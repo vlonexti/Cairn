@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+  <title>Xenon</title>
+  <style>
+    :root { --bg: #1d1815; --ink: #f2e8dc; --muted: #ab9b8c; --faint: #9a897c; --line: #352d27; --accent: #e2a56f; --on: #23170e; }
+    html.light { --bg: #f7f0e7; --ink: #2a1f18; --muted: #6c5a4d; --faint: #76645a; --line: #e7dacb; --accent: #9a5524; --on: #ffffff; }
+    html, body { height: 100%; margin: 0; }
+    body { background: var(--bg); color: var(--ink); font: 15px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif; display: grid; place-items: center; }
+    .drag { position: fixed; inset: 0 0 auto 0; height: 56px; -webkit-app-region: drag; }
+    main { text-align: center; max-width: 440px; padding: 24px; }
+    svg { width: 76px; height: 76px; }
+    .arc { fill: var(--accent); }
+    h1 { font-size: 23px; letter-spacing: -.02em; margin: 22px 0 8px; }
+    p { color: var(--muted); margin: 0 0 22px; }
+    button { font: inherit; font-weight: 600; color: var(--on); background: var(--accent); border: 1px solid transparent; border-radius: 6px; padding: 9px 20px; cursor: pointer; }
+    button:hover { filter: brightness(1.08); }
+    button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    small { display: block; margin-top: 18px; color: var(--faint); }
+  </style>
+</head>
+<body>
+  <div class="drag"></div>
+  <main>
+    <svg viewBox="0 0 256 256" aria-hidden="true">
+      <path fill="currentColor" d="M31 40h36l48 88-48 88H31l48-88z"/>
+      <path fill="currentColor" d="M225 40h-36l-48 88 48 88h36l-48-88z"/>
+      <path class="arc" d="M128 92q1.6 34.4 11 36q-9.4 1.6-11 36q-1.6-34.4-11-36q9.4-1.6 11-36z"/>
+    </svg>
+    <h1>Xenon cannot be reached</h1>
+    <p>There is no connection, and Xenon has not been saved on this computer yet. Once it has opened with a connection, it keeps a copy and opens without one.</p>
+    <button id="retry" autofocus>Try again</button>
+    <small id="status">It will also try again by itself when the connection comes back.</small>
+  </main>
+  <script>
+    const query = new URLSearchParams(location.search);
+    if (query.get('theme') === 'light') document.documentElement.classList.add('light');
+    if (query.get('frame') === 'native') document.querySelector('.drag').remove();
+    const site = new URLSearchParams(location.search).get('site') || 'https://xenon.justloofy.dev/';
+    const go = () => { document.getElementById('status').textContent = 'Connecting…'; location.href = site; };
+    document.getElementById('retry').onclick = go;
+    window.addEventListener('online', go);
+    setInterval(() => { if (navigator.onLine) fetch(site, { mode: 'no-cors', cache: 'no-store' }).then(go, () => {}); }, 15000);
+  </script>
+</body>
+</html>

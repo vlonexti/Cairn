@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-mode="static" data-build="b6df256e081c">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co https://godbolt.org https://huggingface.co https://*.huggingface.co https://*.hf.co">
+  <title>Xenon</title>
+  <link rel="icon" type="image/svg+xml" href="app/img/icon.svg">
+  <link rel="alternate icon" href="app/img/icon.png">
+  <link rel="manifest" href="app/manifest.json">
+  <link rel="apple-touch-icon" href="app/img/icon-180.png">
+  <meta name="apple-mobile-web-app-title" content="Xenon">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="app/css/app.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/prose.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/workbench.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/ide.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/shell.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/login.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/widgets.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/theme.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/polish.css?v=b6df256e081c">
+  <link rel="stylesheet" href="app/css/xenon.css?v=b6df256e081c">
+  <script src="app/js/theme.js?v=b6df256e081c"></script>
+</head>
+<body>
+  <div id="app"></div>
+    <div class="splash" id="splash" role="progressbar" aria-label="Xenon is starting">
+    <div class="sp-light"></div>
+    <div class="sp-stage">
+      <div class="sp-gauge" aria-hidden="true">
+        <div class="sp-rules"><div class="sp-rule l"><i></i></div><div class="sp-rule r"><i></i></div></div>
+        <div class="sp-jaw l"><span><svg viewBox="0 0 256 256"><path d="M31 40h36l48 88-48 88H31l48-88z"/></svg></span></div>
+        <div class="sp-jaw r"><span><svg viewBox="0 0 256 256"><path d="M225 40h-36l-48 88 48 88h36l-48-88z"/></svg></span></div>
+        <i class="sp-arcline"></i>
+        <span class="sp-spark"><svg viewBox="0 0 256 256"><path d="M128 92q1.6 34.4 11 36q-9.4 1.6-11 36q-1.6-34.4-11-36q9.4-1.6 11-36z"/></svg></span>
+      </div>
+      <div class="sp-under">
+        <div class="sp-read" aria-hidden="true"><b class="sp-odo"></b><span>%</span></div>
+        <div class="sp-name">
+          <div class="sp-word" aria-hidden="true"><span style="--i:0">X</span><span style="--i:1">e</span><span style="--i:2">n</span><span style="--i:3">o</span><span style="--i:4">n</span></div>
+          <div class="sp-tag">Learn it by running it.</div>
+        </div>
+      </div>
+    </div>
+    <div class="sp-foot"><span class="sp-ver">v1.0.0</span><span class="sp-skip">click anywhere to skip</span></div>
+  </div>
+  <script>
+    window.XENON_T0 = performance.now();
+    document.querySelector('.sp-jaw').addEventListener('animationstart', function () { window.XENON_T0 = performance.now(); }, { once: true });
+    try { if (sessionStorage.getItem('cairn.splash')) { document.getElementById('splash').classList.add('quick'); window.XENON_QUICK = true; } sessionStorage.setItem('cairn.splash', '1'); } catch (e) {}
+    if (window.XENON_SPLASH === 'short') { document.getElementById('splash').classList.add('quick'); window.XENON_QUICK = true; }
+    if (window.XENON_SPLASH === 'off') { var sp = document.getElementById('splash'); if (sp) sp.parentNode.removeChild(sp); }
+  </script>
+  <script src="app/js/splash.js?v=b6df256e081c"></script>
+  <div id="toasts" aria-live="polite"></div>
+  <script>window.XENON = { token: 'local', version: '1.0.0', static: true, cloud: true };</script>
+    <link rel="preload" as="script" href="vendor/marked/marked.umd.js?v=b6df256e081c">
+  <link rel="preload" as="script" href="vendor/mermaid/mermaid.min.js?v=b6df256e081c">
+  <link rel="preload" as="script" href="vendor/monaco/vs/loader.js?v=b6df256e081c">
+  <link rel="modulepreload" href="app/js/main.js?v=b6df256e081c">
+  <script type="xenon/after-first-frame" src="vendor/marked/marked.umd.js?v=b6df256e081c"></script>
+  <script type="xenon/after-first-frame" src="vendor/mermaid/mermaid.min.js?v=b6df256e081c"></script>
+  <script type="xenon/after-first-frame" src="vendor/monaco/vs/loader.js?v=b6df256e081c"></script>
+  <script type="xenon/after-first-frame" data-module src="app/js/main.js?v=b6df256e081c"></script>
+  <script>
+    (function () {
+      var started = false;
+      function run() {
+        if (started) return;
+        started = true;
+        document.querySelectorAll('script[type="xenon/after-first-frame"]').forEach(function (held) {
+          var s = document.createElement('script');
+          if (held.hasAttribute('data-module')) s.type = 'module';
+          s.async = false;                 // keep the order above
+          s.src = held.getAttribute('src');
+          document.body.appendChild(s);
+        });
+      }
+      requestAnimationFrame(function () { requestAnimationFrame(run); });
+      setTimeout(run, 250);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+{
+  "name": "xenon-desktop",
+  "productName": "Xenon",
+  "version": "2.5.1",
+  "description": "Xenon for the desktop: the Xenon website in windows of its own, with the same accounts and progress, and it opens without a connection.",
+  "homepage": "https://xenon.justloofy.dev",
+  "author": {
+    "name": "Xenon",
+    "email": "noreply@justloofy.dev"
+  },
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux --publish never",
+    "dist:mac": "electron-builder --mac --publish never"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "dev.justloofy.cairn",
+    "productName": "Xenon",
+    "copyright": "Xenon",
+    "files": [
+      "main.js",
+      "build/icon.ico",
+      "build/icon.png",
+      "find-preload.js",
+      "find.html",
+      "offline.html",
+      "preload.js",
+      "runner.js",
+      "updater.js"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "artifactName": "Xenon-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Xenon",
+      "artifactName": "Xenon-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Xenon-${version}-portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.education",
+      "icon": "build/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Education",
+      "icon": "build/icon.png",
+      "synopsis": "Learn to program, one stone at a time"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/vlonexti/Cairn/releases/latest/download"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
+}
