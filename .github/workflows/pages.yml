@@ -3,10 +3,11 @@
 # Needs, once, in the repository: Settings > Pages > Build and deployment > Source: "GitHub Actions".
 name: Publish site
 
+# It runs on every push. (A filter on site/** looked tidier, but GitHub only checks the first 300 changed files of a
+# push against such a filter, so a large push could go unpublished.)
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
