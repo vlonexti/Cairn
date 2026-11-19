@@ -1,4 +1,4 @@
-import{S as F}from"./core.js?v=05ea433593ab";import{restyleSnippet as V}from"./codestyle.js?v=05ea433593ab";const Z=27,j={python:[["main",`def main():
+import{S as F}from"./core.js?v=4abed6da6a14";import{restyleSnippet as V}from"./codestyle.js?v=4abed6da6a14";const Z=27,j={python:[["main",`def main():
     \${1:pass}
 
 
