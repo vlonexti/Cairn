@@ -8,7 +8,7 @@ account carries them to every device.
 
 ## What is on it
 
-17 courses, 703 lessons and 1119 checked tasks, each course one path from the first line to
+18 courses, 733 lessons and 1155 checked tasks, each course one path from the first line to
 advanced work:
 
 | | |
