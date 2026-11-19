@@ -1,7 +1,7 @@
 {
   "name": "xenon-desktop",
   "productName": "Xenon",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "Xenon for the desktop: the Xenon website in windows of its own, with the same accounts and progress, and it opens without a connection.",
   "homepage": "https://xenon.justloofy.dev",
   "author": {
@@ -112,7 +112,7 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://github.com/vlonexti/Cairn/releases/latest/download"
+        "url": "https://github.com/whimsyman/Xenon/releases/latest/download"
       }
     ]
   },

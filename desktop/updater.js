@@ -27,8 +27,8 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
-const FEED = (process.env.XENON_UPDATE_URL || 'https://github.com/vlonexti/Cairn/releases/latest/download').replace(/\/$/, '');
-const PAGE = 'https://github.com/vlonexti/Cairn/releases/latest';
+const FEED = (process.env.XENON_UPDATE_URL || 'https://github.com/whimsyman/Xenon/releases/latest/download').replace(/\/$/, '');
+const PAGE = 'https://github.com/whimsyman/Xenon/releases/latest';
 const EVERY = 4 * 60 * 60 * 1000;
 const DRY = process.env.XENON_UPDATE_DRYRUN === '1';
 

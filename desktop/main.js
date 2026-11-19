@@ -31,7 +31,7 @@ const SITE = (process.env.XENON_URL || 'https://xenon.justloofy.dev/').replace(/
 const ORIGIN = new URL(SITE).origin;
 const APP_ID = 'dev.justloofy.cairn';
 const ICON = path.join(__dirname, 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
-const DOWNLOADS = 'https://github.com/vlonexti/Cairn/releases';
+const DOWNLOADS = 'https://github.com/whimsyman/Xenon/releases';
 const PARTITION = 'persist:cairn';
 
 // How the window is framed. Windows: no title bar, the three window buttons drawn over the page's header.

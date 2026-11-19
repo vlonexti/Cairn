@@ -36,7 +36,7 @@ The desktop app is the same site in windows of its own: the same account and pro
 find on the page, saving a page as a PDF, and it opens with no connection because it keeps a copy of the site on
 your computer. It updates itself.
 
-**[Download the latest version](https://github.com/vlonexti/Xenon/releases/latest)** and pick the file for your
+**[Download the latest version](https://github.com/whimsyman/Xenon/releases/latest)** and pick the file for your
 computer:
 
 | System | File | How |
@@ -51,7 +51,7 @@ have had far less use, so say so with "Send a suggestion" if one misbehaves.
 ## What is in this repository
 
 - **`desktop/`** is the source of the desktop app. The installers on the
-  [releases page](https://github.com/vlonexti/Xenon/releases) are built from it here, in the open.
+  [releases page](https://github.com/whimsyman/Xenon/releases) are built from it here, in the open.
 - **`site/`** is the website exactly as it is served at xenon.justloofy.dev: the files a browser is sent. They
   are published here by a tool and are not meant to be read or edited.
 
@@ -60,6 +60,6 @@ repository.
 
 ## Rights
 
-Copyright © 2026 vlonexti. All rights reserved. Nothing here is under an open-source licence: the site, its
+Copyright © 2026 whimsyman. All rights reserved. Nothing here is under an open-source licence: the site, its
 courses and the app may be used as offered at xenon.justloofy.dev, and may not be copied, republished or
 hosted elsewhere without permission.
