@@ -1,4 +1,4 @@
-import{S as ce}from"./core.js?v=5ec033cc34c5";import{restyleSnippet as me}from"./codestyle.js?v=5ec033cc34c5";import{MORE_SNIPPETS as W,MORE_LIB as ue,NASM as I,NASM_REGISTERS as U,registerInfo as J,readC as de,readLua as fe,readNasm as pe}from"./langmore.js?v=5ec033cc34c5";const he=27,q={python:[["main",`def main():
+import{S as ce}from"./core.js?v=cd38a7ecf58f";import{restyleSnippet as me}from"./codestyle.js?v=cd38a7ecf58f";import{MORE_SNIPPETS as W,MORE_LIB as ue,NASM as I,NASM_REGISTERS as U,registerInfo as J,readC as de,readLua as fe,readNasm as pe}from"./langmore.js?v=cd38a7ecf58f";const he=27,q={python:[["main",`def main():
     \${1:pass}
 
 
