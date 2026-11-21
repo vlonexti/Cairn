@@ -1,6 +1,6 @@
-# Xenon: every lesson is open to read.
 User-agent: *
-Allow: /
+Allow: /$
+Allow: /login.html
 Disallow: /data/
 Disallow: /vendor/
 
