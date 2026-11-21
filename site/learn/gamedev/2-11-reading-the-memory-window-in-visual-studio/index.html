@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Reading the Memory Window in Visual Studio · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/2-11-reading-the-memory-window-in-visual-studio/">
+  <meta name="description" content="The Memory window shows raw bytes, and this chapter has given you everything you need to read them. This lesson puts it together: setting the window's…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Reading the Memory Window in Visual Studio · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The Memory window shows raw bytes, and this chapter has given you everything you need to read them. This lesson puts it together: setting the window's…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/2-11-reading-the-memory-window-in-visual-studio/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Reading the Memory Window in Visual Studio · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reading the Memory Window in Visual Studio · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The Memory window shows raw bytes, and this chapter has given you everything you need to read them. This lesson puts it together: setting the window's…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Memory in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Reading the Memory Window in Visual Studio</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.11</b></span><span>11 of 11 in milestone 2</span><span>9 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The Memory window shows raw bytes, and this chapter has given you everything you need to read them. This lesson puts it together: setting the window&#39;s display, recognising pointers, Debug patterns, text and floating-point numbers at a glance, and decoding a whole object by hand.</p>
+      <div class="prose">
+<h2>Setting the window up</h2>
+<p>Open it while paused: <strong>Debug → Windows → Memory → Memory 1</strong> (Visual Studio has four, so you can keep several places open). The useful controls:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Control</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Address</strong> box</td>
+<td>Type any expression that gives an address: <code>&amp;hero</code>, <code>ptr</code>, <code>names.data()</code>, <code>0x00000052A3CFF7A8</code>, <code>rsp</code>. Press Enter.</td>
+</tr>
+<tr>
+<td><strong>Reevaluate automatically</strong> (the circular arrows)</td>
+<td>Keeps following the expression as you step: useful for a pointer that changes.</td>
+</tr>
+<tr>
+<td><strong>Columns</strong></td>
+<td>How many units per row. Set it to 16 bytes, or to 8 when looking at pointers.</td>
+</tr>
+<tr>
+<td>Right-click → <strong>1-, 2-, 4- or 8-byte integer</strong></td>
+<td>Groups bytes into numbers, already put back into the right order for little-endian.</td>
+</tr>
+<tr>
+<td>Right-click → <strong>32-bit or 64-bit floating point</strong></td>
+<td>Shows each group as a <code>float</code> or <code>double</code>.</td>
+</tr>
+<tr>
+<td>Right-click → <strong>Signed / Unsigned / Hexadecimal display</strong></td>
+<td>How the numbers are written.</td>
+</tr>
+<tr>
+<td>Right-click → <strong>ANSI / Unicode text</strong> (the column on the right)</td>
+<td>Shows the bytes as one-byte or UTF-16 characters.</td>
+</tr>
+</tbody></table>
+</div>
+<p>You can also drag a variable from the code editor or Locals window into the Memory window to jump to its address.</p>
+<h2>Recognising what you are looking at</h2>
+<p>With practice you can tell what a group of bytes is from its shape alone. Here is the catalogue for a 64-bit Windows program:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You see (bytes, as shown)</th>
+<th>It is probably</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>xx xx xx xx f6 7f 00 00</code></td>
+<td>A pointer into the program&#39;s own image (code or globals): high bytes <code>00 00 7f f6</code> or nearby</td>
+</tr>
+<tr>
+<td><code>xx xx xx xx fe 7f 00 00</code></td>
+<td>A pointer into a system DLL</td>
+</tr>
+<tr>
+<td><code>xx xx xx xx 0X 0X 00 00</code> with small X</td>
+<td>A heap pointer: two high bytes zero, then smallish</td>
+</tr>
+<tr>
+<td><code>xx xx xx xx xx 00 00 00</code>, 8-byte aligned, near <code>rsp</code></td>
+<td>A stack address</td>
+</tr>
+<tr>
+<td><code>cc cc cc cc</code></td>
+<td>Uninitialised stack memory (Debug)</td>
+</tr>
+<tr>
+<td><code>cd cd cd cd</code></td>
+<td>Allocated, never written heap memory (Debug)</td>
+</tr>
+<tr>
+<td><code>dd dd dd dd</code></td>
+<td>Freed heap memory (Debug)</td>
+</tr>
+<tr>
+<td><code>fd fd fd fd</code></td>
+<td>Heap guard bytes (Debug)</td>
+</tr>
+<tr>
+<td><code>00 00 80 3f</code></td>
+<td>The <code>float</code> 1.0</td>
+</tr>
+<tr>
+<td><code>00 00 00 00 00 00 f0 3f</code></td>
+<td>The <code>double</code> 1.0</td>
+</tr>
+<tr>
+<td><code>xx 00 xx 00 xx 00</code>, letters in the right-hand column with dots between</td>
+<td>UTF-16 text</td>
+</tr>
+<tr>
+<td>Small numbers followed by <code>00 00 00</code></td>
+<td>Small <code>int</code>s: counts, ids, health</td>
+</tr>
+</tbody></table>
+</div>
+<p>Pointers stand out most: eight bytes ending in <code>00 00</code>, with the high bytes repeating the same few values. Since x64 programs only use the lower 47 bits of an address, the top two bytes of a user-mode pointer are always zero.</p>
+<h2>Reading floating-point numbers</h2>
+<p><code>float</code> and <code>double</code> are not stored like integers. A 32-bit <code>float</code> has three parts:</p>
+<div class="codeblock diagram plain"><pre><code> bit 31   30 ......... 23   22 ...................... 0
+┌──────┬─────────────────┬──────────────────────────────┐
+│ sign │ exponent (8)    │ fraction (23)                │
+└──────┴─────────────────┴──────────────────────────────┘
+value = (-1)^sign × 1.fraction × 2^(exponent − 127)</code></pre></div>
+<p>You will rarely decode one by hand, because the Memory window can do it for you. But a few values are worth recognising, because they appear constantly in game data such as positions, speeds and scales:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Value</th>
+<th><code>float</code> bits</th>
+<th>Bytes in memory</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0.0</td>
+<td><code>0x00000000</code></td>
+<td><code>00 00 00 00</code></td>
+</tr>
+<tr>
+<td>0.5</td>
+<td><code>0x3F000000</code></td>
+<td><code>00 00 00 3f</code></td>
+</tr>
+<tr>
+<td>1.0</td>
+<td><code>0x3F800000</code></td>
+<td><code>00 00 80 3f</code></td>
+</tr>
+<tr>
+<td>2.0</td>
+<td><code>0x40000000</code></td>
+<td><code>00 00 00 40</code></td>
+</tr>
+<tr>
+<td>10.0</td>
+<td><code>0x41200000</code></td>
+<td><code>00 00 20 41</code></td>
+</tr>
+<tr>
+<td>100.0</td>
+<td><code>0x42C80000</code></td>
+<td><code>00 00 c8 42</code></td>
+</tr>
+<tr>
+<td>−1.0</td>
+<td><code>0xBF800000</code></td>
+<td><code>00 00 80 bf</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A rule of thumb: a 4-byte group whose last byte is <code>3f</code>, <code>40</code>, <code>41</code>, <code>42</code>, <code>bf</code>, <code>c0</code>, <code>c1</code> or <code>c2</code> and whose first bytes are often <code>00</code> is very likely a <code>float</code> of modest size.</p>
+<p>You can see a value&#39;s bits from C++ by copying its bytes into an integer. <code>std::bit_cast</code> (C++20) does it in one step:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;bit&gt;</span>
+<span class="tk-p">#include &lt;cstdint&gt;</span>
+<span class="tk-p">#include &lt;format&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (<span class="tk-k">float</span> f : { <span class="tk-n">1.0f</span>, -<span class="tk-n">1.0f</span>, <span class="tk-n">0.5f</span>, <span class="tk-n">100.0f</span>, <span class="tk-n">0.1f</span> })
+        std::cout &lt;&lt; std::<span class="tk-f">format</span>(<span class="tk-s">&quot;{:&gt;6} -&gt; 0x{:08X}\n&quot;</span>, f, std::bit_cast&lt;std::uint32_t&gt;(f));
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>     1 -&gt; 0x3F800000
+    -1 -&gt; 0xBF800000
+   0.5 -&gt; 0x3F000000
+   100 -&gt; 0x42C80000
+   0.1 -&gt; 0x3DCCCCCD</code></pre></div>
+<p><code>0.1</code> has no exact binary form, which is why its bits look busy. It is also why comparing floats with <code>==</code> after arithmetic often fails.</p>
+<h2>Decoding a whole object</h2>
+<p>Here is the routine for any object, using everything from this chapter.</p>
+<ol>
+<li><strong>Find its type&#39;s layout.</strong> Work through the members and the alignment rules (lesson 2.05), or let the Watch window tell you with <code>&amp;obj.member</code>.</li>
+<li><strong>Point the window at the object.</strong> Type <code>&amp;obj</code> in the Address box. Set 8 or 16 columns.</li>
+<li><strong>Split the bytes by offset.</strong> Mark where each member starts.</li>
+<li><strong>Read each member</strong> with the right rule: little-endian integers, float bits, a pointer (follow it by typing it into a second Memory window), padding to skip.</li>
+<li><strong>Check against the Locals window.</strong> Once your reading matches, you understand the layout.</li>
+</ol>
+<p>Try it on this object:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Item</span>
+{
+    <span class="tk-k">const</span> <span class="tk-k">char</span>* name;     <span class="tk-c">// 0</span>
+    <span class="tk-k">float</span> weight;         <span class="tk-c">// 8</span>
+    std::int32_t count;   <span class="tk-c">// 12</span>
+    <span class="tk-k">bool</span> stackable;       <span class="tk-c">// 16, then 7 bytes of tail padding</span>
+};</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>0x0000004F8C8FF8A0  e8 4c 2b a1 f6 7f 00 00  00 00 00 3f 0c 00 00 00
+0x0000004F8C8FF8B0  01 cc cc cc cc cc cc cc</code></pre></div>
+<ul>
+<li>Bytes 0 to 7: <code>e8 4c 2b a1 f6 7f 00 00</code> is the pointer <code>0x00007FF6A12B4CE8</code>: in the program&#39;s image, so <code>name</code> points at a string literal in <code>.rdata</code>.</li>
+<li>Bytes 8 to 11: <code>00 00 00 3f</code> is the float 0.5.</li>
+<li>Bytes 12 to 15: <code>0c 00 00 00</code> is 12.</li>
+<li>Byte 16: <code>01</code> is <code>true</code>.</li>
+<li>Bytes 17 to 23: <code>cc</code>, tail padding in a Debug build.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Reading pointers byte by byte</span></div><div class="callout-body"><p>Switch the window to 8-byte integers in hexadecimal and the pointers read naturally, already reversed into the right order.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Forgetting the window keeps the old address</span></div><div class="callout-body"><p>When you step into a different function, the window still shows the same address, which may now belong to a different frame. Use <strong>Reevaluate automatically</strong>, or type the expression again.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Treating every 4-byte group as an int</span></div><div class="callout-body"><p>Positions and speeds are usually floats. If an &quot;int&quot; is a huge number like 1,065,353,216, try reading it as a float: that one is 1.0.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">You see the eight bytes <code>30 12 4a 9c f6 7f 00 00</code>. What is it most likely to be?</div><ul><li>A pointer into the program&#39;s own code or data</li><li>A double-precision number</li><li>UTF-16 text</li></ul><details><summary>Show the answer</summary><p><b>A pointer into the program&#39;s own code or data</b> Eight bytes ending in <code>f6 7f 00 00</code> is the typical shape of an address in the program&#39;s image.</p></details></li><li><div class="q">What <code>float</code> is stored as the bytes <code>00 00 80 3f</code>?</div><ul><li>128.0</li><li>1.0</li><li>0.0</li></ul><details><summary>Show the answer</summary><p><b>1.0</b> Read little-endian, the bits are <code>0x3F800000</code>: sign 0, exponent 127, fraction 0, which is 1.0.</p></details></li><li><div class="q">An int that should be small reads 1,065,353,216 in the Watch window. What is a likely explanation?</div><ul><li>The memory actually holds the float 1.0, and it is being read as an int</li><li>The int overflowed</li><li>The memory was freed</li></ul><details><summary>Show the answer</summary><p><b>The memory actually holds the float 1.0, and it is being read as an int</b> 1,065,353,216 is <code>0x3F800000</code>, the bit pattern of 1.0f.</p></details></li><li><div class="q">Why do user-mode pointers on x64 Windows always end in <code>00 00</code> in memory?</div><ul><li>Pointers are always multiples of 65,536</li><li>Only the lower 47 bits of an address are used, so the top two bytes are zero, and little-endian puts them last</li><li>The Memory window adds them</li></ul><details><summary>Show the answer</summary><p><b>Only the lower 47 bits of an address are used, so the top two bytes are zero, and little-endian puts them last</b> The highest bytes of the value come last in memory, and for user-mode addresses they are zero.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/2.11">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/2.11">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-10-catching-memory-bugs-with-addresssanitizer/"><span class="mono">previous</span><b>2.10 Catching Memory Bugs with AddressSanitizer</b></a>
+      <a class="lp-next" href="../3-01-pointers-to-pointers/"><span class="mono">next</span><b>3.01 Pointers to Pointers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/2-11-reading-the-memory-window-in-visual-studio"></script>
+</body>
+</html>

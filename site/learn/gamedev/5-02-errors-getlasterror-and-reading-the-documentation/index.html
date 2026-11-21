@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Errors, GetLastError and Reading the Documentation · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/5-02-errors-getlasterror-and-reading-the-documentation/">
+  <meta name="description" content="The Windows API reports failure in several ways: a BOOL that is FALSE, a null or invalid handle, an HRESULT, or a status code. The details usually come from…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Errors, GetLastError and Reading the Documentation · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The Windows API reports failure in several ways: a BOOL that is FALSE, a null or invalid handle, an HRESULT, or a status code. The details usually come from…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/5-02-errors-getlasterror-and-reading-the-documentation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Errors, GetLastError and Reading the Documentation · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Errors, GetLastError and Reading the Documentation · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The Windows API reports failure in several ways: a BOOL that is FALSE, a null or invalid handle, an HRESULT, or a status code. The details usually come from…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>The Windows API</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Errors, GetLastError and Reading the Documentation</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 9 in milestone 5</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The Windows API reports failure in several ways: a <code>BOOL</code> that is <code>FALSE</code>, a null or invalid handle, an <code>HRESULT</code>, or a status code. The details usually come from <code>GetLastError</code>. This lesson shows each pattern, how to turn an error number into a readable message, how <code>HRESULT</code>s are built, and how to read a Microsoft documentation page so you know which pattern a function uses.</p>
+      <div class="prose">
+<h2>Three patterns</h2>
+<p><strong>1. BOOL plus GetLastError.</strong> Many functions return <code>BOOL</code> (an <code>int</code>): non-zero for success, <code>FALSE</code> (0) for failure. On failure, the reason is a number kept per thread, fetched with <code>GetLastError()</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">if</span> (!<span class="tk-f">DeleteFileW</span>(<span class="tk-s">L&quot;C:\\this\\file\\does\\not\\exist.txt&quot;</span>))
+    {
+        <span class="tk-k">const</span> DWORD error{ <span class="tk-f">GetLastError</span>() };     <span class="tk-c">// read it straight away</span>
+        std::cout &lt;&lt; <span class="tk-s">&quot;DeleteFileW failed with error &quot;</span> &lt;&lt; error &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>DeleteFileW failed with error 3</code></pre></div>
+<p>Error 3 is <code>ERROR_PATH_NOT_FOUND</code>. <code>GetLastError</code> must be called <strong>immediately</strong>: almost any later API call, including some done inside <code>std::cout</code>, may overwrite it.</p>
+<p><strong>2. Handles plus GetLastError.</strong> Creation functions return <code>nullptr</code> or <code>INVALID_HANDLE_VALUE</code> (lesson 5.01), and again <code>GetLastError</code> says why.</p>
+<p><strong>3. HRESULT.</strong> COM-based APIs (DirectX, the Windows shell, audio) return an <code>HRESULT</code> directly: a 32-bit code where negative means failure. Test them with the <code>SUCCEEDED(hr)</code> and <code>FAILED(hr)</code> macros, never with <code>== 0</code> or <code>!= 0</code>, since some success codes are not zero.</p>
+<h2>Turning a number into a message</h2>
+<p><code>FormatMessageW</code> looks up the text Windows has for an error code, in the user&#39;s language:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+std::wstring <span class="tk-f">describeError</span>(DWORD error)
+{
+    <span class="tk-k">wchar_t</span>* buffer{ <span class="tk-k">nullptr</span> };
+    <span class="tk-k">const</span> DWORD length{ <span class="tk-f">FormatMessageW</span>(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        <span class="tk-k">nullptr</span>, error, <span class="tk-n">0</span>, <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">wchar_t</span>*&gt;(&amp;buffer), <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>) };
+    std::wstring text{ length ? std::<span class="tk-f">wstring</span>(buffer, length) : <span class="tk-s">L&quot;unknown error&quot;</span> };
+    <span class="tk-f">LocalFree</span>(buffer);                                    <span class="tk-c">// FormatMessage allocated it</span>
+    <span class="tk-k">while</span> (!text.<span class="tk-f">empty</span>() &amp;&amp; (text.<span class="tk-f">back</span>() == L<span class="tk-s">'\n'</span> || text.<span class="tk-f">back</span>() == L<span class="tk-s">'\r'</span>)) text.<span class="tk-f">pop_back</span>();
+    <span class="tk-k">return</span> text;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    HANDLE file{ <span class="tk-f">CreateFileW</span>(<span class="tk-s">L&quot;no_such_save.dat&quot;</span>, GENERIC_READ, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, <span class="tk-k">nullptr</span>) };
+    <span class="tk-k">if</span> (file == INVALID_HANDLE_VALUE)
+    {
+        <span class="tk-k">const</span> DWORD error{ <span class="tk-f">GetLastError</span>() };
+        std::wcout &lt;&lt; <span class="tk-s">L&quot;error &quot;</span> &lt;&lt; error &lt;&lt; <span class="tk-s">L&quot;: &quot;</span> &lt;&lt; <span class="tk-f">describeError</span>(error) &lt;&lt; L<span class="tk-s">'\n'</span>;
+    }
+    <span class="tk-k">else</span> <span class="tk-f">CloseHandle</span>(file);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>error 2: The system cannot find the file specified.</code></pre></div>
+<p>The ones you will meet most:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Name</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2</td>
+<td><code>ERROR_FILE_NOT_FOUND</code></td>
+<td>No such file</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>ERROR_PATH_NOT_FOUND</code></td>
+<td>A folder in the path does not exist</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>ERROR_ACCESS_DENIED</code></td>
+<td>You do not have the rights (lesson 6.08)</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>ERROR_INVALID_HANDLE</code></td>
+<td>A closed or wrong handle</td>
+</tr>
+<tr>
+<td>32</td>
+<td><code>ERROR_SHARING_VIOLATION</code></td>
+<td>Another program has the file open without sharing</td>
+</tr>
+<tr>
+<td>87</td>
+<td><code>ERROR_INVALID_PARAMETER</code></td>
+<td>An argument is wrong</td>
+</tr>
+<tr>
+<td>122</td>
+<td><code>ERROR_INSUFFICIENT_BUFFER</code></td>
+<td>The buffer you passed is too small: call again with a bigger one</td>
+</tr>
+<tr>
+<td>126</td>
+<td><code>ERROR_MOD_NOT_FOUND</code></td>
+<td><code>LoadLibrary</code> could not find the DLL or one it depends on</td>
+</tr>
+</tbody></table>
+</div>
+<p>In the debugger, <code>$err,hr</code> in the Watch window shows the current value with its name (lesson 4.08), and <strong>Tools → Error Lookup</strong> decodes any number.</p>
+<h2>Inside an HRESULT</h2>
+<p>An <code>HRESULT</code> packs three fields into 32 bits:</p>
+<div class="codeblock diagram plain"><pre><code> 31  30..27   26..16          15..0
+┌───┬───────┬───────────────┬────────────────┐
+│ S │ flags │ facility (11) │ code (16)      │
+└───┴───────┴───────────────┴────────────────┘
+S = 1: failure (so failures are negative as signed ints)</code></pre></div>
+<ul>
+<li><strong>Severity</strong> (bit 31): 1 is failure.</li>
+<li><strong>Facility</strong>: which subsystem the code comes from, such as <code>FACILITY_WIN32</code> (7) or <code>FACILITY_DXGI</code>.</li>
+<li><strong>Code</strong>: the error number within that facility.</li>
+</ul>
+<p>A Win32 error code can be wrapped as an <code>HRESULT</code> with <code>HRESULT_FROM_WIN32(error)</code>: error 2 becomes <code>0x80070002</code>. You will recognise that shape everywhere: <code>0x8007xxxx</code> is &quot;a Win32 error, number xxxx&quot;.</p>
+<h2>Reading a documentation page</h2>
+<p>Every function&#39;s page on Microsoft&#39;s site (search &quot;CreateFileW function&quot;) has the same sections, and each answers a question you must ask:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Answers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Syntax</strong></td>
+<td>The exact declaration, parameter types and annotations such as <code>[in]</code>, <code>[out]</code>, <code>[in, optional]</code></td>
+</tr>
+<tr>
+<td><strong>Parameters</strong></td>
+<td>What each one means, what values are allowed, and whether null is accepted</td>
+</tr>
+<tr>
+<td><strong>Return value</strong></td>
+<td>What success and failure look like, and <strong>whether to call <code>GetLastError</code></strong></td>
+</tr>
+<tr>
+<td><strong>Remarks</strong></td>
+<td>The important details: threading rules, ownership of buffers, what to free and with what, common traps</td>
+</tr>
+<tr>
+<td><strong>Requirements</strong></td>
+<td>Which header to include, which <code>.lib</code> to link, which DLL implements it, and the oldest Windows version</td>
+</tr>
+</tbody></table>
+</div>
+<p>The Return value and Remarks sections are where most bugs are prevented. For example, <code>CreateFileW</code>&#39;s Return value section says it returns <code>INVALID_HANDLE_VALUE</code> on failure; <code>ReadFile</code>&#39;s Remarks explain when it can succeed but read fewer bytes than asked.</p>
+<p>Many functions also follow a <strong>two-call pattern</strong> for variable-sized results: call once with a null or small buffer to learn the size needed (often failing with <code>ERROR_INSUFFICIENT_BUFFER</code>), allocate, then call again.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Calling <code>GetLastError</code> too late
+Store it in a variable on the very next line after the failing call.</p>
+</blockquote>
+<blockquote><p>[!warning] Calling <code>GetLastError</code> after success
+Its value is only meaningful when the function reported failure. Some functions leave an old value there on success.</p>
+</blockquote>
+<blockquote><p>[!warning] Testing an <code>HRESULT</code> with <code>if (hr)</code>
+<code>S_FALSE</code> is 1 and means success. Use <code>SUCCEEDED</code> and <code>FAILED</code>.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A function returns <code>FALSE</code>. How do you find out why?</div><ul><li>Call <code>GetLastError()</code> immediately afterwards</li><li>Check <code>errno</code></li><li>Look at the return value&#39;s bits</li></ul><details><summary>Show the answer</summary><p><b>Call <code>GetLastError()</code> immediately afterwards</b> Many Windows functions record the reason per thread, for <code>GetLastError</code> to read.</p></details></li><li><div class="q">What does <code>0x80070005</code> mean?</div><ul><li>A failure HRESULT wrapping Win32 error 5, access denied</li><li>Success with a warning</li><li>Memory address 0x80070005</li></ul><details><summary>Show the answer</summary><p><b>A failure HRESULT wrapping Win32 error 5, access denied</b> Severity bit set, facility 7 (Win32), code 5.</p></details></li><li><div class="q">Which section of a documentation page says whether to call <code>GetLastError</code>?</div><ul><li>Syntax</li><li>Return value</li><li>Requirements</li></ul><details><summary>Show the answer</summary><p><b>Return value</b> It describes what success and failure look like for that particular function.</p></details></li><li><div class="q">Why use <code>FAILED(hr)</code> instead of <code>hr != 0</code>?</div><ul><li>Some success codes, such as <code>S_FALSE</code>, are not zero</li><li><code>HRESULT</code> values are always negative</li><li>The comparison does not compile</li></ul><details><summary>Show the answer</summary><p><b>Some success codes, such as <code>S_FALSE</code>, are not zero</b> Only the severity bit separates success from failure.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-handles-and-kernel-objects/"><span class="mono">previous</span><b>5.01 Handles and Kernel Objects</b></a>
+      <a class="lp-next" href="../5-03-strings-on-windows-ansi-utf-16-and-utf-8/"><span class="mono">next</span><b>5.03 Strings on Windows: ANSI, UTF-16 and UTF-8</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/5-02-errors-getlasterror-and-reading-the-documentation"></script>
+</body>
+</html>

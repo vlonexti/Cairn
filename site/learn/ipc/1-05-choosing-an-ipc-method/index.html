@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Choosing an IPC Method · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/1-05-choosing-an-ipc-method/">
+  <meta name="description" content="A map of the ways processes communicate on Windows - pipes, shared memory, sockets, kernel objects, window messages, files, COM and RPC - compared on speed,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Choosing an IPC Method · Processes and Communication · Xenon">
+  <meta property="og:description" content="A map of the ways processes communicate on Windows - pipes, shared memory, sockets, kernel objects, window messages, files, COM and RPC - compared on speed,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/1-05-choosing-an-ipc-method/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Choosing an IPC Method · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Choosing an IPC Method · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="A map of the ways processes communicate on Windows - pipes, shared memory, sockets, kernel objects, window messages, files, COM and RPC - compared on speed,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Processes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Choosing an IPC Method</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.05</b></span><span>5 of 5 in milestone 1</span><span>5 min</span></div>
+      <p class="lp-summary">A map of the ways processes communicate on Windows - pipes, shared memory, sockets, kernel objects, window messages, files, COM and RPC - compared on speed, simplicity, who can connect and what happens when one side dies, with a guide to choosing.</p>
+      <div class="prose">
+<h2>Many tools, different jobs</h2>
+<p>Every IPC method moves data or signals between address spaces through the kernel, but they differ a great deal in what they are good at. The rest of the course covers each in depth; this lesson is the map.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Moves</th>
+<th>Strengths</th>
+<th>Weaknesses</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Anonymous pipe</strong></td>
+<td>a byte stream, one way</td>
+<td>trivial for parent and child; stdio</td>
+<td>only between related processes</td>
+</tr>
+<tr>
+<td><strong>Named pipe</strong></td>
+<td>a byte or message stream, two way</td>
+<td>any two processes on the machine (or network); per-client connections; access control</td>
+<td>Windows-specific API</td>
+</tr>
+<tr>
+<td><strong>Shared memory</strong> (file mapping)</td>
+<td>nothing: both see the same bytes</td>
+<td>fastest by far, no copying</td>
+<td>you build every structure and all synchronisation yourself</td>
+</tr>
+<tr>
+<td><strong>Socket</strong> (loopback TCP, AF_UNIX)</td>
+<td>a byte stream</td>
+<td>same code works across a network; every language has it</td>
+<td>some overhead; open ports need care</td>
+</tr>
+<tr>
+<td><strong>Events, mutexes, semaphores</strong></td>
+<td>signals, not data</td>
+<td>waiting without spinning; combine with shared memory</td>
+<td>carry no data</td>
+</tr>
+<tr>
+<td><strong>Window messages</strong> (<code>WM_COPYDATA</code>)</td>
+<td>small messages</td>
+<td>easy between GUI programs</td>
+<td>needs windows and a message loop; blocked between privilege levels</td>
+</tr>
+<tr>
+<td><strong>Files</strong></td>
+<td>anything</td>
+<td>simple, survives restarts</td>
+<td>slow; coordinating readers and writers is hard</td>
+</tr>
+<tr>
+<td><strong>COM, RPC</strong></td>
+<td>method calls</td>
+<td>rich, typed interfaces</td>
+<td>heavy machinery to learn and debug</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Questions that decide</h2>
+<p><strong>Are the processes related?</strong> A parent and the child it starts can share anonymous pipes or inherited handles. Unrelated programs need a <strong>name</strong> both know: a named pipe, a named mapping, a port number.</p>
+<p><strong>How much data, how often?</strong> A few messages a second: any method. Megabytes per frame (a video stream, a game&#39;s state for an external tool): <strong>shared memory</strong>, with a small signal to say &quot;new data&quot;. Copying through a pipe costs time per byte; shared memory costs nothing per byte once mapped.</p>
+<p><strong>Request and response, or a stream?</strong> Pipes and sockets fit conversations naturally. Shared memory suits &quot;latest state&quot; and ring buffers of records.</p>
+<p><strong>What if one side dies?</strong> Pipes and sockets <strong>tell you</strong>: the other end is closed and reads fail. Shared memory does not: a dead writer leaves the last data in place and a mutex abandoned (lesson 4.03). Anything built on shared memory needs its own liveness checks, such as watching the other process&#39;s handle.</p>
+<p><strong>Across machines later?</strong> If there is any chance, use sockets from the start; the protocol is then the same locally and remotely.</p>
+<p><strong>Who may connect?</strong> Named pipes and kernel objects carry Windows security descriptors (lesson 5.05); TCP ports on localhost are open to every local process, so the protocol must check who is talking.</p>
+<h2>Common combinations</h2>
+<ul>
+<li><strong>Editor and language server</strong>: stdio pipes with length-framed JSON messages.</li>
+<li><strong>Game and external debug tool</strong>: shared memory holding the game&#39;s state, plus an event or a seqlock so the tool reads consistent snapshots; a named pipe for commands back to the game.</li>
+<li><strong>Single-instance app</strong>: a named mutex to detect the running copy, a named pipe or <code>WM_COPYDATA</code> to hand it the new command line.</li>
+<li><strong>Browser</strong>: one process per site, communicating with the main process over named pipes with a custom message system, shared memory for rendered frames.</li>
+<li><strong>Background service and its settings app</strong>: a named pipe with an access control list allowing only the user&#39;s session.</li>
+</ul>
+<h2>The shape of every IPC design</h2>
+<p>Whatever the method, a robust design has the same parts, which the following milestones build one by one:</p>
+<ol>
+<li><strong>Discovery</strong>: how the two sides find each other (a name, an inherited handle, a port).</li>
+<li><strong>Framing</strong>: where each message begins and ends.</li>
+<li><strong>Format</strong>: how values are encoded so both sides agree.</li>
+<li><strong>Flow</strong>: who speaks when; requests, responses, events.</li>
+<li><strong>Failure</strong>: timeouts, the other side vanishing, bad input.</li>
+<li><strong>Security</strong>: who is allowed to connect, and never trusting what arrives.</li>
+</ol>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/1.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/1.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-04-talking-through-standard-streams/"><span class="mono">previous</span><b>1.04 Talking Through Standard Streams</b></a>
+      <a class="lp-next" href="../2-01-anonymous-pipes/"><span class="mono">next</span><b>2.01 Anonymous Pipes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/1-05-choosing-an-ipc-method"></script>
+</body>
+</html>

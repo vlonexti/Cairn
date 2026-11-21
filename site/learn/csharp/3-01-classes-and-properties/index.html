@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Classes and Properties · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/3-01-classes-and-properties/">
+  <meta name="description" content="Defining classes with fields, constructors and methods, properties with get, set, init and validation, auto-properties and required members, primary…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Classes and Properties · C# · Xenon">
+  <meta property="og:description" content="Defining classes with fields, constructors and methods, properties with get, set, init and validation, auto-properties and required members, primary…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/3-01-classes-and-properties/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Classes and Properties · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Classes and Properties · C# · Xenon">
+  <meta name="twitter:description" content="Defining classes with fields, constructors and methods, properties with get, set, init and validation, auto-properties and required members, primary…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Object-Oriented C#</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Classes and Properties</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Defining classes with fields, constructors and methods, properties with get, set, init and validation, auto-properties and required members, primary constructors, access modifiers and encapsulation, object initializers, ToString, and reference semantics.</p>
+      <div class="prose">
+<h2>A class</h2>
+<p>A <strong>class</strong> describes a kind of object: the data each one holds and what it can do. <code>new</code> creates an <strong>instance</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> acc = <span class="tk-k">new</span> <span class="tk-f">BankAccount</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">100m</span>);
+acc.<span class="tk-f">Deposit</span>(<span class="tk-n">50m</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(acc.<span class="tk-f">Withdraw</span>(<span class="tk-n">500m</span>));     <span class="tk-c">// False</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(acc);                    <span class="tk-c">// calls ToString</span>
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">BankAccount</span>
+{
+    <span class="tk-k">private</span> <span class="tk-k">decimal</span> _balance;              <span class="tk-c">// a field: private data</span>
+
+    <span class="tk-k">public</span> <span class="tk-f">BankAccount</span>(<span class="tk-k">string</span> owner, <span class="tk-k">decimal</span> opening)    <span class="tk-c">// the constructor</span>
+    {
+        <span class="tk-t">Owner</span> = owner;
+        <span class="tk-f">Deposit</span>(opening);
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-t">Owner</span> { <span class="tk-k">get</span>; }           <span class="tk-c">// a read-only auto-property</span>
+
+    <span class="tk-k">public</span> <span class="tk-k">decimal</span> <span class="tk-t">Balance</span> =&gt; _balance;    <span class="tk-c">// a computed, read-only property</span>
+
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Deposit</span>(<span class="tk-k">decimal</span> amount)
+    {
+        <span class="tk-k">if</span> (amount &lt; <span class="tk-n">0</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">ArgumentOutOfRangeException</span>(<span class="tk-f">nameof</span>(amount), <span class="tk-s">&quot;must not be negative&quot;</span>);
+        _balance += amount;
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">bool</span> <span class="tk-f">Withdraw</span>(<span class="tk-k">decimal</span> amount)
+    {
+        <span class="tk-k">if</span> (amount &gt; _balance) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+        _balance -= amount;
+        <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">override</span> <span class="tk-k">string</span> <span class="tk-f">ToString</span>() =&gt; <span class="tk-s">$&quot;{Owner}: {_balance:F2}&quot;</span>;
+}</code></pre></div>
+<p><strong>Encapsulation</strong>: the balance can only change through <code>Deposit</code> and <code>Withdraw</code>, which keep it valid. Nothing outside the class can set it to -1000.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Modifier</th>
+<th>Visible to</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>public</code></td>
+<td>All code</td>
+</tr>
+<tr>
+<td><code>private</code></td>
+<td>Only this class (the default for members)</td>
+</tr>
+<tr>
+<td><code>protected</code></td>
+<td>This class and classes derived from it</td>
+</tr>
+<tr>
+<td><code>internal</code></td>
+<td>This project (assembly); the default for classes</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Properties</h2>
+<p>A <strong>property</strong> looks like a field from outside but runs code. Auto-properties generate the hidden field for you:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> p = <span class="tk-k">new</span> <span class="tk-t">Product</span> { <span class="tk-t">Name</span> = <span class="tk-s">&quot;Tea&quot;</span>, <span class="tk-t">Price</span> = <span class="tk-n">2.5m</span> };
+p.<span class="tk-t">Price</span> = <span class="tk-n">3m</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{p.Name} {p.Price} {p.Sku}&quot;</span>);
+<span class="tk-k">try</span> { p.<span class="tk-t">Price</span> = -<span class="tk-n">1</span>; } <span class="tk-k">catch</span> (<span class="tk-t">ArgumentException</span> e) { <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(e.<span class="tk-t">Message</span>); }
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Product</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">required</span> <span class="tk-k">string</span> <span class="tk-t">Name</span> { <span class="tk-k">get</span>; <span class="tk-k">init</span>; }      <span class="tk-c">// must be set when created, then fixed</span>
+    <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-t">Sku</span> { <span class="tk-k">get</span>; } = <span class="tk-t">Guid</span>.<span class="tk-f">NewGuid</span>().<span class="tk-f">ToString</span>()[..<span class="tk-n">8</span>];   <span class="tk-c">// read-only, with an initial value</span>
+
+    <span class="tk-k">private</span> <span class="tk-k">decimal</span> _price;
+    <span class="tk-k">public</span> <span class="tk-k">decimal</span> <span class="tk-t">Price</span>
+    {
+        <span class="tk-k">get</span> =&gt; _price;
+        <span class="tk-k">set</span>
+        {
+            <span class="tk-k">if</span> (value &lt; <span class="tk-n">0</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">ArgumentException</span>(<span class="tk-s">&quot;price must not be negative&quot;</span>);
+            _price = value;                         <span class="tk-c">// value is what was assigned</span>
+        }
+    }
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Accessors</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>{ get; set; }</code></td>
+<td>Read and write</td>
+</tr>
+<tr>
+<td><code>{ get; }</code></td>
+<td>Set only in the constructor or initializer</td>
+</tr>
+<tr>
+<td><code>{ get; init; }</code></td>
+<td>Set only when the object is created (in an object initializer)</td>
+</tr>
+<tr>
+<td><code>{ get; private set; }</code></td>
+<td>Anyone reads, only the class writes</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>required</code> makes the compiler insist the property is set in the object initializer <code>new Product { Name = ... }</code>.</p>
+<h2>Primary constructors</h2>
+<p>A class can take constructor parameters right after its name. They are in scope in the whole class:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> t = <span class="tk-k">new</span> <span class="tk-f">Temperature</span>(<span class="tk-n">21.5</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{t.Celsius} C = {t.Fahrenheit} F&quot;</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">Temperature</span>(<span class="tk-k">double</span> celsius)
+{
+    <span class="tk-k">public</span> <span class="tk-k">double</span> <span class="tk-t">Celsius</span> =&gt; celsius;
+    <span class="tk-k">public</span> <span class="tk-k">double</span> <span class="tk-t">Fahrenheit</span> =&gt; celsius * <span class="tk-n">9</span> / <span class="tk-n">5</span> + <span class="tk-n">32</span>;
+}</code></pre></div>
+<h2>Objects are references</h2>
+<p>Variables of a class type hold <strong>references</strong>. Two variables can point at the same object, and <code>==</code> checks whether they are the <strong>same object</strong>, not whether they hold equal data:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> a = <span class="tk-k">new</span> <span class="tk-t">Point</span> { X = <span class="tk-n">1</span>, Y = <span class="tk-n">2</span> };
+<span class="tk-k">var</span> b = a;
+<span class="tk-k">var</span> c = <span class="tk-k">new</span> <span class="tk-t">Point</span> { X = <span class="tk-n">1</span>, Y = <span class="tk-n">2</span> };
+b.X = <span class="tk-n">10</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{a.X} {a == b} {a == c}&quot;</span>);    <span class="tk-c">// 10 True False</span>
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Point</span> { <span class="tk-k">public</span> <span class="tk-k">int</span> X { <span class="tk-k">get</span>; <span class="tk-k">set</span>; } <span class="tk-k">public</span> <span class="tk-k">int</span> Y { <span class="tk-k">get</span>; <span class="tk-k">set</span>; } }</code></pre></div>
+<p>For value-based equality, use a <strong>record</strong> (next lesson).</p>
+<h2>Designing a class</h2>
+<ul>
+<li>Keep fields <code>private</code>; expose what callers need through methods and properties.</li>
+<li>Check arguments in constructors and setters, so an object can never be in an invalid state.</li>
+<li>Make properties read-only (<code>get</code> / <code>init</code>) unless something really needs to change them later.</li>
+<li>Name classes with nouns (<code>Invoice</code>) and methods with verbs (<code>AddLine</code>).</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-nullable-types-and-pattern-matching/"><span class="mono">previous</span><b>2.05 Nullable Types and Pattern Matching</b></a>
+      <a class="lp-next" href="../3-02-records-and-structs/"><span class="mono">next</span><b>3.02 Records and Structs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/3-01-classes-and-properties"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Parsing and Printing Numbers · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/6-02-parsing-and-printing-numbers/">
+  <meta name="description" content="Now you can write the routines you have been borrowing. Parsing skips spaces, reads an optional sign, and multiplies and adds digit by digit, with any base…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Parsing and Printing Numbers · Assembly · Xenon">
+  <meta property="og:description" content="Now you can write the routines you have been borrowing. Parsing skips spaces, reads an optional sign, and multiplies and adds digit by digit, with any base…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/6-02-parsing-and-printing-numbers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Parsing and Printing Numbers · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Parsing and Printing Numbers · Assembly · Xenon">
+  <meta name="twitter:description" content="Now you can write the routines you have been borrowing. Parsing skips spaces, reads an optional sign, and multiplies and adds digit by digit, with any base…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Real Programs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Parsing and Printing Numbers</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Now you can write the routines you have been borrowing. Parsing skips spaces, reads an optional sign, and multiplies and adds digit by digit, with any base and an overflow check. Printing divides by the base to produce digits from the right, handles the sign and the most negative number, and maps digits above 9 to letters.</p>
+      <div class="prose">
+<h2>Parsing in any base</h2>
+<p>The rule from lesson 4.05 works for every base: <code>value = value × base + digit</code>. Hex digits <code>a</code> to <code>f</code> (or <code>A</code> to <code>F</code>) are worth 10 to 15.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; parse: rdi = a string, rsi = the base (2 to 16).</span>
+<span class="tk-c">; Returns the value in rax, and in rdx a pointer to the first character it did not use.</span>
+<span class="tk-f">parse:</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+<span class="tk-f">.next:</span>  movzx   <span class="tk-t">ecx</span>, <span class="tk-k">byte</span> [<span class="tk-t">rdi</span>]
+        lea     <span class="tk-t">edx</span>, [<span class="tk-t">rcx</span> - <span class="tk-s">'0'</span>]
+        cmp     <span class="tk-t">edx</span>, <span class="tk-n">9</span>
+        jbe     .have                   <span class="tk-c">; '0'..'9'</span>
+        or      <span class="tk-t">ecx</span>, <span class="tk-n">0x20</span>               <span class="tk-c">; lower case</span>
+        lea     <span class="tk-t">edx</span>, [<span class="tk-t">rcx</span> - <span class="tk-s">'a'</span>]
+        cmp     <span class="tk-t">edx</span>, <span class="tk-n">5</span>
+        ja      .stop                   <span class="tk-c">; not 'a'..'f' either</span>
+        add     <span class="tk-t">edx</span>, <span class="tk-n">10</span>
+<span class="tk-f">.have:</span>  cmp     <span class="tk-t">rdx</span>, <span class="tk-t">rsi</span>
+        jae     .stop                   <span class="tk-c">; a digit too big for this base</span>
+        imul    <span class="tk-t">rax</span>, <span class="tk-t">rsi</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-t">rdx</span>
+        inc     <span class="tk-t">rdi</span>
+        jmp     .next
+<span class="tk-f">.stop:</span>  mov     <span class="tk-t">rdx</span>, <span class="tk-t">rdi</span>
+        ret</code></pre></div>
+<p>Returning &quot;where it stopped&quot; lets the caller check that the whole text was a number (it should stop at the 0), just like C&#39;s <code>strtol</code>.</p>
+<h2>Overflow</h2>
+<p><code>imul</code> and <code>add</code> silently wrap if the number is too big. A careful parser checks the overflow flag after each step: <code>jo .too_big</code> right after the <code>imul</code>, and again after the <code>add</code>. For unsigned numbers, check the carry flag (<code>jc</code>) after <code>add</code>, and use <code>mul</code> (which sets CF and OF when the high half is not zero).</p>
+<h2>Printing in any base</h2>
+<p>Printing divides by the base: each remainder is the next digit from the right.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">digits:</span> <span class="tk-k">db</span>      <span class="tk-s">&quot;0123456789abcdef&quot;</span>
+
+        <span class="tk-k">section</span> .bss
+<span class="tk-f">out:</span>    <span class="tk-k">resb</span>    <span class="tk-n">72</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-c">; print_base: rdi = an unsigned number, rsi = the base (2 to 16). Prints it.</span>
+<span class="tk-f">print_base:</span>
+        lea     <span class="tk-t">r8</span>, [<span class="tk-k">rel</span> out + <span class="tk-n">71</span>]      <span class="tk-c">; the end of the buffer</span>
+        lea     <span class="tk-t">r9</span>, [<span class="tk-k">rel</span> digits]
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rdi</span>
+<span class="tk-f">.digit:</span> xor     <span class="tk-t">edx</span>, <span class="tk-t">edx</span>
+        div     <span class="tk-t">rsi</span>                     <span class="tk-c">; rdx = the next digit, from the right</span>
+        movzx   <span class="tk-t">ecx</span>, <span class="tk-k">byte</span> [<span class="tk-t">r9</span> + <span class="tk-t">rdx</span>]    <span class="tk-c">; its character, from the table</span>
+        mov     [<span class="tk-t">r8</span>], <span class="tk-t">cl</span>
+        dec     <span class="tk-t">r8</span>
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        jnz     .digit
+        inc     <span class="tk-t">r8</span>                      <span class="tk-c">; the first digit</span>
+        lea     <span class="tk-t">rdx</span>, [<span class="tk-k">rel</span> out + <span class="tk-n">72</span>]
+        sub     <span class="tk-t">rdx</span>, <span class="tk-t">r8</span>                 <span class="tk-c">; the length</span>
+        mov     <span class="tk-t">rsi</span>, <span class="tk-t">r8</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>
+        syscall
+        ret
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">3054</span>
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">10</span>
+        call    print_base
+        call    print_newline
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">3054</span>
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">16</span>
+        call    print_base              <span class="tk-c">; bee</span>
+        call    print_newline
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">3054</span>
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">2</span>
+        call    print_base
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>Looking digits up in a table, <code>[r9 + rdx]</code>, avoids an <code>if</code> for digits above 9.</p>
+<h2>Signed numbers</h2>
+<p>To print a signed number: if it is negative, print <code>-</code> and print its negation as unsigned. That even works for the most negative number, −2⁶³: <code>neg</code> leaves it unchanged (it has no positive twin), but read as <strong>unsigned</strong> it is 2⁶³, exactly the right digits.</p>
+<p>To parse one: remember whether there was a <code>-</code>, parse the digits, then <code>neg</code> at the end.</p>
+<h2>Skipping and checking</h2>
+<p>A friendly parser also skips leading spaces and tabs, and the caller decides what to do with leftovers: <code>&quot;12abc&quot;</code> stops at <code>a</code>, so it is not a clean number. That is all <code>read_int</code> does: skip spaces, check for <code>-</code>, parse digits, and put back the character that stopped it, for the next read.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the value of &quot;1f&quot; in base 16?</div><ul><li>31</li><li>115</li><li>16</li></ul><details><summary>Show the answer</summary><p><b>31</b> 1 * 16 + 15.</p></details></li><li><div class="q">Why does parse return where it stopped?</div><ul><li>So the caller can tell whether all the text was a number</li><li>So it can be called again for the next digit</li><li>It must, by the calling convention</li></ul><details><summary>Show the answer</summary><p><b>So the caller can tell whether all the text was a number</b> Like strtol&#39;s end pointer.</p></details></li><li><div class="q">How is the most negative number printed correctly?</div><ul><li>Negate it and print the result as unsigned</li><li>It cannot be printed</li><li>Add 1 first</li></ul><details><summary>Show the answer</summary><p><b>Negate it and print the result as unsigned</b> neg leaves it unchanged, and as unsigned it is 2 to the 63.</p></details></li><li><div class="q">Which flag shows that imul overflowed?</div><ul><li>OF (and CF)</li><li>ZF</li><li>SF only</li></ul><details><summary>Show the answer</summary><p><b>OF (and CF)</b> Check it with jo.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-reading-compiler-output/"><span class="mono">previous</span><b>6.01 Reading Compiler Output</b></a>
+      <a class="lp-next" href="../6-03-optimisation-basics/"><span class="mono">next</span><b>6.03 Optimisation Basics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/6-02-parsing-and-printing-numbers"></script>
+</body>
+</html>

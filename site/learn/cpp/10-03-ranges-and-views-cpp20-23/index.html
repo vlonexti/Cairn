@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Ranges and Views (C++20/23) · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/10-03-ranges-and-views-cpp20-23/">
+  <meta name="description" content="Ranges let you pass a whole container to an algorithm, as in std::ranges::sort(v). Views are lazy, cheap pipelines such as v filter(...) transform(...)…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Ranges and Views (C++20/23) · C++ · Xenon">
+  <meta property="og:description" content="Ranges let you pass a whole container to an algorithm, as in std::ranges::sort(v). Views are lazy, cheap pipelines such as v filter(...) transform(...)…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/10-03-ranges-and-views-cpp20-23/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Ranges and Views (C++20/23) · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Ranges and Views (C++20/23) · C++ · Xenon">
+  <meta name="twitter:description" content="Ranges let you pass a whole container to an algorithm, as in std::ranges::sort(v). Views are lazy, cheap pipelines such as v filter(...) transform(...)…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Modern C++ and the STL</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Ranges and Views (C++20/23)</h1>
+      <div class="readout lp-readout"><span>lesson <b>10.03</b></span><span>3 of 9 in milestone 10</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary"><strong>Ranges</strong> let you pass a whole container to an algorithm, as in <code>std::ranges::sort(v)</code>. <strong>Views</strong> are lazy, cheap pipelines such as <code>v | filter(...) | transform(...) | take(5)</code>: nothing is computed until you iterate. They live in <code>&lt;ranges&gt;</code>.</p>
+      <div class="prose">
+<h2>Range algorithms</h2>
+<p>A <strong>range</strong> is anything with a beginning and an end that can be iterated. The algorithms in <code>std::ranges</code> take one directly.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+std::vector&lt;<span class="tk-k">int</span>&gt; v{ <span class="tk-n">5</span>, <span class="tk-n">2</span>, <span class="tk-n">8</span>, <span class="tk-n">1</span> };
+
+std::ranges::<span class="tk-f">sort</span>(v);
+<span class="tk-k">const</span> <span class="tk-k">auto</span> it{ std::ranges::<span class="tk-f">find</span>(v, <span class="tk-n">8</span>) };
+<span class="tk-k">const</span> <span class="tk-k">bool</span> anyBig{ std::ranges::<span class="tk-f">any_of</span>(v, [](<span class="tk-k">int</span> x) { <span class="tk-k">return</span> x &gt; <span class="tk-n">7</span>; }) };
+<span class="tk-k">const</span> <span class="tk-k">auto</span> [smallest, largest]{ std::ranges::<span class="tk-f">minmax</span>(v) };</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Classic</th>
+<th>Ranges</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Call</td>
+<td><code>std::sort(v.begin(), v.end())</code></td>
+<td><code>std::ranges::sort(v)</code></td>
+</tr>
+<tr>
+<td>Mismatched iterators</td>
+<td>Possible</td>
+<td>Impossible</td>
+</tr>
+<tr>
+<td>Constrained with concepts</td>
+<td>No</td>
+<td>Yes: clearer errors</td>
+</tr>
+<tr>
+<td>Projections</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+</div>
+<h3>Projections</h3>
+<p>Most range algorithms accept a <strong>projection</strong>: a function applied to each element before the algorithm looks at it. A pointer to a member works as one.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Player</span>
+{
+    std::string name{};
+    <span class="tk-k">int</span> score{};
+};
+
+std::vector&lt;<span class="tk-t">Player</span>&gt; players{ { <span class="tk-s">&quot;Ann&quot;</span>, <span class="tk-n">50</span> }, { <span class="tk-s">&quot;Bo&quot;</span>, <span class="tk-n">90</span> }, { <span class="tk-s">&quot;Cy&quot;</span>, <span class="tk-n">70</span> } };
+
+std::ranges::<span class="tk-f">sort</span>(players, {}, &amp;<span class="tk-t">Player</span>::score);                 <span class="tk-c">// ascending by score</span>
+std::ranges::<span class="tk-f">sort</span>(players, std::greater{}, &amp;<span class="tk-t">Player</span>::score);     <span class="tk-c">// descending by score</span>
+<span class="tk-k">const</span> <span class="tk-k">auto</span> best{ std::ranges::<span class="tk-f">max_element</span>(players, {}, &amp;<span class="tk-t">Player</span>::score) };
+<span class="tk-k">const</span> <span class="tk-k">auto</span> ann{ std::ranges::<span class="tk-f">find</span>(players, <span class="tk-s">&quot;Ann&quot;</span>, &amp;<span class="tk-t">Player</span>::name) };</code></pre></div>
+<p>The <code>{}</code> in the second position means &quot;the default comparison&quot;. A projection replaces the lambda <code>[](const Player&amp; a, const Player&amp; b) { return a.score &lt; b.score; }</code> with the one thing that actually varies.</p>
+<h2>Views</h2>
+<p>A <strong>view</strong> is a range that does not own its elements and is cheap to copy. A <strong>range adaptor</strong> takes a range and produces a view of it. Adaptors compose with <code>|</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;ranges&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">namespace</span> vw = std::views;
+
+    <span class="tk-k">const</span> std::vector&lt;<span class="tk-k">int</span>&gt; nums{ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>, <span class="tk-n">6</span>, <span class="tk-n">7</span>, <span class="tk-n">8</span>, <span class="tk-n">9</span>, <span class="tk-n">10</span> };
+
+    <span class="tk-k">auto</span> result{ nums
+        | vw::<span class="tk-f">filter</span>([](<span class="tk-k">int</span> n) { <span class="tk-k">return</span> n % <span class="tk-n">2</span> == <span class="tk-n">0</span>; })
+        | vw::<span class="tk-f">transform</span>([](<span class="tk-k">int</span> n) { <span class="tk-k">return</span> n * n; })
+        | vw::<span class="tk-f">take</span>(<span class="tk-n">3</span>) };
+
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : result)
+    {
+        std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">' '</span>;    <span class="tk-c">// 4 16 36</span>
+    }
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    S[&quot;nums: 1 to 10&quot;] --&gt; F[&quot;filter: even&quot;] --&gt; T[&quot;transform: square&quot;] --&gt; K[&quot;take 3&quot;] --&gt; O[&quot;4 16 36&quot;]</pre></div>
+<h3>Lazy evaluation</h3>
+<p>Building <code>result</code> computes nothing. Work happens only as the loop asks for each element, and one element travels the whole pipeline before the next begins.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> 1  filter: rejected
+ 2  filter: kept    square: 4     take: yield 4
+ 3  filter: rejected
+ 4  filter: kept    square: 16    take: yield 16
+ 5  filter: rejected
+ 6  filter: kept    square: 36    take: yield 36, and stop
+
+ 7, 8, 9 and 10 are never examined</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Consequence</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>No intermediate containers</td>
+<td>Nothing is allocated between stages</td>
+</tr>
+<tr>
+<td>Only what is needed is computed</td>
+<td><code>take(3)</code> stops the whole pipeline</td>
+</tr>
+<tr>
+<td>Infinite ranges are fine</td>
+<td><code>vw::iota(1)</code> counts for ever; a later <code>take</code> bounds it</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Useful views</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>View</th>
+<th>Produces</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>vw::iota(1, 11)</code></td>
+<td>1 to 10, generated with no container</td>
+</tr>
+<tr>
+<td><code>vw::filter(predicate)</code></td>
+<td>The elements that satisfy it</td>
+</tr>
+<tr>
+<td><code>vw::transform(f)</code></td>
+<td><code>f</code> applied to each</td>
+</tr>
+<tr>
+<td><code>vw::take(n)</code>, <code>vw::drop(n)</code></td>
+<td>The first <code>n</code>; all but the first <code>n</code></td>
+</tr>
+<tr>
+<td><code>vw::take_while(p)</code>, <code>vw::drop_while(p)</code></td>
+<td>The same, by a condition</td>
+</tr>
+<tr>
+<td><code>vw::reverse</code></td>
+<td>Back to front</td>
+</tr>
+<tr>
+<td><code>vw::keys</code>, <code>vw::values</code></td>
+<td>The halves of the pairs in a map</td>
+</tr>
+<tr>
+<td><code>vw::split(delimiter)</code></td>
+<td>Sub-ranges between delimiters</td>
+</tr>
+<tr>
+<td><code>vw::join</code></td>
+<td>A range of ranges, flattened</td>
+</tr>
+<tr>
+<td><code>vw::enumerate</code> (C++23)</td>
+<td><code>(index, element)</code> pairs</td>
+</tr>
+<tr>
+<td><code>vw::zip(a, b)</code> (C++23)</td>
+<td>Elements of several ranges, paired</td>
+</tr>
+<tr>
+<td><code>vw::chunk(n)</code>, <code>vw::slide(n)</code> (C++23)</td>
+<td>Groups of <code>n</code>; sliding windows of <code>n</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">for</span> (<span class="tk-k">int</span> i : vw::<span class="tk-f">iota</span>(<span class="tk-n">0</span>, <span class="tk-n">5</span>) | vw::reverse)
+{
+    std::cout &lt;&lt; i;    <span class="tk-c">// 43210</span>
+}
+
+<span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; name : ages | vw::keys)
+{
+    std::cout &lt;&lt; name &lt;&lt; <span class="tk-s">'\n'</span>;
+}
+
+<span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span> [index, name] : vw::<span class="tk-f">enumerate</span>(names))
+{
+    std::cout &lt;&lt; index &lt;&lt; <span class="tk-s">&quot;: &quot;</span> &lt;&lt; name &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p><code>vw::enumerate</code> finally answers the question from <a href="../5-02-looping-over-containers/">5.02 Looping Over Containers</a>: how to get the index and the element together without an index loop.</p>
+<h2>Turning a view back into a container</h2>
+<p><code>std::ranges::to</code> (C++23) runs the pipeline and collects the results.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">auto</span> evens{ nums
+    | vw::<span class="tk-f">filter</span>([](<span class="tk-k">int</span> n) { <span class="tk-k">return</span> n % <span class="tk-n">2</span> == <span class="tk-n">0</span>; })
+    | std::ranges::to&lt;std::vector&gt;() };</code></pre></div>
+<h2>Hazards</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Hazard</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Returning a view of a local container</td>
+<td>A view does not own its data. The container is destroyed and the view dangles, exactly like a <code>std::string_view</code>.</td>
+</tr>
+<tr>
+<td>Iterating a <code>const</code> filter view</td>
+<td><code>filter</code> caches its first match, so it must be iterated as non-const</td>
+</tr>
+<tr>
+<td>Side effects in the lambdas</td>
+<td>They run when the view is iterated, and may run more than once per element</td>
+</tr>
+<tr>
+<td>Modifying the underlying container</td>
+<td>Invalidates the view, as it would any iterator</td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout tip"><div class="callout-title"><span>Keep the functions in a pipeline pure</span></div><div class="callout-body"><p>A function with no side effects, whose result depends only on its argument, behaves the same whenever and however often it is called. That is what makes lazy evaluation safe to reason about.</p>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/10.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/10.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../10-02-maps-and-sets/"><span class="mono">previous</span><b>10.02 Maps and Sets</b></a>
+      <a class="lp-next" href="../10-04-std-optional-std-variant-std-any-and-std-tuple/"><span class="mono">next</span><b>10.04 std::optional, std::variant, std::any and std::tuple</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/10-03-ranges-and-views-cpp20-23"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

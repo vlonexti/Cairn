@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Property Inspector · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/5-03-a-property-inspector/">
+  <meta name="description" content="An inspector shows and edits the properties of whatever is selected. Writing one widget call per field for every type gets tedious; describing each type's…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Property Inspector · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="An inspector shows and edits the properties of whatever is selected. Writing one widget call per field for every type gets tedious; describing each type's…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/5-03-a-property-inspector/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Property Inspector · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Property Inspector · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="An inspector shows and edits the properties of whatever is selected. Writing one widget call per field for every type gets tedious; describing each type's…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Data Views for Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Property Inspector</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 4 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">An inspector shows and edits the properties of whatever is selected. Writing one widget call per field for every type gets tedious; describing each type&#39;s fields once, as data, lets one function draw an inspector for anything. This lesson builds that <strong>property table</strong>, handles editing several selected objects at once, and shows &quot;mixed&quot; values.</p>
+      <div class="prose">
+<h2>By hand first</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">inspect</span>(<span class="tk-t">Light</span>&amp; l)
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">DragFloat3</span>(<span class="tk-s">&quot;Position&quot;</span>, &amp;l.pos.x, <span class="tk-n">0.1f</span>);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">ColorEdit3</span>(<span class="tk-s">&quot;Colour&quot;</span>, &amp;l.color.x);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">SliderFloat</span>(<span class="tk-s">&quot;Intensity&quot;</span>, &amp;l.intensity, <span class="tk-n">0.0f</span>, <span class="tk-n">100.0f</span>, <span class="tk-s">&quot;%.1f&quot;</span>, <span class="tk-t">ImGuiSliderFlags_Logarithmic</span>);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">Checkbox</span>(<span class="tk-s">&quot;Casts shadows&quot;</span>, &amp;l.shadows);
+}</code></pre></div>
+<p>Perfectly fine for three types. With forty component types, and the same fields needing undo, saving and copy-paste, a description of the fields pays off.</p>
+<h2>Describing fields as data</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">enum</span> <span class="tk-k">class</span> <span class="tk-t">Kind</span> { <span class="tk-t">Float</span>, <span class="tk-t">Int</span>, <span class="tk-t">Bool</span>, <span class="tk-t">Color3</span>, <span class="tk-t">Vec3</span>, <span class="tk-t">String</span> };
+
+<span class="tk-k">struct</span> <span class="tk-t">Field</span>
+{
+    <span class="tk-k">const</span> <span class="tk-k">char</span>* name;
+    <span class="tk-t">Kind</span> kind;
+    std::size_t offset;       <span class="tk-c">// where the field is inside the object (offsetof)</span>
+    <span class="tk-k">float</span> min = <span class="tk-n">0</span>, max = <span class="tk-n">0</span>;   <span class="tk-c">// for sliders; 0, 0 means &quot;a drag with no limits&quot;</span>
+};
+
+<span class="tk-k">static</span> <span class="tk-k">const</span> <span class="tk-t">Field</span> lightFields[] = {
+    { <span class="tk-s">&quot;Position&quot;</span>,      <span class="tk-t">Kind</span>::<span class="tk-t">Vec3</span>,   <span class="tk-f">offsetof</span>(<span class="tk-t">Light</span>, pos) },
+    { <span class="tk-s">&quot;Colour&quot;</span>,        <span class="tk-t">Kind</span>::<span class="tk-t">Color3</span>, <span class="tk-f">offsetof</span>(<span class="tk-t">Light</span>, color) },
+    { <span class="tk-s">&quot;Intensity&quot;</span>,     <span class="tk-t">Kind</span>::<span class="tk-t">Float</span>,  <span class="tk-f">offsetof</span>(<span class="tk-t">Light</span>, intensity), <span class="tk-n">0.0f</span>, <span class="tk-n">100.0f</span> },
+    { <span class="tk-s">&quot;Casts shadows&quot;</span>, <span class="tk-t">Kind</span>::<span class="tk-t">Bool</span>,   <span class="tk-f">offsetof</span>(<span class="tk-t">Light</span>, shadows) },
+};</code></pre></div>
+<p>One function then draws any object described this way:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">inspect</span>(<span class="tk-k">void</span>* object, std::span&lt;<span class="tk-k">const</span> <span class="tk-t">Field</span>&gt; fields)
+{
+    <span class="tk-k">bool</span> changed = <span class="tk-k">false</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-t">Field</span>&amp; f : fields)
+    {
+        <span class="tk-k">void</span>* p = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">char</span>*&gt;(object) + f.offset;
+        <span class="tk-k">switch</span> (f.kind)
+        {
+        <span class="tk-k">case</span> <span class="tk-t">Kind</span>::<span class="tk-t">Float</span>:  changed |= f.max &gt; f.min ? <span class="tk-t">ImGui</span>::<span class="tk-f">SliderFloat</span>(f.name, (<span class="tk-k">float</span>*)p, f.min, f.max) : <span class="tk-t">ImGui</span>::<span class="tk-f">DragFloat</span>(f.name, (<span class="tk-k">float</span>*)p, <span class="tk-n">0.1f</span>); <span class="tk-k">break</span>;
+        <span class="tk-k">case</span> <span class="tk-t">Kind</span>::<span class="tk-t">Int</span>:    changed |= <span class="tk-t">ImGui</span>::<span class="tk-f">DragInt</span>(f.name, (<span class="tk-k">int</span>*)p); <span class="tk-k">break</span>;
+        <span class="tk-k">case</span> <span class="tk-t">Kind</span>::<span class="tk-t">Bool</span>:   changed |= <span class="tk-t">ImGui</span>::<span class="tk-f">Checkbox</span>(f.name, (<span class="tk-k">bool</span>*)p); <span class="tk-k">break</span>;
+        <span class="tk-k">case</span> <span class="tk-t">Kind</span>::<span class="tk-t">Color3</span>: changed |= <span class="tk-t">ImGui</span>::<span class="tk-f">ColorEdit3</span>(f.name, (<span class="tk-k">float</span>*)p); <span class="tk-k">break</span>;
+        <span class="tk-k">case</span> <span class="tk-t">Kind</span>::<span class="tk-t">Vec3</span>:   changed |= <span class="tk-t">ImGui</span>::<span class="tk-f">DragFloat3</span>(f.name, (<span class="tk-k">float</span>*)p, <span class="tk-n">0.1f</span>); <span class="tk-k">break</span>;
+        <span class="tk-k">case</span> <span class="tk-t">Kind</span>::<span class="tk-t">String</span>: changed |= <span class="tk-t">ImGui</span>::<span class="tk-f">InputText</span>(f.name, (std::string*)p); <span class="tk-k">break</span>;
+        }
+    }
+    <span class="tk-k">return</span> changed;
+}</code></pre></div>
+<p>The same table drives saving (write each field by name), loading, copy and paste, and undo (record which field changed and its old value). That is a small reflection system; big engines generate these tables from their source code.</p>
+<p><code>offsetof</code> is only guaranteed for <strong>standard-layout</strong> types (plain structs without virtual functions or mixed access); keep component data like that.</p>
+<h2>Editing several objects at once</h2>
+<p>When the user selects five lights and changes the intensity, all five should change. Show each field once:</p>
+<ul>
+<li>if all selected objects have the <strong>same</strong> value, show it normally;</li>
+<li>if they <strong>differ</strong>, show it as <strong>mixed</strong> (ImGui&#39;s <code>ImGuiItemFlags_MixedValue</code> draws a dash in a checkbox, and you can display <code>&quot;--&quot;</code> in a number field);</li>
+<li>when the user edits it, write the <strong>new</strong> value to every selected object.</li>
+</ul>
+<p>For drags, the most useful behaviour is often relative: dragging position by +2 moves every object by +2, keeping their arrangement. The practice computes the shown values for a multi-selection.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Editing only the first selected object</span></div><div class="callout-body"><p>Users expect the change to apply to everything selected.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Using offsetof on a class with virtual functions</span></div><div class="callout-body"><p>It is not guaranteed to work. Keep inspectable data in plain structs.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why describe a type&#39;s fields in a table?</div><ul><li>One table drives the inspector, saving, loading, copy and paste and undo for every type</li><li>Tables draw faster</li><li>ImGui requires it</li></ul><details><summary>Show the answer</summary><p><b>One table drives the inspector, saving, loading, copy and paste and undo for every type</b> It is a small reflection system.</p></details></li><li><div class="q">Three selected lights have intensities 5, 5 and 8. What should the intensity field show?</div><ul><li>A mixed value, such as &quot;--&quot;</li><li>5</li><li>6</li></ul><details><summary>Show the answer</summary><p><b>A mixed value, such as &quot;--&quot;</b> Values that differ are shown as mixed until edited.</p></details></li><li><div class="q">What does offsetof(Light, intensity) give?</div><ul><li>The byte position of intensity inside a Light</li><li>The size of intensity</li><li>The value of intensity</li></ul><details><summary>Show the answer</summary><p><b>The byte position of intensity inside a Light</b> Add it to the object&#39;s address to reach the field.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-a-log-window-with-filters/"><span class="mono">previous</span><b>5.02 A Log Window with Filters</b></a>
+      <a class="lp-next" href="../5-04-undo-and-redo-for-tools/"><span class="mono">next</span><b>5.04 Undo and Redo for Tools</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/5-03-a-property-inspector"></script>
+</body>
+</html>

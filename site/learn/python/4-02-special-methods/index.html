@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Special Methods · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/4-02-special-methods/">
+  <meta name="description" content="Making your classes behave like built-in types - repr and str for printing, eq and ordering, arithmetic operators, len , getitem and iter for containers,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Special Methods · Python · Xenon">
+  <meta property="og:description" content="Making your classes behave like built-in types - repr and str for printing, eq and ordering, arithmetic operators, len , getitem and iter for containers,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/4-02-special-methods/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Special Methods · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Special Methods · Python · Xenon">
+  <meta name="twitter:description" content="Making your classes behave like built-in types - repr and str for printing, eq and ordering, arithmetic operators, len , getitem and iter for containers,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Objects and Errors</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Special Methods</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making your classes behave like built-in types - <strong>repr</strong> and <strong>str</strong> for printing, <strong>eq</strong> and ordering, arithmetic operators, <strong>len</strong>, <strong>getitem</strong> and <strong>iter</strong> for containers, <strong>contains</strong>, and <strong>hash</strong> for use in sets and as keys.</p>
+      <div class="prose">
+<h2>Methods Python calls for you</h2>
+<p>Methods with double underscores on both sides (&quot;dunder&quot; methods) are called by Python&#39;s own syntax:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You write</th>
+<th>Python calls</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>repr(x)</code>, the REPL, debugging</td>
+<td><code>x.__repr__()</code></td>
+</tr>
+<tr>
+<td><code>str(x)</code>, <code>print(x)</code>, f-strings</td>
+<td><code>x.__str__()</code> (falls back to <code>__repr__</code>)</td>
+</tr>
+<tr>
+<td><code>x == y</code></td>
+<td><code>x.__eq__(y)</code></td>
+</tr>
+<tr>
+<td><code>x &lt; y</code></td>
+<td><code>x.__lt__(y)</code></td>
+</tr>
+<tr>
+<td><code>x + y</code>, <code>x * y</code></td>
+<td><code>x.__add__(y)</code>, <code>x.__mul__(y)</code></td>
+</tr>
+<tr>
+<td><code>len(x)</code></td>
+<td><code>x.__len__()</code></td>
+</tr>
+<tr>
+<td><code>x[i]</code></td>
+<td><code>x.__getitem__(i)</code></td>
+</tr>
+<tr>
+<td><code>for item in x</code></td>
+<td><code>x.__iter__()</code></td>
+</tr>
+<tr>
+<td><code>item in x</code></td>
+<td><code>x.__contains__(item)</code></td>
+</tr>
+<tr>
+<td><code>hash(x)</code>, sets, dict keys</td>
+<td><code>x.__hash__()</code></td>
+</tr>
+</tbody></table>
+</div>
+<h2>A vector</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> math
+
+<span class="tk-k">class</span> Vector:
+    <span class="tk-k">def</span> <span class="tk-f">__init__</span>(<span class="tk-k">self</span>, x, y):
+        <span class="tk-k">self</span>.x, <span class="tk-k">self</span>.y = x, y
+
+    <span class="tk-k">def</span> <span class="tk-f">__repr__</span>(<span class="tk-k">self</span>):
+        <span class="tk-k">return</span> <span class="tk-s">f&quot;Vector({self.x}, {self.y})&quot;</span>
+
+    <span class="tk-k">def</span> <span class="tk-f">__eq__</span>(<span class="tk-k">self</span>, other):
+        <span class="tk-k">if</span> <span class="tk-k">not</span> <span class="tk-f">isinstance</span>(other, Vector):
+            <span class="tk-k">return</span> NotImplemented
+        <span class="tk-k">return</span> (<span class="tk-k">self</span>.x, <span class="tk-k">self</span>.y) == (other.x, other.y)
+
+    <span class="tk-k">def</span> <span class="tk-f">__add__</span>(<span class="tk-k">self</span>, other):
+        <span class="tk-k">return</span> <span class="tk-f">Vector</span>(<span class="tk-k">self</span>.x + other.x, <span class="tk-k">self</span>.y + other.y)
+
+    <span class="tk-k">def</span> <span class="tk-f">__mul__</span>(<span class="tk-k">self</span>, k):
+        <span class="tk-k">return</span> <span class="tk-f">Vector</span>(<span class="tk-k">self</span>.x * k, <span class="tk-k">self</span>.y * k)
+
+    <span class="tk-k">def</span> <span class="tk-f">__rmul__</span>(<span class="tk-k">self</span>, k):            <span class="tk-c"># k * v, when k is on the left</span>
+        <span class="tk-k">return</span> <span class="tk-k">self</span> * k
+
+    <span class="tk-k">def</span> <span class="tk-f">__abs__</span>(<span class="tk-k">self</span>):
+        <span class="tk-k">return</span> math.<span class="tk-f">hypot</span>(<span class="tk-k">self</span>.x, <span class="tk-k">self</span>.y)
+
+
+v = <span class="tk-f">Vector</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>)
+<span class="tk-f">print</span>(v + <span class="tk-f">Vector</span>(<span class="tk-n">1</span>, <span class="tk-n">1</span>), <span class="tk-n">2</span> * v, <span class="tk-f">abs</span>(v), v == <span class="tk-f">Vector</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>))</code></pre></div>
+<p><code>__repr__</code> should look like the code that would create the object: it is what you see when debugging. Returning <code>NotImplemented</code> (not raising) from <code>__eq__</code> lets Python try the other side or fall back to &quot;not equal&quot;.</p>
+<h2>Containers</h2>
+<p>A class that holds items can support <code>len</code>, indexing, <code>in</code> and loops:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">class</span> Playlist:
+    <span class="tk-k">def</span> <span class="tk-f">__init__</span>(<span class="tk-k">self</span>, *songs):
+        <span class="tk-k">self</span>._songs = <span class="tk-f">list</span>(songs)
+
+    <span class="tk-k">def</span> <span class="tk-f">__len__</span>(<span class="tk-k">self</span>):
+        <span class="tk-k">return</span> <span class="tk-f">len</span>(<span class="tk-k">self</span>._songs)
+
+    <span class="tk-k">def</span> <span class="tk-f">__getitem__</span>(<span class="tk-k">self</span>, index):
+        <span class="tk-k">return</span> <span class="tk-k">self</span>._songs[index]          <span class="tk-c"># slices work too, because lists support them</span>
+
+    <span class="tk-k">def</span> <span class="tk-f">__iter__</span>(<span class="tk-k">self</span>):
+        <span class="tk-k">return</span> <span class="tk-f">iter</span>(<span class="tk-k">self</span>._songs)
+
+    <span class="tk-k">def</span> <span class="tk-f">__contains__</span>(<span class="tk-k">self</span>, song):
+        <span class="tk-k">return</span> song <span class="tk-k">in</span> <span class="tk-k">self</span>._songs
+
+
+p = <span class="tk-f">Playlist</span>(<span class="tk-s">&quot;Intro&quot;</span>, <span class="tk-s">&quot;Theme&quot;</span>, <span class="tk-s">&quot;Outro&quot;</span>)
+<span class="tk-f">print</span>(<span class="tk-f">len</span>(p), p[<span class="tk-n">1</span>], p[-<span class="tk-n">1</span>], <span class="tk-s">&quot;Theme&quot;</span> <span class="tk-k">in</span> p, [s.<span class="tk-f">upper</span>() <span class="tk-k">for</span> s <span class="tk-k">in</span> p])</code></pre></div>
+<h2>Ordering and hashing</h2>
+<p>Defining <code>__eq__</code> and <code>__lt__</code>, plus <code>functools.total_ordering</code>, gives all six comparisons, so <code>sorted()</code> works on your objects. An object used in a set or as a dictionary key needs <code>__hash__</code> consistent with <code>__eq__</code> (equal objects must have equal hashes); a class that defines <code>__eq__</code> without <code>__hash__</code> becomes unhashable, which is correct for mutable objects. Dataclasses (lesson 4.04) write most of this for you.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-classes-and-objects/"><span class="mono">previous</span><b>4.01 Classes and Objects</b></a>
+      <a class="lp-next" href="../4-03-inheritance-and-protocols/"><span class="mono">next</span><b>4.03 Inheritance and Protocols</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/4-02-special-methods"></script>
+</body>
+</html>

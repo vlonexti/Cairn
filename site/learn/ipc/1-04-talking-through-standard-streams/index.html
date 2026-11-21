@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Talking Through Standard Streams · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/1-04-talking-through-standard-streams/">
+  <meta name="description" content="The simplest channel between a parent and a child - its standard input, output and error redirected to pipes - and the deadlocks waiting for anyone who reads…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Talking Through Standard Streams · Processes and Communication · Xenon">
+  <meta property="og:description" content="The simplest channel between a parent and a child - its standard input, output and error redirected to pipes - and the deadlocks waiting for anyone who reads…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/1-04-talking-through-standard-streams/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Talking Through Standard Streams · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Talking Through Standard Streams · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="The simplest channel between a parent and a child - its standard input, output and error redirected to pipes - and the deadlocks waiting for anyone who reads…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Processes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Talking Through Standard Streams</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The simplest channel between a parent and a child - its standard input, output and error redirected to pipes - and the deadlocks waiting for anyone who reads them carelessly, plus line-based protocols over stdio as used by language servers and many tools.</p>
+      <div class="prose">
+<h2>Three streams for free</h2>
+<p>Every process has three standard handles: <strong>input</strong>, <strong>output</strong> and <strong>error</strong>. A console program reads from the first and writes to the others. When you start a program, you can connect any of them to a <strong>pipe</strong> you hold the other end of, and you have a two-way channel with no extra setup on the child&#39;s side: it just uses <code>std::cin</code> and <code>std::cout</code>.</p>
+<p>That is why so many tools talk this way: compilers report errors on stderr, <code>git</code> writes results on stdout, and <strong>language servers</strong> (the processes behind code completion in editors) exchange JSON messages over stdin and stdout.</p>
+<h2>Wiring it up</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>SECURITY_ATTRIBUTES inheritable{ <span class="tk-k">sizeof</span>(inheritable), <span class="tk-k">nullptr</span>, TRUE };
+HANDLE inRead, inWrite, outRead, outWrite;
+<span class="tk-f">CreatePipe</span>(&amp;inRead, &amp;inWrite, &amp;inheritable, <span class="tk-n">0</span>);       <span class="tk-c">// parent writes inWrite -&gt; child reads inRead</span>
+<span class="tk-f">CreatePipe</span>(&amp;outRead, &amp;outWrite, &amp;inheritable, <span class="tk-n">0</span>);     <span class="tk-c">// child writes outWrite -&gt; parent reads outRead</span>
+<span class="tk-f">SetHandleInformation</span>(inWrite, HANDLE_FLAG_INHERIT, <span class="tk-n">0</span>);  <span class="tk-c">// the parent's ends must NOT be inherited</span>
+<span class="tk-f">SetHandleInformation</span>(outRead, HANDLE_FLAG_INHERIT, <span class="tk-n">0</span>);
+
+STARTUPINFOW si{ <span class="tk-k">sizeof</span>(si) };
+si.dwFlags = STARTF_USESTDHANDLES;
+si.hStdInput = inRead;
+si.hStdOutput = outWrite;
+si.hStdError = outWrite;                               <span class="tk-c">// or a third pipe, to keep errors apart</span>
+<span class="tk-f">CreateProcessW</span>(<span class="tk-c">/* ... */</span> TRUE <span class="tk-c">/* inherit */</span>, CREATE_NO_WINDOW, <span class="tk-c">/* ... */</span> &amp;si, &amp;pi);
+
+<span class="tk-f">CloseHandle</span>(inRead);       <span class="tk-c">// the child has its own copies now</span>
+<span class="tk-f">CloseHandle</span>(outWrite);     <span class="tk-c">// essential: otherwise reading outRead never ends</span></code></pre></div>
+<p>Closing the parent&#39;s copies of the <strong>child&#39;s</strong> ends is the step people forget. A pipe reports end-of-file to the reader only when <strong>every</strong> write handle is closed; if the parent still holds <code>outWrite</code>, reading <code>outRead</code> waits for ever after the child exits.</p>
+<p>Likewise, when the parent has nothing more to send, it closes <code>inWrite</code>, and the child&#39;s next read sees end-of-file. Many tools read until end of input before they start working.</p>
+<h2>The deadlock</h2>
+<p>Pipes have a fixed buffer, typically a few kilobytes. A writer whose pipe is full <strong>blocks</strong> until the reader takes something out. That creates a classic deadlock:</p>
+<ol>
+<li>The parent writes a large input to the child&#39;s stdin, all of it, before reading anything.</li>
+<li>The child reads a little, then writes a lot of output, filling its stdout pipe.</li>
+<li>The child blocks writing; the parent blocks writing; neither ever reads.</li>
+</ol>
+<p>The same happens with stdout and stderr on two pipes: the parent reads stdout to the end while the child blocks writing to a full stderr.</p>
+<p>The rule: <strong>read every output pipe continuously while also writing</strong>. In practice, read each output pipe on its own thread (or use overlapped I/O, lesson 2.05), collecting what arrives, and write input on another.</p>
+<h2>Lines and encodings</h2>
+<p>Output arrives in arbitrary chunks, not lines: one read can return half a line, or three and a half. To process line by line, keep a buffer per stream, append each chunk, and take out complete lines (ending in <code>\n</code>, with a <code>\r</code> before it on Windows) as they appear; whatever is left waits for the next chunk. The final partial line is complete only when the stream reaches end-of-file.</p>
+<p>Console programs write in the console&#39;s code page or in UTF-8; when you capture them you receive raw bytes and must decode them yourself. Many tools let you choose (<code>git -c core.quotepath=off</code>, Python&#39;s <code>PYTHONIOENCODING=utf-8</code>); for your own helpers, always write UTF-8.</p>
+<h2>Protocols over stdio</h2>
+<p>Stdio becomes a real protocol once both sides agree on message boundaries. Two common choices:</p>
+<ul>
+<li><strong>One message per line</strong> (JSON Lines, for example): simple, as long as messages never contain a raw newline.</li>
+<li><strong>Headers then a body of known length</strong>, as the Language Server Protocol does:</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>Content-Length: 52\r\n
+\r\n
+{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;initialize&quot;,...}</code></pre></div>
+<p>The reader parses headers up to the blank line, then reads exactly <code>Content-Length</code> bytes. Milestone 2 builds framing like this properly.</p>
+<div class="callout warning"><div class="callout-title"><span class="label">Watch out</span></div><div class="callout-body"><p>A child that writes anything else to stdout (a debug <code>printf</code>, a library&#39;s warning) corrupts a stdout protocol. Send logs to stderr, or to a file.</p>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-waiting-exit-codes-and-jobs/"><span class="mono">previous</span><b>1.03 Waiting, Exit Codes and Jobs</b></a>
+      <a class="lp-next" href="../1-05-choosing-an-ipc-method/"><span class="mono">next</span><b>1.05 Choosing an IPC Method</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/1-04-talking-through-standard-streams"></script>
+</body>
+</html>

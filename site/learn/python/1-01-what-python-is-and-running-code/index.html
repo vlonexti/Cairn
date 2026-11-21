@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>What Python Is and Running Code · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/1-01-what-python-is-and-running-code/">
+  <meta name="description" content="Python is a language you can read almost like English and run without a separate compile step. This lesson explains what that means, runs a first program,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What Python Is and Running Code · Python · Xenon">
+  <meta property="og:description" content="Python is a language you can read almost like English and run without a separate compile step. This lesson explains what that means, runs a first program,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/1-01-what-python-is-and-running-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="What Python Is and Running Code · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What Python Is and Running Code · Python · Xenon">
+  <meta name="twitter:description" content="Python is a language you can read almost like English and run without a separate compile step. This lesson explains what that means, runs a first program,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">What Python Is and Running Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Python is a language you can read almost like English and run without a separate compile step. This lesson explains what that means, runs a first program, and shows the two ways to run Python - scripts and the interactive prompt.</p>
+      <div class="prose">
+<h2>A language built for people</h2>
+<p>Python was designed to be <strong>easy to read</strong>. Compare printing the numbers 1 to 3:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">for</span> number <span class="tk-k">in</span> <span class="tk-f">range</span>(<span class="tk-n">1</span>, <span class="tk-n">4</span>):
+    <span class="tk-f">print</span>(number)</code></pre></div>
+<p>No semicolons, no braces, no type declarations: the indentation shows the structure, and the words say what happens. That makes Python the language people reach for when they want an idea working <strong>quickly</strong>: scripts that rename a thousand files, tools that read a spreadsheet and send a report, data analysis, web servers, machine learning, and glue between other programs.</p>
+<p>The price is speed: Python runs much slower than C++ for heavy computation. In practice that rarely matters, because the slow parts are done by libraries written in C (which is what NumPy and friends are), and most programs spend their time waiting for files and networks anyway.</p>
+<h2>How Python runs your code</h2>
+<p>C++ is <strong>compiled</strong> to machine code before it runs. Python is run by an <strong>interpreter</strong>: the <code>python</code> program reads your source, turns it into compact <strong>bytecode</strong>, and executes it straight away. There is no separate build step: you edit and run.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    S[hello.py] --&gt; I[python interpreter] --&gt; B[bytecode] --&gt; R[runs immediately]</pre></div>
+<p>One consequence: many mistakes are found only when the line runs. A typo in a function that is never called goes unnoticed. That is why testing (lesson 5.05) matters even more in Python.</p>
+<h2>Your first program</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-f">print</span>(<span class="tk-s">&quot;Hello, Xenon!&quot;</span>)
+<span class="tk-f">print</span>(<span class="tk-s">&quot;Python is&quot;</span>, <span class="tk-n">3</span> * <span class="tk-n">11</span>, <span class="tk-s">&quot;years old in 2024&quot;</span>)</code></pre></div>
+<p><code>print</code> writes its arguments separated by spaces and ends with a new line. Text goes between quotes (single or double, both work); numbers do not.</p>
+<p>Press <strong>Run</strong> on any example in these lessons to run it, and edit it to try things out.</p>
+<h2>Running Python yourself</h2>
+<p>On your own computer, install Python from python.org (on Windows, tick &quot;Add python.exe to PATH&quot;) or the Microsoft Store. Then there are two ways to run it:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Way</th>
+<th>How</th>
+<th>Good for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Script</strong></td>
+<td>Save code in <code>hello.py</code>, run <code>python hello.py</code></td>
+<td>Programs you keep</td>
+</tr>
+<tr>
+<td><strong>Interactive prompt</strong> (REPL)</td>
+<td>Run <code>python</code> with no file, type a line, see the result</td>
+<td>Trying things out, a calculator</td>
+</tr>
+</tbody></table>
+</div>
+<p>At the interactive prompt, the result of each expression is shown automatically:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>&gt;&gt;&gt; 2 ** 10
+1024
+&gt;&gt;&gt; &quot;ab&quot; * 3
+'ababab'</code></pre></div>
+<p>In a script, nothing is shown unless you <code>print</code> it. Editors such as VS Code (with the Python extension) run scripts with one key and show errors as you type.</p>
+<h2>Comments</h2>
+<p>Everything after <code>#</code> on a line is a <strong>comment</strong>, ignored by Python:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-c"># Work out the area of a 3 by 4 rectangle.</span>
+width = <span class="tk-n">3</span>
+height = <span class="tk-n">4</span>
+<span class="tk-f">print</span>(width * height)   <span class="tk-c"># prints 12</span></code></pre></div>
+<p>Write comments for the <strong>why</strong>, not the what: the code already says what it does.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-values-variables-and-types/"><span class="mono">next</span><b>1.02 Values, Variables and Types</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/1-01-what-python-is-and-running-code"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

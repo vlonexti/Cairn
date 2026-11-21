@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Cameras and Scrolling Worlds · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/4-01-cameras-and-scrolling-worlds/">
+  <meta name="description" content="A world bigger than the screen needs a camera. This lesson uses raylib's Camera2D - target, offset, zoom and rotation - converts between screen and world…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Cameras and Scrolling Worlds · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="A world bigger than the screen needs a camera. This lesson uses raylib's Camera2D - target, offset, zoom and rotation - converts between screen and world…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/4-01-cameras-and-scrolling-worlds/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cameras and Scrolling Worlds · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cameras and Scrolling Worlds · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="A world bigger than the screen needs a camera. This lesson uses raylib's Camera2D - target, offset, zoom and rotation - converts between screen and world…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>Worlds</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Cameras and Scrolling Worlds</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A world bigger than the screen needs a camera. This lesson uses raylib&#39;s Camera2D - target, offset, zoom and rotation - converts between screen and world coordinates, and makes the camera follow the player smoothly with a dead zone, look-ahead, limits at the level&#39;s edges and screen shake.</p>
+      <div class="prose">
+<h2>World and screen coordinates</h2>
+<p>So far everything was drawn in <strong>screen</strong> coordinates. A level 5000 pixels wide does not fit, so objects get <strong>world</strong> coordinates, and a camera decides which part of the world is on screen.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Camera2D</span> camera{};
+camera.target = player.pos;                                       <span class="tk-c">// the world point the camera looks at</span>
+camera.offset = { <span class="tk-f">GetScreenWidth</span>() / <span class="tk-n">2.0f</span>, <span class="tk-f">GetScreenHeight</span>() / <span class="tk-n">2.0f</span> };  <span class="tk-c">// where that point appears on screen</span>
+camera.rotation = <span class="tk-n">0.0f</span>;
+camera.zoom = <span class="tk-n">1.0f</span>;
+
+<span class="tk-f">BeginDrawing</span>();
+<span class="tk-f">ClearBackground</span>(SKYBLUE);
+<span class="tk-f">BeginMode2D</span>(camera);
+    <span class="tk-f">drawWorld</span>();                 <span class="tk-c">// in world coordinates</span>
+<span class="tk-f">EndMode2D</span>();
+<span class="tk-f">drawInterface</span>();                 <span class="tk-c">// in screen coordinates, on top</span>
+<span class="tk-f">EndDrawing</span>();</code></pre></div>
+<p>Everything between <code>BeginMode2D</code> and <code>EndMode2D</code> is transformed: a world point <code>p</code> appears on screen at <code>(p - target) * zoom + offset</code> (plus rotation). Putting <code>offset</code> at the screen&#39;s centre keeps the target in the middle.</p>
+<h2>Converting</h2>
+<p>The mouse is in screen coordinates; to click on the world, convert:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-t">Vector2</span> mouseWorld = <span class="tk-f">GetScreenToWorld2D</span>(<span class="tk-f">GetMousePosition</span>(), camera);
+<span class="tk-k">const</span> <span class="tk-t">Vector2</span> labelPos = <span class="tk-f">GetWorldToScreen2D</span>(enemy.pos, camera);   <span class="tk-c">// e.g. a name above an enemy in the interface</span></code></pre></div>
+<h2>Following the player</h2>
+<p><code>camera.target = player.pos</code> works, but the camera jerks with every small movement. Better cameras:</p>
+<ul>
+<li><strong>Smoothing</strong>: move the target part of the way towards the player each frame. Like friction in lesson 1.04, make it independent of the frame rate: <code>target += (player - target) * (1 - pow(0.001f, dt))</code>.</li>
+<li><strong>Dead zone</strong>: the camera does not move while the player stays inside a box around the screen&#39;s centre; it moves only enough to keep the player in the box. Small movements no longer shake the view.</li>
+<li><strong>Look-ahead</strong>: aim a little ahead of the player in the direction they are moving or facing, so they see more of what is coming.</li>
+<li><strong>Platformer vertical rule</strong>: many platformers only move the camera vertically when the player lands, so jumps do not bounce the view.</li>
+</ul>
+<h2>Staying inside the level</h2>
+<p>The camera should not show the void beyond the level&#39;s edges. After moving it, clamp the target so the visible area stays inside the level:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">float</span> halfW = <span class="tk-f">GetScreenWidth</span>() / <span class="tk-n">2.0f</span> / camera.zoom;
+<span class="tk-k">const</span> <span class="tk-k">float</span> halfH = <span class="tk-f">GetScreenHeight</span>() / <span class="tk-n">2.0f</span> / camera.zoom;
+camera.target.x = std::<span class="tk-f">clamp</span>(camera.target.x, halfW, levelWidth - halfW);
+camera.target.y = std::<span class="tk-f">clamp</span>(camera.target.y, halfH, levelHeight - halfH);</code></pre></div>
+<p>If the level is smaller than the screen, centre it instead (the clamp range would be empty).</p>
+<h2>Zoom</h2>
+<p>Zooming around the mouse, as in the ImGui course&#39;s level editor, keeps the point under the mouse fixed: convert the mouse to world coordinates, change the zoom, and set <code>offset</code> to the mouse and <code>target</code> to that world point.</p>
+<h2>Screen shake</h2>
+<p>A short shake on a hit or explosion makes it feel powerful. Keep a <strong>trauma</strong> value between 0 and 1 that events add to and that decays over time; offset the camera by a random amount proportional to <code>trauma²</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>trauma = std::<span class="tk-f">max</span>(<span class="tk-n">0.0f</span>, trauma - dt * <span class="tk-n">1.5f</span>);
+<span class="tk-k">const</span> <span class="tk-k">float</span> shake = trauma * trauma;
+camera.offset = { centre.x + shake * <span class="tk-n">12</span> * <span class="tk-f">randomMinus1To1</span>(), centre.y + shake * <span class="tk-n">12</span> * <span class="tk-f">randomMinus1To1</span>() };</code></pre></div>
+<p>Squaring makes small trauma barely visible and large trauma strong. Always provide an option to turn shake off: some players get motion sickness.</p>
+<h2>Parallax</h2>
+<p>Background layers that move slower than the world make a cheap illusion of depth: draw a far layer with a camera whose target is <code>target * 0.2</code>, a nearer one with <code>* 0.5</code>, then the world at <code>* 1</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-spatial-grids-for-many-objects/"><span class="mono">previous</span><b>3.05 Spatial Grids for Many Objects</b></a>
+      <a class="lp-next" href="../4-02-tile-maps-and-levels/"><span class="mono">next</span><b>4.02 Tile Maps and Levels</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/4-01-cameras-and-scrolling-worlds"></script>
+</body>
+</html>

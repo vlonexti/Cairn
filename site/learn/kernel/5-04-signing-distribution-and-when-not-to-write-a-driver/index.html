@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Signing, Distribution and When Not to Write a Driver · Windows Kernel Driver Development · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/kernel/5-04-signing-distribution-and-when-not-to-write-a-driver/">
+  <meta name="description" content="How real drivers reach users - driver packages, INF files and catalogs, Microsoft's attestation and HLK signing through the Partner Center, Windows Update -…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Signing, Distribution and When Not to Write a Driver · Windows Kernel Driver Development · Xenon">
+  <meta property="og:description" content="How real drivers reach users - driver packages, INF files and catalogs, Microsoft's attestation and HLK signing through the Partner Center, Windows Update -…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/kernel/5-04-signing-distribution-and-when-not-to-write-a-driver/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Signing, Distribution and When Not to Write a Driver · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Signing, Distribution and When Not to Write a Driver · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:description" content="How real drivers reach users - driver packages, INF files and catalogs, Microsoft's attestation and HLK signing through the Partner Center, Windows Update -…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Kernel Driver Development</a><span>/</span><span>Quality, Security and Shipping</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Signing, Distribution and When Not to Write a Driver</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 4 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How real drivers reach users - driver packages, INF files and catalogs, Microsoft&#39;s attestation and HLK signing through the Partner Center, Windows Update - and the alternatives that make most drivers unnecessary: user-mode services, ETW, UMDF and existing system features.</p>
+      <div class="prose">
+<h2>Why everything must be signed</h2>
+<p>Since Windows 10 version 1607, new kernel drivers load only when <strong>signed by Microsoft</strong>. A developer&#39;s own certificate is not enough: the driver is submitted to Microsoft, which signs it. Test signing (lesson 1.02) exists only for development machines. This requirement is a cornerstone of Windows security: it means every driver on a normal machine is traceable to a registered company, and drivers found to be malicious or vulnerable can be revoked and blocked.</p>
+<h2>The driver package</h2>
+<p>A driver is shipped as a <strong>package</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>XenonLog.sys</code></td>
+<td>The driver</td>
+</tr>
+<tr>
+<td><code>XenonLog.inf</code></td>
+<td>Installation instructions: where files go, services and registry entries, version</td>
+</tr>
+<tr>
+<td><code>XenonLog.cat</code></td>
+<td>A catalog: hashes of the package&#39;s files, signed</td>
+</tr>
+</tbody></table>
+</div>
+<p>A minimal INF for a software driver:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>[<span class="tk-t">Version</span>]
+<span class="tk-t">Signature</span>   = <span class="tk-s">&quot;$WINDOWS NT$&quot;</span>
+<span class="tk-t">Class</span>       = <span class="tk-t">System</span>
+<span class="tk-t">ClassGuid</span>   = {4d36e97d-e325-<span class="tk-n">11ce</span>-bfc1-08002be10318}
+<span class="tk-t">Provider</span>    = %<span class="tk-t">ProviderName</span>%
+<span class="tk-t">DriverVer</span>   = <span class="tk-n">11</span>/<span class="tk-n">15</span>/<span class="tk-n">2026</span>,<span class="tk-n">1.0</span>.<span class="tk-n">0.0</span>
+<span class="tk-t">CatalogFile</span> = <span class="tk-t">XenonLog</span>.cat
+<span class="tk-t">PnpLockdown</span> = <span class="tk-n">1</span>
+
+[<span class="tk-t">DestinationDirs</span>]
+<span class="tk-t">DefaultDestDir</span> = <span class="tk-n">13</span>          ; the driver store
+
+[<span class="tk-t">DefaultInstall</span>.NTamd64]
+<span class="tk-t">CopyFiles</span> = <span class="tk-t">XenonLog</span>.<span class="tk-t">Files</span>
+
+[<span class="tk-t">DefaultInstall</span>.NTamd64.<span class="tk-t">Services</span>]
+<span class="tk-t">AddService</span> = <span class="tk-t">XenonLog</span>,, <span class="tk-t">XenonLog</span>.<span class="tk-t">Service</span>
+
+[<span class="tk-t">XenonLog</span>.<span class="tk-t">Service</span>]
+<span class="tk-t">ServiceType</span>   = <span class="tk-n">1</span>            ; kernel driver
+<span class="tk-t">StartType</span>     = <span class="tk-n">3</span>            ; on demand
+<span class="tk-t">ErrorControl</span>  = <span class="tk-n">1</span>
+<span class="tk-t">ServiceBinary</span> = %<span class="tk-n">13</span>%\<span class="tk-t">XenonLog</span>.sys
+; ... [<span class="tk-t">XenonLog</span>.<span class="tk-t">Files</span>], [<span class="tk-t">Strings</span>]</code></pre></div>
+<p><code>DriverVer</code> (date and four-part version) decides which of several packages Windows prefers; <code>InfVerif</code> (in the WDK) checks the INF for errors. The practice parses and checks the <code>[Version]</code> section.</p>
+<h2>Getting Microsoft&#39;s signature</h2>
+<p>Through the <strong>Partner Center</strong> (Windows Hardware Dev Center), with an <strong>EV code-signing certificate</strong> identifying your company:</p>
+<ul>
+<li><strong>Attestation signing</strong>: submit the package (signed with your EV certificate); Microsoft checks it and signs it. It loads on client Windows. Fast, no hardware tests.</li>
+<li><strong>HLK certification</strong>: run the <strong>Hardware Lab Kit</strong> tests and submit the results; required for Windows Server and for distribution through Windows Update with the &quot;certified&quot; status.</li>
+</ul>
+<p>Drivers must also pass the driver CodeQL checks (lesson 5.02) and the HVCI (memory integrity) compatibility requirements: no writable-and-executable memory, for example.</p>
+<h2>Distribution</h2>
+<p>Signed packages are installed with <code>pnputil /add-driver XenonLog.inf /install</code>, an installer that calls <code>DiInstallDriver</code>, or published through <strong>Windows Update</strong> for hardware drivers. Updating a driver means a new package with a higher <code>DriverVer</code>.</p>
+<h2>When not to write a driver</h2>
+<p>Every driver adds risk to every machine it runs on, needs Microsoft&#39;s signature, and is much harder to write and update than user-mode code. Before writing one, check the alternatives:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use instead</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Watching process creation, file and registry activity</td>
+<td>ETW providers (Microsoft-Windows-Kernel-Process and others), Windows Defender&#39;s and Sysmon&#39;s existing logging</td>
+</tr>
+<tr>
+<td>Talking to a USB device</td>
+<td>WinUSB or a <strong>UMDF</strong> user-mode driver</td>
+</tr>
+<tr>
+<td>Background work with system rights</td>
+<td>A Windows service</td>
+</tr>
+<tr>
+<td>Network filtering</td>
+<td>Windows Filtering Platform from user mode where possible</td>
+</tr>
+<tr>
+<td>Performance data</td>
+<td>ETW, performance counters</td>
+</tr>
+</tbody></table>
+</div>
+<p>This course&#39;s log driver is a teaching project: in practice, a user-mode program subscribing to the kernel&#39;s ETW process events gives the same information without any driver at all. Knowing how the kernel works is valuable for debugging, performance work and security; writing kernel code should be the last option, taken with everything this course has covered.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/kernel/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/kernel/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-secure-driver-design/"><span class="mono">previous</span><b>5.03 Secure Driver Design</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/kernel/5-04-signing-distribution-and-when-not-to-write-a-driver"></script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Python's Documentation · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/4-01-python-s-documentation/">
+  <meta name="description" content="Finding and reading docs.python.org - the tutorial, library reference and language reference - Python signature notation with defaults, / and , the version…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Python's Documentation · Reading Documentation · Xenon">
+  <meta property="og:description" content="Finding and reading docs.python.org - the tutorial, library reference and language reference - Python signature notation with defaults, / and , the version…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/4-01-python-s-documentation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Python's Documentation · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Python's Documentation · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="Finding and reading docs.python.org - the tutorial, library reference and language reference - Python signature notation with defaults, / and , the version…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>Other Languages and Specifications</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Python's Documentation</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 4 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Finding and reading docs.python.org - the tutorial, library reference and language reference - Python signature notation with defaults, / and *, the version notes that say when behaviour changed, how a page describes exceptions, and help(), docstrings and type stubs from inside Python.</p>
+      <div class="prose">
+<h2>Three books in one site</h2>
+<p>docs.python.org holds several documents, and knowing which to open saves time:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Document</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Tutorial</strong></td>
+<td>learning the language from the start</td>
+</tr>
+<tr>
+<td><strong>Library Reference</strong></td>
+<td>built-in functions, types (<code>str</code>, <code>list</code>, <code>dict</code>) and every standard module: the one you will use most</td>
+</tr>
+<tr>
+<td><strong>Language Reference</strong></td>
+<td>the exact rules of the syntax and semantics, like the C++ standard</td>
+</tr>
+<tr>
+<td><strong>HOWTOs</strong></td>
+<td>how-to guides on single topics: sorting, logging, regular expressions</td>
+</tr>
+<tr>
+<td><strong>What&#39;s New</strong></td>
+<td>per version, what was added and changed</td>
+</tr>
+</tbody></table>
+</div>
+<p>Use the version selector at the top: pages differ between Python 3.9 and 3.13, and search engines often land on an old one.</p>
+<h2>Reading a Python signature</h2>
+<p>Python pages write signatures in Python syntax:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>str.<span class="tk-f">split</span>(sep=<span class="tk-k">None</span>, maxsplit=-<span class="tk-n">1</span>)
+<span class="tk-f">sorted</span>(iterable, /, *, key=<span class="tk-k">None</span>, reverse=<span class="tk-k">False</span>)
+<span class="tk-f">int</span>(x, /, base=<span class="tk-n">10</span>)</code></pre></div>
+<ul>
+<li><code>name=value</code>: a <strong>default</strong>; you may leave the argument out.</li>
+<li>A <code>/</code> marks the end of <strong>positional-only</strong> parameters: <code>sorted(iterable=x)</code> is an error; you must write <code>sorted(x)</code>.</li>
+<li>A <code>*</code> marks the start of <strong>keyword-only</strong> parameters: <code>sorted(x, None, True)</code> is an error; you must write <code>sorted(x, reverse=True)</code>.</li>
+<li>Older pages use brackets for optional arguments: <code>range(start, stop[, step])</code>.</li>
+</ul>
+<p>Defaults such as <code>sep=None</code> often stand for a <strong>different behaviour</strong>, not a value, and the description explains it. For <code>str.split</code>, <code>sep=None</code> means &quot;split on runs of whitespace and drop empty strings&quot;, while any given separator means &quot;split exactly at each occurrence, keeping empty strings&quot;. The project of milestone 1 implemented exactly this difference.</p>
+<h2>What the description promises</h2>
+<p>Python pages are prose more than tables, so read for these phrases:</p>
+<ul>
+<li><strong>&quot;Raises <code>ValueError</code> if ...&quot;</strong>, <strong>&quot;If ... a <code>TypeError</code> is raised&quot;</strong>: the exceptions to handle.</li>
+<li><strong>&quot;Return a new list ...&quot;</strong> versus <strong>&quot;... in place&quot;</strong>: <code>sorted()</code> returns a new list, <code>list.sort()</code> changes the list and returns <code>None</code>. Using <code>x = x.sort()</code> is a classic bug the page warns about.</li>
+<li><strong>&quot;The result is guaranteed to be stable&quot;</strong>, <strong>&quot;CPython implementation detail: ...&quot;</strong>: the first you may rely on; the second you may not, other Pythons can differ.</li>
+<li>Exact edge rules: slicing <code>s[i:j:k]</code> documents what happens with negative and out-of-range indices and with a negative step (practice 4.01 implements them).</li>
+</ul>
+<h2>Version notes</h2>
+<p>Pages carry boxed notes that matter as much as the text:</p>
+<ul>
+<li><strong>Added in version 3.9.</strong> You cannot use it on 3.8.</li>
+<li><strong>Changed in version 3.7:</strong> for example, &quot;dictionary order is guaranteed to be insertion order&quot;. Code relying on the new behaviour silently misbehaves on older versions.</li>
+<li><strong>Deprecated since version 3.12, will be removed in version 3.14.</strong> Plan to move away.</li>
+</ul>
+<h2>From inside Python</h2>
+<ul>
+<li><code>help(str.split)</code> prints the docstring, which usually summarises the page.</li>
+<li><code>obj.__doc__</code> is the same text; your own functions get one when their first statement is a string literal.</li>
+<li>Type hints and the <strong>typeshed</strong> stubs (what editors use for completion) show parameter and return types, which the prose sometimes leaves implicit.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>&gt;&gt;&gt; <span class="tk-f">help</span>(str.split)
+<span class="tk-f">split</span>(<span class="tk-k">self</span>, /, sep=<span class="tk-k">None</span>, maxsplit=-<span class="tk-n">1</span>)
+    Return a list of the substrings <span class="tk-k">in</span> the string, using sep <span class="tk-k">as</span> the separator string.
+    ...</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-structures-flags-and-versions/"><span class="mono">previous</span><b>3.04 Structures, Flags and Versions</b></a>
+      <a class="lp-next" href="../4-02-javascript-mdn-and-node/"><span class="mono">next</span><b>4.02 JavaScript, MDN and Node</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/4-01-python-s-documentation"></script>
+</body>
+</html>

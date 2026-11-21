@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Testing Webhooks · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/4-05-testing-webhooks/">
+  <meta name="description" content="Testing the code that receives webhooks without waiting for real events - fixture deliveries built and signed in tests, testing every rejection path,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Testing Webhooks · Working with APIs · Xenon">
+  <meta property="og:description" content="Testing the code that receives webhooks without waiting for real events - fixture deliveries built and signed in tests, testing every rejection path,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/4-05-testing-webhooks/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Testing Webhooks · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Testing Webhooks · Working with APIs · Xenon">
+  <meta name="twitter:description" content="Testing the code that receives webhooks without waiting for real events - fixture deliveries built and signed in tests, testing every rejection path,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Webhooks</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Testing Webhooks</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Testing the code that receives webhooks without waiting for real events - fixture deliveries built and signed in tests, testing every rejection path, replaying recorded deliveries, the service&#39;s own test events and CLI tools, and exposing a local endpoint with a tunnel during development.</p>
+      <div class="prose">
+<h2>The awkward part</h2>
+<p>Webhook code runs when <strong>another</strong> system decides to call it, which makes it awkward to test: you cannot easily make a real payment fail at three in the morning. The answer is to build deliveries yourself.</p>
+<h2>Fixture deliveries</h2>
+<p>A test helper that builds a <strong>signed</strong> request from an event, exactly as the service would, lets you test the whole receiver:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">make_delivery</span>(secret, event, timestamp, path=<span class="tk-s">&quot;/webhooks&quot;</span>):
+    body = json.<span class="tk-f">dumps</span>(event, separators=(<span class="tk-s">&quot;,&quot;</span>, <span class="tk-s">&quot;:&quot;</span>), sort_keys=<span class="tk-k">True</span>).<span class="tk-f">encode</span>()
+    signature = hmac.<span class="tk-f">new</span>(secret, <span class="tk-s">f&quot;{timestamp}.&quot;</span>.<span class="tk-f">encode</span>() + body, hashlib.sha256).<span class="tk-f">hexdigest</span>()
+    head = (<span class="tk-s">f&quot;POST {path} HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\n&quot;</span>
+            <span class="tk-s">f&quot;Content-Length: {len(body)}\r\nWebhook-Signature: t={timestamp},v1={signature}\r\n\r\n&quot;</span>)
+    <span class="tk-k">return</span> head.<span class="tk-f">encode</span>() + body</code></pre></div>
+<p>With it, each test is one line of setup and one assertion:</p>
+<ul>
+<li>a valid delivery is accepted and processed <strong>once</strong>;</li>
+<li>the <strong>same</strong> delivery again is accepted but not processed again;</li>
+<li>a delivery signed with the <strong>wrong secret</strong>, with a <strong>changed body</strong>, or with an <strong>old timestamp</strong> is rejected;</li>
+<li>a delivery for an <strong>unknown event type</strong> is accepted and ignored;</li>
+<li>events delivered <strong>out of order</strong> leave the newest state;</li>
+<li>a handler that <strong>fails</strong> gets a 500, and a later retry of the same event succeeds.</li>
+</ul>
+<p>Practice 4.05 writes this helper; the project&#39;s tests use the same idea.</p>
+<h2>Recorded deliveries</h2>
+<p>Services show recent deliveries (payload, headers and your response) in their dashboard, and many let you <strong>resend</strong> one. Save a few real payloads (with personal data removed) as test fixtures: they catch differences between the documentation&#39;s examples and what the service really sends, such as a field that is sometimes <code>null</code>.</p>
+<h2>Test events and tools</h2>
+<ul>
+<li>Most services have a <strong>&quot;send test webhook&quot;</strong> button or an API to trigger sample events.</li>
+<li>Some ship a CLI that forwards events from their test mode to your local machine.</li>
+<li>In <strong>test mode</strong>, you can create the objects (a test payment with a test card) that trigger real events end to end.</li>
+</ul>
+<h2>Reaching your laptop</h2>
+<p>A service cannot deliver to <code>http://127.0.0.1:8080</code>. During development, a <strong>tunnel</strong> service gives your local port a temporary public HTTPS URL; you register that URL as the webhook endpoint in <strong>test mode</strong>. Remember to remove the subscription afterwards, and never point live-mode webhooks at a laptop.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-a-webhook-receiver/"><span class="mono">previous</span><b>4.04 A Webhook Receiver</b></a>
+      <a class="lp-next" href="../5-01-designing-an-integration/"><span class="mono">next</span><b>5.01 Designing an Integration</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/4-05-testing-webhooks"></script>
+</body>
+</html>

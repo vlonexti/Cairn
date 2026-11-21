@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Exploring Your Own Process with VirtualQuery · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/6-04-exploring-your-own-process-with-virtualquery/">
+  <meta name="description" content="VirtualQuery answers &quot;what is at this address?&quot;: the region's start and size, its state, protection and type. Walking it across the whole address space…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Exploring Your Own Process with VirtualQuery · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="VirtualQuery answers &quot;what is at this address?&quot;: the region's start and size, its state, protection and type. Walking it across the whole address space…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/6-04-exploring-your-own-process-with-virtualquery/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Exploring Your Own Process with VirtualQuery · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Exploring Your Own Process with VirtualQuery · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="VirtualQuery answers &quot;what is at this address?&quot;: the region's start and size, its state, protection and type. Walking it across the whole address space…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Processes, Threads and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Exploring Your Own Process with VirtualQuery</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 9 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary"><code>VirtualQuery</code> answers &quot;what is at this address?&quot;: the region&#39;s start and size, its state, protection and type. Walking it across the whole address space produces a map of your process: the modules, heaps, stacks and reserved areas. This lesson builds that map, the same view tools like VMMap show, and uses it to identify what any pointer points at.</p>
+      <div class="prose">
+<h2>Asking about an address</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>MEMORY_BASIC_INFORMATION info{};
+<span class="tk-f">VirtualQuery</span>(someAddress, &amp;info, <span class="tk-k">sizeof</span>(info));</code></pre></div>
+<p><code>VirtualQuery</code> fills a <code>MEMORY_BASIC_INFORMATION</code> describing the <strong>region</strong> containing the address: a run of consecutive pages that all share the same state, protection and type.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BaseAddress</code></td>
+<td>Start of the region containing the address</td>
+</tr>
+<tr>
+<td><code>RegionSize</code></td>
+<td>Size of the region, in bytes</td>
+</tr>
+<tr>
+<td><code>AllocationBase</code></td>
+<td>Start of the original <code>VirtualAlloc</code> (or mapping) the region belongs to</td>
+</tr>
+<tr>
+<td><code>State</code></td>
+<td><code>MEM_FREE</code>, <code>MEM_RESERVE</code> or <code>MEM_COMMIT</code> (lesson 6.03)</td>
+</tr>
+<tr>
+<td><code>Protect</code></td>
+<td>Current protection, such as <code>PAGE_READWRITE</code></td>
+</tr>
+<tr>
+<td><code>Type</code></td>
+<td><code>MEM_IMAGE</code> (an exe or DLL), <code>MEM_MAPPED</code> (a file mapping) or <code>MEM_PRIVATE</code> (heap, stack, <code>VirtualAlloc</code>)</td>
+</tr>
+</tbody></table>
+</div>
+<h2>What is this pointer?</h2>
+<p>The <code>Type</code> and <code>AllocationBase</code> fields identify where any pointer leads. For an image, <code>AllocationBase</code> is the module&#39;s <code>HMODULE</code>, so <code>GetModuleFileNameW</code> gives its name:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">const</span> <span class="tk-k">char</span>* <span class="tk-f">kind</span>(<span class="tk-k">const</span> <span class="tk-k">void</span>* p)
+{
+    MEMORY_BASIC_INFORMATION info{};
+    <span class="tk-k">if</span> (!<span class="tk-f">VirtualQuery</span>(p, &amp;info, <span class="tk-k">sizeof</span>(info)) || info.<span class="tk-t">State</span> != MEM_COMMIT) <span class="tk-k">return</span> <span class="tk-s">&quot;not committed memory&quot;</span>;
+    <span class="tk-k">if</span> (info.<span class="tk-t">Type</span> == MEM_IMAGE)
+        <span class="tk-k">return</span> (info.<span class="tk-t">Protect</span> &amp; (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) ? <span class="tk-s">&quot;code in a module&quot;</span> : <span class="tk-s">&quot;data in a module&quot;</span>;
+    <span class="tk-k">if</span> (info.<span class="tk-t">Type</span> == MEM_MAPPED) <span class="tk-k">return</span> <span class="tk-s">&quot;a mapped file&quot;</span>;
+    <span class="tk-k">return</span> <span class="tk-s">&quot;private memory (heap, stack or VirtualAlloc)&quot;</span>;
+}
+
+<span class="tk-k">int</span> g_global{ <span class="tk-n">1</span> };
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> local{ <span class="tk-n">2</span> };
+    <span class="tk-k">auto</span> heap{ std::make_unique&lt;<span class="tk-k">int</span>&gt;(<span class="tk-n">3</span>) };
+    std::cout &lt;&lt; <span class="tk-s">&quot;main:       &quot;</span> &lt;&lt; <span class="tk-f">kind</span>(<span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">void</span>*&gt;(&amp;main)) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;g_global:   &quot;</span> &lt;&lt; <span class="tk-f">kind</span>(&amp;g_global) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;a literal:  &quot;</span> &lt;&lt; <span class="tk-f">kind</span>(<span class="tk-s">&quot;text&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;local:      &quot;</span> &lt;&lt; <span class="tk-f">kind</span>(&amp;local) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;heap:       &quot;</span> &lt;&lt; <span class="tk-f">kind</span>(heap.<span class="tk-f">get</span>()) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;nullptr+16: &quot;</span> &lt;&lt; <span class="tk-f">kind</span>(<span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">void</span>*&gt;(<span class="tk-n">16</span>)) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>main:       code in a module
+g_global:   data in a module
+a literal:  data in a module
+local:      private memory (heap, stack or VirtualAlloc)
+heap:       private memory (heap, stack or VirtualAlloc)
+nullptr+16: not committed memory</code></pre></div>
+<p>A crash reporter or a debugging tool does exactly this to say &quot;the bad pointer pointed into freed space&quot; or &quot;the crash was in plugin.dll&#39;s code&quot;.</p>
+<h2>Walking the whole address space</h2>
+<p>Regions are consecutive, so you can walk them all: start at address 0, query, then jump to <code>BaseAddress + RegionSize</code>, until <code>VirtualQuery</code> fails at the end of user space.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    SIZE_T committed{ <span class="tk-n">0</span> }, reserved{ <span class="tk-n">0</span> };
+    <span class="tk-k">int</span> regions{ <span class="tk-n">0</span> }, imageRegions{ <span class="tk-n">0</span> };
+    MEMORY_BASIC_INFORMATION info{};
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">char</span>* at{ <span class="tk-k">nullptr</span> }; <span class="tk-f">VirtualQuery</span>(at, &amp;info, <span class="tk-k">sizeof</span>(info)) == <span class="tk-k">sizeof</span>(info); at = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(info.<span class="tk-t">BaseAddress</span>) + info.<span class="tk-t">RegionSize</span>)
+    {
+        ++regions;
+        <span class="tk-k">if</span> (info.<span class="tk-t">State</span> == MEM_COMMIT) committed += info.<span class="tk-t">RegionSize</span>;
+        <span class="tk-k">if</span> (info.<span class="tk-t">State</span> == MEM_RESERVE) reserved += info.<span class="tk-t">RegionSize</span>;
+        <span class="tk-k">if</span> (info.<span class="tk-t">State</span> == MEM_COMMIT &amp;&amp; info.<span class="tk-t">Type</span> == MEM_IMAGE) ++imageRegions;
+    }
+    std::cout &lt;&lt; regions &lt;&lt; <span class="tk-s">&quot; regions, &quot;</span> &lt;&lt; imageRegions &lt;&lt; <span class="tk-s">&quot; committed image regions\n&quot;</span>;
+    std::cout &lt;&lt; committed / <span class="tk-n">1024</span> &lt;&lt; <span class="tk-s">&quot; KB committed, &quot;</span> &lt;&lt; reserved / (<span class="tk-n">1024</span> * <span class="tk-n">1024</span>) &lt;&lt; <span class="tk-s">&quot; MB reserved\n&quot;</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output (yours will differ)</span></div><pre><code>212 regions, 63 committed image regions
+6044 KB committed, 2056 MB reserved</code></pre></div>
+<p>Even a tiny program has a couple of hundred regions: every DLL contributes several (one per section with a different protection: code, read-only data, writable data), plus heaps, the stack and its guard page, and areas Windows reserves for itself. The reserved total is large because of reservations such as the stack&#39;s 1 MB and heap segments, which cost no memory.</p>
+<h2>Reading the map</h2>
+<p>A typical slice of the map, written out the way the practice task does:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>00000097A1A00000  1004 KB  reserved   private              thread stack (reserved part)
+00000097A1AFB000    12 KB  rw- guard  private              stack guard page
+00000097A1AFE000     8 KB  rw-        private              stack (committed part)
+0000022F7B4A0000  1024 KB  rw-        private              heap segment
+00007FF6A1200000     4 KB  r--        image  game.exe      headers
+00007FF6A1201000   108 KB  r-x        image  game.exe      .text
+00007FF6A121C000    40 KB  r--        image  game.exe      .rdata
+00007FF6A1226000     8 KB  rw-        image  game.exe      .data</code></pre></div>
+<p>The sections of <code>game.exe</code> from lesson 2.03 are visible directly as regions with their protections. The thread stack shows reserve-then-commit-as-it-grows with its guard page from lesson 6.03.</p>
+<p>Microsoft&#39;s <strong>VMMap</strong> (part of the free Sysinternals tools) shows this map for any process with a friendly interface, and <strong>Visual Studio&#39;s</strong> diagnostic tools can too. Writing the walk yourself is the best way to understand what they show.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Not advancing past free regions</span></div><div class="callout-body"><p>Free regions are regions too. Always step by <code>BaseAddress + RegionSize</code>, whatever the state.</p>
+</div></div>
+<blockquote><p>[!warning] Treating <code>Protect</code> as meaningful for free or reserved regions
+It only describes committed pages; for reserved regions, <code>AllocationProtect</code> holds the protection the reservation was made with.</p>
+</blockquote>
+<blockquote><p>[!warning] Reading memory just because <code>VirtualQuery</code> said it was committed
+Another thread can free it a moment later. Tools that read arbitrary memory must be prepared for the read to fail (chapter 12).</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does <code>VirtualQuery</code> describe?</div><ul><li>The region of consecutive pages, sharing state, protection and type, that contains the given address</li><li>Only the single page containing the address</li><li>The whole process</li></ul><details><summary>Show the answer</summary><p><b>The region of consecutive pages, sharing state, protection and type, that contains the given address</b> A region is a run of pages with identical attributes.</p></details></li><li><div class="q">A pointer&#39;s region has type <code>MEM_IMAGE</code> and protection <code>PAGE_EXECUTE_READ</code>. What does it point at?</div><ul><li>Code inside a loaded exe or DLL</li><li>A heap block</li><li>A thread&#39;s stack</li></ul><details><summary>Show the answer</summary><p><b>Code inside a loaded exe or DLL</b> Image regions are modules; execute permission means the code section.</p></details></li><li><div class="q">How do you get from one region to the next when walking the address space?</div><ul><li>Query at <code>BaseAddress + RegionSize</code> of the current region</li><li>Add 4,096 to the address</li><li>Call <code>VirtualQuery</code> with a null pointer again</li></ul><details><summary>Show the answer</summary><p><b>Query at <code>BaseAddress + RegionSize</code> of the current region</b> Regions are consecutive and cover the whole space, free parts included.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-pages-protection-and-committing-memory/"><span class="mono">previous</span><b>6.03 Pages, Protection and Committing Memory</b></a>
+      <a class="lp-next" href="../6-05-threads-and-the-scheduler/"><span class="mono">next</span><b>6.05 Threads and the Scheduler</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/6-04-exploring-your-own-process-with-virtualquery"></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Registers · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/1-02-registers/">
+  <meta name="description" content="Registers are the processor's own tiny, fast storage - sixteen 64-bit general-purpose ones on x86-64, plus rip (the next instruction) and rflags. The low 32,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Registers · Assembly · Xenon">
+  <meta property="og:description" content="Registers are the processor's own tiny, fast storage - sixteen 64-bit general-purpose ones on x86-64, plus rip (the next instruction) and rflags. The low 32,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/1-02-registers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Registers · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Registers · Assembly · Xenon">
+  <meta name="twitter:description" content="Registers are the processor's own tiny, fast storage - sixteen 64-bit general-purpose ones on x86-64, plus rip (the next instruction) and rflags. The low 32,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Hello, Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Registers</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.02</b></span><span>2 of 6 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Registers are the processor&#39;s own tiny, fast storage - sixteen 64-bit general-purpose ones on x86-64, plus rip (the next instruction) and rflags. The low 32, 16 and 8 bits of each have their own names, such as eax, ax and al. Writing a 32-bit register clears the top half of the 64-bit one; writing 8 or 16 bits does not.</p>
+      <div class="prose">
+<h2>Storage inside the processor</h2>
+<p>Memory is big but, by the processor&#39;s standards, slow: reading it can take a hundred cycles. <strong>Registers</strong> are a handful of storage slots inside the processor itself, read and written in a fraction of a cycle. Almost every instruction works on registers, so programs constantly move values from memory into registers, work on them, and store the results back.</p>
+<p>x86-64 has <strong>16 general-purpose registers</strong>, each 64 bits:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Register</th>
+<th>Traditional use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rax</code></td>
+<td>accumulator: results, return values, system call numbers</td>
+</tr>
+<tr>
+<td><code>rbx</code></td>
+<td>base: a general register that functions keep safe</td>
+</tr>
+<tr>
+<td><code>rcx</code></td>
+<td>counter: loop counts, shift counts, 4th argument</td>
+</tr>
+<tr>
+<td><code>rdx</code></td>
+<td>data: the high half in multiply and divide, 3rd argument</td>
+</tr>
+<tr>
+<td><code>rsi</code>, <code>rdi</code></td>
+<td>source and destination index: the 2nd and 1st arguments</td>
+</tr>
+<tr>
+<td><code>rbp</code></td>
+<td>base pointer: the stack frame (lesson 5.03)</td>
+</tr>
+<tr>
+<td><code>rsp</code></td>
+<td><strong>stack pointer</strong>: the top of the stack. Leave it alone for now</td>
+</tr>
+<tr>
+<td><code>r8</code> to <code>r15</code></td>
+<td>eight more, added when x86 went 64-bit</td>
+</tr>
+</tbody></table>
+</div>
+<p>The &quot;traditional uses&quot; come from the 1970s Intel 8086. Today most instructions work on any register, but some conventions (which registers hold arguments, which ones functions must keep) matter a lot, as module 5 shows.</p>
+<p>Two special registers cannot be used directly: <strong><code>rip</code></strong>, the instruction pointer, holds the address of the next instruction, and <strong><code>rflags</code></strong> holds the flags that comparisons set (lesson 2.04).</p>
+<h2>Smaller views of the same register</h2>
+<p>Each register has names for its lower parts, a history of how x86 grew from 16 to 32 to 64 bits:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>64 bits</th>
+<th>low 32</th>
+<th>low 16</th>
+<th>low 8</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rax</code></td>
+<td><code>eax</code></td>
+<td><code>ax</code></td>
+<td><code>al</code></td>
+</tr>
+<tr>
+<td><code>rbx</code></td>
+<td><code>ebx</code></td>
+<td><code>bx</code></td>
+<td><code>bl</code></td>
+</tr>
+<tr>
+<td><code>rcx</code></td>
+<td><code>ecx</code></td>
+<td><code>cx</code></td>
+<td><code>cl</code></td>
+</tr>
+<tr>
+<td><code>rdx</code></td>
+<td><code>edx</code></td>
+<td><code>dx</code></td>
+<td><code>dl</code></td>
+</tr>
+<tr>
+<td><code>rsi</code></td>
+<td><code>esi</code></td>
+<td><code>si</code></td>
+<td><code>sil</code></td>
+</tr>
+<tr>
+<td><code>rdi</code></td>
+<td><code>edi</code></td>
+<td><code>di</code></td>
+<td><code>dil</code></td>
+</tr>
+<tr>
+<td><code>rbp</code></td>
+<td><code>ebp</code></td>
+<td><code>bp</code></td>
+<td><code>bpl</code></td>
+</tr>
+<tr>
+<td><code>rsp</code></td>
+<td><code>esp</code></td>
+<td><code>sp</code></td>
+<td><code>spl</code></td>
+</tr>
+<tr>
+<td><code>r8</code></td>
+<td><code>r8d</code></td>
+<td><code>r8w</code></td>
+<td><code>r8b</code></td>
+</tr>
+<tr>
+<td>... <code>r15</code></td>
+<td><code>r15d</code></td>
+<td><code>r15w</code></td>
+<td><code>r15b</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><code>eax</code> is not a separate register: it <strong>is</strong> the bottom 32 bits of <code>rax</code>. (There are also <code>ah</code>, <code>bh</code>, <code>ch</code>, <code>dh</code> for bits 8 to 15 of the first four, a leftover you will rarely need.)</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/assembly/l/1.02">Try it in Xenon</a></div>
+<p>Step through it and watch <code>rax</code>:</p>
+<ol>
+<li><code>mov al, 0xAA</code> changes only the lowest byte.</li>
+<li><code>mov ax, 0xBBBB</code> changes only the lowest 16 bits.</li>
+<li><code>mov eax, 0xCC</code> sets the low 32 bits <strong>and clears the upper 32</strong>.</li>
+<li><code>mov rax, -1</code> sets all 64 bits to 1.</li>
+</ol>
+<div class="callout tip"><div class="callout-title"><span>The 32-bit rule</span></div><div class="callout-body"><p>Writing a 32-bit register (<code>eax</code>, <code>r9d</code>) always zeroes the top 32 bits of the 64-bit register. Writing an 8- or 16-bit one leaves the rest alone. That is why compilers so often write <code>mov eax, 5</code> instead of <code>mov rax, 5</code>: it does the same thing with a shorter instruction.</p>
+</div></div>
+<h2>Values have no types</h2>
+<p>A register holds 64 bits, nothing more. Whether those bits are a number, a character, an address or a negative number is up to the instructions you use on them. <code>-1</code> and <code>18446744073709551615</code> are the same 64 bits (all 1s, in two&#39;s complement, from the Fundamentals course): <code>add</code> does not care, but comparisons and divisions come in signed and unsigned versions (lesson 3.03).</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">How many general-purpose registers does x86-64 have?</div><ul><li>16</li><li>8</li><li>64</li></ul><details><summary>Show the answer</summary><p><b>16</b> rax to rsp, and r8 to r15.</p></details></li><li><div class="q">What is eax?</div><ul><li>The low 32 bits of rax</li><li>A separate 32-bit register</li><li>An older name for rax that no longer works</li></ul><details><summary>Show the answer</summary><p><b>The low 32 bits of rax</b> Changing eax changes rax.</p></details></li><li><div class="q">rax holds 0xFFFFFFFFFFFFFFFF. After mov eax, 1, what is rax?</div><ul><li>1</li><li>0xFFFFFFFF00000001</li><li>0xFFFFFFFFFFFFFFFF</li></ul><details><summary>Show the answer</summary><p><b>1</b> Writing a 32-bit register clears the upper half.</p></details></li><li><div class="q">Which register holds the address of the next instruction?</div><ul><li>rip</li><li>rsp</li><li>rax</li></ul><details><summary>Show the answer</summary><p><b>rip</b> rsp is the stack pointer.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/1.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/1.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-01-what-assembly-is/"><span class="mono">previous</span><b>1.01 What Assembly Is</b></a>
+      <a class="lp-next" href="../1-03-mov-and-exit-codes/"><span class="mono">next</span><b>1.03 mov and Exit Codes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/1-02-registers"></script>
+</body>
+</html>

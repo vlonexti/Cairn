@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Regular Expressions · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/7-01-regular-expressions/">
+  <meta name="description" content="Patterns that find and take apart text - writing a RegExp, character classes and quantifiers, anchors, groups and named groups, flags (g, i, m, s, u, y),…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Regular Expressions · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Patterns that find and take apart text - writing a RegExp, character classes and quantifiers, anchors, groups and named groups, flags (g, i, m, s, u, y),…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/7-01-regular-expressions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Regular Expressions · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Regular Expressions · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Patterns that find and take apart text - writing a RegExp, character classes and quantifiers, anchors, groups and named groups, flags (g, i, m, s, u, y),…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Advanced JavaScript and TypeScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Regular Expressions</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.01</b></span><span>1 of 6 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Patterns that find and take apart text - writing a RegExp, character classes and quantifiers, anchors, groups and named groups, flags (g, i, m, s, u, y), test, match, matchAll, replace with a function, split, and keeping patterns readable.</p>
+      <div class="prose">
+<h2>A pattern language for text</h2>
+<p>A <strong>regular expression</strong> describes a set of strings: &quot;a word&quot;, &quot;a date like 2026-11-20&quot;, &quot;anything between quotes&quot;. JavaScript writes them between slashes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> datePattern = /\d{<span class="tk-n">4</span>}-\d{<span class="tk-n">2</span>}-\d{<span class="tk-n">2</span>}/;
+console.<span class="tk-f">log</span>(datePattern.<span class="tk-f">test</span>(<span class="tk-s">&quot;due 2026-11-20&quot;</span>));   <span class="tk-c">// true</span>
+console.<span class="tk-f">log</span>(datePattern.<span class="tk-f">test</span>(<span class="tk-s">&quot;due tomorrow&quot;</span>));     <span class="tk-c">// false</span></code></pre></div>
+<p><code>new RegExp(&quot;\\d+&quot;, &quot;g&quot;)</code> builds one from a string, which you need when the pattern is only known at run time (note the doubled backslash inside a string).</p>
+<h2>The building blocks</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Matches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>abc</code></td>
+<td>exactly those characters</td>
+</tr>
+<tr>
+<td><code>.</code></td>
+<td>any character except a new line</td>
+</tr>
+<tr>
+<td><code>\d</code> <code>\w</code> <code>\s</code></td>
+<td>a digit, a word character (letter, digit, <code>_</code>), whitespace</td>
+</tr>
+<tr>
+<td><code>\D</code> <code>\W</code> <code>\S</code></td>
+<td>anything but those</td>
+</tr>
+<tr>
+<td><code>[aeiou]</code> <code>[a-z0-9]</code> <code>[^,]</code></td>
+<td>one character from a set, a range, or not in a set</td>
+</tr>
+<tr>
+<td><code>x*</code> <code>x+</code> <code>x?</code></td>
+<td>zero or more, one or more, zero or one</td>
+</tr>
+<tr>
+<td><code>x{3}</code> <code>x{2,5}</code> <code>x{2,}</code></td>
+<td>exactly 3, 2 to 5, at least 2</td>
+</tr>
+<tr>
+<td><code>^</code> <code>$</code></td>
+<td>start and end of the text (of each line with the <code>m</code> flag)</td>
+</tr>
+<tr>
+<td><code>\b</code></td>
+<td>a word boundary</td>
+</tr>
+<tr>
+<td><code>a|b</code></td>
+<td>either</td>
+</tr>
+<tr>
+<td><code>\.</code> <code>\(</code> <code>\\</code></td>
+<td>a special character taken literally</td>
+</tr>
+</tbody></table>
+</div>
+<p>Quantifiers are <strong>greedy</strong>: <code>&quot;.+&quot;</code> on <code>&quot;a&quot; and &quot;b&quot;</code> takes everything from the first quote to the last. Add <code>?</code> to make them lazy: <code>&quot;.+?&quot;</code> stops at the first closing quote.</p>
+<h2>Groups</h2>
+<p>Parentheses group part of a pattern and <strong>capture</strong> what it matched. <code>match</code> (without the <code>g</code> flag) returns the whole match and every group:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> m = <span class="tk-s">&quot;Order #4512 shipped&quot;</span>.<span class="tk-f">match</span>(/#(\d+)\s+(\w+)/);
+console.<span class="tk-f">log</span>(m[<span class="tk-n">0</span>], <span class="tk-s">&quot;|&quot;</span>, m[<span class="tk-n">1</span>], <span class="tk-s">&quot;|&quot;</span>, m[<span class="tk-n">2</span>]);   <span class="tk-c">// #4512 shipped | 4512 | shipped</span></code></pre></div>
+<p><strong>Named groups</strong> make the result readable:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> { groups } = <span class="tk-s">&quot;2026-11-20&quot;</span>.<span class="tk-f">match</span>(/(?&lt;year&gt;\d{<span class="tk-n">4</span>})-(?&lt;month&gt;\d{<span class="tk-n">2</span>})-(?&lt;day&gt;\d{<span class="tk-n">2</span>})/);
+console.<span class="tk-f">log</span>(groups.year, groups.month, groups.day);</code></pre></div>
+<p><code>(?:...)</code> groups without capturing, when you only need the grouping for <code>|</code> or a quantifier.</p>
+<h2>Flags</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>g</code></td>
+<td>global: find every match, not just the first</td>
+</tr>
+<tr>
+<td><code>i</code></td>
+<td>ignore case</td>
+</tr>
+<tr>
+<td><code>m</code></td>
+<td><code>^</code> and <code>$</code> match at each line</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td><code>.</code> matches new lines too</td>
+</tr>
+<tr>
+<td><code>u</code></td>
+<td>Unicode: <code>\u{1F600}</code> and <code>\p{L}</code> (any letter) work</td>
+</tr>
+<tr>
+<td><code>y</code></td>
+<td>sticky: match only at <code>lastIndex</code> (for tokenizers)</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Finding every match</h2>
+<p>With <code>g</code>, <code>match</code> returns just the matched strings. <code>matchAll</code> gives each match with its groups and position, which is usually what you want:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> text = <span class="tk-s">&quot;x=1, y=22, z=333&quot;</span>;
+console.<span class="tk-f">log</span>(text.<span class="tk-f">match</span>(/\d+/g));                    <span class="tk-c">// [ '1', '22', '333' ]</span>
+<span class="tk-k">for</span> (<span class="tk-k">const</span> m <span class="tk-k">of</span> text.<span class="tk-f">matchAll</span>(/(\w)=(\d+)/g)) {
+  console.<span class="tk-f">log</span>(m[<span class="tk-n">1</span>], <span class="tk-f">Number</span>(m[<span class="tk-n">2</span>]), <span class="tk-s">&quot;at&quot;</span>, m.index);
+}</code></pre></div>
+<h2>Replacing and splitting</h2>
+<p><code>replace</code> with <code>g</code> (or <code>replaceAll</code>) changes every match. The replacement can use <code>$1</code> or <code>$&lt;name&gt;</code>, or be a <strong>function</strong> that receives the match and its groups:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code>console.<span class="tk-f">log</span>(<span class="tk-s">&quot;2026-11-20&quot;</span>.<span class="tk-f">replace</span>(/(\d+)-(\d+)-(\d+)/, <span class="tk-s">&quot;$3/$2/$1&quot;</span>));    <span class="tk-c">// 20/11/2026</span>
+<span class="tk-k">const</span> shouted = <span class="tk-s">&quot;make it loud&quot;</span>.<span class="tk-f">replace</span>(/\b\w/g, letter =&gt; letter.<span class="tk-f">toUpperCase</span>());
+console.<span class="tk-f">log</span>(shouted);                                                    <span class="tk-c">// Make It Loud</span>
+console.<span class="tk-f">log</span>(<span class="tk-s">&quot;a, b;c ,d&quot;</span>.<span class="tk-f">split</span>(/\s*[,;]\s*/));                            <span class="tk-c">// [ 'a', 'b', 'c', 'd' ]</span></code></pre></div>
+<h2>A word of caution</h2>
+<p>A regular expression is great for finding and checking <strong>shapes</strong> of text. It is a poor tool for nested structures such as HTML or JSON: use a real parser (<code>JSON.parse</code>, the DOM) for those. And a long pattern is hard to read, so build it from named pieces:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> number = String.raw<span class="tk-s">`\d+(?:\.\d+)?`</span>;
+<span class="tk-k">const</span> unit = String.raw<span class="tk-s">`(?:kg|g|lb)`</span>;
+<span class="tk-k">const</span> weight = <span class="tk-k">new</span> <span class="tk-f">RegExp</span>(<span class="tk-s">`^(${number})\\s*(${unit})$`</span>, <span class="tk-s">&quot;i&quot;</span>);
+console.<span class="tk-f">log</span>(<span class="tk-s">&quot;2.5 KG&quot;</span>.<span class="tk-f">match</span>(weight).<span class="tk-f">slice</span>(<span class="tk-n">1</span>));</code></pre></div>
+<p><code>String.raw</code> keeps backslashes as written, so you do not have to double them.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/7.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/7.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-05-project-a-web-app/"><span class="mono">previous</span><b>6.05 Project: A Web App</b></a>
+      <a class="lp-next" href="../7-02-getters-setters-and-symbols/"><span class="mono">next</span><b>7.02 Getters, Setters and Symbols</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/7-01-regular-expressions"></script>
+</body>
+</html>

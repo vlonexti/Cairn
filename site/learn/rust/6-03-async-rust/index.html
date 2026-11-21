@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Async Rust · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/6-03-async-rust/">
+  <meta name="description" content="An overview of asynchronous Rust - why async exists, futures and async fn, .await, why a runtime such as Tokio is needed, spawning tasks, running futures…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Async Rust · Rust · Xenon">
+  <meta property="og:description" content="An overview of asynchronous Rust - why async exists, futures and async fn, .await, why a runtime such as Tokio is needed, spawning tasks, running futures…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/6-03-async-rust/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Async Rust · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Async Rust · Rust · Xenon">
+  <meta name="twitter:description" content="An overview of asynchronous Rust - why async exists, futures and async fn, .await, why a runtime such as Tokio is needed, spawning tasks, running futures…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Concurrency and Projects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Async Rust</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">An overview of asynchronous Rust - why async exists, futures and async fn, .await, why a runtime such as Tokio is needed, spawning tasks, running futures concurrently with join and select, async I/O, channels and timeouts, Send and &#39;static bounds on tasks, and choosing between threads and async.</p>
+      <div class="prose">
+<h2>Why async</h2>
+<p>Threads are a fine way to do several things at once, but each one costs memory and switching between thousands of them is expensive. A web server waiting on ten thousand slow network connections spends almost all its time <strong>waiting</strong>. <strong>Async</strong> code lets one thread juggle many waiting tasks: when a task would block, it yields, and the thread runs another task that is ready.</p>
+<h2>Futures and .await</h2>
+<p>An <code>async fn</code> does not run when called. It returns a <strong>future</strong>: a value that represents work which can be driven to completion later. <code>.await</code> drives a future, pausing the current async function until the result is ready:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">async</span> <span class="tk-k">fn</span> <span class="tk-f">fetch_price</span>(item: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-k">u32</span> {
+    <span class="tk-c">// imagine a network request here</span>
+    tokio::time::<span class="tk-f">sleep</span>(std::time::<span class="tk-t">Duration</span>::<span class="tk-f">from_millis</span>(<span class="tk-n">100</span>)).<span class="tk-k">await</span>;
+    <span class="tk-k">if</span> item == <span class="tk-s">&quot;tea&quot;</span> { <span class="tk-n">250</span> } <span class="tk-k">else</span> { <span class="tk-n">400</span> }
+}
+
+<span class="tk-k">async</span> <span class="tk-k">fn</span> <span class="tk-f">total</span>(items: &amp;[&amp;<span class="tk-k">str</span>]) -&gt; <span class="tk-k">u32</span> {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> sum = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> item <span class="tk-k">in</span> items {
+        sum += <span class="tk-f">fetch_price</span>(item).<span class="tk-k">await</span>;          <span class="tk-c">// one after another</span>
+    }
+    sum
+}</code></pre></div>
+<p>Futures are <strong>lazy</strong>: if nobody awaits (or spawns) them, nothing happens. The compiler warns about unused futures.</p>
+<h2>A runtime</h2>
+<p>The standard library defines futures but does not include the machinery that runs them. A <strong>runtime</strong> does: it polls futures, parks them while they wait for I/O or timers, and wakes them up. <strong>Tokio</strong> is the most used one:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TOML</span></div><pre><code>[dependencies]
+tokio = { version = &quot;1&quot;, features = [&quot;full&quot;] }</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[tokio::main]</span>
+<span class="tk-k">async</span> <span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> a = <span class="tk-f">fetch_price</span>(<span class="tk-s">&quot;tea&quot;</span>);
+    <span class="tk-k">let</span> b = <span class="tk-f">fetch_price</span>(<span class="tk-s">&quot;cake&quot;</span>);
+    <span class="tk-k">let</span> (pa, pb) = tokio::<span class="tk-p">join!</span>(a, b);            <span class="tk-c">// both at the same time: about 100 ms, not 200</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{pa} {pb}&quot;</span>);
+
+    <span class="tk-k">let</span> handle = tokio::<span class="tk-f">spawn</span>(<span class="tk-k">async</span> { <span class="tk-f">fetch_price</span>(<span class="tk-s">&quot;mug&quot;</span>).<span class="tk-k">await</span> * <span class="tk-n">2</span> });   <span class="tk-c">// a separate task</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, handle.<span class="tk-k">await</span>.<span class="tk-f">unwrap</span>());
+
+    <span class="tk-k">match</span> tokio::time::<span class="tk-f">timeout</span>(std::time::<span class="tk-t">Duration</span>::<span class="tk-f">from_millis</span>(<span class="tk-n">50</span>), <span class="tk-f">fetch_price</span>(<span class="tk-s">&quot;slow&quot;</span>)).<span class="tk-k">await</span> {
+        <span class="tk-f">Ok</span>(price) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;{price}&quot;</span>),
+        <span class="tk-f">Err</span>(_) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;gave up after 50 ms&quot;</span>),
+    }
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x.await</code></td>
+<td>Wait for one future inside an async function</td>
+</tr>
+<tr>
+<td><code>tokio::join!(a, b)</code></td>
+<td>Run several futures concurrently, wait for all</td>
+</tr>
+<tr>
+<td><code>tokio::select!</code></td>
+<td>Wait for whichever finishes first</td>
+</tr>
+<tr>
+<td><code>tokio::spawn(fut)</code></td>
+<td>Run a future as an independent task (like a lightweight thread)</td>
+</tr>
+<tr>
+<td><code>tokio::sync::mpsc</code>, <code>Mutex</code></td>
+<td>Async versions of channels and locks</td>
+</tr>
+<tr>
+<td><code>tokio::time::sleep</code>, <code>timeout</code></td>
+<td>Timers that do not block the thread</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Rules that trip people up</h2>
+<ul>
+<li><strong>Never block inside async code.</strong> <code>std::thread::sleep</code>, a long CPU loop or a blocking file read stops the whole runtime thread, and every task on it. Use the async versions (<code>tokio::time::sleep</code>, <code>tokio::fs</code>), or move blocking work to <code>tokio::task::spawn_blocking</code>.</li>
+<li>Spawned tasks may run on other threads and outlive the caller, so their futures must be <strong><code>Send + &#39;static</code></strong>: own their data (<code>move</code>), and use <code>Arc</code> for sharing. Holding a <code>std::sync::MutexGuard</code> across an <code>.await</code> makes the future non-<code>Send</code>; release it before awaiting, or use <code>tokio::sync::Mutex</code>.</li>
+<li>Async functions in traits work directly in modern Rust; returning boxed futures (<code>Pin&lt;Box&lt;dyn Future&gt;&gt;</code>) is still needed in some generic code.</li>
+</ul>
+<h2>Threads or async?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Use threads when</th>
+<th>Use async when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The work is CPU-bound (computing, compressing)</td>
+<td>The work is mostly waiting (network, many connections)</td>
+</tr>
+<tr>
+<td>There are a handful of concurrent jobs</td>
+<td>There are thousands of concurrent tasks</td>
+</tr>
+<tr>
+<td>You want the simplest code</td>
+<td>You are writing servers or clients with a runtime anyway</td>
+</tr>
+</tbody></table>
+</div>
+<p>Many programs use both: an async web server that hands heavy computations to a thread pool. The practice sandbox has no Tokio, so this lesson&#39;s code is for reading and for your own projects.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-shared-state-with-arc-and-mutex/"><span class="mono">previous</span><b>6.02 Shared State with Arc and Mutex</b></a>
+      <a class="lp-next" href="../6-04-testing-documentation-and-tooling/"><span class="mono">next</span><b>6.04 Testing, Documentation and Tooling</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/6-03-async-rust"></script>
+</body>
+</html>

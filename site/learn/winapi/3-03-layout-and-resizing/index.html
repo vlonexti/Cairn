@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Layout and Resizing · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/3-03-layout-and-resizing/">
+  <meta name="description" content="Win32 has no layout engine - when a window is resized, you move its controls. This lesson lays controls out in WM SIZE with anchors, sets a minimum size with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Layout and Resizing · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="Win32 has no layout engine - when a window is resized, you move its controls. This lesson lays controls out in WM SIZE with anchors, sets a minimum size with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/3-03-layout-and-resizing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Layout and Resizing · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Layout and Resizing · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="Win32 has no layout engine - when a window is resized, you move its controls. This lesson lays controls out in WM SIZE with anchors, sets a minimum size with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Dialogs and Modern Interfaces</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Layout and Resizing</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Win32 has no layout engine - when a window is resized, you move its controls. This lesson lays controls out in WM_SIZE with anchors, sets a minimum size with WM_GETMINMAXINFO, moves many controls at once without flicker, and builds a splitter.</p>
+      <div class="prose">
+<h2>WM_SIZE</h2>
+<p>When the user resizes a window, it receives <code>WM_SIZE</code> with the new client size. Positioning the controls is up to you:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">case</span> WM_SIZE:
+{
+    <span class="tk-k">const</span> <span class="tk-k">int</span> w = <span class="tk-f">LOWORD</span>(lParam), h = <span class="tk-f">HIWORD</span>(lParam);
+    <span class="tk-k">const</span> <span class="tk-k">int</span> pad = <span class="tk-n">10</span>, buttonW = <span class="tk-n">80</span>, buttonH = <span class="tk-n">26</span>;
+    <span class="tk-f">MoveWindow</span>(m_list, pad, pad, w - <span class="tk-n">2</span> * pad, h - <span class="tk-n">3</span> * pad - buttonH, TRUE);
+    <span class="tk-f">MoveWindow</span>(m_ok, w - pad - <span class="tk-n">2</span> * buttonW - pad, h - pad - buttonH, buttonW, buttonH, TRUE);
+    <span class="tk-f">MoveWindow</span>(m_cancel, w - pad - buttonW, h - pad - buttonH, buttonW, buttonH, TRUE);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Writing that maths for every control gets messy. Most layouts are described better with <strong>anchors</strong>.</p>
+<h2>Anchors</h2>
+<p>Each control remembers its distances from the edges of the parent at the original size, and which edges it is <strong>anchored</strong> to:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Anchored to</th>
+<th>When the window grows by dx</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Left only</td>
+<td>Stays where it is</td>
+</tr>
+<tr>
+<td>Right only</td>
+<td>Moves right by dx</td>
+</tr>
+<tr>
+<td>Left and right</td>
+<td>Stretches by dx</td>
+</tr>
+<tr>
+<td>Neither</td>
+<td>Stays centred in the same relative position</td>
+</tr>
+</tbody></table>
+</div>
+<p>The same on the vertical axis with top and bottom. A list that fills the window is anchored on all four sides; OK and Cancel at the bottom right are anchored right and bottom; a search box along the top is anchored left, right and top. The practice builds this layout engine.</p>
+<h2>A minimum size</h2>
+<p>Below some size the layout breaks: controls overlap or get negative widths. Tell Windows the minimum <strong>window</strong> size (frame included) in <code>WM_GETMINMAXINFO</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">case</span> WM_GETMINMAXINFO:
+{
+    <span class="tk-k">auto</span>* mmi = <span class="tk-k">reinterpret_cast</span>&lt;MINMAXINFO*&gt;(lParam);
+    mmi-&gt;ptMinTrackSize.x = m_minWindowSize.cx;    <span class="tk-c">// computed once with AdjustWindowRectExForDpi</span>
+    mmi-&gt;ptMinTrackSize.y = m_minWindowSize.cy;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<h2>Moving many controls</h2>
+<p>Moving twenty controls one by one repaints twenty times and flickers. <strong>Deferred window positioning</strong> moves them all in one step:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HDWP batch = <span class="tk-f">BeginDeferWindowPos</span>(<span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(m_controls.<span class="tk-f">size</span>()));
+<span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; c : m_controls)
+{
+    <span class="tk-k">const</span> RECT r = c.<span class="tk-f">layout</span>(width, height);
+    batch = <span class="tk-f">DeferWindowPos</span>(batch, c.hwnd, <span class="tk-k">nullptr</span>, r.left, r.top, r.right - r.left, r.bottom - r.top,
+                           SWP_NOZORDER | SWP_NOACTIVATE);
+}
+<span class="tk-f">EndDeferWindowPos</span>(batch);</code></pre></div>
+<p>Setting <code>WS_CLIPCHILDREN</code> on the parent stops it from painting its background over the children, the other big source of flicker on resizing.</p>
+<h2>Splitters</h2>
+<p>A <strong>splitter</strong> is the bar between two panes that the user drags to change their sizes. It is not a control: it is a strip of the parent&#39;s client area between the two child windows.</p>
+<ol>
+<li>In <code>WM_SETCURSOR</code>, show <code>IDC_SIZEWE</code> when the mouse is over the strip (lesson 2.02).</li>
+<li>On <code>WM_LBUTTONDOWN</code> over it, capture the mouse and remember the offset between the mouse and the split position.</li>
+<li>On <code>WM_MOUSEMOVE</code> while captured, set the split position, <strong>clamped</strong> so neither pane gets smaller than its minimum, and lay out again.</li>
+<li>On <code>WM_LBUTTONUP</code>, release the capture, and save the position in the settings (lesson 5.02).</li>
+</ol>
+<p>Storing the split as a <strong>fraction</strong> of the width rather than pixels keeps it sensible when the window is resized or moved to a monitor with a different DPI.</p>
+<h2>Keeping the layout in one function</h2>
+<p>Put all layout in one function, <code>layout(width, height)</code>, and call it from <code>WM_SIZE</code>, after the splitter moves, after a font change and after a DPI change (lesson 3.04). When the layout is computed in exactly one place, it cannot disagree with itself.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-common-dialogs/"><span class="mono">previous</span><b>3.02 Common Dialogs</b></a>
+      <a class="lp-next" href="../3-04-high-dpi-screens/"><span class="mono">next</span><b>3.04 High-DPI Screens</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/3-03-layout-and-resizing"></script>
+</body>
+</html>

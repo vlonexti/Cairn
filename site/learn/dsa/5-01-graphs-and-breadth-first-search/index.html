@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Graphs and Breadth-First Search · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/5-01-graphs-and-breadth-first-search/">
+  <meta name="description" content="Modelling connections - vertices and edges, directed, undirected and weighted graphs, adjacency matrices, adjacency lists and edge lists with their costs,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Graphs and Breadth-First Search · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Modelling connections - vertices and edges, directed, undirected and weighted graphs, adjacency matrices, adjacency lists and edge lists with their costs,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/5-01-graphs-and-breadth-first-search/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Graphs and Breadth-First Search · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Graphs and Breadth-First Search · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Modelling connections - vertices and edges, directed, undirected and weighted graphs, adjacency matrices, adjacency lists and edge lists with their costs,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Graphs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Graphs and Breadth-First Search</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 5 in milestone 5</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Modelling connections - vertices and edges, directed, undirected and weighted graphs, adjacency matrices, adjacency lists and edge lists with their costs, breadth-first search and why it finds shortest paths in unweighted graphs, rebuilding the path from parent links, connected components, two-colouring (bipartite graphs), grids as implicit graphs, and multi-source BFS.</p>
+      <div class="prose">
+<h2>Graphs</h2>
+<p>A <strong>graph</strong> is a set of <strong>vertices</strong> (nodes) joined by <strong>edges</strong>. It is the most general structure in this course: lists and trees are special graphs. Graphs model anything with connections:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Vertices</th>
+<th>Edges</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>maps</td>
+<td>places</td>
+<td>roads (weighted by distance or time)</td>
+</tr>
+<tr>
+<td>social networks</td>
+<td>people</td>
+<td>friendships (undirected) or follows (directed)</td>
+</tr>
+<tr>
+<td>the web</td>
+<td>pages</td>
+<td>links (directed)</td>
+</tr>
+<tr>
+<td>build systems</td>
+<td>tasks</td>
+<td>&quot;must happen before&quot; (directed, no cycles)</td>
+</tr>
+<tr>
+<td>games</td>
+<td>board positions</td>
+<td>moves</td>
+</tr>
+</tbody></table>
+</div>
+<p>Vocabulary: an edge is <strong>directed</strong> (one way, u → v) or <strong>undirected</strong> (both ways). Edges may carry a <strong>weight</strong>. The <strong>degree</strong> of a vertex is its number of edges. A <strong>path</strong> is a sequence of vertices joined by edges; a <strong>cycle</strong> is a path that returns to its start. We write V for the number of vertices and E for the number of edges.</p>
+<h2>Representing a graph</h2>
+<p>Number the vertices 0 to V − 1. Then there are three common representations:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Representation</th>
+<th>Memory</th>
+<th>Is u–v an edge?</th>
+<th>List u&#39;s neighbours</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>adjacency matrix: <code>bool m[V][V]</code></td>
+<td>O(V²)</td>
+<td>O(1)</td>
+<td>O(V)</td>
+</tr>
+<tr>
+<td><strong>adjacency list</strong>: <code>vector&lt;vector&lt;int&gt;&gt; adj</code></td>
+<td>O(V + E)</td>
+<td>O(degree)</td>
+<td>O(degree)</td>
+</tr>
+<tr>
+<td>edge list: <code>vector&lt;pair&lt;int,int&gt;&gt;</code></td>
+<td>O(E)</td>
+<td>O(E)</td>
+<td>O(E)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Most real graphs are <strong>sparse</strong> (E is much smaller than V²: a road network has a few roads per junction), so the <strong>adjacency list</strong> is the default. A matrix suits small, dense graphs. An edge list suits algorithms that process edges in sorted order, like Kruskal&#39;s (lesson 5.04).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> V = <span class="tk-n">5</span>;
+    std::vector&lt;std::vector&lt;<span class="tk-k">int</span>&gt;&gt; <span class="tk-f">adj</span>(V);
+    <span class="tk-k">auto</span> addEdge = [&amp;](<span class="tk-k">int</span> u, <span class="tk-k">int</span> v) { adj[u].<span class="tk-f">push_back</span>(v); adj[v].<span class="tk-f">push_back</span>(u); };   <span class="tk-c">// undirected: both directions</span>
+    <span class="tk-f">addEdge</span>(<span class="tk-n">0</span>, <span class="tk-n">1</span>); <span class="tk-f">addEdge</span>(<span class="tk-n">0</span>, <span class="tk-n">2</span>); <span class="tk-f">addEdge</span>(<span class="tk-n">1</span>, <span class="tk-n">3</span>); <span class="tk-f">addEdge</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>); <span class="tk-f">addEdge</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>);
+
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> u = <span class="tk-n">0</span>; u &lt; V; ++u)
+    {
+        std::cout &lt;&lt; u &lt;&lt; <span class="tk-s">&quot;:&quot;</span>;
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> v : adj[u]) std::cout &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; v;
+        std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+}</code></pre></div>
+<p>For a weighted graph, store pairs: <code>std::vector&lt;std::vector&lt;std::pair&lt;int, int&gt;&gt;&gt; adj</code> with <code>(neighbour, weight)</code>.</p>
+<h2>Breadth-first search</h2>
+<p><strong>Breadth-first search</strong> (BFS) explores a graph in layers, exactly like level-order traversal of a tree (lesson 4.01): first the start vertex, then all its neighbours, then all <strong>their</strong> unvisited neighbours, and so on. A <strong>queue</strong> holds the frontier, and a <code>visited</code> (or distance) array makes sure each vertex is processed once, since unlike a tree, a graph can reach a vertex by several routes.</p>
+<p>Because BFS reaches vertices in order of distance, the first time it reaches a vertex is along a <strong>shortest path</strong> (fewest edges). Recording each vertex&#39;s <strong>parent</strong>, the vertex it was discovered from, lets you rebuild that path backwards from the target.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> V = <span class="tk-n">8</span>;
+    std::vector&lt;std::vector&lt;<span class="tk-k">int</span>&gt;&gt; <span class="tk-f">adj</span>(V);
+    <span class="tk-k">for</span> (<span class="tk-k">auto</span> [u, v] : std::vector&lt;std::pair&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;&gt;{ { <span class="tk-n">0</span>, <span class="tk-n">1</span> }, { <span class="tk-n">0</span>, <span class="tk-n">2</span> }, { <span class="tk-n">1</span>, <span class="tk-n">3</span> }, { <span class="tk-n">2</span>, <span class="tk-n">3</span> }, { <span class="tk-n">3</span>, <span class="tk-n">4</span> }, { <span class="tk-n">4</span>, <span class="tk-n">5</span> }, { <span class="tk-n">2</span>, <span class="tk-n">6</span> }, { <span class="tk-n">6</span>, <span class="tk-n">5</span> } })
+    {
+        adj[u].<span class="tk-f">push_back</span>(v);
+        adj[v].<span class="tk-f">push_back</span>(u);
+    }
+
+    std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">dist</span>(V, -<span class="tk-n">1</span>), <span class="tk-f">parent</span>(V, -<span class="tk-n">1</span>);
+    std::queue&lt;<span class="tk-k">int</span>&gt; q;
+    dist[<span class="tk-n">0</span>] = <span class="tk-n">0</span>;
+    q.<span class="tk-f">push</span>(<span class="tk-n">0</span>);
+    <span class="tk-k">while</span> (!q.<span class="tk-f">empty</span>())
+    {
+        <span class="tk-k">int</span> u = q.<span class="tk-f">front</span>();
+        q.<span class="tk-f">pop</span>();
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> v : adj[u])
+            <span class="tk-k">if</span> (dist[v] == -<span class="tk-n">1</span>)                  <span class="tk-c">// first time we see v: that is the shortest way there</span>
+            {
+                dist[v] = dist[u] + <span class="tk-n">1</span>;
+                parent[v] = u;
+                q.<span class="tk-f">push</span>(v);
+            }
+    }
+
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> u = <span class="tk-n">0</span>; u &lt; V; ++u) std::cout &lt;&lt; <span class="tk-s">&quot;dist[&quot;</span> &lt;&lt; u &lt;&lt; <span class="tk-s">&quot;] = &quot;</span> &lt;&lt; dist[u] &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    std::vector&lt;<span class="tk-k">int</span>&gt; path;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> v = <span class="tk-n">5</span>; v != -<span class="tk-n">1</span>; v = parent[v]) path.<span class="tk-f">push_back</span>(v);
+    std::<span class="tk-f">reverse</span>(path.<span class="tk-f">begin</span>(), path.<span class="tk-f">end</span>());
+    std::cout &lt;&lt; <span class="tk-s">&quot;a shortest path from 0 to 5:&quot;</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> v : path) std::cout &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; v;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>Vertex 7 has no edges, so its distance stays −1: unreachable. BFS visits each vertex once and looks at each edge once (twice for undirected), so it runs in <strong>O(V + E)</strong>.</p>
+<p>Mark a vertex as visited when it is <strong>pushed</strong>, not when it is popped. Otherwise the same vertex can enter the queue many times.</p>
+<h2>Connected components</h2>
+<p>In an undirected graph, a <strong>connected component</strong> is a maximal set of vertices that can all reach each other. Run BFS from every vertex not yet visited; each run discovers one whole component. The total is still O(V + E). (Union-find, lesson 4.05, also counts components, and handles edges arriving over time.)</p>
+<h2>Two-colouring: bipartite graphs</h2>
+<p>A graph is <strong>bipartite</strong> if its vertices can be split into two groups with every edge going <strong>between</strong> the groups: students and courses, jobs and machines. BFS tests it: colour the start 0, its neighbours 1, their neighbours 0, and so on; the graph is bipartite exactly when no edge joins two vertices of the same colour. (Equivalently: it has no cycle of odd length.)</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">bool</span> <span class="tk-f">bipartite</span>(<span class="tk-k">const</span> std::vector&lt;std::vector&lt;<span class="tk-k">int</span>&gt;&gt;&amp; adj)
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">colour</span>(adj.<span class="tk-f">size</span>(), -<span class="tk-n">1</span>);
+    <span class="tk-k">for</span> (std::size_t s = <span class="tk-n">0</span>; s &lt; adj.<span class="tk-f">size</span>(); ++s)
+    {
+        <span class="tk-k">if</span> (colour[s] != -<span class="tk-n">1</span>) <span class="tk-k">continue</span>;              <span class="tk-c">// a new component</span>
+        colour[s] = <span class="tk-n">0</span>;
+        std::queue&lt;<span class="tk-k">int</span>&gt; q;
+        q.<span class="tk-f">push</span>(<span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(s));
+        <span class="tk-k">while</span> (!q.<span class="tk-f">empty</span>())
+        {
+            <span class="tk-k">int</span> u = q.<span class="tk-f">front</span>();
+            q.<span class="tk-f">pop</span>();
+            <span class="tk-k">for</span> (<span class="tk-k">int</span> v : adj[u])
+            {
+                <span class="tk-k">if</span> (colour[v] == -<span class="tk-n">1</span>) { colour[v] = <span class="tk-n">1</span> - colour[u]; q.<span class="tk-f">push</span>(v); }
+                <span class="tk-k">else</span> <span class="tk-k">if</span> (colour[v] == colour[u]) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+            }
+        }
+    }
+    <span class="tk-k">return</span> <span class="tk-k">true</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;std::vector&lt;<span class="tk-k">int</span>&gt;&gt; square{ { <span class="tk-n">1</span>, <span class="tk-n">3</span> }, { <span class="tk-n">0</span>, <span class="tk-n">2</span> }, { <span class="tk-n">1</span>, <span class="tk-n">3</span> }, { <span class="tk-n">2</span>, <span class="tk-n">0</span> } };   <span class="tk-c">// a 4-cycle</span>
+    std::vector&lt;std::vector&lt;<span class="tk-k">int</span>&gt;&gt; triangle{ { <span class="tk-n">1</span>, <span class="tk-n">2</span> }, { <span class="tk-n">0</span>, <span class="tk-n">2</span> }, { <span class="tk-n">0</span>, <span class="tk-n">1</span> } };            <span class="tk-c">// a 3-cycle</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;square bipartite? &quot;</span> &lt;&lt; <span class="tk-f">bipartite</span>(square) &lt;&lt; <span class="tk-s">&quot;, triangle bipartite? &quot;</span> &lt;&lt; <span class="tk-f">bipartite</span>(triangle) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<h2>Grids are graphs</h2>
+<p>A maze or a game map stored as a grid of characters is a graph in disguise: each open cell is a vertex, with edges to its open neighbours up, down, left and right. You never build an adjacency list; you compute the neighbours on the fly with direction offsets.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;std::string&gt; maze{
+        <span class="tk-s">&quot;S.#.....&quot;</span>,
+        <span class="tk-s">&quot;.##.###.&quot;</span>,
+        <span class="tk-s">&quot;....#...&quot;</span>,
+        <span class="tk-s">&quot;#.#.#.#.&quot;</span>,
+        <span class="tk-s">&quot;..#...#G&quot;</span> };
+    <span class="tk-k">int</span> rows = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(maze.<span class="tk-f">size</span>()), cols = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(maze[<span class="tk-n">0</span>].<span class="tk-f">size</span>());
+    <span class="tk-k">const</span> <span class="tk-k">int</span> dr[] = { -<span class="tk-n">1</span>, <span class="tk-n">1</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span> }, dc[] = { <span class="tk-n">0</span>, <span class="tk-n">0</span>, -<span class="tk-n">1</span>, <span class="tk-n">1</span> };
+
+    std::vector&lt;std::vector&lt;<span class="tk-k">int</span>&gt;&gt; <span class="tk-f">dist</span>(rows, std::vector&lt;<span class="tk-k">int</span>&gt;(cols, -<span class="tk-n">1</span>));
+    std::queue&lt;std::pair&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;&gt; q;
+    dist[<span class="tk-n">0</span>][<span class="tk-n">0</span>] = <span class="tk-n">0</span>;
+    q.<span class="tk-f">push</span>({ <span class="tk-n">0</span>, <span class="tk-n">0</span> });
+    <span class="tk-k">while</span> (!q.<span class="tk-f">empty</span>())
+    {
+        <span class="tk-k">auto</span> [r, c] = q.<span class="tk-f">front</span>();
+        q.<span class="tk-f">pop</span>();
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> d = <span class="tk-n">0</span>; d &lt; <span class="tk-n">4</span>; ++d)
+        {
+            <span class="tk-k">int</span> nr = r + dr[d], nc = c + dc[d];
+            <span class="tk-k">if</span> (nr &lt; <span class="tk-n">0</span> || nr &gt;= rows || nc &lt; <span class="tk-n">0</span> || nc &gt;= cols || maze[nr][nc] == <span class="tk-s">'#'</span> || dist[nr][nc] != -<span class="tk-n">1</span>) <span class="tk-k">continue</span>;
+            dist[nr][nc] = dist[r][c] + <span class="tk-n">1</span>;
+            q.<span class="tk-f">push</span>({ nr, nc });
+        }
+    }
+    std::cout &lt;&lt; <span class="tk-s">&quot;steps from S to G: &quot;</span> &lt;&lt; dist[<span class="tk-n">4</span>][<span class="tk-n">7</span>] &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p><strong>Multi-source BFS</strong> starts with <strong>several</strong> vertices in the queue at distance 0. It computes, for every cell, the distance to the <strong>nearest</strong> source in a single O(V + E) pass: the nearest exit for every room, how long fire takes to spread from several starting points, the distance from every pixel to the nearest edge.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does BFS find shortest paths in an unweighted graph?</div><ul><li>It reaches vertices in order of their distance from the start, so the first visit is along a shortest path</li><li>It tries every possible path</li><li>It always moves towards the target</li><li>It uses a priority queue</li></ul><details><summary>Show the answer</summary><p><b>It reaches vertices in order of their distance from the start, so the first visit is along a shortest path</b> The queue processes all vertices at distance d before any at distance d + 1.</p></details></li><li><div class="q">A road network has 1,000,000 junctions and about 2,500,000 roads. Which representation?</div><ul><li>an adjacency matrix</li><li>adjacency lists</li><li>an edge list only</li><li>a binary heap</li></ul><details><summary>Show the answer</summary><p><b>adjacency lists</b> A matrix would need 10^12 entries; adjacency lists need memory proportional to V + E.</p></details></li><li><div class="q">When should BFS mark a vertex as visited?</div><ul><li>When it is pushed onto the queue</li><li>When it is popped from the queue</li><li>After all its neighbours are processed</li><li>It does not need to</li></ul><details><summary>Show the answer</summary><p><b>When it is pushed onto the queue</b> Marking on push stops the same vertex being queued several times.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>Graphs are vertices and edges, directed or undirected, weighted or not; use adjacency lists for sparse graphs.</li>
+<li>BFS explores in layers with a queue in O(V + E), giving shortest paths by number of edges; parent links rebuild the path.</li>
+<li>Repeated BFS finds connected components; BFS two-colouring tests for bipartite graphs.</li>
+<li>Grids are implicit graphs; multi-source BFS gives the distance to the nearest of several sources.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-union-find/"><span class="mono">previous</span><b>4.05 Union-Find</b></a>
+      <a class="lp-next" href="../5-02-depth-first-search-and-topological-order/"><span class="mono">next</span><b>5.02 Depth-First Search and Topological Order</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/5-01-graphs-and-breadth-first-search"></script>
+</body>
+</html>

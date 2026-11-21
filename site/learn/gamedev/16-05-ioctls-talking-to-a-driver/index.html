@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>IOCTLs: Talking to a Driver · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/16-05-ioctls-talking-to-a-driver/">
+  <meta name="description" content="Reads and writes move bytes; most driver interfaces need commands : &quot;echo this&quot;, &quot;give me your statistics&quot;, &quot;reset&quot;. Those are I/O control codes (IOCTLs),…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="IOCTLs: Talking to a Driver · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Reads and writes move bytes; most driver interfaces need commands : &quot;echo this&quot;, &quot;give me your statistics&quot;, &quot;reset&quot;. Those are I/O control codes (IOCTLs),…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/16-05-ioctls-talking-to-a-driver/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="IOCTLs: Talking to a Driver · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IOCTLs: Talking to a Driver · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Reads and writes move bytes; most driver interfaces need commands : &quot;echo this&quot;, &quot;give me your statistics&quot;, &quot;reset&quot;. Those are I/O control codes (IOCTLs),…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Educational Driver Development</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">IOCTLs: Talking to a Driver</h1>
+      <div class="readout lp-readout"><span>lesson <b>16.05</b></span><span>5 of 10 in milestone 16</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Reads and writes move bytes; most driver interfaces need <strong>commands</strong>: &quot;echo this&quot;, &quot;give me your statistics&quot;, &quot;reset&quot;. Those are <strong>I/O control codes</strong> (IOCTLs), sent with <code>DeviceIoControl</code> and received as <code>IRP_MJ_DEVICE_CONTROL</code>. This lesson explains how a control code packs device type, function, buffering method and required access into 32 bits, and writes the driver&#39;s dispatch routine for the echo driver&#39;s commands.</p>
+      <div class="prose">
+<h2>Control codes</h2>
+<p>An IOCTL is a 32-bit number built by the <code>CTL_CODE</code> macro from four fields:</p>
+<div class="codeblock diagram plain"><pre><code> 31        16 15  14 13                 2 1    0
+┌────────────┬──────┬────────────────────┬──────┐
+│ DeviceType │Access│     Function       │Method│
+│  (16 bits) │ (2)  │     (12 bits)      │ (2)  │
+└────────────┴──────┴────────────────────┴──────┘</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>DeviceType</strong></td>
+<td>The device&#39;s type, as passed to <code>IoCreateDevice</code>. Values below <code>0x8000</code> are reserved for Microsoft; your own drivers use <code>0x8000</code> and up</td>
+</tr>
+<tr>
+<td><strong>Function</strong></td>
+<td>Which command. Values <code>0x800</code> and up are for vendors</td>
+</tr>
+<tr>
+<td><strong>Method</strong></td>
+<td>How buffers are passed: <code>METHOD_BUFFERED</code> (0), <code>METHOD_IN_DIRECT</code> (1), <code>METHOD_OUT_DIRECT</code> (2), <code>METHOD_NEITHER</code> (3); lesson 16.07</td>
+</tr>
+<tr>
+<td><strong>Access</strong></td>
+<td>The access the caller&#39;s handle must have: <code>FILE_ANY_ACCESS</code> (0), <code>FILE_READ_ACCESS</code> (1), <code>FILE_WRITE_ACCESS</code> (2), or both (3)</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// echo_ioctl.h: shared by the driver and the client, like lesson 13.03's plugin header.</span>
+<span class="tk-p">#define</span> ECHO_DEVICE_TYPE <span class="tk-n">0x8001</span>
+<span class="tk-p">#define</span> IOCTL_ECHO_PING   <span class="tk-f">CTL_CODE</span>(ECHO_DEVICE_TYPE, <span class="tk-n">0x800</span>, METHOD_BUFFERED, FILE_ANY_ACCESS)
+<span class="tk-p">#define</span> IOCTL_ECHO_ECHO   <span class="tk-f">CTL_CODE</span>(ECHO_DEVICE_TYPE, <span class="tk-n">0x801</span>, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
+<span class="tk-p">#define</span> IOCTL_ECHO_STATS  <span class="tk-f">CTL_CODE</span>(ECHO_DEVICE_TYPE, <span class="tk-n">0x802</span>, METHOD_BUFFERED, FILE_READ_ACCESS)
+
+<span class="tk-k">struct</span> <span class="tk-t">EchoStats</span> { <span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span> requests; <span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span> bytesEchoed; };</code></pre></div>
+<p>The access bits are enforced by the I/O manager before the driver ever sees the request: a handle opened without write access cannot send <code>IOCTL_ECHO_ECHO</code>. Choosing them carefully is part of the driver&#39;s security (lesson 16.04). The practice task encodes and decodes these codes.</p>
+<h2>The dispatch routine</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>NTSTATUS <span class="tk-f">EchoDeviceControl</span>(PDEVICE_OBJECT device, PIRP irp)
+{
+    <span class="tk-k">auto</span>* state{ <span class="tk-k">static_cast</span>&lt;<span class="tk-t">EchoState</span>*&gt;(device-&gt;<span class="tk-t">DeviceExtension</span>) };
+    <span class="tk-k">const</span> PIO_STACK_LOCATION stack{ <span class="tk-f">IoGetCurrentIrpStackLocation</span>(irp) };
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; p{ stack-&gt;<span class="tk-t">Parameters</span>.<span class="tk-t">DeviceIoControl</span> };
+    NTSTATUS status{ STATUS_INVALID_DEVICE_REQUEST };
+    ULONG_PTR information{ <span class="tk-n">0</span> };
+
+    <span class="tk-k">switch</span> (p.<span class="tk-t">IoControlCode</span>)
+    {
+    <span class="tk-k">case</span> IOCTL_ECHO_PING:
+        status = STATUS_SUCCESS;
+        <span class="tk-k">break</span>;
+
+    <span class="tk-k">case</span> IOCTL_ECHO_STATS:
+        <span class="tk-k">if</span> (p.<span class="tk-t">OutputBufferLength</span> &lt; <span class="tk-k">sizeof</span>(<span class="tk-t">EchoStats</span>)) { status = STATUS_BUFFER_TOO_SMALL; <span class="tk-k">break</span>; }
+        <span class="tk-c">// METHOD_BUFFERED: the I/O manager gave us one system buffer for input and output (lesson 16.07).</span>
+        *<span class="tk-k">static_cast</span>&lt;<span class="tk-t">EchoStats</span>*&gt;(irp-&gt;<span class="tk-t">AssociatedIrp</span>.<span class="tk-t">SystemBuffer</span>) = state-&gt;stats;
+        information = <span class="tk-k">sizeof</span>(<span class="tk-t">EchoStats</span>);
+        status = STATUS_SUCCESS;
+        <span class="tk-k">break</span>;
+
+    <span class="tk-k">case</span> IOCTL_ECHO_ECHO:
+        status = <span class="tk-f">EchoEcho</span>(state, irp, p, information);     <span class="tk-c">// lesson 16.07 writes this, carefully</span>
+        <span class="tk-k">break</span>;
+    }
+
+    irp-&gt;<span class="tk-t">IoStatus</span>.<span class="tk-t">Status</span> = status;
+    irp-&gt;<span class="tk-t">IoStatus</span>.<span class="tk-t">Information</span> = information;            <span class="tk-c">// how many bytes to copy back to the caller</span>
+    <span class="tk-f">IoCompleteRequest</span>(irp, IO_NO_INCREMENT);
+    <span class="tk-k">return</span> status;
+}
+
+<span class="tk-c">// in DriverEntry:</span>
+driver-&gt;<span class="tk-t">MajorFunction</span>[IRP_MJ_DEVICE_CONTROL] = <span class="tk-t">EchoDeviceControl</span>;</code></pre></div>
+<ul>
+<li><strong>Unknown codes</strong> fall through to <code>STATUS_INVALID_DEVICE_REQUEST</code>. Never assume a code is one you know.</li>
+<li><strong>Every length is checked</strong> before any buffer is touched (lesson 16.07 is entirely about this).</li>
+<li><code>Information</code> tells the I/O manager how many bytes of the output to copy back for <code>METHOD_BUFFERED</code>; it must never exceed the output length.</li>
+<li>Updating <code>state-&gt;stats</code> from several processors at once needs synchronisation: interlocked operations (<code>InterlockedIncrement64</code>) or a lock (lesson 15.06).</li>
+</ul>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Function numbers below <code>0x800</code> or device types below <code>0x8000</code>
+Those ranges are reserved for Microsoft.</p>
+</blockquote>
+<blockquote><p>[!warning] <code>FILE_ANY_ACCESS</code> for commands that change state
+Require the access the operation needs, so read-only handles cannot perform it.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Trusting the control code</span></div><div class="callout-body"><p>Handle only codes you define; everything else returns <code>STATUS_INVALID_DEVICE_REQUEST</code>.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What four fields make up an IOCTL code?</div><ul><li>Device type, required access, function number and buffering method</li><li>Driver name, version, size and checksum</li><li>Process id, thread id, address and length</li></ul><details><summary>Show the answer</summary><p><b>Device type, required access, function number and buffering method</b> Packed by the <code>CTL_CODE</code> macro into 32 bits.</p></details></li><li><div class="q">Who enforces an IOCTL&#39;s access bits?</div><ul><li>The I/O manager, against the caller&#39;s handle, before the driver sees the request</li><li>The driver, if it remembers to</li><li>Nobody</li></ul><details><summary>Show the answer</summary><p><b>The I/O manager, against the caller&#39;s handle, before the driver sees the request</b> A handle without the required access cannot send the code.</p></details></li><li><div class="q">What does <code>IoStatus.Information</code> hold when completing a buffered IOCTL?</div><ul><li>How many bytes of output the I/O manager should copy back to the caller</li><li>The control code</li><li>The status</li></ul><details><summary>Show the answer</summary><p><b>How many bytes of output the I/O manager should copy back to the caller</b> It must never exceed the output buffer&#39;s length.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/16.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/16.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../16-04-device-objects-and-symbolic-links/"><span class="mono">previous</span><b>16.04 Device Objects and Symbolic Links</b></a>
+      <a class="lp-next" href="../16-06-a-user-mode-client/"><span class="mono">next</span><b>16.06 A User-Mode Client</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/16-05-ioctls-talking-to-a-driver"></script>
+</body>
+</html>

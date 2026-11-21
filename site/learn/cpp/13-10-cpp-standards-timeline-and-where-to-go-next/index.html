@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>C++ Standards Timeline and Where to Go Next · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/13-10-cpp-standards-timeline-and-where-to-go-next/">
+  <meta name="description" content="C++ gets a new standard every three years. Knowing what arrived when helps you read older code, choose compiler settings and know what you can rely on. After…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="C++ Standards Timeline and Where to Go Next · C++ · Xenon">
+  <meta property="og:description" content="C++ gets a new standard every three years. Knowing what arrived when helps you read older code, choose compiler settings and know what you can rely on. After…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/13-10-cpp-standards-timeline-and-where-to-go-next/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="C++ Standards Timeline and Where to Go Next · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="C++ Standards Timeline and Where to Go Next · C++ · Xenon">
+  <meta name="twitter:description" content="C++ gets a new standard every three years. Knowing what arrived when helps you read older code, choose compiler settings and know what you can rely on. After…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Expert C++</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">C++ Standards Timeline and Where to Go Next</h1>
+      <div class="readout lp-readout"><span>lesson <b>13.10</b></span><span>10 of 10 in milestone 13</span><span>6 min</span></div>
+      <p class="lp-summary">C++ gets a new standard every three years. Knowing what arrived when helps you read older code, choose compiler settings and know what you can rely on. After that: pick a field and go deep.</p>
+      <div class="prose">
+<h2>What each standard added</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;C++98 / 03&lt;br/&gt;templates, the STL,&lt;br/&gt;exceptions&quot;] --&gt; B[&quot;C++11&lt;br/&gt;auto, lambdas, move,&lt;br/&gt;smart pointers, threads,&lt;br/&gt;constexpr, range-for&quot;]
+    B --&gt; C[&quot;C++14&lt;br/&gt;generic lambdas,&lt;br/&gt;make_unique&quot;]
+    C --&gt; D[&quot;C++17&lt;br/&gt;optional, variant,&lt;br/&gt;string_view, filesystem,&lt;br/&gt;structured bindings,&lt;br/&gt;if constexpr&quot;]
+    D --&gt; E[&quot;C++20&lt;br/&gt;concepts, ranges,&lt;br/&gt;coroutines, modules,&lt;br/&gt;format, span&quot;]
+    E --&gt; F[&quot;C++23&lt;br/&gt;print, expected,&lt;br/&gt;generator,&lt;br/&gt;import std&quot;]
+    F --&gt; G[&quot;C++26&lt;br/&gt;reflection,&lt;br/&gt;contracts,&lt;br/&gt;std::execution&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Standard</th>
+<th>Principal additions</th>
+<th>In this course</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>C++98 / 03</strong></td>
+<td>Classes, templates, exceptions, the containers and algorithms</td>
+<td>The foundation of everything</td>
+</tr>
+<tr>
+<td><strong>C++11</strong></td>
+<td><code>auto</code>, lambdas, rvalue references and move semantics, <code>unique_ptr</code> and <code>shared_ptr</code>, threads and atomics, <code>constexpr</code>, range-based <code>for</code>, <code>nullptr</code>, <code>enum class</code>, variadic templates, <code>override</code></td>
+<td>Milestones 4 to 12</td>
+</tr>
+<tr>
+<td><strong>C++14</strong></td>
+<td>Generic lambdas, <code>std::make_unique</code>, <code>decltype(auto)</code>, binary literals, digit separators</td>
+<td>Milestones 2 and 5</td>
+</tr>
+<tr>
+<td><strong>C++17</strong></td>
+<td><code>optional</code>, <code>variant</code>, <code>any</code>, <code>string_view</code>, <code>filesystem</code>, structured bindings, <code>if constexpr</code>, fold expressions, CTAD, inline variables, parallel algorithms, guaranteed copy elision</td>
+<td>Milestones 9 to 12</td>
+</tr>
+<tr>
+<td><strong>C++20</strong></td>
+<td>Concepts, ranges, coroutines, modules, <code>&lt;=&gt;</code>, <code>std::format</code>, <code>span</code>, <code>jthread</code>, semaphores and latches, <code>consteval</code> and <code>constinit</code>, designated initializers, calendars and time zones</td>
+<td>Milestones 9 to 13</td>
+</tr>
+<tr>
+<td><strong>C++23</strong></td>
+<td><code>std::print</code>, <code>std::expected</code>, <code>std::generator</code>, <code>mdspan</code>, <code>flat_map</code>, <code>import std</code>, deducing <code>this</code>, <code>ranges::to</code>, <code>views::zip</code> and <code>enumerate</code></td>
+<td>Milestones 10 to 13</td>
+</tr>
+<tr>
+<td><strong>C++26</strong></td>
+<td>Static reflection, contracts, <code>std::execution</code>, <code>#embed</code>, linear algebra, defined behaviour for uninitialized reads</td>
+<td>Mentioned in Milestones 11 to 13</td>
+</tr>
+</tbody></table>
+</div>
+<p>C++11 was the turning point. Code written before it looks like a different language, with raw <code>new</code> and <code>delete</code>, hand-written iterator loops and no <code>auto</code>. &quot;Modern C++&quot; means C++11 and later.</p>
+<div class="callout note"><div class="callout-title"><span>A standard and its implementation are different things</span></div><div class="callout-body"><p>A feature is usable only once your compiler <strong>and</strong> its standard library implement it, which can lag the standard by years. cppreference.com keeps a compiler-support table for each feature.</p>
+</div></div>
+<h2>Reading older code</h2>
+<p>You will spend more time reading existing code than writing new code. A translation table:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>In older code</th>
+<th>Today</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>new</code> and <code>delete</code></td>
+<td><code>std::make_unique</code>, containers</td>
+</tr>
+<tr>
+<td><code>NULL</code> or <code>0</code> for a pointer</td>
+<td><code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>typedef</code></td>
+<td><code>using</code></td>
+</tr>
+<tr>
+<td><code>for (iterator it = v.begin(); it != v.end(); ++it)</code></td>
+<td>A range-based <code>for</code></td>
+</tr>
+<tr>
+<td>A hand-written function object class</td>
+<td>A lambda</td>
+</tr>
+<tr>
+<td><code>std::enable_if</code></td>
+<td>A concept</td>
+</tr>
+<tr>
+<td>Output parameters for several results</td>
+<td>Return a struct, or structured bindings</td>
+</tr>
+<tr>
+<td><code>printf</code>, or chains of <code>&lt;&lt;</code> with manipulators</td>
+<td><code>std::format</code>, <code>std::print</code></td>
+</tr>
+<tr>
+<td>A <code>char*</code> and a length</td>
+<td><code>std::string_view</code>, <code>std::span</code></td>
+</tr>
+</tbody></table>
+</div>
+<h2>Where to go next</h2>
+<p>You have covered the language. Depth now comes from a field.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">mindmap
+  root((Your path))
+    Games
+      raylib, SFML, SDL
+      OpenGL, Vulkan, DirectX
+      Unreal Engine
+      Entity component systems
+    Systems
+      Operating system internals
+      Networking with Asio
+      Embedded devices
+      Compilers and LLVM
+    Performance
+      SIMD
+      GPU computing
+      High-performance computing
+    Finance
+      Low-latency systems
+      Lock-free structures
+    Tools and applications
+      Qt
+      Dear ImGui
+      Command-line tools
+    Open source
+      Contribute to a library
+      Read the standard library</pre></div>
+<p>Since your aim is computer science, three subjects build directly on this course and are worth taking next: <strong>data structures and algorithms</strong> (trees, graphs, hashing, dynamic programming), <strong>computer architecture</strong> (what <a href="../13-04-performance-caches-and-data-oriented-design/">13.04 Performance, Caches and Data-Oriented Design</a> only sketched), and <strong>operating systems</strong> (what threads, memory and files really are). C++ is the language most of that material is taught and implemented in.</p>
+<h3>Resources</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reference</td>
+<td><strong>cppreference.com</strong>. Keep it open.</td>
+</tr>
+<tr>
+<td>Guidelines</td>
+<td>The <strong>C++ Core Guidelines</strong></td>
+</tr>
+<tr>
+<td>Books: foundations</td>
+<td><em>A Tour of C++</em> and <em>Programming: Principles and Practice Using C++</em>, both by Stroustrup</td>
+</tr>
+<tr>
+<td>Books: using it well</td>
+<td><em>Effective Modern C++</em> (Meyers); <em>C++ Concurrency in Action</em> (Williams); <em>C++ Templates: The Complete Guide</em> (Vandevoorde, Josuttis, Gregor)</td>
+</tr>
+<tr>
+<td>Books: performance</td>
+<td><em>Optimized C++</em> (Guntheroth); <em>Data-Oriented Design</em> (Fabian)</td>
+</tr>
+<tr>
+<td>Talks</td>
+<td>CppCon, C++Now and Meeting C++, all online. Start with the &quot;Back to Basics&quot; series.</td>
+</tr>
+<tr>
+<td>Experiment</td>
+<td><strong>Compiler Explorer</strong> (godbolt.org) shows the machine code. <strong>C++ Insights</strong> shows what the compiler makes of your source.</td>
+</tr>
+<tr>
+<td>Practice</td>
+<td>Advent of Code, Exercism&#39;s C++ track, contributing to open source</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Four pieces of advice</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Build things</strong></td>
+<td>Every project you finish teaches more than any lesson. The projects in this course are a start; the ones you invent yourself teach the most.</td>
+</tr>
+<tr>
+<td><strong>Read other people&#39;s code</strong></td>
+<td>Good libraries, and the standard library&#39;s own implementation, show how experienced programmers solve problems.</td>
+</tr>
+<tr>
+<td><strong>Keep the safety net on</strong></td>
+<td>Warnings, sanitizers and tests, always: <a href="../13-09-testing-sanitizers-static-analysis-and-tooling/">13.09 Testing, Sanitizers, Static Analysis and Tooling</a></td>
+</tr>
+<tr>
+<td><strong>Simple first, clever later</strong></td>
+<td>The best C++ is unremarkable to read. Reach for the advanced techniques of the last three milestones when a problem needs them, and not before.</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/13.10">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/13.10">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../13-09-testing-sanitizers-static-analysis-and-tooling/"><span class="mono">previous</span><b>13.09 Testing, Sanitizers, Static Analysis and Tooling</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/13-10-cpp-standards-timeline-and-where-to-go-next"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Compile-Time Programming — constexpr, consteval, constinit · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/11-04-compile-time-programming-constexpr-consteval-constinit/">
+  <meta name="description" content="Modern C++ can run real code inside the compiler : loops, std::vector, std::string, even new and delete, provided nothing allocated escapes to run time.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Compile-Time Programming — constexpr, consteval, constinit · C++ · Xenon">
+  <meta property="og:description" content="Modern C++ can run real code inside the compiler : loops, std::vector, std::string, even new and delete, provided nothing allocated escapes to run time.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/11-04-compile-time-programming-constexpr-consteval-constinit/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Compile-Time Programming — constexpr, consteval, constinit · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Compile-Time Programming — constexpr, consteval, constinit · C++ · Xenon">
+  <meta name="twitter:description" content="Modern C++ can run real code inside the compiler : loops, std::vector, std::string, even new and delete, provided nothing allocated escapes to run time.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Advanced Templates and Metaprogramming</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Compile-Time Programming — constexpr, consteval, constinit</h1>
+      <div class="readout lp-readout"><span>lesson <b>11.04</b></span><span>4 of 7 in milestone 11</span><span>6 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Modern C++ can run real code <strong>inside the compiler</strong>: loops, <code>std::vector</code>, <code>std::string</code>, even <code>new</code> and <code>delete</code>, provided nothing allocated escapes to run time. <code>constexpr</code> <em>may</em> run at compile time, <code>consteval</code> <em>must</em>, and <code>constinit</code> guarantees a static variable is initialized at compile time while leaving it mutable.</p>
+      <div class="prose">
+<h2>The keywords</h2>
+<p><a href="../2-06-const-and-constexpr/">2.06 const and constexpr</a> introduced <code>constexpr</code>. Here is the full set.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Keyword</th>
+<th>Applies to</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>constexpr</code></td>
+<td>A variable</td>
+<td>Its value is a compile-time constant; implies <code>const</code></td>
+</tr>
+<tr>
+<td><code>constexpr</code></td>
+<td>A function</td>
+<td><strong>May</strong> be evaluated at compile time when its arguments are constant; otherwise runs normally</td>
+</tr>
+<tr>
+<td><code>consteval</code></td>
+<td>A function</td>
+<td><strong>Must</strong> be evaluated at compile time. An <strong>immediate function</strong>.</td>
+</tr>
+<tr>
+<td><code>constinit</code></td>
+<td>A static or thread-local variable</td>
+<td>Initialized at compile time, but <strong>not</strong> <code>const</code></td>
+</tr>
+<tr>
+<td><code>if constexpr</code></td>
+<td>A branch</td>
+<td>Selected at compile time; the other branch is discarded</td>
+</tr>
+<tr>
+<td><code>if consteval</code> (C++23)</td>
+<td>A branch</td>
+<td>Taken when the function is being evaluated at compile time</td>
+</tr>
+</tbody></table>
+</div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;constexpr int sq(int n)&quot;] --&gt;|&quot;sq(5) where a constant is required&quot;| CT[&quot;evaluated by the compiler:&lt;br/&gt;25 is stored in the program&quot;]
+    A --&gt;|&quot;sq(userInput)&quot;| RT[&quot;runs at run time&quot;]
+    B[&quot;consteval int sq2(int n)&quot;] --&gt;|&quot;sq2(5)&quot;| CT
+    B --&gt;|&quot;sq2(userInput)&quot;| ERR[&quot;compile error&quot;]</pre></div>
+<p>An evaluation done by the compiler is a <strong>constant evaluation</strong>. It is forced wherever the language needs a constant: the initializer of a <code>constexpr</code> variable, a template argument, an array bound, a <code>case</code> label, a <code>static_assert</code>.</p>
+<blockquote><p>[!note] <code>constexpr</code> on a function is a permission, not a guarantee
+<code>int x{ sq(5) };</code> with a non-<code>constexpr</code> <code>x</code> may or may not be folded by the optimiser. To be certain, initialize a <code>constexpr</code> variable, or make the function <code>consteval</code>.</p>
+</blockquote>
+<h2>Real algorithms at compile time</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;array&gt;</span>
+<span class="tk-p">#include &lt;cstddef&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">constexpr</span> <span class="tk-k">bool</span> <span class="tk-f">isPrime</span>(<span class="tk-k">int</span> n)
+{
+    <span class="tk-k">if</span> (n &lt; <span class="tk-n">2</span>)
+    {
+        <span class="tk-k">return</span> <span class="tk-k">false</span>;
+    }
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">2</span> }; i * i &lt;= n; ++i)
+    {
+        <span class="tk-k">if</span> (n % i == <span class="tk-n">0</span>)
+        {
+            <span class="tk-k">return</span> <span class="tk-k">false</span>;
+        }
+    }
+    <span class="tk-k">return</span> <span class="tk-k">true</span>;
+}
+
+<span class="tk-k">template</span> &lt;std::size_t N&gt;
+<span class="tk-k">constexpr</span> std::array&lt;<span class="tk-k">int</span>, N&gt; <span class="tk-f">firstPrimes</span>()
+{
+    std::array&lt;<span class="tk-k">int</span>, N&gt; result{};
+    std::size_t found{ <span class="tk-n">0</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> n{ <span class="tk-n">2</span> }; found &lt; N; ++n)
+    {
+        <span class="tk-k">if</span> (<span class="tk-f">isPrime</span>(n))
+        {
+            result[found++] = n;
+        }
+    }
+    <span class="tk-k">return</span> result;
+}
+
+<span class="tk-k">constexpr</span> <span class="tk-k">auto</span> primes{ firstPrimes&lt;<span class="tk-n">10</span>&gt;() };
+<span class="tk-k">static_assert</span>(primes[<span class="tk-n">9</span>] == <span class="tk-n">29</span>);
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> p : primes)
+    {
+        std::cout &lt;&lt; p &lt;&lt; <span class="tk-s">' '</span>;
+    }
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The loop runs in the compiler. The executable contains the finished table and no code to compute it. This is the modern way to build lookup tables.</p>
+<h2>Containers at compile time</h2>
+<p>Since C++20, dynamic allocation is permitted during constant evaluation, on one condition: everything allocated must be released before the evaluation ends. This is a <strong>transient allocation</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">constexpr</span> <span class="tk-k">int</span> <span class="tk-f">sumOfSquares</span>(<span class="tk-k">int</span> n)
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; values{};
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">1</span> }; i &lt;= n; ++i)
+    {
+        values.<span class="tk-f">push_back</span>(i * i);
+    }
+    <span class="tk-k">return</span> std::<span class="tk-f">accumulate</span>(values.<span class="tk-f">begin</span>(), values.<span class="tk-f">end</span>(), <span class="tk-n">0</span>);
+}    <span class="tk-c">// the vector is destroyed here, inside the evaluation</span>
+
+<span class="tk-k">static_assert</span>(<span class="tk-f">sumOfSquares</span>(<span class="tk-n">3</span>) == <span class="tk-n">14</span>);</code></pre></div>
+<p><code>std::vector</code> and <code>std::string</code> are usable inside a <code>constexpr</code> function. What you cannot do is make a <code>constexpr</code> <strong>variable</strong> of those types that holds heap memory, because that memory would have to survive into the running program. Return a <code>std::array</code> or a plain value instead.</p>
+<h2>Hashing strings for a <code>switch</code></h2>
+<p>A <code>switch</code> needs integer constants (<a href="../3-02-switch/">3.02 switch</a>). A <code>constexpr</code> hash function supplies them from strings and also runs normally on run-time input.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">constexpr</span> std::uint32_t <span class="tk-f">hashName</span>(std::string_view text)
+{
+    std::uint32_t hash{ <span class="tk-n">2166136261u</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">char</span> c : text)
+    {
+        hash ^= <span class="tk-k">static_cast</span>&lt;std::uint8_t&gt;(c);
+        hash *= <span class="tk-n">16777619u</span>;
+    }
+    <span class="tk-k">return</span> hash;
+}
+
+<span class="tk-k">switch</span> (<span class="tk-f">hashName</span>(command))            <span class="tk-c">// run time: hashes what the user typed</span>
+{
+<span class="tk-k">case</span> <span class="tk-f">hashName</span>(<span class="tk-s">&quot;jump&quot;</span>): <span class="tk-f">jump</span>(); <span class="tk-k">break</span>; <span class="tk-c">// compile time: a case label must be a constant</span>
+<span class="tk-k">case</span> <span class="tk-f">hashName</span>(<span class="tk-s">&quot;run&quot;</span>):  <span class="tk-f">run</span>();  <span class="tk-k">break</span>;
+}</code></pre></div>
+<p>One function, used in both worlds. Two different strings can hash to the same value, so real code confirms the match afterwards.</p>
+<h2><code>consteval</code></h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">consteval</span> <span class="tk-k">int</span> <span class="tk-f">square</span>(<span class="tk-k">int</span> n)
+{
+    <span class="tk-k">return</span> n * n;
+}
+
+<span class="tk-k">constexpr</span> <span class="tk-k">int</span> a{ <span class="tk-f">square</span>(<span class="tk-n">8</span>) };    <span class="tk-c">// 64, computed by the compiler</span>
+
+<span class="tk-k">int</span> x{ <span class="tk-n">3</span> };
+<span class="tk-k">int</span> b{ <span class="tk-f">square</span>(x) };              <span class="tk-c">// error: x is not a constant expression</span></code></pre></div>
+<p>Use <code>consteval</code> when a run-time call would be a mistake. Its best-known use is <strong>validation</strong>: <code>std::format</code> checks its format string through a <code>consteval</code> constructor, which is how a wrong format string becomes a compile error (<a href="../10-07-formatting-with-std-format-and-std-print/">10.07 Formatting with std::format and std::print</a>). You can do the same:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">consteval</span> <span class="tk-k">int</span> <span class="tk-f">checkedPercent</span>(<span class="tk-k">int</span> value)
+{
+    <span class="tk-k">if</span> (value &lt; <span class="tk-n">0</span> || value &gt; <span class="tk-n">100</span>)
+    {
+        <span class="tk-k">throw</span> <span class="tk-s">&quot;percentage out of range&quot;</span>;    <span class="tk-c">// reaching a throw makes the evaluation fail</span>
+    }
+    <span class="tk-k">return</span> value;
+}
+
+<span class="tk-k">constexpr</span> <span class="tk-k">int</span> volume{ <span class="tk-f">checkedPercent</span>(<span class="tk-n">80</span>) };     <span class="tk-c">// fine</span>
+<span class="tk-c">// constexpr int bad{ checkedPercent(140) };    // compile error</span></code></pre></div>
+<h2><code>constinit</code></h2>
+<p>A global with a dynamic initializer is initialized at program start, before <code>main</code>. Across different source files the order is unspecified, so one global&#39;s initializer may use another that has not been initialized yet. That is the <strong>static initialization order fiasco</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">constinit</span> <span class="tk-k">int</span> g_counter{ <span class="tk-n">0</span> };                 <span class="tk-c">// initialized at compile time; still modifiable</span>
+<span class="tk-k">constinit</span> <span class="tk-k">thread_local</span> <span class="tk-k">int</span> t_calls{ <span class="tk-n">0</span> };</code></pre></div>
+<p><code>constinit</code> makes the compiler verify that the initializer is a constant expression. A variable initialized at compile time exists before any code runs, so it cannot be caught in that ordering problem. Unlike <code>constexpr</code>, it does not make the variable <code>const</code>.</p>
+<h2>Values with <code>constexpr</code>, types with templates</h2>
+<p>The original way to compute at compile time was recursion through template instantiation (<a href="../9-02-non-type-parameters-and-template-specialization/">9.02 Non-Type Parameters and Template Specialization</a>):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">unsigned</span> N&gt;
+<span class="tk-k">struct</span> <span class="tk-t">Factorial</span>
+{
+    <span class="tk-k">static</span> <span class="tk-k">constexpr</span> <span class="tk-k">unsigned</span> value{ N * <span class="tk-t">Factorial</span>&lt;N - <span class="tk-n">1</span>&gt;::value };
+};
+
+<span class="tk-k">template</span> &lt;&gt;
+<span class="tk-k">struct</span> <span class="tk-t">Factorial</span>&lt;<span class="tk-n">0</span>&gt;
+{
+    <span class="tk-k">static</span> <span class="tk-k">constexpr</span> <span class="tk-k">unsigned</span> value{ <span class="tk-n">1</span> };
+};</code></pre></div>
+<p>Today:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">constexpr</span> <span class="tk-k">unsigned</span> <span class="tk-f">factorial</span>(<span class="tk-k">unsigned</span> n)
+{
+    <span class="tk-k">return</span> n &lt;= <span class="tk-n">1</span> ? <span class="tk-n">1</span> : n * <span class="tk-f">factorial</span>(n - <span class="tk-n">1</span>);
+}</code></pre></div>
+<div class="callout tip"><div class="callout-title"><span>The division of labour</span></div><div class="callout-body"><p>Compute <strong>values</strong> with <code>constexpr</code> functions: they are ordinary code, testable at run time too. Use templates and traits to compute <strong>types</strong>: <a href="../11-07-template-metaprogramming-techniques/">11.07 Template Metaprogramming Techniques</a>.</p>
+</div></div>
+<h2>What is not allowed</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Restriction</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Undefined behaviour</td>
+<td>The compiler <strong>rejects</strong> it during constant evaluation</td>
+</tr>
+<tr>
+<td>Input and output</td>
+<td>No streams, no files</td>
+</tr>
+<tr>
+<td><code>reinterpret_cast</code></td>
+<td>Not permitted</td>
+</tr>
+<tr>
+<td>Non-transient allocation</td>
+<td>Memory must be released before the evaluation ends</td>
+</tr>
+<tr>
+<td>Unbounded work</td>
+<td>Compilers limit the number of steps and the recursion depth</td>
+</tr>
+</tbody></table>
+</div>
+<p>The first row is a benefit. An overflow, an out-of-bounds index or a read of an uninitialized variable inside a constant evaluation is a compile error. Testing a <code>constexpr</code> function with <code>static_assert</code> therefore proves those cases are free of undefined behaviour.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/11.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/11.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../11-03-sfinae-enable-if-and-tag-dispatch/"><span class="mono">previous</span><b>11.03 SFINAE, enable_if and Tag Dispatch</b></a>
+      <a class="lp-next" href="../11-05-crtp-mixins-and-static-polymorphism/"><span class="mono">next</span><b>11.05 CRTP, Mixins and Static Polymorphism</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/11-04-compile-time-programming-constexpr-consteval-constinit"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

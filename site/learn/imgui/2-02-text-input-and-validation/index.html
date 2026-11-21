@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Text Input and Validation · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/2-02-text-input-and-validation/">
+  <meta name="description" content="Text fields in ImGui write into a buffer you own. This lesson covers InputText with character arrays and std::string, number fields, multi-line text, flags…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Text Input and Validation · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Text fields in ImGui write into a buffer you own. This lesson covers InputText with character arrays and std::string, number fields, multi-line text, flags…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/2-02-text-input-and-validation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Text Input and Validation · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Text Input and Validation · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Text fields in ImGui write into a buffer you own. This lesson covers InputText with character arrays and std::string, number fields, multi-line text, flags…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Widgets and Input</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Text Input and Validation</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Text fields in ImGui write into a buffer you own. This lesson covers <code>InputText</code> with character arrays and <code>std::string</code>, number fields, multi-line text, flags that restrict what can be typed, callbacks for custom filtering and completion, and validating a value before you accept it.</p>
+      <div class="prose">
+<h2>InputText with a buffer</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static</span> <span class="tk-k">char</span> name[<span class="tk-n">64</span>] = <span class="tk-s">&quot;Granite&quot;</span>;
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputText</span>(<span class="tk-s">&quot;Name&quot;</span>, name, <span class="tk-f">IM_ARRAYSIZE</span>(name));      <span class="tk-c">// edits the array in place</span></code></pre></div>
+<p>ImGui edits <strong>your</strong> buffer directly and never writes more than its size (including the terminating zero). <code>IM_ARRAYSIZE</code> gives the number of elements of an array.</p>
+<h2>InputText with std::string</h2>
+<p>The file <code>misc/cpp/imgui_stdlib.cpp</code> (add it to your project) gives overloads that resize a <code>std::string</code> as you type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include</span> <span class="tk-s">&quot;misc/cpp/imgui_stdlib.h&quot;</span>
+
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputText</span>(<span class="tk-s">&quot;Name&quot;</span>, &amp;stone.name);                         <span class="tk-c">// std::string*</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputTextMultiline</span>(<span class="tk-s">&quot;Notes&quot;</span>, &amp;level.notes, <span class="tk-f">ImVec2</span>(-FLT_MIN, <span class="tk-n">120</span>));   <span class="tk-c">// full width, 120 high</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputTextWithHint</span>(<span class="tk-s">&quot;##search&quot;</span>, <span class="tk-s">&quot;Search stones...&quot;</span>, &amp;search);          <span class="tk-c">// grey hint when empty</span></code></pre></div>
+<p><code>-FLT_MIN</code> as a width means &quot;all the space up to the right edge&quot;; it is ImGui&#39;s idiom for &quot;fill&quot;.</p>
+<h2>Number fields</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">InputInt</span>(<span class="tk-s">&quot;Count&quot;</span>, &amp;count);                  <span class="tk-c">// with - and + buttons</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputInt</span>(<span class="tk-s">&quot;Count&quot;</span>, &amp;count, <span class="tk-n">0</span>);               <span class="tk-c">// step 0: no buttons</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputFloat</span>(<span class="tk-s">&quot;Weight&quot;</span>, &amp;weight, <span class="tk-n">0.1f</span>, <span class="tk-n">1.0f</span>, <span class="tk-s">&quot;%.2f&quot;</span>);
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputScalar</span>(<span class="tk-s">&quot;Seed&quot;</span>, <span class="tk-t">ImGuiDataType_U64</span>, &amp;seed);   <span class="tk-c">// any numeric type</span></code></pre></div>
+<h2>Restricting what can be typed</h2>
+<p>Flags filter characters as they are typed:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Allows</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ImGuiInputTextFlags_CharsDecimal</code></td>
+<td><code>0123456789.+-*/</code></td>
+</tr>
+<tr>
+<td><code>ImGuiInputTextFlags_CharsHexadecimal</code></td>
+<td><code>0123456789ABCDEFabcdef</code></td>
+</tr>
+<tr>
+<td><code>ImGuiInputTextFlags_CharsUppercase</code></td>
+<td>Turns letters to upper case</td>
+</tr>
+<tr>
+<td><code>ImGuiInputTextFlags_CharsNoBlank</code></td>
+<td>No spaces or tabs</td>
+</tr>
+<tr>
+<td><code>ImGuiInputTextFlags_CharsScientific</code></td>
+<td>Decimal plus <code>e</code>/<code>E</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Others change behaviour: <code>EnterReturnsTrue</code> (return <code>true</code> only when Enter is pressed, ideal for a console), <code>ReadOnly</code>, <code>Password</code> (shows <code>*</code>), <code>AutoSelectAll</code>, <code>EscapeClearsAll</code>.</p>
+<h2>Callbacks: custom filters, history, completion</h2>
+<p>For anything the flags cannot do, pass a callback:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">onlyIdentifierChars</span>(<span class="tk-t">ImGuiInputTextCallbackData</span>* data)
+{
+    <span class="tk-k">const</span> <span class="tk-t">ImWchar</span> c = data-&gt;<span class="tk-t">EventChar</span>;
+    <span class="tk-k">const</span> <span class="tk-k">bool</span> ok = (c &gt;= <span class="tk-s">'a'</span> &amp;&amp; c &lt;= <span class="tk-s">'z'</span>) || (c &gt;= <span class="tk-s">'A'</span> &amp;&amp; c &lt;= <span class="tk-s">'Z'</span>) || (c &gt;= <span class="tk-s">'0'</span> &amp;&amp; c &lt;= <span class="tk-s">'9'</span>) || c == <span class="tk-s">'_'</span>;
+    <span class="tk-k">return</span> ok ? <span class="tk-n">0</span> : <span class="tk-n">1</span>;                <span class="tk-c">// return 1 to reject the character</span>
+}
+
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputText</span>(<span class="tk-s">&quot;Id&quot;</span>, id, <span class="tk-k">sizeof</span>(id), <span class="tk-t">ImGuiInputTextFlags_CallbackCharFilter</span>, onlyIdentifierChars);</code></pre></div>
+<p><code>ImGuiInputTextFlags_CallbackCompletion</code> calls you when Tab is pressed (for auto-completing a console command), and <code>CallbackHistory</code> when Up or Down is pressed (for recalling previous commands). The console example in the demo window shows both.</p>
+<h2>Validating a value</h2>
+<p>Filtering stops <strong>characters</strong>; validation checks the whole <strong>value</strong>. A common, friendly pattern: edit a copy, show what is wrong, and only apply it when it is valid and the edit is finished.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static</span> std::string editing = level.name;
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputText</span>(<span class="tk-s">&quot;Level name&quot;</span>, &amp;editing);
+<span class="tk-k">const</span> std::string problem = <span class="tk-f">validateLevelName</span>(editing);   <span class="tk-c">// &quot;&quot; if fine</span>
+<span class="tk-k">if</span> (!problem.<span class="tk-f">empty</span>())
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TextColored</span>(<span class="tk-f">ImVec4</span>(<span class="tk-n">1</span>, <span class="tk-n">0.4f</span>, <span class="tk-n">0.4f</span>, <span class="tk-n">1</span>), <span class="tk-s">&quot;%s&quot;</span>, problem.<span class="tk-f">c_str</span>());
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">IsItemDeactivatedAfterEdit</span>() &amp;&amp; problem.<span class="tk-f">empty</span>())
+    level.name = editing;</code></pre></div>
+<p>The practice writes <code>validateLevelName</code> and a character filter.</p>
+<h2>Keyboard focus</h2>
+<p><code>ImGui::SetKeyboardFocusHere()</code> before a text field gives it the keyboard focus on that frame: useful when a search window or console opens. <code>ImGui::IsItemFocused()</code> tells whether the field has focus.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Passing sizeof of a pointer as the buffer size</span></div><div class="callout-body"><p><code>InputText(&quot;x&quot;, ptr, sizeof(ptr))</code> passes 8. Use the real buffer size, <code>IM_ARRAYSIZE</code> for arrays, or the std::string overload.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Applying invalid text immediately</span></div><div class="callout-body"><p>Edit a copy and apply when it validates, so half-typed values never reach your data.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which flag makes InputText return true only when Enter is pressed?</div><ul><li>ImGuiInputTextFlags_EnterReturnsTrue</li><li>ImGuiInputTextFlags_ReadOnly</li><li>ImGuiInputTextFlags_CharsDecimal</li></ul><details><summary>Show the answer</summary><p><b>ImGuiInputTextFlags_EnterReturnsTrue</b> Ideal for console commands and search boxes.</p></details></li><li><div class="q">What does a CallbackCharFilter return to reject a character?</div><ul><li>1</li><li>0</li><li>The character itself</li></ul><details><summary>Show the answer</summary><p><b>1</b> Returning nonzero discards the typed character.</p></details></li><li><div class="q">What is the difference between filtering and validating?</div><ul><li>Filtering stops individual characters as they are typed; validating checks the whole value</li><li>They are the same thing</li><li>Validating happens in the back end</li></ul><details><summary>Show the answer</summary><p><b>Filtering stops individual characters as they are typed; validating checks the whole value</b> A name can contain only allowed characters and still be invalid as a whole.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-sliders-drags-and-checkboxes/"><span class="mono">previous</span><b>2.01 Sliders, Drags and Checkboxes</b></a>
+      <a class="lp-next" href="../2-03-combo-boxes-and-list-boxes/"><span class="mono">next</span><b>2.03 Combo Boxes and List Boxes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/2-02-text-input-and-validation"></script>
+</body>
+</html>

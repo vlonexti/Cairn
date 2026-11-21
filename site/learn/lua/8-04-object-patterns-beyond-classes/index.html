@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Object Patterns Beyond Classes · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/8-04-object-patterns-beyond-classes/">
+  <meta name="description" content="Other ways to build objects in Lua - closures as objects with truly private state, constructors called like functions with call, mixins that copy behaviour…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Object Patterns Beyond Classes · Lua · Xenon">
+  <meta property="og:description" content="Other ways to build objects in Lua - closures as objects with truly private state, constructors called like functions with call, mixins that copy behaviour…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/8-04-object-patterns-beyond-classes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Object Patterns Beyond Classes · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Object Patterns Beyond Classes · Lua · Xenon">
+  <meta name="twitter:description" content="Other ways to build objects in Lua - closures as objects with truly private state, constructors called like functions with call, mixins that copy behaviour…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Lua in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Object Patterns Beyond Classes</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.04</b></span><span>4 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Other ways to build objects in Lua - closures as objects with truly private state, constructors called like functions with __call, mixins that copy behaviour into a class, composition instead of inheritance, an event emitter, and validated objects with a proxy; with the trade-offs of each against the class pattern.</p>
+      <div class="prose">
+<h2>More than one way</h2>
+<p>Lesson 5.03&#39;s class pattern (a metatable whose <code>__index</code> is the class) is the most common way to write objects in Lua. It is not the only one, and some problems fit other patterns better.</p>
+<h2>Closures as objects</h2>
+<p>An object can be a table of functions that share local variables. The variables are completely private: no code outside can reach them.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">newAccount</span>(owner, balance)
+    balance = balance <span class="tk-k">or</span> <span class="tk-n">0</span>
+    <span class="tk-k">local</span> history = {}
+
+    <span class="tk-k">local</span> <span class="tk-k">self</span> = {}
+    <span class="tk-k">function</span> <span class="tk-k">self</span>.<span class="tk-f">deposit</span>(amount)
+        <span class="tk-k">if</span> amount &lt;= <span class="tk-n">0</span> <span class="tk-k">then</span> <span class="tk-f">error</span>(<span class="tk-s">&quot;amount must be positive&quot;</span>, <span class="tk-n">2</span>) <span class="tk-k">end</span>
+        balance = balance + amount
+        history[#history + <span class="tk-n">1</span>] = <span class="tk-s">&quot;+&quot;</span> .. amount
+    <span class="tk-k">end</span>
+    <span class="tk-k">function</span> <span class="tk-k">self</span>.<span class="tk-f">withdraw</span>(amount)
+        <span class="tk-k">if</span> amount &gt; balance <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-k">false</span>, <span class="tk-s">&quot;insufficient funds&quot;</span> <span class="tk-k">end</span>
+        balance = balance - amount
+        history[#history + <span class="tk-n">1</span>] = <span class="tk-s">&quot;-&quot;</span> .. amount
+        <span class="tk-k">return</span> <span class="tk-k">true</span>
+    <span class="tk-k">end</span>
+    <span class="tk-k">function</span> <span class="tk-k">self</span>.<span class="tk-f">balance</span>() <span class="tk-k">return</span> balance <span class="tk-k">end</span>
+    <span class="tk-k">function</span> <span class="tk-k">self</span>.<span class="tk-f">statement</span>() <span class="tk-k">return</span> owner .. <span class="tk-s">&quot;: &quot;</span> .. table.<span class="tk-f">concat</span>(history, <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+    <span class="tk-k">return</span> <span class="tk-k">self</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> a = <span class="tk-f">newAccount</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">100</span>)
+a.<span class="tk-f">deposit</span>(<span class="tk-n">50</span>)
+<span class="tk-f">print</span>(a.<span class="tk-f">withdraw</span>(<span class="tk-n">500</span>))
+a.<span class="tk-f">withdraw</span>(<span class="tk-n">30</span>)
+<span class="tk-f">print</span>(a.<span class="tk-f">balance</span>(), a.<span class="tk-f">statement</span>(), a.history)       <span class="tk-c">--&gt; 120  Ada: +50 -30  nil</span></code></pre></div>
+<p>Methods are called with a dot (<code>a.deposit</code>), not a colon, because they do not need <code>self</code>: they reach the data through the closure. The cost is memory: each object has its own copy of every function, where class objects share one. For a few hundred objects that does not matter; for a million particles it does.</p>
+<h2>Constructors with __call</h2>
+<p>A metatable&#39;s <code>__call</code> lets a table be called like a function, which makes <code>Point(1, 2)</code> work instead of <code>Point.new(1, 2)</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Point = {}
+Point.__index = Point
+<span class="tk-f">setmetatable</span>(Point, { __call = <span class="tk-k">function</span>(cls, x, y) <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ x = x, y = y }, cls) <span class="tk-k">end</span> })
+
+<span class="tk-k">function</span> Point:<span class="tk-f">length</span>() <span class="tk-k">return</span> math.<span class="tk-f">sqrt</span>(<span class="tk-k">self</span>.x ^ <span class="tk-n">2</span> + <span class="tk-k">self</span>.y ^ <span class="tk-n">2</span>) <span class="tk-k">end</span>
+Point.__tostring = <span class="tk-k">function</span>(p) <span class="tk-k">return</span> <span class="tk-s">&quot;(&quot;</span> .. p.x .. <span class="tk-s">&quot;, &quot;</span> .. p.y .. <span class="tk-s">&quot;)&quot;</span> <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> p = <span class="tk-f">Point</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>)
+<span class="tk-f">print</span>(<span class="tk-f">tostring</span>(p), p:<span class="tk-f">length</span>())</code></pre></div>
+<h2>Mixins</h2>
+<p>A <strong>mixin</strong> is a table of methods copied into a class, so unrelated classes can share behaviour without inheriting from each other:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Comparable = {
+    __lt = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a:<span class="tk-f">compareKey</span>() &lt; b:<span class="tk-f">compareKey</span>() <span class="tk-k">end</span>,
+    __le = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a:<span class="tk-f">compareKey</span>() &lt;= b:<span class="tk-f">compareKey</span>() <span class="tk-k">end</span>,
+    max = <span class="tk-k">function</span>(<span class="tk-k">self</span>, other) <span class="tk-k">if</span> <span class="tk-k">self</span> &lt; other <span class="tk-k">then</span> <span class="tk-k">return</span> other <span class="tk-k">end</span> <span class="tk-k">return</span> <span class="tk-k">self</span> <span class="tk-k">end</span>,
+}
+
+<span class="tk-k">local</span> Serialisable = {
+    toText = <span class="tk-k">function</span>(<span class="tk-k">self</span>)
+        <span class="tk-k">local</span> keys = {}
+        <span class="tk-k">for</span> k <span class="tk-k">in</span> <span class="tk-f">pairs</span>(<span class="tk-k">self</span>) <span class="tk-k">do</span> keys[#keys + <span class="tk-n">1</span>] = k <span class="tk-k">end</span>
+        table.<span class="tk-f">sort</span>(keys)
+        <span class="tk-k">local</span> parts = {}
+        <span class="tk-k">for</span> _, k <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(keys) <span class="tk-k">do</span> parts[#parts + <span class="tk-n">1</span>] = k .. <span class="tk-s">&quot;=&quot;</span> .. <span class="tk-f">tostring</span>(<span class="tk-k">self</span>[k]) <span class="tk-k">end</span>
+        <span class="tk-k">return</span> <span class="tk-s">&quot;{&quot;</span> .. table.<span class="tk-f">concat</span>(parts, <span class="tk-s">&quot;, &quot;</span>) .. <span class="tk-s">&quot;}&quot;</span>
+    <span class="tk-k">end</span>,
+}
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">include</span>(class, mixin)
+    <span class="tk-k">for</span> k, v <span class="tk-k">in</span> <span class="tk-f">pairs</span>(mixin) <span class="tk-k">do</span> class[k] = v <span class="tk-k">end</span>
+    <span class="tk-k">return</span> class
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> Card = { __index = <span class="tk-k">nil</span> }
+Card.__index = Card
+<span class="tk-f">include</span>(Card, Comparable)
+<span class="tk-f">include</span>(Card, Serialisable)
+<span class="tk-k">function</span> Card.<span class="tk-f">new</span>(rank, suit) <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ rank = rank, suit = suit }, Card) <span class="tk-k">end</span>
+<span class="tk-k">function</span> Card:<span class="tk-f">compareKey</span>() <span class="tk-k">return</span> <span class="tk-k">self</span>.rank <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> a, b = Card.<span class="tk-f">new</span>(<span class="tk-n">10</span>, <span class="tk-s">&quot;hearts&quot;</span>), Card.<span class="tk-f">new</span>(<span class="tk-n">3</span>, <span class="tk-s">&quot;spades&quot;</span>)
+<span class="tk-f">print</span>(b &lt; a, a:<span class="tk-f">max</span>(b):<span class="tk-f">toText</span>())</code></pre></div>
+<p>Copying works for metamethods like <code>__lt</code> too, because they are just fields of the metatable.</p>
+<h2>Composition</h2>
+<p>Instead of a <code>Player</code> that inherits from <code>Movable</code>, which inherits from <code>Drawable</code>, give the player <strong>parts</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">newPosition</span>(x, y)
+    <span class="tk-k">return</span> { x = x, y = y, move = <span class="tk-k">function</span>(<span class="tk-k">self</span>, dx, dy) <span class="tk-k">self</span>.x, <span class="tk-k">self</span>.y = <span class="tk-k">self</span>.x + dx, <span class="tk-k">self</span>.y + dy <span class="tk-k">end</span> }
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">newHealth</span>(max)
+    <span class="tk-k">return</span> { hp = max, max = max, hurt = <span class="tk-k">function</span>(<span class="tk-k">self</span>, n) <span class="tk-k">self</span>.hp = math.<span class="tk-f">max</span>(<span class="tk-n">0</span>, <span class="tk-k">self</span>.hp - n) <span class="tk-k">end</span> }
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> player = { name = <span class="tk-s">&quot;Ada&quot;</span>, pos = <span class="tk-f">newPosition</span>(<span class="tk-n">0</span>, <span class="tk-n">0</span>), health = <span class="tk-f">newHealth</span>(<span class="tk-n">20</span>) }
+player.pos:<span class="tk-f">move</span>(<span class="tk-n">3</span>, <span class="tk-n">1</span>)
+player.health:<span class="tk-f">hurt</span>(<span class="tk-n">5</span>)
+<span class="tk-f">print</span>(player.name, player.pos.x, player.pos.y, player.health.hp)</code></pre></div>
+<p>Parts can be mixed freely (a chest has a position but no health), which is exactly why many game engines use components (the game development course&#39;s entity systems).</p>
+<h2>An event emitter</h2>
+<p>Objects that tell others when something happens:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">newEmitter</span>()
+    <span class="tk-k">local</span> listeners = {}
+    <span class="tk-k">local</span> e = {}
+    <span class="tk-k">function</span> e.<span class="tk-f">on</span>(name, fn)
+        listeners[name] = listeners[name] <span class="tk-k">or</span> {}
+        table.<span class="tk-f">insert</span>(listeners[name], fn)
+        <span class="tk-k">return</span> <span class="tk-k">function</span>()                    <span class="tk-c">-- call this to unsubscribe</span>
+            <span class="tk-k">for</span> i, f <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(listeners[name]) <span class="tk-k">do</span>
+                <span class="tk-k">if</span> f == fn <span class="tk-k">then</span> table.<span class="tk-f">remove</span>(listeners[name], i) <span class="tk-k">return</span> <span class="tk-k">end</span>
+            <span class="tk-k">end</span>
+        <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+    <span class="tk-k">function</span> e.<span class="tk-f">emit</span>(name, ...)
+        <span class="tk-k">for</span> _, fn <span class="tk-k">in</span> <span class="tk-f">ipairs</span>({ table.<span class="tk-f">unpack</span>(listeners[name] <span class="tk-k">or</span> {}) }) <span class="tk-k">do</span> <span class="tk-f">fn</span>(...) <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> e
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> door = <span class="tk-f">newEmitter</span>()
+<span class="tk-k">local</span> off = door.<span class="tk-f">on</span>(<span class="tk-s">&quot;open&quot;</span>, <span class="tk-k">function</span>(who) <span class="tk-f">print</span>(who .. <span class="tk-s">&quot; opened the door&quot;</span>) <span class="tk-k">end</span>)
+door.<span class="tk-f">on</span>(<span class="tk-s">&quot;open&quot;</span>, <span class="tk-k">function</span>() <span class="tk-f">print</span>(<span class="tk-s">&quot;a bell rings&quot;</span>) <span class="tk-k">end</span>)
+door.<span class="tk-f">emit</span>(<span class="tk-s">&quot;open&quot;</span>, <span class="tk-s">&quot;Ada&quot;</span>)
+<span class="tk-f">off</span>()
+door.<span class="tk-f">emit</span>(<span class="tk-s">&quot;open&quot;</span>, <span class="tk-s">&quot;Bob&quot;</span>)</code></pre></div>
+<p><code>emit</code> loops over a <strong>copy</strong> of the list, so a listener that unsubscribes while being called does not upset the loop.</p>
+<h2>Validated objects with a proxy</h2>
+<p>A proxy (lesson 5.02) can check every assignment:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">validated</span>(rules)
+    <span class="tk-k">local</span> data = {}
+    <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({}, {
+        __index = data,
+        __newindex = <span class="tk-k">function</span>(_, k, v)
+            <span class="tk-k">local</span> rule = rules[k]
+            <span class="tk-k">if</span> <span class="tk-k">not</span> rule <span class="tk-k">then</span> <span class="tk-f">error</span>(<span class="tk-s">&quot;unknown field &quot;</span> .. <span class="tk-f">tostring</span>(k), <span class="tk-n">2</span>) <span class="tk-k">end</span>
+            <span class="tk-k">local</span> ok, msg = <span class="tk-f">rule</span>(v)
+            <span class="tk-k">if</span> <span class="tk-k">not</span> ok <span class="tk-k">then</span> <span class="tk-f">error</span>(k .. <span class="tk-s">&quot;: &quot;</span> .. msg, <span class="tk-n">2</span>) <span class="tk-k">end</span>
+            data[k] = v
+        <span class="tk-k">end</span>,
+    })
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> settings = <span class="tk-f">validated</span>({
+    volume = <span class="tk-k">function</span>(v) <span class="tk-k">return</span> <span class="tk-f">type</span>(v) == <span class="tk-s">&quot;number&quot;</span> <span class="tk-k">and</span> v &gt;= <span class="tk-n">0</span> <span class="tk-k">and</span> v &lt;= <span class="tk-n">1</span>, <span class="tk-s">&quot;must be from 0 to 1&quot;</span> <span class="tk-k">end</span>,
+    name = <span class="tk-k">function</span>(v) <span class="tk-k">return</span> <span class="tk-f">type</span>(v) == <span class="tk-s">&quot;string&quot;</span> <span class="tk-k">and</span> #v &gt; <span class="tk-n">0</span>, <span class="tk-s">&quot;must be a non-empty string&quot;</span> <span class="tk-k">end</span>,
+})
+settings.volume = <span class="tk-n">0.5</span>
+<span class="tk-f">print</span>(settings.volume, <span class="tk-f">pcall</span>(<span class="tk-k">function</span>() settings.volume = <span class="tk-n">3</span> <span class="tk-k">end</span>))
+<span class="tk-f">print</span>(<span class="tk-f">pcall</span>(<span class="tk-k">function</span>() settings.colour = <span class="tk-s">&quot;red&quot;</span> <span class="tk-k">end</span>))</code></pre></div>
+<h2>Choosing</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>pattern</th>
+<th>good for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>class with metatable</td>
+<td>many objects of one kind; shared methods; inheritance</td>
+</tr>
+<tr>
+<td>closures</td>
+<td>truly private state; few objects</td>
+</tr>
+<tr>
+<td>mixins</td>
+<td>sharing behaviour between unrelated classes</td>
+</tr>
+<tr>
+<td>composition</td>
+<td>objects made of optional parts, like game entities</td>
+</tr>
+<tr>
+<td>proxy</td>
+<td>checking or watching every change</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/8.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/8.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-03-serialisation/"><span class="mono">previous</span><b>8.03 Serialisation</b></a>
+      <a class="lp-next" href="../8-05-performance-in-lua/"><span class="mono">next</span><b>8.05 Performance in Lua</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/8-04-object-patterns-beyond-classes"></script>
+</body>
+</html>

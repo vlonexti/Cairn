@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Modules, Crates and Tests · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/3-05-modules-crates-and-tests/">
+  <meta name="description" content="Organising code with mod, pub and use, privacy rules for items and struct fields, splitting modules into files, packages, library and binary crates, adding…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Modules, Crates and Tests · Rust · Xenon">
+  <meta property="og:description" content="Organising code with mod, pub and use, privacy rules for items and struct fields, splitting modules into files, packages, library and binary crates, adding…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/3-05-modules-crates-and-tests/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Modules, Crates and Tests · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Modules, Crates and Tests · Rust · Xenon">
+  <meta name="twitter:description" content="Organising code with mod, pub and use, privacy rules for items and struct fields, splitting modules into files, packages, library and binary crates, adding…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Collections, Errors and Modules</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Modules, Crates and Tests</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Organising code with mod, pub and use, privacy rules for items and struct fields, splitting modules into files, packages, library and binary crates, adding dependencies from crates.io with Cargo.toml, and writing unit tests with #[test], assert macros and cargo test, plus integration tests and documentation tests.</p>
+      <div class="prose">
+<h2>Modules</h2>
+<p>A <strong>module</strong> groups related items and controls what is visible outside it. Everything is <strong>private</strong> by default; <code>pub</code> makes it visible to the parent module and beyond:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">mod</span> geometry {
+    <span class="tk-k">pub</span> <span class="tk-k">struct</span> <span class="tk-t">Point</span> {
+        <span class="tk-k">pub</span> x: <span class="tk-k">f64</span>,
+        <span class="tk-k">pub</span> y: <span class="tk-k">f64</span>,
+    }
+
+    <span class="tk-k">pub</span> <span class="tk-k">fn</span> <span class="tk-f">distance</span>(a: &amp;<span class="tk-t">Point</span>, b: &amp;<span class="tk-t">Point</span>) -&gt; <span class="tk-k">f64</span> {
+        (<span class="tk-f">square</span>(a.x - b.x) + <span class="tk-f">square</span>(a.y - b.y)).<span class="tk-f">sqrt</span>()
+    }
+
+    <span class="tk-k">fn</span> <span class="tk-f">square</span>(v: <span class="tk-k">f64</span>) -&gt; <span class="tk-k">f64</span> { v * v }          <span class="tk-c">// private: only usable inside geometry</span>
+
+    <span class="tk-k">pub</span> <span class="tk-k">mod</span> shapes {
+        <span class="tk-k">use</span> <span class="tk-k">super</span>::<span class="tk-t">Point</span>;                        <span class="tk-c">// super: the parent module</span>
+
+        <span class="tk-k">pub</span> <span class="tk-k">struct</span> <span class="tk-t">Circle</span> { <span class="tk-k">pub</span> center: <span class="tk-t">Point</span>, <span class="tk-k">pub</span> radius: <span class="tk-k">f64</span> }
+
+        <span class="tk-k">impl</span> <span class="tk-t">Circle</span> {
+            <span class="tk-k">pub</span> <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { std::<span class="tk-k">f64</span>::consts::PI * <span class="tk-k">self</span>.radius * <span class="tk-k">self</span>.radius }
+        }
+    }
+}
+
+<span class="tk-k">use</span> geometry::shapes::<span class="tk-t">Circle</span>;
+<span class="tk-k">use</span> geometry::{distance, <span class="tk-t">Point</span>};
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> a = <span class="tk-t">Point</span> { x: <span class="tk-n">0.0</span>, y: <span class="tk-n">0.0</span> };
+    <span class="tk-k">let</span> b = <span class="tk-t">Point</span> { x: <span class="tk-n">3.0</span>, y: <span class="tk-n">4.0</span> };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">distance</span>(&amp;a, &amp;b));
+    <span class="tk-k">let</span> c = <span class="tk-t">Circle</span> { center: b, radius: <span class="tk-n">1.0</span> };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:.3} at ({}, {})&quot;</span>, c.<span class="tk-f">area</span>(), c.center.x, c.center.y);
+    <span class="tk-c">// geometry::square(2.0);                    // error: function `square` is private</span>
+}</code></pre></div>
+<ul>
+<li>Paths use <code>::</code>. <code>crate::</code> starts at the crate&#39;s root, <code>super::</code> at the parent, <code>self::</code> at the current module.</li>
+<li><code>use</code> brings a path into scope so you can write the short name.</li>
+<li>A <code>pub struct</code> can still have private fields: then code outside the module cannot build it directly and must use its constructor, which keeps its rules intact.</li>
+</ul>
+<h2>Files</h2>
+<p>In a real project each module usually has its own file:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>src/
+  main.rs          mod geometry;  (tells Cargo to load src/geometry.rs)
+  geometry.rs      pub mod shapes;
+  geometry/
+    shapes.rs</code></pre></div>
+<p><code>mod geometry;</code> with a semicolon means &quot;the module&#39;s code is in <code>geometry.rs</code> (or <code>geometry/mod.rs</code>)&quot;.</p>
+<h2>Packages and crates</h2>
+<ul>
+<li>A <strong>crate</strong> is a unit of compilation: a <strong>binary</strong> crate (with <code>main</code>, from <code>src/main.rs</code>) or a <strong>library</strong> crate (from <code>src/lib.rs</code>).</li>
+<li>A <strong>package</strong> is a folder with <code>Cargo.toml</code>; it can contain a library and any number of binaries.</li>
+</ul>
+<p>Dependencies come from crates.io:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TOML</span></div><pre><code>[package]
+name = &quot;wordcount&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2024&quot;
+
+[dependencies]
+clap = { version = &quot;4&quot;, features = [&quot;derive&quot;] }
+serde = { version = &quot;1&quot;, features = [&quot;derive&quot;] }</code></pre></div>
+<p><code>cargo add clap --features derive</code> edits the file for you. <code>Cargo.lock</code> records exact versions; commit it for applications.</p>
+<h2>Unit tests</h2>
+<p>Tests live next to the code, in a module that is only compiled for <code>cargo test</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">pub</span> <span class="tk-k">fn</span> <span class="tk-f">add</span>(a: <span class="tk-k">i32</span>, b: <span class="tk-k">i32</span>) -&gt; <span class="tk-k">i32</span> { a + b }
+
+<span class="tk-k">pub</span> <span class="tk-k">fn</span> <span class="tk-f">divide</span>(a: <span class="tk-k">i32</span>, b: <span class="tk-k">i32</span>) -&gt; <span class="tk-k">i32</span> {
+    <span class="tk-k">if</span> b == <span class="tk-n">0</span> { <span class="tk-p">panic!</span>(<span class="tk-s">&quot;division by zero&quot;</span>); }
+    a / b
+}
+
+<span class="tk-p">#[cfg(test)]</span>
+<span class="tk-k">mod</span> tests {
+    <span class="tk-k">use</span> <span class="tk-k">super</span>::*;
+
+    <span class="tk-p">#[test]</span>
+    <span class="tk-k">fn</span> <span class="tk-f">adds_small_numbers</span>() {
+        <span class="tk-p">assert_eq!</span>(<span class="tk-f">add</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>), <span class="tk-n">5</span>);
+    }
+
+    <span class="tk-p">#[test]</span>
+    <span class="tk-k">fn</span> <span class="tk-f">negative_numbers</span>() {
+        <span class="tk-p">assert!</span>(<span class="tk-f">add</span>(-<span class="tk-n">2</span>, -<span class="tk-n">3</span>) &lt; <span class="tk-n">0</span>, <span class="tk-s">&quot;expected a negative sum&quot;</span>);
+        <span class="tk-p">assert_ne!</span>(<span class="tk-f">add</span>(-<span class="tk-n">1</span>, <span class="tk-n">1</span>), <span class="tk-n">1</span>);
+    }
+
+    <span class="tk-p">#[test]</span>
+    <span class="tk-p">#[should_panic(expected = &quot;division by zero&quot;)]</span>
+    <span class="tk-k">fn</span> <span class="tk-f">dividing_by_zero_panics</span>() {
+        <span class="tk-f">divide</span>(<span class="tk-n">1</span>, <span class="tk-n">0</span>);
+    }
+
+    <span class="tk-p">#[test]</span>
+    <span class="tk-k">fn</span> <span class="tk-f">returns_result</span>() -&gt; <span class="tk-t">Result</span>&lt;(), <span class="tk-t">String</span>&gt; {
+        <span class="tk-k">let</span> n: <span class="tk-k">i32</span> = <span class="tk-s">&quot;42&quot;</span>.<span class="tk-f">parse</span>().<span class="tk-f">map_err</span>(|e| <span class="tk-p">format!</span>(<span class="tk-s">&quot;{e}&quot;</span>))?;
+        <span class="tk-p">assert_eq!</span>(n, <span class="tk-n">42</span>);
+        <span class="tk-f">Ok</span>(())
+    }
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>cargo test                   <span class="tk-c"> # build and run every test</span>
+cargo test negative          <span class="tk-c"> # only tests whose name contains &quot;negative&quot;</span>
+cargo test -- --nocapture    <span class="tk-c"> # show println! output from passing tests</span></code></pre></div>
+<p>Because the <code>tests</code> module is a child of the module it tests, it can test <strong>private</strong> functions too.</p>
+<p><strong>Integration tests</strong> go in a <code>tests/</code> folder next to <code>src/</code> and use the crate only through its public API, like a user would. <strong>Documentation tests</strong> are code examples inside <code>///</code> comments, which <code>cargo test</code> compiles and runs, so examples in the documentation never go stale.</p>
+<p>The practice tasks in this course use the same idea with a small kit: <code>test(&quot;name&quot;, || { check_eq(actual, expected); })</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-error-handling-with-result/"><span class="mono">previous</span><b>3.04 Error Handling with Result</b></a>
+      <a class="lp-next" href="../4-01-generics/"><span class="mono">next</span><b>4.01 Generics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/3-05-modules-crates-and-tests"></script>
+</body>
+</html>

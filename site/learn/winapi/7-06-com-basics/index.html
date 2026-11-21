@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>COM Basics · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/7-06-com-basics/">
+  <meta name="description" content="The object model behind much of the Windows API - initialising COM and apartments, interfaces and IUnknown with QueryInterface, AddRef and Release, creating…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="COM Basics · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="The object model behind much of the Windows API - initialising COM and apartments, interfaces and IUnknown with QueryInterface, AddRef and Release, creating…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/7-06-com-basics/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="COM Basics · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="COM Basics · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="The object model behind much of the Windows API - initialising COM and apartments, interfaces and IUnknown with QueryInterface, AddRef and Release, creating…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Deeper into the System</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">COM Basics</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.06</b></span><span>6 of 6 in milestone 7</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The object model behind much of the Windows API - initialising COM and apartments, interfaces and IUnknown with QueryInterface, AddRef and Release, creating objects with CoCreateInstance, HRESULTs, ComPtr to manage reference counts, memory COM hands you, and creating a shortcut with IShellLinkW as a complete example.</p>
+      <div class="prose">
+<h2>Why COM</h2>
+<p>Many Windows features are not plain C functions but <strong>COM objects</strong>: the file dialogs (lesson 3.02), Direct2D, DirectWrite and WIC (milestone 4), shortcuts, the taskbar, the Windows Runtime underneath WinRT. <strong>COM</strong> (the Component Object Model) is a binary standard for objects: any language that can call through a table of function pointers can use them, which is why the same objects work from C++, C#, Python and scripting languages.</p>
+<h2>Initialising</h2>
+<p>Every thread that uses COM initialises it first and uninitialises it at the end:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HRESULT hr{ <span class="tk-f">CoInitializeEx</span>(<span class="tk-k">nullptr</span>, COINIT_APARTMENTTHREADED) };    <span class="tk-c">// UI threads: a single-threaded apartment</span>
+<span class="tk-k">if</span> (<span class="tk-f">FAILED</span>(hr)) <span class="tk-k">return</span> hr;                                           <span class="tk-c">// S_FALSE means &quot;already initialised&quot;: still call CoUninitialize</span>
+<span class="tk-c">// ... use COM ...</span>
+<span class="tk-f">CoUninitialize</span>();</code></pre></div>
+<p>The <strong>apartment</strong> says how objects may be called across threads: <code>COINIT_APARTMENTTHREADED</code> (STA) for threads with windows, where calls are delivered through the message loop; <code>COINIT_MULTITHREADED</code> (MTA) for worker threads. A thread cannot switch: a second call with the other model fails with <code>RPC_E_CHANGED_MODE</code>.</p>
+<h2>Interfaces and IUnknown</h2>
+<p>A COM object is used only through <strong>interfaces</strong>: tables of functions, each identified by a GUID (an <strong>IID</strong>). Every interface starts with the three methods of <strong>IUnknown</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>QueryInterface(iid, &amp;ptr)</code></td>
+<td>asks the object for another interface; <code>E_NOINTERFACE</code> if it has none</td>
+</tr>
+<tr>
+<td><code>AddRef()</code></td>
+<td>adds one to the object&#39;s reference count</td>
+</tr>
+<tr>
+<td><code>Release()</code></td>
+<td>subtracts one; at zero, the object deletes itself</td>
+</tr>
+</tbody></table>
+</div>
+<p>The rules: every interface pointer you receive (from <code>CoCreateInstance</code>, <code>QueryInterface</code> or an out parameter) has already been <code>AddRef</code>ed <strong>for you</strong>, so you must <code>Release</code> it exactly once. Forgetting leaks the object; releasing twice destroys it while something still uses it. Practice 7.06 implements these rules and the smart pointer that follows them for you.</p>
+<h2>ComPtr</h2>
+<p>Nobody calls <code>AddRef</code> and <code>Release</code> by hand in modern code. <code>Microsoft::WRL::ComPtr</code> (in <code>&lt;wrl/client.h&gt;</code>, or <code>winrt::com_ptr</code> and the WIL library&#39;s <code>wil::com_ptr</code>) does it automatically:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;wrl/client.h&gt;</span>
+<span class="tk-k">using</span> <span class="tk-t">Microsoft</span>::WRL::<span class="tk-t">ComPtr</span>;
+
+<span class="tk-t">ComPtr</span>&lt;IShellLinkW&gt; link;
+HRESULT hr{ <span class="tk-f">CoCreateInstance</span>(CLSID_ShellLink, <span class="tk-k">nullptr</span>, CLSCTX_INPROC_SERVER, <span class="tk-f">IID_PPV_ARGS</span>(&amp;link)) };
+<span class="tk-k">if</span> (<span class="tk-f">FAILED</span>(hr)) <span class="tk-k">return</span> hr;
+
+link-&gt;<span class="tk-f">SetPath</span>(<span class="tk-s">LR&quot;(C:\Program Files\Xenon\Xenon.exe)&quot;</span>);
+link-&gt;<span class="tk-f">SetDescription</span>(<span class="tk-s">L&quot;Learn to program&quot;</span>);
+
+<span class="tk-t">ComPtr</span>&lt;IPersistFile&gt; file;
+hr = link.<span class="tk-f">As</span>(&amp;file);                                     <span class="tk-c">// QueryInterface for IPersistFile</span>
+<span class="tk-k">if</span> (<span class="tk-f">SUCCEEDED</span>(hr))
+    hr = file-&gt;<span class="tk-f">Save</span>(<span class="tk-s">LR&quot;(C:\Users\Public\Desktop\Xenon.lnk)&quot;</span>, TRUE);
+<span class="tk-c">// both pointers are released automatically here</span></code></pre></div>
+<ul>
+<li><code>IID_PPV_ARGS(&amp;p)</code> passes the interface&#39;s IID and the address of the pointer together, so they can never mismatch.</li>
+<li><code>ComPtr</code> copies <code>AddRef</code>, destruction and reassignment <code>Release</code>, <code>.As()</code> is a checked <code>QueryInterface</code>, <code>.Get()</code> gives the raw pointer for a call, and <code>&amp;p</code> (or <code>.ReleaseAndGetAddressOf()</code>) for an out parameter.</li>
+</ul>
+<h2>Errors and memory</h2>
+<ul>
+<li>COM methods return **<code>HRESULT</code>**s: test with <code>SUCCEEDED</code> and <code>FAILED</code> (lesson 3.03 of Reading Documentation), and remember <code>S_FALSE</code> is a success.</li>
+<li>Strings and buffers that a COM method allocates for you are freed with <strong><code>CoTaskMemFree</code></strong> (for example the path from <code>IShellItem::GetDisplayName</code>). <code>BSTR</code> strings, used by automation interfaces, are freed with <code>SysFreeString</code>. The method&#39;s documentation says which.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/7.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/7.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-05-access-tokens-and-privileges/"><span class="mono">previous</span><b>7.05 Access Tokens and Privileges</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/7-06-com-basics"></script>
+</body>
+</html>

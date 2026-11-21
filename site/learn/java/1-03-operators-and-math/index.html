@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Operators and Math · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/1-03-operators-and-math/">
+  <meta name="description" content="Arithmetic with integer division and remainder, compound assignment and increment, comparison and logical operators with short-circuiting, the ternary…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Operators and Math · Java · Xenon">
+  <meta property="og:description" content="Arithmetic with integer division and remainder, compound assignment and increment, comparison and logical operators with short-circuiting, the ternary…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/1-03-operators-and-math/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Operators and Math · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Operators and Math · Java · Xenon">
+  <meta name="twitter:description" content="Arithmetic with integer division and remainder, compound assignment and increment, comparison and logical operators with short-circuiting, the ternary…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Operators and Math</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.03</b></span><span>3 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Arithmetic with integer division and remainder, compound assignment and increment, comparison and logical operators with short-circuiting, the ternary operator, precedence, the Math class, and comparing doubles safely.</p>
+      <div class="prose">
+<h2>Arithmetic</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> a = <span class="tk-n">17</span>, b = <span class="tk-n">5</span>;
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a + b);       <span class="tk-c">// 22</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a - b);       <span class="tk-c">// 12</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a * b);       <span class="tk-c">// 85</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a / b);       <span class="tk-c">// 3: int / int is integer division</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a % b);       <span class="tk-c">// 2: the remainder</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a / <span class="tk-n">5.0</span>);     <span class="tk-c">// 3.4: a double operand makes it a double division</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>((<span class="tk-k">double</span>) a / b);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(-<span class="tk-n">17</span> / <span class="tk-n">5</span>);     <span class="tk-c">// -3: rounds toward zero</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(-<span class="tk-n">17</span> % <span class="tk-n">5</span>);     <span class="tk-c">// -2: the sign follows the left side</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">floorMod</span>(-<span class="tk-n">17</span>, <span class="tk-n">5</span>));   <span class="tk-c">// 3: always 0 to 4</span>
+    }
+}</code></pre></div>
+<p><code>minutes / 60</code> and <code>minutes % 60</code> split minutes into hours and the rest. <code>n % 2 == 0</code> tests for even numbers. Integer division by zero throws <code>ArithmeticException</code>; double division by zero gives <code>Infinity</code> or <code>NaN</code>.</p>
+<p>Watch out for <code>+</code> with strings: once a <code>String</code> is involved, <code>+</code> joins text. <code>&quot;Total: &quot; + 2 + 3</code> is <code>&quot;Total: 23&quot;</code>; write <code>&quot;Total: &quot; + (2 + 3)</code>.</p>
+<h2>Assignment shortcuts</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> score = <span class="tk-n">10</span>;
+        score += <span class="tk-n">5</span>;      <span class="tk-c">// 15</span>
+        score *= <span class="tk-n">2</span>;      <span class="tk-c">// 30</span>
+        score -= <span class="tk-n">1</span>;      <span class="tk-c">// 29</span>
+        score++;         <span class="tk-c">// 30</span>
+        score--;         <span class="tk-c">// 29</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(score);
+        <span class="tk-k">int</span> i = <span class="tk-n">5</span>;
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(i++);   <span class="tk-c">// prints 5, then i becomes 6</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(++i);   <span class="tk-c">// i becomes 7, then prints 7</span>
+    }
+}</code></pre></div>
+<h2>Comparisons and logic</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>==</code>, <code>!=</code></td>
+<td>Equal, not equal (for primitives)</td>
+</tr>
+<tr>
+<td><code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code></td>
+<td>Ordering</td>
+</tr>
+<tr>
+<td><code>&amp;&amp;</code></td>
+<td>And (short-circuit)</td>
+</tr>
+<tr>
+<td><code>||</code></td>
+<td>Or (short-circuit)</td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td>Not</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> age = <span class="tk-n">20</span>;
+        <span class="tk-k">boolean</span> hasTicket = <span class="tk-k">true</span>;
+        <span class="tk-k">boolean</span> canEnter = age &gt;= <span class="tk-n">18</span> &amp;&amp; hasTicket;
+        <span class="tk-k">boolean</span> discount = age &lt; <span class="tk-n">12</span> || age &gt;= <span class="tk-n">65</span>;
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(canEnter + <span class="tk-s">&quot; &quot;</span> + discount + <span class="tk-s">&quot; &quot;</span> + !canEnter);
+
+        <span class="tk-t">String</span> name = <span class="tk-k">null</span>;
+        <span class="tk-k">if</span> (name != <span class="tk-k">null</span> &amp;&amp; name.<span class="tk-f">length</span>() &gt; <span class="tk-n">3</span>) <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;long name&quot;</span>);   <span class="tk-c">// safe: &amp;&amp; stops early</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(age &gt;= <span class="tk-n">18</span> ? <span class="tk-s">&quot;adult&quot;</span> : <span class="tk-s">&quot;minor&quot;</span>);                         <span class="tk-c">// the ternary operator</span>
+    }
+}</code></pre></div>
+<p><code>&amp;&amp;</code> and <code>||</code> <strong>short-circuit</strong>: the right side is only evaluated when needed, which makes the null check above safe. Conditions must be <code>boolean</code>: <code>if (count)</code> does not compile in Java.</p>
+<p>For objects, <code>==</code> compares <strong>references</strong> (is it the same object?), not contents. Strings are compared with <code>equals</code> (lesson 1.04).</p>
+<h2>Precedence</h2>
+<p><code>*</code>, <code>/</code>, <code>%</code> before <code>+</code>, <code>-</code>; then comparisons; then <code>&amp;&amp;</code>; then <code>||</code>; then <code>?:</code>; then assignment. Use parentheses when in doubt.</p>
+<h2>Math</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">sqrt</span>(<span class="tk-n">16</span>));          <span class="tk-c">// 4.0</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">pow</span>(<span class="tk-n">2</span>, <span class="tk-n">10</span>));        <span class="tk-c">// 1024.0</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">abs</span>(-<span class="tk-n">3.5</span>));         <span class="tk-c">// 3.5</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">max</span>(<span class="tk-n">3</span>, <span class="tk-n">9</span>));         <span class="tk-c">// 9</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">round</span>(<span class="tk-n">2.5</span>));        <span class="tk-c">// 3: rounds halves up, returns long</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">round</span>(-<span class="tk-n">2.5</span>));       <span class="tk-c">// -2</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">floor</span>(-<span class="tk-n">2.5</span>) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-t">Math</span>.<span class="tk-f">ceil</span>(<span class="tk-n">2.1</span>));   <span class="tk-c">// -3.0 3.0</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">clamp</span>(<span class="tk-n">15</span>, <span class="tk-n">0</span>, <span class="tk-n">10</span>));  <span class="tk-c">// 10 (Java 21+)</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.PI);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>((<span class="tk-k">int</span>) (<span class="tk-t">Math</span>.<span class="tk-f">random</span>() * <span class="tk-n">6</span>) + <span class="tk-n">1</span> &gt; <span class="tk-n">0</span>);         <span class="tk-c">// a dice roll 1-6</span>
+    }
+}</code></pre></div>
+<h2>Comparing doubles</h2>
+<p>Because of rounding, <code>0.1 + 0.2 == 0.3</code> is <code>false</code>. Compare floating-point numbers with a tolerance:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">double</span> x = <span class="tk-n">0.1</span> + <span class="tk-n">0.2</span>;
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(x == <span class="tk-n">0.3</span>);                      <span class="tk-c">// false</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">abs</span>(x - <span class="tk-n">0.3</span>) &lt; <span class="tk-n">1e-9</span>);      <span class="tk-c">// true</span>
+    }
+}</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/1.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/1.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-02-variables-and-primitive-types/"><span class="mono">previous</span><b>1.02 Variables and Primitive Types</b></a>
+      <a class="lp-next" href="../1-04-strings-and-input/"><span class="mono">next</span><b>1.04 Strings and Input</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/1-03-operators-and-math"></script>
+</body>
+</html>

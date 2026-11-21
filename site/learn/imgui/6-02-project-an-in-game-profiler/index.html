@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Project: An In-Game Profiler · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/6-02-project-an-in-game-profiler/">
+  <meta name="description" content="Build a profiler that runs inside your game - scoped timers you sprinkle through the code, a per-frame tree of where the time went with total and self times,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Project: An In-Game Profiler · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Build a profiler that runs inside your game - scoped timers you sprinkle through the code, a per-frame tree of where the time went with total and self times,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/6-02-project-an-in-game-profiler/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Project: An In-Game Profiler · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Project: An In-Game Profiler · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Build a profiler that runs inside your game - scoped timers you sprinkle through the code, a per-frame tree of where the time went with total and self times,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Projects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Project: An In-Game Profiler</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 3 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Build a profiler that runs inside your game - scoped timers you sprinkle through the code, a per-frame tree of where the time went with total and self times, a frame-time graph with the budget line, and a flame view drawn with the draw list. This lesson covers measuring, collecting, aggregating and showing the data.</p>
+      <div class="prose">
+<h2>Measuring with scopes</h2>
+<p>A <strong>zone</strong> is a named span of time. Mark zones with a small RAII object that records a begin event when constructed and an end event when destroyed:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Zone</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">Zone</span>(<span class="tk-k">const</span> <span class="tk-k">char</span>* name) : m_name{ name } { <span class="tk-t">Profiler</span>::<span class="tk-f">get</span>().<span class="tk-f">begin</span>(m_name, <span class="tk-f">now</span>()); }
+    ~<span class="tk-f">Zone</span>() { <span class="tk-t">Profiler</span>::<span class="tk-f">get</span>().<span class="tk-f">end</span>(m_name, <span class="tk-f">now</span>()); }
+<span class="tk-k">private</span>:
+    <span class="tk-k">const</span> <span class="tk-k">char</span>* m_name;
+};
+<span class="tk-c">// Two steps, so __LINE__ is replaced by the number before the names are joined.</span>
+<span class="tk-p">#define</span> <span class="tk-f">PROFILE_JOIN2</span>(a, b) a##b
+<span class="tk-p">#define</span> <span class="tk-f">PROFILE_JOIN</span>(a, b) <span class="tk-f">PROFILE_JOIN2</span>(a, b)
+<span class="tk-p">#define</span> <span class="tk-f">PROFILE_ZONE</span>(name) <span class="tk-t">Zone</span> <span class="tk-f">PROFILE_JOIN</span>(profileZone, __LINE__){ name }
+
+<span class="tk-k">void</span> <span class="tk-f">updateEnemies</span>()
+{
+    <span class="tk-f">PROFILE_ZONE</span>(<span class="tk-s">&quot;updateEnemies&quot;</span>);
+    <span class="tk-k">for</span> (<span class="tk-k">auto</span>&amp; e : enemies) { <span class="tk-f">PROFILE_ZONE</span>(<span class="tk-s">&quot;think&quot;</span>); e.<span class="tk-f">think</span>(); }
+}</code></pre></div>
+<p><code>now()</code> should be a high-resolution clock: <code>QueryPerformanceCounter</code> on Windows, or <code>std::chrono::steady_clock</code>. The string is a literal, so storing the pointer is fine and cheap.</p>
+<p>Zones nest naturally: &quot;think&quot; begins and ends inside &quot;updateEnemies&quot;. Recording only begin and end events, in order, captures the whole tree.</p>
+<h2>From events to a tree</h2>
+<p>At the end of a frame, the events of that frame form a list like:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>begin frame 0      begin update 10    begin physics 12   end physics 40
+begin think 41     end think 52       begin think 52     end think 60    end update 61
+begin render 61    end render 150     end frame 152</code></pre></div>
+<p>Walk them with a <strong>stack</strong>: a begin pushes a new node as a child of the top of the stack; an end pops it and stores its duration. Each node&#39;s <strong>total time</strong> is its own duration; its <strong>self time</strong> is the total minus its children&#39;s totals: the time spent in that zone&#39;s own code. Zones with the same name under the same parent (the two &quot;think&quot; zones) are usually <strong>merged</strong> into one row with a call count. The practice builds exactly this.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>frame          152.0 ms   self 12.0
+  update        51.0      self 4.0
+    physics     28.0
+    think       19.0  (2 calls)
+  render        89.0</code></pre></div>
+<h2>Showing it</h2>
+<ul>
+<li><strong>A table tree</strong> (lessons 3.03 and 3.04): name, total, self, calls, with tree nodes in the first column and sorting by total or self.</li>
+<li><strong>A frame graph</strong> (lesson 5.01): the last few hundred frame times with the 16.6 ms line; clicking a bar pauses on that frame to inspect its tree.</li>
+<li><strong>A flame view</strong>: each zone as a bar whose x position and width are its start and duration in the frame, and whose row is its nesting depth. Draw it with <code>AddRectFilled</code> and <code>AddText</code>, coloured by name (the golden-ratio hue trick from lesson 2.04 keeps colours stable per name). Hover a bar for a tooltip with the exact numbers.</li>
+</ul>
+<h2>Threads</h2>
+<p>Zones on other threads (loading, audio, job workers) need their own event lists: give each thread its own buffer (<code>thread_local</code>) and merge them at the end of the frame, showing one lane per thread in the flame view.</p>
+<h2>Keep the profiler cheap</h2>
+<ul>
+<li>Two clock reads and two small writes per zone: keep zones out of loops that run millions of times, or profile a sample of them.</li>
+<li>No memory allocation per event: pre-allocate the event buffer.</li>
+<li>Compile zones out of shipping builds: <code>#define PROFILE_ZONE(name)</code> to nothing (lesson 6.03).</li>
+</ul>
+<p>Professional tools such as Tracy and Optick follow this design and add network streaming, GPU timing and much more; after this project you will know how to read them.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-project-a-level-editor/"><span class="mono">previous</span><b>6.01 Project: A Level Editor</b></a>
+      <a class="lp-next" href="../6-03-imgui-in-a-game-you-ship/"><span class="mono">next</span><b>6.03 ImGui in a Game You Ship</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/6-02-project-an-in-game-profiler"></script>
+</body>
+</html>

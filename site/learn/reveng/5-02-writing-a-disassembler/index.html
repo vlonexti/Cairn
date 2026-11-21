@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Writing a Disassembler · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/5-02-writing-a-disassembler/">
+  <meta name="description" content="From bytes to text - table-driven decoding, naming registers and building memory operands, formatting immediates and branch targets, linear sweep versus…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Writing a Disassembler · Reverse Engineering · Xenon">
+  <meta property="og:description" content="From bytes to text - table-driven decoding, naming registers and building memory operands, formatting immediates and branch targets, linear sweep versus…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/5-02-writing-a-disassembler/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Writing a Disassembler · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Writing a Disassembler · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="From bytes to text - table-driven decoding, naming registers and building memory operands, formatting immediates and branch targets, linear sweep versus…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Building Your Own Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Writing a Disassembler</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 5 in milestone 5</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">From bytes to text - table-driven decoding, naming registers and building memory operands, formatting immediates and branch targets, linear sweep versus recursive descent, telling code from data, and the real libraries (Zydis, Capstone) behind every tool.</p>
+      <div class="prose">
+<h2>Decoding and formatting</h2>
+<p>A disassembler does two jobs for each instruction:</p>
+<ol>
+<li><strong>Decode</strong>: read prefixes, opcode, ModRM, SIB, displacement and immediate into a structure: which operation, which registers, which memory expression, which constant. This also gives the length.</li>
+<li><strong>Format</strong>: turn that structure into text in a chosen syntax: <code>mov rax, qword ptr [rcx+0x10]</code> (Intel, as MSVC and x64dbg show it) or <code>movq 0x10(%rcx), %rax</code> (AT&amp;T, as GDB and <code>objdump</code> show by default).</li>
+</ol>
+<p>Keeping them separate pays off: analysis code (a control flow graph, a pattern generator) wants the structure, not the text.</p>
+<h2>Tables</h2>
+<p>x86 has hundreds of opcodes, so real decoders are <strong>table-driven</strong>: an array indexed by opcode byte saying what follows (ModRM or not, immediate size, operand roles) and the mnemonic. A small decoder for common instructions is a table like this:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Opcode</th>
+<th>Form</th>
+<th>Mnemonic</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>01</code> / <code>03</code></td>
+<td>r/m, reg / reg, r/m</td>
+<td><code>add</code></td>
+</tr>
+<tr>
+<td><code>29</code> / <code>2B</code></td>
+<td>r/m, reg / reg, r/m</td>
+<td><code>sub</code></td>
+</tr>
+<tr>
+<td><code>31</code> / <code>33</code></td>
+<td>r/m, reg / reg, r/m</td>
+<td><code>xor</code></td>
+</tr>
+<tr>
+<td><code>39</code> / <code>3B</code></td>
+<td>r/m, reg / reg, r/m</td>
+<td><code>cmp</code></td>
+</tr>
+<tr>
+<td><code>85</code></td>
+<td>r/m, reg</td>
+<td><code>test</code></td>
+</tr>
+<tr>
+<td><code>89</code> / <code>8B</code></td>
+<td>r/m, reg / reg, r/m</td>
+<td><code>mov</code></td>
+</tr>
+<tr>
+<td><code>8D</code></td>
+<td>reg, m</td>
+<td><code>lea</code></td>
+</tr>
+<tr>
+<td><code>83 /0 /4 /5 /7</code></td>
+<td>r/m, imm8</td>
+<td><code>add</code> <code>and</code> <code>sub</code> <code>cmp</code></td>
+</tr>
+<tr>
+<td><code>81 /0 /4 /5 /7</code></td>
+<td>r/m, imm32</td>
+<td>the same with a 32-bit immediate</td>
+</tr>
+<tr>
+<td><code>C7 /0</code></td>
+<td>r/m, imm32</td>
+<td><code>mov</code></td>
+</tr>
+<tr>
+<td><code>B8</code>+r</td>
+<td>reg, imm32 (imm64 with REX.W)</td>
+<td><code>mov</code></td>
+</tr>
+<tr>
+<td><code>50</code>+r / <code>58</code>+r</td>
+<td>reg</td>
+<td><code>push</code> / <code>pop</code></td>
+</tr>
+<tr>
+<td><code>E8</code> / <code>E9</code> / <code>EB</code></td>
+<td>rel32 / rel32 / rel8</td>
+<td><code>call</code> / <code>jmp</code> / <code>jmp</code></td>
+</tr>
+<tr>
+<td><code>70</code>+cc / <code>0F 80</code>+cc</td>
+<td>rel8 / rel32</td>
+<td><code>jo jno jb jae je jne jbe ja js jns jp jnp jl jge jle jg</code></td>
+</tr>
+<tr>
+<td><code>C3</code>, <code>CC</code>, <code>90</code></td>
+<td>none</td>
+<td><code>ret</code>, <code>int3</code>, <code>nop</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>With just these, most of a typical function decodes.</p>
+<h2>Operands</h2>
+<p><strong>Registers</strong> depend on the operand size: with REX.W the 64-bit names (<code>rax</code>, ..., <code>r15</code>), otherwise the 32-bit ones (<code>eax</code>, ..., <code>edi</code>, <code>r8d</code>, ..., <code>r15d</code>). Registers <strong>inside a memory operand</strong> are addresses, so they always use the 64-bit names: <code>dword ptr [rbp-0x4]</code>, never <code>[ebp-0x4]</code>.</p>
+<p><strong>Memory operands</strong> are built from the ModRM and SIB fields: base, then <code>+index*scale</code>, then the displacement as <code>+0x10</code> or <code>-0x8</code>, all in brackets. A size keyword in front says how many bytes are accessed: <code>qword ptr</code>, <code>dword ptr</code>, <code>word ptr</code>, <code>byte ptr</code>. <code>lea</code> takes no size keyword, because it accesses no memory.</p>
+<p><strong>Immediates</strong> for arithmetic are sign-extended: <code>83 C0 FF</code> is <code>add eax, -0x1</code>, not <code>add eax, 0xff</code>.</p>
+<p><strong>Branch targets</strong> are shown as absolute addresses, computed from the instruction&#39;s address, its length and its displacement (lesson 4.02), because that is what a reader needs.</p>
+<h2>Linear sweep and recursive descent</h2>
+<p>How do you choose where to decode?</p>
+<ul>
+<li><strong>Linear sweep</strong> decodes from the start of a section to the end, each instruction right after the previous one. Simple, and it sees everything, but when it meets <strong>data inside code</strong> (a jump table, padding, a literal pool), it decodes it as nonsense instructions, and may stay out of step for a few instructions afterwards. <code>objdump</code> works this way.</li>
+<li><strong>Recursive descent</strong> starts at known entry points (the entry point, exports, <code>.pdata</code> functions) and follows the code: decode until a <code>ret</code> or <code>jmp</code>, and queue every branch and call target. It never decodes data by mistake, but misses code that is only reached indirectly (through function pointers, vtables, jump tables), unless it resolves those too. Ghidra, IDA and Binary Ninja combine this with many heuristics.</li>
+</ul>
+<p>When a byte does not decode as any known instruction, a disassembler shows it as data, <code>db 0x0f</code>, and moves on by one byte.</p>
+<h2>Use a library for real work</h2>
+<p>A complete x86-64 decoder covers thousands of instruction forms, AVX-512, and many corner cases. For your own tools use a library:</p>
+<ul>
+<li><strong>Zydis</strong>: fast, thorough, C, MIT licence; decodes into a detailed structure and formats Intel or AT&amp;T.</li>
+<li><strong>Capstone</strong>: many architectures (x86, ARM, MIPS...), C with bindings for Python and other languages, BSD licence.</li>
+<li><strong>iced</strong> (Rust and .NET): very complete, also encodes.</li>
+</ul>
+<p>Writing a small one yourself, as this milestone&#39;s project does, is how you learn what those libraries give you, and how to read their output when it surprises you.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-how-x64-instructions-are-encoded/"><span class="mono">previous</span><b>5.01 How x64 Instructions Are Encoded</b></a>
+      <a class="lp-next" href="../5-03-reading-a-process-s-memory-map/"><span class="mono">next</span><b>5.03 Reading a Process's Memory Map</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/5-02-writing-a-disassembler"></script>
+</body>
+</html>

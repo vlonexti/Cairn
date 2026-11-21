@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Recognising Classes, Vtables and Strings · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/9-06-recognising-classes-vtables-and-strings/">
+  <meta name="description" content="C++ programs leave distinctive traces even without symbols: vtables in read-only data list each polymorphic class's virtual functions, RTTI records often…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Recognising Classes, Vtables and Strings · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="C++ programs leave distinctive traces even without symbols: vtables in read-only data list each polymorphic class's virtual functions, RTTI records often…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/9-06-recognising-classes-vtables-and-strings/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Recognising Classes, Vtables and Strings · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Recognising Classes, Vtables and Strings · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="C++ programs leave distinctive traces even without symbols: vtables in read-only data list each polymorphic class's virtual functions, RTTI records often…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Reverse Engineering Fundamentals</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Recognising Classes, Vtables and Strings</h1>
+      <div class="readout lp-readout"><span>lesson <b>9.06</b></span><span>6 of 10 in milestone 9</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">C++ programs leave distinctive traces even without symbols: <strong>vtables</strong> in read-only data list each polymorphic class&#39;s virtual functions, <strong>RTTI</strong> records often hold class names outright, constructors write vptrs, and <strong>strings</strong> reveal messages, file names and formats. This lesson shows how to find and use each, and how a <code>strings</code>-style scan works.</p>
+      <div class="prose">
+<h2>Vtables</h2>
+<p>Lesson 3.05 showed that each class with virtual functions has a vtable, an array of function pointers, in <code>.rdata</code>, and each object stores a pointer to it at offset 0. In a stripped program, vtables are among the most useful structures you can find:</p>
+<ul>
+<li>Each vtable is a <strong>list of one class&#39;s virtual functions</strong>, in declaration order.</li>
+<li>Classes related by inheritance have vtables with the <strong>same layout</strong>: slot 3 is the same virtual function (overridden or not) in every one.</li>
+<li>A vtable entry pointing at the same function as the base class&#39;s entry means that function was <strong>not overridden</strong>.</li>
+</ul>
+<p>How to find them: in Ghidra, look in <code>.rdata</code> for runs of 8-byte values that are all addresses of functions in <code>.text</code>. Ghidra&#39;s analysis usually labels them <code>vftable</code> when RTTI is present.</p>
+<h2>Constructors and destructors</h2>
+<p>A <strong>constructor</strong> can be recognised by what it does with the vptr:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">Goblin_ctor:</span>
+    mov   [<span class="tk-t">rsp</span>+<span class="tk-n">8</span>], <span class="tk-t">rcx</span>
+    sub   <span class="tk-t">rsp</span>, <span class="tk-n">28h</span>
+    call  Entity_ctor                        <span class="tk-c">; base class constructor first</span>
+    lea   <span class="tk-t">rax</span>, [Goblin_vftable]              <span class="tk-c">; then store this class's vtable...</span>
+    mov   <span class="tk-t">rcx</span>, [<span class="tk-t">rsp</span>+<span class="tk-n">30h</span>]
+    mov   [<span class="tk-t">rcx</span>], <span class="tk-t">rax</span>                         <span class="tk-c">; ...into offset 0 of the object</span>
+    mov   <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">18h</span>], <span class="tk-n">10</span>            <span class="tk-c">; initialise members</span>
+    ...</code></pre></div>
+<p>The pattern &quot;call another constructor, then store a vtable address into <code>[this]</code>, then initialise members&quot; identifies a constructor, its base class&#39;s constructor, and its vtable all at once. Destructors do the reverse: store their own vtable, destroy members, then call the base destructor. Every place a vtable&#39;s address is <strong>written</strong> is a constructor or destructor of that class.</p>
+<h2>RTTI: class names for free</h2>
+<p>Unless a program is compiled with <code>/GR-</code>, MSVC stores <strong>run-time type information</strong> for each polymorphic class, used by <code>dynamic_cast</code> and <code>typeid</code>. Just before each vtable sits a pointer to a &quot;complete object locator&quot;, which leads to a <strong>type descriptor</strong> containing the class&#39;s <strong>decorated name</strong> as a string:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>.?AVGoblin@@
+.?AVEntity@@
+.?AV?$vector@HV?$allocator@H@std@@@std@@</code></pre></div>
+<p><code>.?AV</code> means &quot;a class&quot;, and the rest is the class name in MSVC&#39;s name-mangling format (lesson 4.02); <code>undname</code> or Ghidra demangles them. A class hierarchy descriptor also lists each class&#39;s <strong>base classes</strong>, so RTTI can recover the whole inheritance tree. Searching a stripped program&#39;s strings for <code>.?AV</code> often lists every polymorphic class it has.</p>
+<h2>Strings</h2>
+<p>Programs are full of text: messages, log lines, file names, registry keys, format strings, URLs, error descriptions, command names. They survive compilation unchanged (lesson 2.03&#39;s <code>.rdata</code>), and <strong>each one is a label</strong> for the code that uses it:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>String found</th>
+<th>Suggests</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;Failed to open save file %s&quot;</code></td>
+<td>The function using it loads saves; the <code>%s</code> argument is the path</td>
+</tr>
+<tr>
+<td><code>&quot;config.ini&quot;</code>, <code>&quot;Settings&quot;</code></td>
+<td>Configuration loading</td>
+</tr>
+<tr>
+<td><code>&quot;Assertion failed: %s, file %s, line %d&quot;</code></td>
+<td>The program&#39;s assert handler (lesson 8.03)</td>
+</tr>
+<tr>
+<td><code>&quot;kernel32.dll&quot;</code>, <code>&quot;VirtualAlloc&quot;</code></td>
+<td>A function loaded at run time with <code>GetProcAddress</code> (lesson 9.03)</td>
+</tr>
+<tr>
+<td><code>&quot;%d/%d&quot;</code>, <code>&quot;HP&quot;</code></td>
+<td>Interface drawing</td>
+</tr>
+</tbody></table>
+</div>
+<p>Remember both encodings (lesson 2.08): Windows programs often store UTF-16 strings, which look like <code>H.P.</code> with zero bytes between the letters in a byte view. Tools search for both. The classic tool is <code>strings</code> (in Microsoft&#39;s Sysinternals suite): it scans any file for runs of printable characters of at least some minimum length. The practice task writes one.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Assuming RTTI is always there</span></div><div class="callout-body"><p>Programs built with <code>/GR-</code> have none; vtables still exist but are unnamed.</p>
+</div></div>
+<blockquote><p>[!warning] Treating every run of addresses in <code>.rdata</code> as a vtable
+Jump tables and other pointer arrays look similar. A vtable is referenced by constructors that store it into objects.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Searching only for ASCII strings</span></div><div class="callout-body"><p>Windows programs use UTF-16 heavily. Search both forms.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Where is a class&#39;s vtable stored?</div><ul><li>In read-only data (<code>.rdata</code>), once per class</li><li>In each object</li><li>On the heap</li></ul><details><summary>Show the answer</summary><p><b>In read-only data (<code>.rdata</code>), once per class</b> Objects hold only a pointer to it.</p></details></li><li><div class="q">How can you recognise a constructor without symbols?</div><ul><li>It calls the base constructor, then writes a vtable address into offset 0 of the object</li><li>It is the first function in the program</li><li>It always has the most arguments</li></ul><details><summary>Show the answer</summary><p><b>It calls the base constructor, then writes a vtable address into offset 0 of the object</b> Every write of a vtable address into an object marks a constructor or destructor.</p></details></li><li><div class="q">What is <code>.?AVGoblin@@</code>?</div><ul><li>The decorated name of the class <code>Goblin</code>, stored as RTTI</li><li>An error message</li><li>A file name</li></ul><details><summary>Show the answer</summary><p><b>The decorated name of the class <code>Goblin</code>, stored as RTTI</b> <code>.?AV</code> introduces a class&#39;s decorated name.</p></details></li><li><div class="q">Why search for UTF-16 strings as well as ASCII?</div><ul><li>Windows programs often store text as UTF-16, which an ASCII-only scan misses</li><li>UTF-16 strings are always longer</li><li>ASCII strings are not stored in programs</li></ul><details><summary>Show the answer</summary><p><b>Windows programs often store text as UTF-16, which an ASCII-only scan misses</b> Wide strings appear with a zero byte between ASCII letters.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/9.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/9.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../9-05-recognising-functions-loops-and-branches/"><span class="mono">previous</span><b>9.05 Recognising Functions, Loops and Branches</b></a>
+      <a class="lp-next" href="../9-07-dynamic-analysis-with-a-debugger/"><span class="mono">next</span><b>9.07 Dynamic Analysis with a Debugger</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/9-06-recognising-classes-vtables-and-strings"></script>
+</body>
+</html>

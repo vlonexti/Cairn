@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Object Relationships · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/7-07-object-relationships/">
+  <meta name="description" content="Objects relate in a few standard ways. Composition : a part that is owned and dies with the whole. Aggregation : has it, but does not own it. Association :…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Object Relationships · C++ · Xenon">
+  <meta property="og:description" content="Objects relate in a few standard ways. Composition : a part that is owned and dies with the whole. Aggregation : has it, but does not own it. Association :…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/7-07-object-relationships/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Object Relationships · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Object Relationships · C++ · Xenon">
+  <meta name="twitter:description" content="Objects relate in a few standard ways. Composition : a part that is owned and dies with the whole. Aggregation : has it, but does not own it. Association :…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Memory Management</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Object Relationships</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.07</b></span><span>7 of 8 in milestone 7</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">Objects relate in a few standard ways. <strong>Composition</strong>: a part that is owned and dies with the whole. <strong>Aggregation</strong>: has it, but does not own it. <strong>Association</strong>: knows about it. <strong>Dependency</strong>: uses it briefly. Which one applies decides how you store the member.</p>
+      <div class="prose">
+<h2>Five relationships</h2>
+<p>Designing a program is largely deciding how its objects relate. Each relationship has a name, a meaning, and a natural way to write it in C++.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">classDiagram
+    direction LR
+    Car *-- Engine : composition
+    Department o-- Teacher : aggregation
+    Doctor --&gt; Patient : association
+    Printer ..&gt; Document : dependency
+    Animal &lt;|-- Dog : inheritance</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Relationship</th>
+<th>Say it as</th>
+<th>Does A control B&#39;s lifetime?</th>
+<th>Typical code</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Composition</strong></td>
+<td>A car <strong>has an</strong> engine, as a part</td>
+<td>Yes: the part dies with the whole</td>
+<td>A value member, or a <code>std::unique_ptr</code></td>
+</tr>
+<tr>
+<td><strong>Aggregation</strong></td>
+<td>A department <strong>has</strong> teachers</td>
+<td>No: they exist independently</td>
+<td>A pointer, or a <code>std::weak_ptr</code></td>
+</tr>
+<tr>
+<td><strong>Association</strong></td>
+<td>A doctor <strong>treats</strong> patients</td>
+<td>No</td>
+<td>Pointers or identifiers</td>
+</tr>
+<tr>
+<td><strong>Dependency</strong></td>
+<td>A printer <strong>uses</strong> a document</td>
+<td>No: only during a call</td>
+<td>A function parameter</td>
+</tr>
+<tr>
+<td><strong>Inheritance</strong></td>
+<td>A dog <strong>is an</strong> animal</td>
+<td></td>
+<td><code>class Dog : public Animal</code> (Milestone 8)</td>
+</tr>
+</tbody></table>
+</div>
+<p>The middle column is the one that matters for this milestone. It is the ownership question from <a href="../7-02-new-and-delete-dynamic-memory/">7.02 new and delete — Dynamic Memory</a>, asked about members.</p>
+<h2>Composition</h2>
+<p>The part belongs to the whole and has no life outside it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Engine</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">start</span>() { std::cout &lt;&lt; <span class="tk-s">&quot;vroom\n&quot;</span>; }
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Car</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">drive</span>() { m_engine.<span class="tk-f">start</span>(); }
+
+<span class="tk-k">private</span>:
+    <span class="tk-t">Engine</span> m_engine{};
+    std::vector&lt;<span class="tk-t">Wheel</span>&gt; m_wheels{ <span class="tk-n">4</span> };
+};</code></pre></div>
+<div class="codeblock diagram plain"><pre><code> ┌─────── Car ────────┐
+ │ ┌──────┐ ┌──────┐  │     destroy the Car and the
+ │ │Engine│ │Wheels│  │     Engine and Wheels go with it
+ │ └──────┘ └──────┘  │
+ └────────────────────┘</code></pre></div>
+<p>A value member is the simplest, fastest and safest form. Use a <code>std::unique_ptr</code> member only when you need what a pointer offers: the part may be absent, may be replaced, or is of a type chosen while running.</p>
+<h2>Aggregation</h2>
+<p>The whole refers to parts that exist on their own and may outlive it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Department</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">add</span>(<span class="tk-t">Teacher</span>&amp; teacher) { m_teachers.<span class="tk-f">push_back</span>(&amp;teacher); }
+
+<span class="tk-k">private</span>:
+    std::vector&lt;<span class="tk-t">Teacher</span>*&gt; m_teachers{};    <span class="tk-c">// not owned</span>
+};
+
+<span class="tk-t">Teacher</span> bob{ <span class="tk-s">&quot;Bob&quot;</span> };
+{
+    <span class="tk-t">Department</span> maths{};
+    maths.<span class="tk-f">add</span>(bob);
+}    <span class="tk-c">// the Department is gone. Bob is unaffected.</span></code></pre></div>
+<p>The raw pointers here are observers, which is a legitimate use. The obligation runs the other way: the teachers must outlive the department&#39;s use of them, or the pointers dangle.</p>
+<div class="callout note"><div class="callout-title"><span>A vector cannot hold references</span></div><div class="callout-body"><p><code>std::vector&lt;Teacher&amp;&gt;</code> does not compile, because a reference cannot be reassigned and a vector must be able to move its elements. Use pointers, or <code>std::vector&lt;std::reference_wrapper&lt;Teacher&gt;&gt;</code>.</p>
+</div></div>
+<h2>Association</h2>
+<p>Two independent objects that know about each other.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Patient</span>;
+
+<span class="tk-k">class</span> <span class="tk-t">Doctor</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">addPatient</span>(<span class="tk-t">Patient</span>&amp; patient);
+
+<span class="tk-k">private</span>:
+    std::vector&lt;<span class="tk-t">Patient</span>*&gt; m_patients{};
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Patient</span>
+{
+<span class="tk-k">private</span>:
+    std::vector&lt;<span class="tk-t">Doctor</span>*&gt; m_doctors{};
+};</code></pre></div>
+<p>Links in both directions have to be kept consistent: adding a patient to a doctor must also add the doctor to the patient, and removal must undo both. Prefer a link in one direction, or store an identifier and look the object up when needed.</p>
+<h2>Dependency</h2>
+<p>The lightest relationship. One class uses another for the length of a function call and keeps nothing.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Printer</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">print</span>(<span class="tk-k">const</span> <span class="tk-t">Document</span>&amp; document);
+};</code></pre></div>
+<h2>Choosing</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    Q1{&quot;Is B a kind of A?&quot;} -- yes --&gt; I[&quot;Inheritance&lt;br/&gt;(Milestone 8)&quot;]
+    Q1 -- no --&gt; Q2{&quot;Is B a part of A that&lt;br/&gt;cannot exist without it?&quot;}
+    Q2 -- yes --&gt; C[&quot;Composition&lt;br/&gt;value member or unique_ptr&quot;]
+    Q2 -- no --&gt; Q3{&quot;Does A keep a lasting&lt;br/&gt;link to B?&quot;}
+    Q3 -- yes --&gt; A[&quot;Aggregation or association&lt;br/&gt;pointer, weak_ptr or identifier&quot;]
+    Q3 -- no --&gt; D[&quot;Dependency&lt;br/&gt;function parameter&quot;]</pre></div>
+<div class="callout tip"><div class="callout-title"><span>Prefer the weakest relationship that works</span></div><div class="callout-body"><p>A dependency is easier to reason about than a stored link, and composition is easier than inheritance. The well-known advice &quot;favour composition over inheritance&quot; is explained in <a href="../8-06-object-slicing-casting-and-composition/">8.06 Object Slicing, Casting and Composition</a>.</p>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/7.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/7.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-06-smart-pointers/"><span class="mono">previous</span><b>7.06 Smart Pointers</b></a>
+      <a class="lp-next" href="../7-08-container-classes-and-std-initializer-list/"><span class="mono">next</span><b>7.08 Container Classes and std::initializer_list</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/7-07-object-relationships"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

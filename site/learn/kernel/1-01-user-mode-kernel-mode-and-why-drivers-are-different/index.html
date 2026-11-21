@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>User Mode, Kernel Mode and Why Drivers Are Different · Windows Kernel Driver Development · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/kernel/1-01-user-mode-kernel-mode-and-why-drivers-are-different/">
+  <meta name="description" content="What the kernel is, why the processor separates user mode from kernel mode, what drivers are for, and why a bug in a driver takes the whole machine down.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="User Mode, Kernel Mode and Why Drivers Are Different · Windows Kernel Driver Development · Xenon">
+  <meta property="og:description" content="What the kernel is, why the processor separates user mode from kernel mode, what drivers are for, and why a bug in a driver takes the whole machine down.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/kernel/1-01-user-mode-kernel-mode-and-why-drivers-are-different/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="User Mode, Kernel Mode and Why Drivers Are Different · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="User Mode, Kernel Mode and Why Drivers Are Different · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:description" content="What the kernel is, why the processor separates user mode from kernel mode, what drivers are for, and why a bug in a driver takes the whole machine down.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Kernel Driver Development</a><span>/</span><span>Into the Kernel</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">User Mode, Kernel Mode and Why Drivers Are Different</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">What the kernel is, why the processor separates user mode from kernel mode, what drivers are for, and why a bug in a driver takes the whole machine down. This lesson also sets the rules for the course - everything happens in a virtual machine.</p>
+      <div class="prose">
+<h2>Two privilege levels</h2>
+<p>The processor runs code at different <strong>privilege levels</strong>. Windows uses two:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>User mode</th>
+<th>Kernel mode</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Who runs there</td>
+<td>Applications, services, most of Windows&#39; own programs</td>
+<td>The kernel, the executive, the HAL and drivers</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>Its own process&#39;s address space only</td>
+<td>All of memory, every process, the hardware</td>
+</tr>
+<tr>
+<td>A crash</td>
+<td>Ends that one process</td>
+<td>Stops the whole machine: a <strong>bug check</strong> (blue screen)</td>
+</tr>
+<tr>
+<td>Errors</td>
+<td>Exceptions, error codes</td>
+<td>Must be handled perfectly; there is no one to clean up</td>
+</tr>
+</tbody></table>
+</div>
+<p>User-mode code cannot touch the hardware or another process&#39;s memory; when it needs something the system provides (reading a file, creating a window), it makes a <strong>system call</strong>, and the processor switches to kernel mode to run trusted code on its behalf, then switches back.</p>
+<h2>What lives in the kernel</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    A[Applications] --&gt; S[System calls: ntdll.dll]
+    S --&gt; E[Executive: I/O manager, memory manager, object manager, process manager, security]
+    E --&gt; K[Kernel: scheduling, interrupts, synchronisation]
+    E --&gt; D[Drivers: file systems, networking, devices, filters]
+    K --&gt; H[HAL: hardware abstraction]
+    D --&gt; H</pre></div>
+<p><strong>Drivers</strong> are modules that run in kernel mode, loaded by the system, to extend it: a driver for a graphics card or a USB device, a file system, a network filter, an antivirus filter. They follow the same rules as the rest of the kernel and have the same power.</p>
+<h2>Why drivers are different</h2>
+<p>Everything in the Win32 API course still applies in spirit, but a kernel driver adds rules that user-mode code never sees:</p>
+<ul>
+<li><strong>No safety net</strong>: dereferencing a bad pointer, leaking memory, or holding a lock too long affects the whole machine, and a crash stops everything with a bug check.</li>
+<li><strong>No C++ runtime as you know it</strong>: no exceptions, no <code>new</code> without care, no standard library containers, no <code>printf</code>. Drivers are written in C or a careful subset of C++.</li>
+<li><strong>Interrupt levels</strong> (IRQLs, lesson 3.02) decide what code may do at any moment: some code may not wait, may not touch pageable memory, may not even call most functions.</li>
+<li><strong>Everything coming from user mode is hostile until checked</strong>: a driver is a door into the kernel, and an unchecked buffer is a security hole for the whole system (lesson 2.05).</li>
+</ul>
+<p>Most of the time, the right answer is <strong>not to write a driver</strong>: user-mode services, ETW, Windows&#39; built-in APIs and user-mode driver frameworks cover far more than people expect (lesson 5.04). This course is about understanding the kernel and building drivers correctly when they are needed.</p>
+<h2>The rules of this course</h2>
+<ol>
+<li><strong>Everything runs in a virtual machine</strong> (lesson 1.02). Never load a test driver on the computer you work on.</li>
+<li>The drivers in this course <strong>echo, count and log</strong>: they talk to their own user-mode client and observe documented events. They never read or write other processes&#39; memory, never hide anything, and never try to get around any of Windows&#39; protections.</li>
+<li>Test drivers are loaded with <strong>test signing</strong>, Microsoft&#39;s documented mechanism for driver development, enabled only inside the virtual machine.</li>
+</ol>
+<h2>How the practice works</h2>
+<p>Compiler Explorer runs ordinary programs, not drivers. So the practice checks the <strong>logic</strong> that goes inside drivers in plain C++: the I/O control codes, the kernel&#39;s string type, buffer validation, linked lists, ring buffers, IRQL rules. Each practice declares the few kernel types it needs, exactly as the WDK headers do.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/kernel/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/kernel/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-building-a-safe-lab/"><span class="mono">next</span><b>1.02 Building a Safe Lab</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/kernel/1-01-user-mode-kernel-mode-and-why-drivers-are-different"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Popups, Context Menus and Modals · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/4-02-popups-context-menus-and-modals/">
+  <meta name="description" content="Popups are small windows that appear on request and close when you click elsewhere - right-click menus, pickers, confirmations. This lesson explains ImGui's…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Popups, Context Menus and Modals · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Popups are small windows that appear on request and close when you click elsewhere - right-click menus, pickers, confirmations. This lesson explains ImGui's…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/4-02-popups-context-menus-and-modals/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Popups, Context Menus and Modals · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Popups, Context Menus and Modals · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Popups are small windows that appear on request and close when you click elsewhere - right-click menus, pickers, confirmations. This lesson explains ImGui's…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Menus, Popups, Docking and Style</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Popups, Context Menus and Modals</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Popups are small windows that appear on request and close when you click elsewhere - right-click menus, pickers, confirmations. This lesson explains ImGui&#39;s popup model (open by ID, draw every frame while open), context menus on items and windows, modal dialogs that block the rest of the interface, and the classic &quot;unsaved changes&quot; confirmation.</p>
+      <div class="prose">
+<h2>Opening and drawing are separate</h2>
+<p>A popup has an ID, like a widget. You <strong>open</strong> it once, in reaction to something, and you <strong>draw</strong> it every frame with <code>BeginPopup</code>, which returns <code>true</code> only while it is open:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Pick a stone&quot;</span>)) <span class="tk-t">ImGui</span>::<span class="tk-f">OpenPopup</span>(<span class="tk-s">&quot;stone picker&quot;</span>);     <span class="tk-c">// once, on click</span>
+
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginPopup</span>(<span class="tk-s">&quot;stone picker&quot;</span>))                                     <span class="tk-c">// every frame</span>
+{
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">char</span>* s : { <span class="tk-s">&quot;Granite&quot;</span>, <span class="tk-s">&quot;Basalt&quot;</span>, <span class="tk-s">&quot;Slate&quot;</span> })
+        <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Selectable</span>(s)) chosen = s;                              <span class="tk-c">// a Selectable closes the popup</span>
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndPopup</span>();                                                     <span class="tk-c">// only if BeginPopup returned true</span>
+}</code></pre></div>
+<p>The popup closes by itself when the user clicks outside it, presses Escape, or clicks a <code>Selectable</code>/<code>MenuItem</code> inside it. Close it from code with <code>ImGui::CloseCurrentPopup()</code> inside the popup.</p>
+<p>Both calls must be made with the <strong>same ID stack</strong>: an <code>OpenPopup</code> inside a <code>PushID(i)</code> opens a popup that <code>BeginPopup</code> can only find inside the same <code>PushID(i)</code>. This is the most common popup bug, and a direct consequence of lesson 1.05.</p>
+<h2>Context menus</h2>
+<p>Right-click menus have shortcuts that do the opening for you:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">Selectable</span>(stone.name.<span class="tk-f">c_str</span>());
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginPopupContextItem</span>())                   <span class="tk-c">// right-click on the item just drawn</span>
+{
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">MenuItem</span>(<span class="tk-s">&quot;Rename&quot;</span>)) <span class="tk-f">startRename</span>(stone);
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">MenuItem</span>(<span class="tk-s">&quot;Delete&quot;</span>)) <span class="tk-f">deleteStone</span>(stone);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndPopup</span>();
+}
+
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginPopupContextWindow</span>(<span class="tk-k">nullptr</span>, <span class="tk-t">ImGuiPopupFlags_MouseButtonRight</span> | <span class="tk-t">ImGuiPopupFlags_NoOpenOverItems</span>))
+{                                                      <span class="tk-c">// right-click on empty space in the window</span>
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">MenuItem</span>(<span class="tk-s">&quot;Add stone&quot;</span>)) <span class="tk-f">addStone</span>();
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndPopup</span>();
+}</code></pre></div>
+<h2>Modals</h2>
+<p>A <strong>modal</strong> popup blocks interaction with everything behind it until it is closed, and dims the background. Use it for decisions that must be made before continuing:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (wantsToQuit &amp;&amp; level.dirty) <span class="tk-t">ImGui</span>::<span class="tk-f">OpenPopup</span>(<span class="tk-s">&quot;Unsaved changes&quot;</span>);
+
+<span class="tk-t">ImGui</span>::<span class="tk-f">SetNextWindowPos</span>(<span class="tk-t">ImGui</span>::<span class="tk-f">GetMainViewport</span>()-&gt;<span class="tk-f">GetCenter</span>(), <span class="tk-t">ImGuiCond_Appearing</span>, <span class="tk-f">ImVec2</span>(<span class="tk-n">0.5f</span>, <span class="tk-n">0.5f</span>));
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginPopupModal</span>(<span class="tk-s">&quot;Unsaved changes&quot;</span>, <span class="tk-k">nullptr</span>, <span class="tk-t">ImGuiWindowFlags_AlwaysAutoResize</span>))
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;Save changes to %s before quitting?&quot;</span>, level.name.<span class="tk-f">c_str</span>());
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Save&quot;</span>, <span class="tk-f">ImVec2</span>(<span class="tk-n">100</span>, <span class="tk-n">0</span>)))       { <span class="tk-f">save</span>(); <span class="tk-f">quit</span>(); <span class="tk-t">ImGui</span>::<span class="tk-f">CloseCurrentPopup</span>(); }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>();
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Don't save&quot;</span>, <span class="tk-f">ImVec2</span>(<span class="tk-n">100</span>, <span class="tk-n">0</span>))) { <span class="tk-f">quit</span>(); <span class="tk-t">ImGui</span>::<span class="tk-f">CloseCurrentPopup</span>(); }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>();
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Cancel&quot;</span>, <span class="tk-f">ImVec2</span>(<span class="tk-n">100</span>, <span class="tk-n">0</span>)))     { wantsToQuit = <span class="tk-k">false</span>; <span class="tk-t">ImGui</span>::<span class="tk-f">CloseCurrentPopup</span>(); }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndPopup</span>();
+}</code></pre></div>
+<p><code>SetNextWindowPos</code> with the pivot <code>(0.5, 0.5)</code> and <code>ImGuiCond_Appearing</code> centres the dialog each time it appears. Passing a <code>bool*</code> as the second argument gives the modal a close button.</p>
+<h2>The unsaved-changes flow</h2>
+<p>&quot;Quit&quot;, &quot;New level&quot; and &quot;Open level&quot; all have the same shape: if there are unsaved changes, ask first; then do the action only if the user saved or chose not to. A small state machine keeps it correct: remember the <strong>pending action</strong>, open the modal, and when a button is pressed run (or drop) the pending action. The practice builds it.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>OpenPopup and BeginPopup under different ID stacks</span></div><div class="callout-body"><p>The popup is opened but never found. Call both at the same PushID level.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Calling OpenPopup every frame</span></div><div class="callout-body"><p>The popup reopens and resets constantly. Open it once, in response to an event.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Using a modal for information</span></div><div class="callout-body"><p>Modals interrupt. Use them for decisions only; show information in a tooltip or a log.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">How often do you call OpenPopup and BeginPopup?</div><ul><li>OpenPopup once when it should open; BeginPopup every frame</li><li>Both every frame</li><li>Both once</li></ul><details><summary>Show the answer</summary><p><b>OpenPopup once when it should open; BeginPopup every frame</b> Opening is an event; drawing happens every frame while open.</p></details></li><li><div class="q">OpenPopup(&quot;menu&quot;) is called inside PushID(3), BeginPopup(&quot;menu&quot;) outside it. What happens?</div><ul><li>The popup never appears, because the IDs differ</li><li>It works normally</li><li>ImGui opens two popups</li></ul><details><summary>Show the answer</summary><p><b>The popup never appears, because the IDs differ</b> Popup IDs follow the ID stack.</p></details></li><li><div class="q">When should you use a modal popup?</div><ul><li>For a decision that must be made before continuing, such as saving unsaved changes</li><li>For every message</li><li>For tooltips</li></ul><details><summary>Show the answer</summary><p><b>For a decision that must be made before continuing, such as saving unsaved changes</b> Modals block everything else until answered.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-menus-and-shortcuts/"><span class="mono">previous</span><b>4.01 Menus and Shortcuts</b></a>
+      <a class="lp-next" href="../4-03-drag-and-drop/"><span class="mono">next</span><b>4.03 Drag and Drop</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/4-02-popups-context-menus-and-modals"></script>
+</body>
+</html>

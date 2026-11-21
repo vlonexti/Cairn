@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Printing Digits Yourself · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/2-05-printing-digits-yourself/">
+  <meta name="description" content="To print a number, split it into decimal digits with div - by 100 for the hundreds, by 10 for the tens, the remainder for the units - and turn each digit…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Printing Digits Yourself · Assembly · Xenon">
+  <meta property="og:description" content="To print a number, split it into decimal digits with div - by 100 for the hundreds, by 10 for the tens, the remainder for the units - and turn each digit…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/2-05-printing-digits-yourself/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Printing Digits Yourself · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Printing Digits Yourself · Assembly · Xenon">
+  <meta name="twitter:description" content="To print a number, split it into decimal digits with div - by 100 for the hundreds, by 10 for the tens, the remainder for the units - and turn each digit…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Arithmetic and Logic</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Printing Digits Yourself</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">To print a number, split it into decimal digits with div - by 100 for the hundreds, by 10 for the tens, the remainder for the units - and turn each digit into a character by adding &#39;0&#39;. Store the characters in a buffer and write them. print_int does the same with a loop, building the digits from the right.</p>
+      <div class="prose">
+<h2>Digits are remainders</h2>
+<p>The number 427 is 4 hundreds, 2 tens and 7 units. Division pulls them apart:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>quotient</th>
+<th>remainder</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>427 ÷ 100</td>
+<td><strong>4</strong></td>
+<td>27</td>
+</tr>
+<tr>
+<td>27 ÷ 10</td>
+<td><strong>2</strong></td>
+<td><strong>7</strong></td>
+</tr>
+</tbody></table>
+</div>
+<p>Each digit 0 to 9 becomes its character by adding <code>&#39;0&#39;</code> (48): the characters <code>&#39;0&#39;</code> to <code>&#39;9&#39;</code> have the codes 48 to 57, in order. So 4 becomes <code>&#39;4&#39;</code> (52).</p>
+<h2>A three-digit printer</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .bss
+<span class="tk-f">digits:</span> <span class="tk-k">resb</span>    <span class="tk-n">4</span>               <span class="tk-c">; three digits and a new line</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">427</span>        <span class="tk-c">; the number, 0 to 999</span>
+
+        xor     <span class="tk-t">edx</span>, <span class="tk-t">edx</span>
+        mov     <span class="tk-t">ecx</span>, <span class="tk-n">100</span>
+        div     <span class="tk-t">ecx</span>             <span class="tk-c">; eax = hundreds, edx = the rest</span>
+        add     <span class="tk-t">al</span>, <span class="tk-s">'0'</span>
+        mov     [<span class="tk-k">rel</span> digits], <span class="tk-t">al</span>
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-t">edx</span>        <span class="tk-c">; the rest, 0 to 99</span>
+        xor     <span class="tk-t">edx</span>, <span class="tk-t">edx</span>
+        mov     <span class="tk-t">ecx</span>, <span class="tk-n">10</span>
+        div     <span class="tk-t">ecx</span>             <span class="tk-c">; eax = tens, edx = units</span>
+        add     <span class="tk-t">al</span>, <span class="tk-s">'0'</span>
+        mov     [<span class="tk-k">rel</span> digits + <span class="tk-n">1</span>], <span class="tk-t">al</span>
+        add     <span class="tk-t">dl</span>, <span class="tk-s">'0'</span>
+        mov     [<span class="tk-k">rel</span> digits + <span class="tk-n">2</span>], <span class="tk-t">dl</span>
+        mov     <span class="tk-k">byte</span> [<span class="tk-k">rel</span> digits + <span class="tk-n">3</span>], <span class="tk-n">10</span>
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>          <span class="tk-c">; write the 4 bytes</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> digits]
+        mov     <span class="tk-t">edx</span>, <span class="tk-n">4</span>
+        syscall
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<ul>
+<li><code>div ecx</code> is the 32-bit form: it divides <code>edx:eax</code> by <code>ecx</code>. That is enough for small numbers and faster than the 64-bit form.</li>
+<li><code>mov [rel digits + 1], al</code> stores one byte at the address <code>digits + 1</code>. Lesson 4.01 covers addresses.</li>
+<li>This version always prints three digits: 7 comes out as <code>007</code>.</li>
+</ul>
+<h2>Any number of digits</h2>
+<p>A number can have up to 20 decimal digits (2⁶⁴ is about 1.8 × 10¹⁹). Instead of a fixed set of divisions, <code>print_uint</code> repeats one step: divide by 10, and the remainder is the <strong>last</strong> digit. Then the quotient&#39;s last digit is the one before, and so on, until the quotient is 0. Because the digits come out from right to left, it fills its buffer backwards:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">print_uint:</span>
+        sub     <span class="tk-t">rsp</span>, <span class="tk-n">40</span>                 <span class="tk-c">; room on the stack for the digits (lesson 4.04)</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-t">rsp</span> + <span class="tk-n">32</span>]         <span class="tk-c">; start at the right-hand end</span>
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rdi</span>
+        mov     <span class="tk-t">ecx</span>, <span class="tk-n">10</span>
+<span class="tk-f">.digit:</span> xor     <span class="tk-t">edx</span>, <span class="tk-t">edx</span>
+        div     <span class="tk-t">rcx</span>                     <span class="tk-c">; rax = rax / 10, rdx = the last digit</span>
+        add     <span class="tk-t">dl</span>, <span class="tk-s">'0'</span>
+        dec     <span class="tk-t">rsi</span>                     <span class="tk-c">; move one place left</span>
+        mov     [<span class="tk-t">rsi</span>], <span class="tk-t">dl</span>               <span class="tk-c">; store the character</span>
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        jnz     .digit                  <span class="tk-c">; more digits while the quotient is not 0</span>
+        ...                             <span class="tk-c">; then write from rsi to the end</span></code></pre></div>
+<p><code>jnz</code> means &quot;jump if not zero&quot;, back to <code>.digit</code>: a loop. That is the subject of module 3. After it, you will write your own version, and lesson 6.02 handles signed numbers and reading digits back in.</p>
+<h2>Printing in other bases</h2>
+<p>The same method works for any base: divide by 2 for binary, by 16 for hexadecimal (where digits 10 to 15 become <code>&#39;a&#39;</code> to <code>&#39;f&#39;</code>). Since 2 and 16 are powers of two, shifts and masks replace the divisions: the last hex digit is <code>n &amp; 15</code>, and <code>n &gt;&gt; 4</code> drops it. That is how <code>print_hex</code> works.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the character for the digit 7?</div><ul><li>7 + &#39;0&#39;, which is 55</li><li>7</li><li>&#39;0&#39; - 7</li></ul><details><summary>Show the answer</summary><p><b>7 + &#39;0&#39;, which is 55</b> The digit characters are in order from 48.</p></details></li><li><div class="q">427 divided by 10 leaves remainder 7. What does that give?</div><ul><li>The last digit</li><li>The first digit</li><li>The number of digits</li></ul><details><summary>Show the answer</summary><p><b>The last digit</b> Division by 10 peels digits off the right.</p></details></li><li><div class="q">Why does print_uint fill its buffer from the end?</div><ul><li>Division by 10 produces the digits from right to left</li><li>Because the stack grows down</li><li>To print the number backwards</li></ul><details><summary>Show the answer</summary><p><b>Division by 10 produces the digits from right to left</b> The last digit comes out first.</p></details></li><li><div class="q">Before div ecx, why xor edx, edx?</div><ul><li>div ecx divides edx:eax, so edx must be 0 for a 32-bit number</li><li>To clear the flags</li><li>To make the remainder 0</li></ul><details><summary>Show the answer</summary><p><b>div ecx divides edx:eax, so edx must be 0 for a 32-bit number</b> The 32-bit form uses edx as the high half.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-the-flags/"><span class="mono">previous</span><b>2.04 The Flags</b></a>
+      <a class="lp-next" href="../3-01-compare-and-jump/"><span class="mono">next</span><b>3.01 Compare and Jump</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/2-05-printing-digits-yourself"></script>
+</body>
+</html>

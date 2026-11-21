@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Bytes, Encodings and Binary Data · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/8-04-bytes-encodings-and-binary-data/">
+  <meta name="description" content="The difference between text and bytes - bytes and bytearray, encoding and decoding with UTF-8, what goes wrong with the wrong encoding, hex and base64,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Bytes, Encodings and Binary Data · Python · Xenon">
+  <meta property="og:description" content="The difference between text and bytes - bytes and bytearray, encoding and decoding with UTF-8, what goes wrong with the wrong encoding, hex and base64,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/8-04-bytes-encodings-and-binary-data/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Bytes, Encodings and Binary Data · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Bytes, Encodings and Binary Data · Python · Xenon">
+  <meta name="twitter:description" content="The difference between text and bytes - bytes and bytearray, encoding and decoding with UTF-8, what goes wrong with the wrong encoding, hex and base64,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Python in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Bytes, Encodings and Binary Data</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.04</b></span><span>4 of 6 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">The difference between text and bytes - bytes and bytearray, encoding and decoding with UTF-8, what goes wrong with the wrong encoding, hex and base64, reading and writing binary files, packing numbers with the struct module, and memoryview for working on part of a buffer without copying.</p>
+      <div class="prose">
+<h2>Text is not bytes</h2>
+<p>A <code>str</code> holds characters. Files, networks and most other programs deal in <strong>bytes</strong>: numbers from 0 to 255. Turning text into bytes is <strong>encoding</strong>; turning bytes back into text is <strong>decoding</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>text = <span class="tk-s">&quot;café&quot;</span>
+data = text.<span class="tk-f">encode</span>(<span class="tk-s">&quot;utf-8&quot;</span>)
+<span class="tk-f">print</span>(data, <span class="tk-f">len</span>(text), <span class="tk-f">len</span>(data))
+<span class="tk-f">print</span>(data.<span class="tk-f">decode</span>(<span class="tk-s">&quot;utf-8&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>b'caf\xc3\xa9' 4 5
+café</code></pre></div>
+<p><code>é</code> takes two bytes in UTF-8, so the text has 4 characters but 5 bytes. A <code>bytes</code> literal is written <code>b&#39;...&#39;</code>; bytes that are not printable ASCII show as <code>\x..</code>.</p>
+<h2>The wrong encoding</h2>
+<p>Decoding with an encoding that does not match gives either an error or quietly wrong text:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>data = <span class="tk-s">&quot;café&quot;</span>.<span class="tk-f">encode</span>(<span class="tk-s">&quot;utf-8&quot;</span>)
+<span class="tk-f">print</span>(data.<span class="tk-f">decode</span>(<span class="tk-s">&quot;latin-1&quot;</span>))
+<span class="tk-k">try</span>:
+    <span class="tk-s">b&quot;\xff\xfe&quot;</span>.<span class="tk-f">decode</span>(<span class="tk-s">&quot;utf-8&quot;</span>)
+<span class="tk-k">except</span> UnicodeDecodeError <span class="tk-k">as</span> e:
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;error:&quot;</span>, e.reason)
+<span class="tk-f">print</span>(<span class="tk-s">b&quot;\xff abc&quot;</span>.<span class="tk-f">decode</span>(<span class="tk-s">&quot;utf-8&quot;</span>, errors=<span class="tk-s">&quot;replace&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>cafÃ©
+error: invalid start byte
+� abc</code></pre></div>
+<p><code>cafÃ©</code> is the classic sign of UTF-8 read as Latin-1. Always say the encoding when opening text files (<code>open(path, encoding=&quot;utf-8&quot;)</code>), and decide on purpose what to do with bad bytes (<code>errors=&quot;replace&quot;</code> or <code>&quot;strict&quot;</code>).</p>
+<h2>Working with bytes</h2>
+<p><code>bytes</code> cannot be changed; <code>bytearray</code> can:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>b = <span class="tk-f">bytes</span>([<span class="tk-n">72</span>, <span class="tk-n">105</span>])
+<span class="tk-f">print</span>(b, b[<span class="tk-n">0</span>], <span class="tk-f">list</span>(b))
+
+buf = <span class="tk-f">bytearray</span>(<span class="tk-s">b&quot;hello&quot;</span>)
+buf[<span class="tk-n">0</span>] = <span class="tk-f">ord</span>(<span class="tk-s">&quot;J&quot;</span>)
+buf += <span class="tk-s">b&quot;!&quot;</span>
+<span class="tk-f">print</span>(buf, buf.<span class="tk-f">hex</span>(<span class="tk-s">&quot; &quot;</span>))
+<span class="tk-f">print</span>(bytes.<span class="tk-f">fromhex</span>(<span class="tk-s">&quot;48 69&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>b'Hi' 72 [72, 105]
+bytearray(b'Jello!') 4a 65 6c 6c 6f 21
+b'Hi'</code></pre></div>
+<p>Indexing a <code>bytes</code> gives an <code>int</code>; slicing gives <code>bytes</code>.</p>
+<h2>Base64</h2>
+<p>Base64 turns any bytes into plain ASCII text, so binary data can travel through JSON, email or URLs:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> base64
+
+raw = <span class="tk-f">bytes</span>([<span class="tk-n">0</span>, <span class="tk-n">255</span>, <span class="tk-n">128</span>, <span class="tk-n">64</span>])
+text = base64.<span class="tk-f">b64encode</span>(raw).<span class="tk-f">decode</span>(<span class="tk-s">&quot;ascii&quot;</span>)
+<span class="tk-f">print</span>(text, base64.<span class="tk-f">b64decode</span>(text) == raw)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>AP+AQA== True</code></pre></div>
+<p>It is an encoding, not encryption: anyone can decode it.</p>
+<h2>Binary files</h2>
+<p>Open with <code>&quot;rb&quot;</code> or <code>&quot;wb&quot;</code> to read and write bytes with no decoding:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">with</span> <span class="tk-f">open</span>(<span class="tk-s">&quot;image.png&quot;</span>, <span class="tk-s">&quot;rb&quot;</span>) <span class="tk-k">as</span> f:
+    header = f.<span class="tk-f">read</span>(<span class="tk-n">8</span>)
+<span class="tk-f">print</span>(header == <span class="tk-s">b&quot;\x89PNG\r\n\x1a\n&quot;</span>)</code></pre></div>
+<h2>Packing numbers with struct</h2>
+<p>Binary formats store numbers as fixed-size groups of bytes. <code>struct.pack</code> turns values into bytes by a format string, and <code>struct.unpack</code> reverses it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> struct
+
+data = struct.<span class="tk-f">pack</span>(<span class="tk-s">&quot;&lt;HIf&quot;</span>, <span class="tk-n">7</span>, <span class="tk-n">1_000_000</span>, <span class="tk-n">1.5</span>)
+<span class="tk-f">print</span>(data.<span class="tk-f">hex</span>(<span class="tk-s">&quot; &quot;</span>), <span class="tk-f">len</span>(data))
+<span class="tk-f">print</span>(struct.<span class="tk-f">unpack</span>(<span class="tk-s">&quot;&lt;HIf&quot;</span>, data))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>07 00 40 42 0f 00 00 00 c0 3f 10
+(7, 1000000, 1.5)</code></pre></div>
+<p>The format starts with the byte order, <code>&lt;</code> for little-endian (most PCs) or <code>&gt;</code> for big-endian (network order), then one letter per value: <code>b</code>/<code>B</code> 1 byte, <code>h</code>/<code>H</code> 2, <code>i</code>/<code>I</code> 4, <code>q</code>/<code>Q</code> 8 (lower case signed, upper case unsigned), <code>f</code> and <code>d</code> for floats, <code>5s</code> for 5 raw bytes. <code>struct.calcsize</code> gives the total size.</p>
+<p>Reading records one after another:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> struct
+
+RECORD = struct.<span class="tk-f">Struct</span>(<span class="tk-s">&quot;&lt;I8sB&quot;</span>)       <span class="tk-c"># id, name (8 bytes), score</span>
+rows = [(<span class="tk-n">1</span>, <span class="tk-s">b&quot;Ada&quot;</span>, <span class="tk-n">91</span>), (<span class="tk-n">2</span>, <span class="tk-s">b&quot;Bob&quot;</span>, <span class="tk-n">48</span>)]
+blob = <span class="tk-s">b&quot;&quot;</span>.<span class="tk-f">join</span>(RECORD.<span class="tk-f">pack</span>(*r) <span class="tk-k">for</span> r <span class="tk-k">in</span> rows)
+
+<span class="tk-k">for</span> id_, name, score <span class="tk-k">in</span> RECORD.<span class="tk-f">iter_unpack</span>(blob):
+    <span class="tk-f">print</span>(id_, name.<span class="tk-f">rstrip</span>(<span class="tk-s">b&quot;\0&quot;</span>).<span class="tk-f">decode</span>(), score)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1 Ada 91
+2 Bob 48</code></pre></div>
+<p><code>8s</code> pads short names with zero bytes, which is why the reader strips them.</p>
+<h2>Integers to bytes directly</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>n = <span class="tk-n">1_000_000</span>
+data = n.<span class="tk-f">to_bytes</span>(<span class="tk-n">4</span>, <span class="tk-s">&quot;big&quot;</span>)
+<span class="tk-f">print</span>(data.<span class="tk-f">hex</span>(), int.<span class="tk-f">from_bytes</span>(data, <span class="tk-s">&quot;big&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>000f4240 1000000</code></pre></div>
+<h2>memoryview: slices without copying</h2>
+<p>Slicing <code>bytes</code> makes a copy. A <code>memoryview</code> looks at part of a buffer without copying, and can write into a <code>bytearray</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>buf = <span class="tk-f">bytearray</span>(<span class="tk-n">8</span>)
+view = <span class="tk-f">memoryview</span>(buf)
+view[<span class="tk-n">2</span>:<span class="tk-n">4</span>] = <span class="tk-s">b&quot;\x12\x34&quot;</span>
+<span class="tk-f">print</span>(buf.<span class="tk-f">hex</span>(<span class="tk-s">&quot; &quot;</span>), view[<span class="tk-n">2</span>:<span class="tk-n">4</span>].<span class="tk-f">tobytes</span>())</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>00 00 12 34 00 00 00 00 b'\x124'</code></pre></div>
+<p>For large files or network buffers this avoids copying megabytes just to look at a header.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/8.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/8.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-03-generics-and-advanced-typing/"><span class="mono">previous</span><b>8.03 Generics and Advanced Typing</b></a>
+      <a class="lp-next" href="../8-05-databases-with-sqlite3/"><span class="mono">next</span><b>8.05 Databases with sqlite3</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/8-04-bytes-encodings-and-binary-data"></script>
+</body>
+</html>

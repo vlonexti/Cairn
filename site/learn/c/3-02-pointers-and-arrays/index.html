@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Pointers and Arrays · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/3-02-pointers-and-arrays/">
+  <meta name="description" content="An array's name turns into a pointer to its first element. Adding 1 to a pointer moves it by one element, not one byte, so p[i] is exactly (p + i). Pointers…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pointers and Arrays · C · Xenon">
+  <meta property="og:description" content="An array's name turns into a pointer to its first element. Adding 1 to a pointer moves it by one element, not one byte, so p[i] is exactly (p + i). Pointers…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/3-02-pointers-and-arrays/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pointers and Arrays · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pointers and Arrays · C · Xenon">
+  <meta name="twitter:description" content="An array's name turns into a pointer to its first element. Adding 1 to a pointer moves it by one element, not one byte, so p[i] is exactly (p + i). Pointers…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>Pointers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Pointers and Arrays</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">An array&#39;s name turns into a pointer to its first element. Adding 1 to a pointer moves it by one element, not one byte, so p[i] is exactly *(p + i). Pointers can walk through arrays and strings, subtracting two pointers gives the distance between them, and a pointer just past the end is allowed as a stopping point.</p>
+      <div class="prose">
+<h2>The array name is a pointer to element 0</h2>
+<p>In almost every expression, an array&#39;s name turns into (&quot;decays to&quot;) a pointer to its first element:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> values[<span class="tk-n">4</span>] = {<span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">40</span>};
+    <span class="tk-k">int</span> *p = values;              <span class="tk-c">// the same as &amp;values[0]</span>
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d %d\n&quot;</span>, *p, values[<span class="tk-n">0</span>]);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>That is why a function &quot;receiving an array&quot; really receives a pointer (lesson 2.04): <code>int values[]</code> in a parameter list means exactly <code>int *values</code>.</p>
+<h2>Pointer arithmetic</h2>
+<p>Adding 1 to a pointer moves it to the <strong>next element</strong>: the address grows by the size of the type, 4 bytes for an <code>int</code>, 8 for a <code>double</code>, 1 for a <code>char</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> values[<span class="tk-n">4</span>] = {<span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">40</span>};
+    <span class="tk-k">int</span> *p = values;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d\n&quot;</span>, *(p + <span class="tk-n">2</span>));       <span class="tk-c">// 30</span>
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%p\n%p\n&quot;</span>, (<span class="tk-k">void</span> *)p, (<span class="tk-k">void</span> *)(p + <span class="tk-n">1</span>));   <span class="tk-c">// 4 apart</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/c/l/3.02">Try it in Xenon</a></div>
+<p>And now the secret of <code>[ ]</code>: <strong><code>p[i]</code> is defined as <code>*(p + i)</code></strong>. Indexing is pointer arithmetic with nicer clothes on. It works the same on arrays and on pointers.</p>
+<h2>Walking with a pointer</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+size_t <span class="tk-f">length</span>(<span class="tk-k">const</span> <span class="tk-k">char</span> *s)
+{
+    <span class="tk-k">const</span> <span class="tk-k">char</span> *start = s;
+    <span class="tk-k">while</span> (*s != <span class="tk-s">'\0'</span>) {
+        s++;                        <span class="tk-c">// move to the next character</span>
+    }
+    <span class="tk-k">return</span> (size_t)(s - start);     <span class="tk-c">// the distance between two pointers</span>
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%zu\n&quot;</span>, <span class="tk-f">length</span>(<span class="tk-s">&quot;pointer&quot;</span>));   <span class="tk-c">// 7</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<ul>
+<li><code>s++</code> moves the pointer itself (the parameter is a copy, so the caller&#39;s pointer is untouched).</li>
+<li>Subtracting two pointers into the same array gives the number of <strong>elements</strong> between them, of type <code>ptrdiff_t</code>.</li>
+<li><code>*s != &#39;\0&#39;</code> is often written as just <code>*s</code>.</li>
+</ul>
+<p>The famous one-line copy reads: <code>while ((*dest++ = *src++) != &#39;\0&#39;) { }</code> - copy a character, move both pointers, stop after copying the terminator.</p>
+<h2>Begin and end</h2>
+<p>A common style passes a pointer to the first element and one <strong>just past</strong> the last:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">long</span> <span class="tk-k">long</span> <span class="tk-f">total</span>(<span class="tk-k">const</span> <span class="tk-k">int</span> *begin, <span class="tk-k">const</span> <span class="tk-k">int</span> *end)
+{
+    <span class="tk-k">long</span> <span class="tk-k">long</span> sum = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">int</span> *p = begin; p != end; p++) {
+        sum += *p;
+    }
+    <span class="tk-k">return</span> sum;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> values[] = {<span class="tk-n">3</span>, <span class="tk-n">1</span>, <span class="tk-n">4</span>, <span class="tk-n">1</span>, <span class="tk-n">5</span>, <span class="tk-n">9</span>};
+    size_t n = <span class="tk-k">sizeof</span> values / <span class="tk-k">sizeof</span> values[<span class="tk-n">0</span>];
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%lld\n&quot;</span>, <span class="tk-f">total</span>(values, values + n));        <span class="tk-c">// all: 23</span>
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%lld\n&quot;</span>, <span class="tk-f">total</span>(values + <span class="tk-n">2</span>, values + <span class="tk-n">4</span>));    <span class="tk-c">// the 4 and the 1: 5</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>C allows a pointer to the position one past the end of an array, as long as you never dereference it. Any further, or before the start, and even computing the pointer is undefined.</p>
+<h2>Arrays are not quite pointers</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th><code>int a[4]</code></th>
+<th><code>int *p</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sizeof</code></td>
+<td>16: the whole array</td>
+<td>8: one address</td>
+</tr>
+<tr>
+<td>can be assigned (<code>a = ...</code>)</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>storage</td>
+<td>holds 4 ints</td>
+<td>holds one address</td>
+</tr>
+</tbody></table>
+</div>
+<p>The array <strong>is</strong> the memory; the pointer only <strong>points at</strong> memory somewhere else.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">If p points at an int at address 1000, what address is p + 1?</div><ul><li>1004</li><li>1001</li><li>1008</li></ul><details><summary>Show the answer</summary><p><b>1004</b> Pointer arithmetic moves by whole elements, and an int is 4 bytes.</p></details></li><li><div class="q">Which is the same as values[3]?</div><ul><li>*(values + 3)</li><li>*values + 3</li><li>&amp;values + 3</li></ul><details><summary>Show the answer</summary><p><b>*(values + 3)</b> *values + 3 is the first element plus 3.</p></details></li><li><div class="q">Two pointers into the same array, q - p, gives...</div><ul><li>The number of elements between them</li><li>The number of bytes between them</li><li>An error</li></ul><details><summary>Show the answer</summary><p><b>The number of elements between them</b> The difference is in elements, like the addition.</p></details></li><li><div class="q">Can a pointer point one past the end of an array?</div><ul><li>Yes, as long as it is never dereferenced</li><li>No, never</li><li>Yes, and reading it gives 0</li></ul><details><summary>Show the answer</summary><p><b>Yes, as long as it is never dereferenced</b> It is the usual &quot;end&quot; marker for loops.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-addresses-and-pointers/"><span class="mono">previous</span><b>3.01 Addresses and Pointers</b></a>
+      <a class="lp-next" href="../3-03-pointers-as-parameters/"><span class="mono">next</span><b>3.03 Pointers as Parameters</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/3-02-pointers-and-arrays"></script>
+</body>
+</html>

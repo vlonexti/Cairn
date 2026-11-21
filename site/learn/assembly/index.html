@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Assembly course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/">
+  <meta name="description" content="x86-64 assembly: talk to the processor directly. Write programs in the processor's own instructions: x86-64 assembly in Intel syntax with NASM, running on…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Assembly course · Xenon">
+  <meta property="og:description" content="x86-64 assembly: talk to the processor directly. Write programs in the processor's own instructions: x86-64 assembly in Intel syntax with NASM, running on…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Assembly course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Assembly course · Xenon">
+  <meta name="twitter:description" content="x86-64 assembly: talk to the processor directly. Write programs in the processor's own instructions: x86-64 assembly in Intel syntax with NASM, running on…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Assembly</span></div>
+    <h1 class="display">Assembly</h1>
+    <div class="readout lp-readout"><span><b>8</b> milestones</span><span><b>41</b> lessons</span><span><b>51</b> practice tasks</span><span><b>40</b> projects</span></div>
+    <p class="lp-lede">Write programs in the processor's own instructions: x86-64 assembly in Intel syntax with NASM, running on Linux. Starting from a program that prints with a system call, the course covers registers, data, Xenon's print and read routines, arithmetic, multiplying and dividing, bit operations and the flags, how numbers become printed digits, compares and jumps, loops, signed and unsigned conditions, if and switch as the compiler writes them, branch-free code, addressing modes, arrays, strings, the stack, buffers and input, call and ret, the System V calling convention, stack frames, recursion, calling and being called from C, reading compiler output, parsing numbers, optimisation, SIMD, ARM64, and finally floating point with SSE, NASM macros, files through system calls, structures, and bit scanning and atomic instructions, then string instructions, division by magic numbers, jump tables, memory from mmap, and arguments and the environment. Every lesson has checked practice, assembled with NASM and run for real, and every milestone ends with five projects, from small to large.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-what-assembly-is/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/assembly">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> Hello, Machine</h2>
+      <p class="lp-ms-blurb">What assembly is, registers, mov and exit codes, system calls, data, and Xenon's print and read routines.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-what-assembly-is/"><span class="mono">1.01</span><span class="t">What Assembly Is</span><span class="n">1 task</span></a></li>
+        <li><a href="1-02-registers/"><span class="mono">1.02</span><span class="t">Registers</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-mov-and-exit-codes/"><span class="mono">1.03</span><span class="t">mov and Exit Codes</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-system-calls-write-and-exit/"><span class="mono">1.04</span><span class="t">System Calls write and exit</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-data-db-dw-dd-dq-and-equ/"><span class="mono">1.05</span><span class="t">Data db, dw, dd, dq and equ</span><span class="n">1 task</span></a></li>
+        <li><a href="1-06-xenon-s-print-and-read-routines/"><span class="mono">1.06</span><span class="t">Xenon's Print and Read Routines</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Arithmetic and Logic</h2>
+      <p class="lp-ms-blurb">Adding and subtracting, multiplying and dividing, bit instructions and shifts, the flags, and how a number is printed.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-add-sub-inc-dec-and-neg/"><span class="mono">2.01</span><span class="t">add, sub, inc, dec and neg</span><span class="n">1 task</span></a></li>
+        <li><a href="2-02-multiplying-and-dividing/"><span class="mono">2.02</span><span class="t">Multiplying and Dividing</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-bit-instructions-and-shifts/"><span class="mono">2.03</span><span class="t">Bit Instructions and Shifts</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-the-flags/"><span class="mono">2.04</span><span class="t">The Flags</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-printing-digits-yourself/"><span class="mono">2.05</span><span class="t">Printing Digits Yourself</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Control Flow</h2>
+      <p class="lp-ms-blurb">Compares and jumps, loops, signed and unsigned conditions, if and switch from C, and branch-free code.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-compare-and-jump/"><span class="mono">3.01</span><span class="t">Compare and Jump</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-loops/"><span class="mono">3.02</span><span class="t">Loops</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-signed-and-unsigned-conditions/"><span class="mono">3.03</span><span class="t">Signed and Unsigned Conditions</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-if-else-and-switch-from-c/"><span class="mono">3.04</span><span class="t">if, else and switch from C</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-branch-free-code-cmov-and-setcc/"><span class="mono">3.05</span><span class="t">Branch-Free Code cmov and setcc</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Memory</h2>
+      <p class="lp-ms-blurb">Addressing modes, arrays, strings, the stack, and buffers for input.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-addressing-modes/"><span class="mono">4.01</span><span class="t">Addressing Modes</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-arrays/"><span class="mono">4.02</span><span class="t">Arrays</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-strings/"><span class="mono">4.03</span><span class="t">Strings</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-the-stack-push-and-pop/"><span class="mono">4.04</span><span class="t">The Stack push and pop</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-buffers-and-input/"><span class="mono">4.05</span><span class="t">Buffers and Input</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Functions</h2>
+      <p class="lp-ms-blurb">call and ret, the System V calling convention, stack frames, recursion, and working with C.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-call-and-ret/"><span class="mono">5.01</span><span class="t">call and ret</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-the-system-v-calling-convention/"><span class="mono">5.02</span><span class="t">The System V Calling Convention</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-stack-frames-and-locals/"><span class="mono">5.03</span><span class="t">Stack Frames and Locals</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-recursion/"><span class="mono">5.04</span><span class="t">Recursion</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-working-with-c/"><span class="mono">5.05</span><span class="t">Working with C</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Real Programs</h2>
+      <p class="lp-ms-blurb">Reading compiler output, parsing and printing numbers, optimisation, SIMD, and ARM64.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-reading-compiler-output/"><span class="mono">6.01</span><span class="t">Reading Compiler Output</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-parsing-and-printing-numbers/"><span class="mono">6.02</span><span class="t">Parsing and Printing Numbers</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-optimisation-basics/"><span class="mono">6.03</span><span class="t">Optimisation Basics</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-simd-many-numbers-at-once/"><span class="mono">6.04</span><span class="t">SIMD Many Numbers at Once</span><span class="n">1 task</span></a></li>
+        <li><a href="6-05-beyond-x86-arm64-and-debuggers/"><span class="mono">6.05</span><span class="t">Beyond x86 ARM64 and Debuggers</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">07</span> Deeper Assembly</h2>
+      <p class="lp-ms-blurb">Floating point with SSE, NASM macros and conditional assembly, files with system calls, structures and data layout, and bit scanning with atomic instructions.</p>
+      <ol class="lp-lessons">
+        <li><a href="7-01-floating-point-with-sse/"><span class="mono">7.01</span><span class="t">Floating Point with SSE</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-02-nasm-macros-and-conditional-assembly/"><span class="mono">7.02</span><span class="t">NASM Macros and Conditional Assembly</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-03-files-with-system-calls/"><span class="mono">7.03</span><span class="t">Files with System Calls</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-04-structures-and-data-layout/"><span class="mono">7.04</span><span class="t">Structures and Data Layout</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-05-bit-scanning-and-atomics/"><span class="mono">7.05</span><span class="t">Bit Scanning and Atomics</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">08</span> Assembly in Practice</h2>
+      <p class="lp-ms-blurb">String instructions, multiplying and dividing by constants without div, jump tables and function pointers, memory from the kernel with mmap, and command-line arguments and the environment.</p>
+      <ol class="lp-lessons">
+        <li><a href="8-01-string-instructions/"><span class="mono">8.01</span><span class="t">String Instructions</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-02-multiplying-and-dividing-by-constants/"><span class="mono">8.02</span><span class="t">Multiplying and Dividing by Constants</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-03-jump-tables-and-function-pointers/"><span class="mono">8.03</span><span class="t">Jump Tables and Function Pointers</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-04-memory-from-the-kernel/"><span class="mono">8.04</span><span class="t">Memory from the Kernel</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-05-command-line-arguments-and-the-environment/"><span class="mono">8.05</span><span class="t">Command-Line Arguments and the Environment</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly"></script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Atomics and the Memory Model · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/12-05-atomics-and-the-memory-model/">
+  <meta name="description" content="std::atomic&lt;T makes individual operations on a variable indivisible, so counters and flags need no mutex. The memory model defines what other threads are…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Atomics and the Memory Model · C++ · Xenon">
+  <meta property="og:description" content="std::atomic&lt;T makes individual operations on a variable indivisible, so counters and flags need no mutex. The memory model defines what other threads are…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/12-05-atomics-and-the-memory-model/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Atomics and the Memory Model · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Atomics and the Memory Model · C++ · Xenon">
+  <meta name="twitter:description" content="std::atomic&lt;T makes individual operations on a variable indivisible, so counters and flags need no mutex. The memory model defines what other threads are…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Concurrency and Coroutines</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Atomics and the Memory Model</h1>
+      <div class="readout lp-readout"><span>lesson <b>12.05</b></span><span>5 of 7 in milestone 12</span><span>7 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary"><code>std::atomic&lt;T&gt;</code> makes individual operations on a variable indivisible, so counters and flags need no mutex. The <strong>memory model</strong> defines what other threads are guaranteed to <em>observe</em>: compilers and processors reorder work, and <strong>memory orders</strong> constrain that. The default, <code>seq_cst</code>, is the safest; weaken it only with proof.</p>
+      <div class="prose">
+<h2><code>std::atomic</code></h2>
+<p>An operation is <strong>atomic</strong> if no other thread can observe it half-done.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;atomic&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;thread&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::atomic&lt;<span class="tk-k">int</span>&gt; counter{ <span class="tk-n">0</span> };
+    <span class="tk-k">auto</span> increment{ [&amp;]
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; <span class="tk-n">1'000'000</span>; ++i)
+        {
+            ++counter;
+        }
+    } };
+
+    {
+        std::jthread a{ increment };
+        std::jthread b{ increment };
+    }
+    std::cout &lt;&lt; counter &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// exactly 2000000</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Compare with the lost updates in <a href="../12-02-data-races-mutexes-and-locks/">12.02 Data Races, Mutexes and Locks</a>. Here <code>++counter</code> is a single indivisible read-modify-write. Access to an atomic object is never a data race.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x.load()</code>, <code>x.store(v)</code></td>
+<td>Read; write</td>
+</tr>
+<tr>
+<td><code>x++</code>, <code>x += 5</code>, <code>x.fetch_add(5)</code></td>
+<td>Atomic read-modify-write</td>
+</tr>
+<tr>
+<td><code>x.exchange(v)</code></td>
+<td>Store <code>v</code> and return the previous value</td>
+</tr>
+<tr>
+<td><code>x.compare_exchange_weak(expected, desired)</code></td>
+<td>If <code>x</code> equals <code>expected</code>, store <code>desired</code>; otherwise copy <code>x</code> into <code>expected</code></td>
+</tr>
+<tr>
+<td><code>x.wait(old)</code>, <code>x.notify_one()</code> (C++20)</td>
+<td>Block until the value changes from <code>old</code></td>
+</tr>
+<tr>
+<td><code>std::atomic_flag</code></td>
+<td>A boolean flag guaranteed to be lock-free</td>
+</tr>
+</tbody></table>
+</div>
+<p>For small types, atomics are implemented with single processor instructions and are <strong>lock-free</strong>: no thread ever blocks. For larger types the library may use a hidden lock; <code>is_always_lock_free</code> tells you which.</p>
+<div class="callout warning"><div class="callout-title"><span>Atomic variables do not make atomic logic</span></div><div class="callout-body">
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (x == <span class="tk-n">0</span>) { x = <span class="tk-n">1</span>; }    <span class="tk-c">// two operations: another thread can act in between</span></code></pre></div>
+<p>Each step is atomic and the sequence is not. Use a compare-exchange, or a mutex.</p>
+</div></div>
+<h3>Compare-and-swap</h3>
+<p><code>compare_exchange</code> is the building block of lock-free code: &quot;change the value only if nobody else changed it first&quot;.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::atomic&lt;<span class="tk-k">int</span>&gt; maxSeen{ <span class="tk-n">0</span> };
+
+<span class="tk-k">void</span> <span class="tk-f">updateMax</span>(<span class="tk-k">int</span> value)
+{
+    <span class="tk-k">int</span> current{ maxSeen.<span class="tk-f">load</span>() };
+    <span class="tk-k">while</span> (value &gt; current &amp;&amp; !maxSeen.<span class="tk-f">compare_exchange_weak</span>(current, value))
+    {
+        <span class="tk-c">// the exchange failed: current now holds the latest value, so the test is repeated</span>
+    }
+}</code></pre></div>
+<p>The loop reads the current value, computes, and tries to install the result. If another thread got in first, the exchange fails, refreshes <code>current</code>, and the loop tries again. The <code>weak</code> form may fail spuriously and is meant for loops; <code>compare_exchange_strong</code> fails only when the values differ.</p>
+<h2>Why ordering matters</h2>
+<p>A compiler may reorder statements that do not depend on each other, and a processor may execute and commit them out of order. A single thread can never tell. Another thread can.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> data{ <span class="tk-n">0</span> };
+<span class="tk-k">bool</span> ready{ <span class="tk-k">false</span> };    <span class="tk-c">// not atomic</span>
+
+<span class="tk-c">// Thread A                    // Thread B</span>
+data = <span class="tk-n">42</span>;                     <span class="tk-k">while</span> (!ready) {}
+ready = <span class="tk-k">true</span>;                  std::cout &lt;&lt; data &lt;&lt; <span class="tk-s">'\n'</span>;</code></pre></div>
+<p>Thread A&#39;s two writes are independent, so they may take effect as <code>ready = true; data = 42;</code>. Thread B might print 0. It might also loop for ever, because the compiler sees a loop that never modifies <code>ready</code> and reads it once. And all of it is a data race, so nothing is guaranteed at all.</p>
+<p>The <strong>memory model</strong> is the part of the standard that says which orderings a program may rely on.</p>
+<h2>Memory orders</h2>
+<p>Every atomic operation takes an optional <strong>memory order</strong> describing how strongly it is ordered relative to other operations.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::atomic&lt;<span class="tk-k">bool</span>&gt; ready{ <span class="tk-k">false</span> };
+<span class="tk-k">int</span> data{ <span class="tk-n">0</span> };
+
+<span class="tk-c">// Thread A: the producer</span>
+data = <span class="tk-n">42</span>;
+ready.<span class="tk-f">store</span>(<span class="tk-k">true</span>, std::memory_order_release);
+
+<span class="tk-c">// Thread B: the consumer</span>
+<span class="tk-k">while</span> (!ready.<span class="tk-f">load</span>(std::memory_order_acquire)) {}
+std::cout &lt;&lt; data &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// guaranteed to print 42</span></code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph A[&quot;Thread A&quot;]
+        A1[&quot;data = 42&quot;] --&gt; A2[&quot;ready.store(true, release)&quot;]
+    end
+    subgraph B[&quot;Thread B&quot;]
+        B1[&quot;ready.load(acquire) sees true&quot;] --&gt; B2[&quot;reads data: 42&quot;]
+    end
+    A2 -.-&gt;|&quot;synchronizes with&quot;| B1</pre></div>
+<p>A <strong>release</strong> store and an <strong>acquire</strong> load that reads the stored value form a pair. Everything thread A did before the store is visible to thread B after the load. That relationship is called <strong>happens-before</strong>: if A happens-before B, B sees A&#39;s effects. Here the plain variable <code>data</code> is safely handed over, with no data race.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Guarantee</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>memory_order_seq_cst</code> (the default)</td>
+<td>All such operations appear in one global order that every thread agrees on</td>
+<td>Everything, unless measured otherwise</td>
+</tr>
+<tr>
+<td><code>memory_order_release</code> / <code>memory_order_acquire</code></td>
+<td>The pairing described above</td>
+<td>Publishing data; implementing locks</td>
+</tr>
+<tr>
+<td><code>memory_order_acq_rel</code></td>
+<td>Both, for a read-modify-write</td>
+<td>Lock-free data structures</td>
+</tr>
+<tr>
+<td><code>memory_order_relaxed</code></td>
+<td>Atomicity only; no ordering</td>
+<td>Statistics counters read at the end</td>
+</tr>
+</tbody></table>
+</div>
+<p>The weaker orders exist because the strongest costs more on some processors. On x86 the difference is small; on ARM it can be significant.</p>
+<div class="callout danger"><div class="callout-title"><span>Lock-free programming is specialist work</span></div><div class="callout-body"><p>Code using weak orders can be wrong in ways that appear once a month, on one processor family, under load. Use a mutex first. Move to atomics only when profiling shows the lock is the bottleneck, keep the default order unless you can argue the weaker one is correct, and test with ThreadSanitizer.</p>
+</div></div>
+<h2>False sharing</h2>
+<p>Processors cache memory in blocks of typically 64 bytes, called <strong>cache lines</strong>. When two threads write to <strong>different</strong> variables that happen to share a cache line, each write invalidates the other core&#39;s copy of the whole line. The threads share no data, yet slow each other dramatically.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> one cache line:   [ counterA | counterB | ............ ]
+                       ▲            ▲
+                    thread 1     thread 2        each write evicts the line from the other core</code></pre></div>
+<p>The remedy is to keep them on separate lines:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-k">alignas</span>(std::hardware_destructive_interference_size) <span class="tk-t">PaddedCounter</span>
+{
+    std::atomic&lt;<span class="tk-k">long</span>&gt; value{};
+};</code></pre></div>
+<p>More on caches in <a href="../13-04-performance-caches-and-data-oriented-design/">13.04 Performance, Caches and Data-Oriented Design</a>.</p>
+<h2><code>volatile</code> is not for threads</h2>
+<p><code>volatile</code> tells the compiler that reads and writes of a variable have effects it cannot see, so it must not remove or merge them. It exists for memory-mapped hardware. It provides neither atomicity nor ordering. Use <code>std::atomic</code> for anything shared between threads.</p>
+<h2>A spinlock</h2>
+<p>A mutex puts a waiting thread to sleep. A <strong>spinlock</strong> keeps retrying, which is faster when the wait is extremely short.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">SpinLock</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">lock</span>()
+    {
+        <span class="tk-k">while</span> (m_flag.<span class="tk-f">test_and_set</span>(std::memory_order_acquire))
+        {
+            m_flag.<span class="tk-f">wait</span>(<span class="tk-k">true</span>);
+        }
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">unlock</span>()
+    {
+        m_flag.<span class="tk-f">clear</span>(std::memory_order_release);
+        m_flag.<span class="tk-f">notify_one</span>();
+    }
+
+<span class="tk-k">private</span>:
+    std::atomic_flag m_flag{};
+};</code></pre></div>
+<p><code>test_and_set</code> atomically sets the flag and returns what it was. If it was already set, another thread holds the lock. This version waits efficiently with <code>atomic_flag::wait</code> instead of spinning hot. Because it has <code>lock</code> and <code>unlock</code>, it works with <code>std::lock_guard&lt;SpinLock&gt;</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/12.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/12.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../12-04-futures-promises-std-async-and-thread-pools/"><span class="mono">previous</span><b>12.04 Futures, Promises, std::async and Thread Pools</b></a>
+      <a class="lp-next" href="../12-06-parallel-algorithms-and-simd/"><span class="mono">next</span><b>12.06 Parallel Algorithms and SIMD</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/12-05-atomics-and-the-memory-model"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Variables and Initialization · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/1-04-variables-and-initialization/">
+  <meta name="description" content="A variable is a named box in memory that holds one value of one type . Always give it a starting value: int age{ 25 };">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Variables and Initialization · C++ · Xenon">
+  <meta property="og:description" content="A variable is a named box in memory that holds one value of one type . Always give it a starting value: int age{ 25 };">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/1-04-variables-and-initialization/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Variables and Initialization · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Variables and Initialization · C++ · Xenon">
+  <meta name="twitter:description" content="A variable is a named box in memory that holds one value of one type . Always give it a starting value: int age{ 25 };">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Variables and Initialization</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 10 in milestone 1</span><span>5 min</span><span><b>4</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>variable</strong> is a named box in memory that holds one value of one <strong>type</strong>. Always give it a starting value: <code>int age{ 25 };</code></p>
+      <div class="prose">
+<h2>A variable is a labelled box</h2>
+<p>Programs need to remember things: a score, a name, a price. A <strong>variable</strong> is a piece of the computer&#39;s memory with a name on it, so you can put a value in and look at it later.</p>
+<div class="codeblock diagram plain"><pre><code>   int age{ 25 };           double price{ 9.99 };       char grade{ 'A' };
+
+  ┌──────────────┐         ┌──────────────┐           ┌──────────────┐
+  │      25      │         │     9.99     │           │     'A'      │
+  └──────────────┘         └──────────────┘           └──────────────┘
+       age                      price                      grade
+     (an int)                 (a double)                  (a char)</code></pre></div>
+<p>Creating one takes three parts:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> age{ <span class="tk-n">25</span> };</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Here</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Type</strong></td>
+<td><code>int</code></td>
+<td>What kind of value the box can hold</td>
+</tr>
+<tr>
+<td><strong>Name</strong></td>
+<td><code>age</code></td>
+<td>What you call it in the rest of the program</td>
+</tr>
+<tr>
+<td><strong>Starting value</strong></td>
+<td><code>{ 25 }</code></td>
+<td>What is in the box to begin with</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Five types to start with</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Holds</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int</code></td>
+<td>whole numbers</td>
+<td><code>42</code>, <code>-7</code>, <code>0</code></td>
+</tr>
+<tr>
+<td><code>double</code></td>
+<td>numbers with a decimal point</td>
+<td><code>3.14</code>, <code>-0.5</code></td>
+</tr>
+<tr>
+<td><code>char</code></td>
+<td>one single character, in <strong>single</strong> quotes</td>
+<td><code>&#39;x&#39;</code>, <code>&#39;7&#39;</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td>a yes/no answer</td>
+<td><code>true</code>, <code>false</code></td>
+</tr>
+<tr>
+<td><code>std::string</code></td>
+<td>text, in <strong>double</strong> quotes (needs <code>#include &lt;string&gt;</code>)</td>
+<td><code>&quot;Hello&quot;</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The type is fixed for the life of the variable. An <code>int</code> box can never hold text.</p>
+<h2>Always give a starting value</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> a{ <span class="tk-n">5</span> };     <span class="tk-c">// a holds 5</span>
+<span class="tk-k">int</span> b{};        <span class="tk-c">// empty braces: b holds 0</span>
+<span class="tk-k">int</span> c;          <span class="tk-c">// DANGER: c holds whatever happened to be in that memory</span></code></pre></div>
+<div class="callout danger"><div class="callout-title"><span>Never leave a variable uninitialized</span></div><div class="callout-body"><p><code>int c;</code> reserves a box but puts nothing in it. The box contains leftover junk from whatever used that memory before. Your program might print 0, or 32767, or behave differently every time you run it. <strong>Always write the braces.</strong></p>
+</div></div>
+<p>You will see two other ways to give a starting value in other people&#39;s code. They work, but braces are safer:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> x = <span class="tk-n">4.7</span>;    <span class="tk-c">// builds, and quietly throws away the .7  (x is 4)</span>
+<span class="tk-k">int</span> y{ <span class="tk-n">4.7</span> };   <span class="tk-c">// refuses to build: &quot;narrowing conversion&quot;. The mistake is caught.</span></code></pre></div>
+<p>Giving a variable its first value is called <strong>initialization</strong>.</p>
+<h2>Changing the value later</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> score{ <span class="tk-n">10</span> };       <span class="tk-c">// create the box, holding 10</span>
+    score = <span class="tk-n">25</span>;            <span class="tk-c">// replace the contents with 25</span>
+    score = score + <span class="tk-n">5</span>;     <span class="tk-c">// read 25, add 5, store 30</span>
+    std::cout &lt;&lt; score &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;score: 10&quot;] --&gt;|&quot;score = 25&quot;| B[&quot;score: 25&quot;] --&gt;|&quot;score = score + 5&quot;| C[&quot;score: 30&quot;]</pre></div>
+<p>Putting a new value into an existing variable is called <strong>assignment</strong>. The old value is gone.</p>
+<blockquote><p>[!note] <code>=</code> does not mean &quot;equals&quot;
+In C++, <code>=</code> means <strong>&quot;work out the right-hand side, then store it in the variable on the left&quot;</strong>. That is why <code>score = score + 5</code> makes sense: read the old score, add 5, store the result back.</p>
+</blockquote>
+<h2>Choosing names</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Allowed</th>
+<th>Not allowed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>playerHealth</code>, <code>max_speed</code>, <code>count2</code></td>
+<td><code>2count</code> (starts with a digit)</td>
+</tr>
+<tr>
+<td>letters, digits and <code>_</code></td>
+<td><code>my-var</code>, <code>my var</code> (hyphen, space)</td>
+</tr>
+<tr>
+<td></td>
+<td>words C++ already uses: <code>int</code>, <code>return</code>, <code>class</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A good name says what is in the box. <code>secondsElapsed</code> tells the reader something; <code>s</code> does not. This course uses <code>camelCase</code>: lower-case first word, a capital at the start of each later word.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>4 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-anatomy-of-a-program/"><span class="mono">previous</span><b>1.03 Anatomy of a Program</b></a>
+      <a class="lp-next" href="../1-05-input-and-output/"><span class="mono">next</span><b>1.05 Input and Output</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/1-04-variables-and-initialization"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

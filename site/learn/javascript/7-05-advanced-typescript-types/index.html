@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Advanced TypeScript Types · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/7-05-advanced-typescript-types/">
+  <meta name="description" content="Types that compute other types - keyof, typeof and indexed access, mapped types, conditional types and infer, template literal types, satisfies, user-defined…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Advanced TypeScript Types · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Types that compute other types - keyof, typeof and indexed access, mapped types, conditional types and infer, template literal types, satisfies, user-defined…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/7-05-advanced-typescript-types/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Advanced TypeScript Types · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Advanced TypeScript Types · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Types that compute other types - keyof, typeof and indexed access, mapped types, conditional types and infer, template literal types, satisfies, user-defined…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Advanced JavaScript and TypeScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Advanced TypeScript Types</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.05</b></span><span>5 of 6 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Types that compute other types - keyof, typeof and indexed access, mapped types, conditional types and infer, template literal types, satisfies, user-defined type guards and assertion functions, and declaration files for JavaScript code.</p>
+      <div class="prose">
+<h2>Types from values and from other types</h2>
+<p>Lessons 5.01 to 5.05 wrote types by hand. TypeScript can also <strong>derive</strong> types, so they stay in step with the code automatically.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">const</span> defaults = { theme: <span class="tk-s">&quot;dark&quot;</span>, fontSize: <span class="tk-n">14</span>, showTips: <span class="tk-k">true</span> };
+
+<span class="tk-k">type</span> <span class="tk-t">Settings</span> = <span class="tk-k">typeof</span> defaults;          <span class="tk-c">// { theme: string; fontSize: number; showTips: boolean }</span>
+<span class="tk-k">type</span> <span class="tk-t">SettingName</span> = <span class="tk-k">keyof</span> <span class="tk-t">Settings</span>;        <span class="tk-c">// &quot;theme&quot; | &quot;fontSize&quot; | &quot;showTips&quot;</span>
+<span class="tk-k">type</span> <span class="tk-t">FontSize</span> = <span class="tk-t">Settings</span>[<span class="tk-s">&quot;fontSize&quot;</span>];     <span class="tk-c">// number   (an indexed access type)</span>
+
+<span class="tk-k">function</span> <span class="tk-k">get</span>&lt;K <span class="tk-k">extends</span> <span class="tk-t">SettingName</span>&gt;(name: K): <span class="tk-t">Settings</span>[K] {
+  <span class="tk-k">return</span> defaults[name];
+}
+<span class="tk-k">const</span> size = <span class="tk-k">get</span>(<span class="tk-s">&quot;fontSize&quot;</span>);             <span class="tk-c">// number, known from the argument</span>
+console.<span class="tk-f">log</span>(size + <span class="tk-n">1</span>);</code></pre></div>
+<p><code>typeof</code> (in a type position) turns a value into its type; <code>keyof</code> gives the union of a type&#39;s keys; <code>T[K]</code> looks up the type of a property.</p>
+<h2>Mapped types</h2>
+<p>A <strong>mapped type</strong> builds a new object type by going over the keys of another:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">Settings</span> = { theme: <span class="tk-k">string</span>; fontSize: <span class="tk-k">number</span> };
+
+<span class="tk-k">type</span> <span class="tk-t">Flags</span>&lt;T&gt; = { [K <span class="tk-k">in</span> <span class="tk-k">keyof</span> T]: <span class="tk-k">boolean</span> };              <span class="tk-c">// same keys, every value boolean</span>
+<span class="tk-k">type</span> <span class="tk-t">Getters</span>&lt;T&gt; = { [K <span class="tk-k">in</span> <span class="tk-k">keyof</span> T <span class="tk-k">as</span> <span class="tk-s">`get${Capitalize&lt;string &amp; K&gt;}`</span>]: () =&gt; T[K] };
+<span class="tk-k">type</span> <span class="tk-t">Mutable</span>&lt;T&gt; = { -<span class="tk-k">readonly</span> [K <span class="tk-k">in</span> <span class="tk-k">keyof</span> T]: T[K] };     <span class="tk-c">// removes readonly</span>
+
+<span class="tk-k">const</span> changed: <span class="tk-t">Flags</span>&lt;<span class="tk-t">Settings</span>&gt; = { theme: <span class="tk-k">true</span>, fontSize: <span class="tk-k">false</span> };
+<span class="tk-k">const</span> api: <span class="tk-t">Getters</span>&lt;<span class="tk-t">Settings</span>&gt; = { getTheme: () =&gt; <span class="tk-s">&quot;dark&quot;</span>, getFontSize: () =&gt; <span class="tk-n">14</span> };
+console.<span class="tk-f">log</span>(changed.theme, api.<span class="tk-f">getFontSize</span>());</code></pre></div>
+<p>The utility types you already use (<code>Partial</code>, <code>Readonly</code>, <code>Pick</code>, <code>Record</code>) are mapped types in the standard library.</p>
+<h2>Conditional types and infer</h2>
+<p>A <strong>conditional type</strong> chooses between two types: <code>T extends U ? X : Y</code>. With <code>infer</code>, it can pull a type out of another:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">IsString</span>&lt;T&gt; = T <span class="tk-k">extends</span> <span class="tk-k">string</span> ? <span class="tk-s">&quot;yes&quot;</span> : <span class="tk-s">&quot;no&quot;</span>;
+<span class="tk-k">type</span> A = <span class="tk-t">IsString</span>&lt;<span class="tk-s">&quot;hi&quot;</span>&gt;;           <span class="tk-c">// &quot;yes&quot;</span>
+
+<span class="tk-k">type</span> <span class="tk-t">ElementOf</span>&lt;T&gt; = T <span class="tk-k">extends</span> <span class="tk-k">readonly</span> (<span class="tk-k">infer</span> E)[] ? E : <span class="tk-k">never</span>;
+<span class="tk-k">type</span> B = <span class="tk-t">ElementOf</span>&lt;<span class="tk-k">number</span>[]&gt;;      <span class="tk-c">// number</span>
+
+<span class="tk-k">type</span> <span class="tk-t">Awaited2</span>&lt;T&gt; = T <span class="tk-k">extends</span> <span class="tk-t">Promise</span>&lt;<span class="tk-k">infer</span> V&gt; ? V : T;
+<span class="tk-k">type</span> C = <span class="tk-t">Awaited2</span>&lt;<span class="tk-t">Promise</span>&lt;<span class="tk-k">string</span>&gt;&gt;;   <span class="tk-c">// string</span>
+
+<span class="tk-k">const</span> check: [A, B, C] = [<span class="tk-s">&quot;yes&quot;</span>, <span class="tk-n">42</span>, <span class="tk-s">&quot;done&quot;</span>];
+console.<span class="tk-f">log</span>(check);</code></pre></div>
+<p>Given a union, a conditional type is applied to each member separately, which is how <code>Exclude&lt;T, U&gt;</code> removes members: <code>type Exclude&lt;T, U&gt; = T extends U ? never : T;</code>.</p>
+<h2>Template literal types</h2>
+<p>Strings can be built at the type level too:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">Side</span> = <span class="tk-s">&quot;top&quot;</span> | <span class="tk-s">&quot;bottom&quot;</span>;
+<span class="tk-k">type</span> <span class="tk-t">Edge</span> = <span class="tk-s">&quot;left&quot;</span> | <span class="tk-s">&quot;right&quot;</span>;
+<span class="tk-k">type</span> <span class="tk-t">Corner</span> = <span class="tk-s">`${Side}-${Edge}`</span>;     <span class="tk-c">// &quot;top-left&quot; | &quot;top-right&quot; | &quot;bottom-left&quot; | &quot;bottom-right&quot;</span>
+<span class="tk-k">type</span> <span class="tk-t">EventName</span>&lt;T <span class="tk-k">extends</span> <span class="tk-k">string</span>&gt; = <span class="tk-s">`on${Capitalize&lt;T&gt;}`</span>;
+
+<span class="tk-k">const</span> corner: <span class="tk-t">Corner</span> = <span class="tk-s">&quot;bottom-left&quot;</span>;
+<span class="tk-k">const</span> handler: <span class="tk-t">EventName</span>&lt;<span class="tk-s">&quot;click&quot;</span>&gt; = <span class="tk-s">&quot;onClick&quot;</span>;
+console.<span class="tk-f">log</span>(corner, handler);</code></pre></div>
+<h2>satisfies</h2>
+<p><code>satisfies</code> checks a value against a type <strong>without</strong> widening the value&#39;s own type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">Colour</span> = <span class="tk-s">&quot;red&quot;</span> | <span class="tk-s">&quot;green&quot;</span> | <span class="tk-s">&quot;blue&quot;</span>;
+<span class="tk-k">const</span> palette = {
+  red: [<span class="tk-n">255</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>],
+  green: <span class="tk-s">&quot;#00ff00&quot;</span>,
+} <span class="tk-k">satisfies</span> <span class="tk-t">Partial</span>&lt;<span class="tk-t">Record</span>&lt;<span class="tk-t">Colour</span>, <span class="tk-k">string</span> | <span class="tk-k">number</span>[]&gt;&gt;;
+
+console.<span class="tk-f">log</span>(palette.green.<span class="tk-f">toUpperCase</span>());   <span class="tk-c">// still known to be a string</span>
+console.<span class="tk-f">log</span>(palette.red.length);            <span class="tk-c">// still known to be an array</span></code></pre></div>
+<p>With <code>: Partial&lt;Record&lt;...&gt;&gt;</code> instead, both properties would have the wide type <code>string | number[] | undefined</code>.</p>
+<h2>Type guards and assertion functions</h2>
+<p>A function returning <code>value is Type</code> teaches TypeScript to narrow (lesson 5.03) with your own check:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">Cat</span> = { kind: <span class="tk-s">&quot;cat&quot;</span>; <span class="tk-f">meow</span>(): <span class="tk-k">string</span> };
+<span class="tk-k">type</span> <span class="tk-t">Dog</span> = { kind: <span class="tk-s">&quot;dog&quot;</span>; <span class="tk-f">bark</span>(): <span class="tk-k">string</span> };
+
+<span class="tk-k">function</span> <span class="tk-f">isCat</span>(pet: <span class="tk-t">Cat</span> | <span class="tk-t">Dog</span>): pet <span class="tk-k">is</span> <span class="tk-t">Cat</span> {
+  <span class="tk-k">return</span> pet.kind === <span class="tk-s">&quot;cat&quot;</span>;
+}
+
+<span class="tk-k">function</span> assertDefined&lt;T&gt;(value: T | <span class="tk-k">undefined</span>, name: <span class="tk-k">string</span>): <span class="tk-k">asserts</span> value <span class="tk-k">is</span> T {
+  <span class="tk-k">if</span> (value === <span class="tk-k">undefined</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">Error</span>(<span class="tk-s">`${name} is missing`</span>);
+}
+
+<span class="tk-k">function</span> <span class="tk-f">speak</span>(pet: <span class="tk-t">Cat</span> | <span class="tk-t">Dog</span>): <span class="tk-k">string</span> {
+  <span class="tk-k">return</span> <span class="tk-f">isCat</span>(pet) ? pet.<span class="tk-f">meow</span>() : pet.<span class="tk-f">bark</span>();   <span class="tk-c">// pet is Cat, then Dog</span>
+}
+console.<span class="tk-f">log</span>(<span class="tk-f">speak</span>({ kind: <span class="tk-s">&quot;dog&quot;</span>, bark: () =&gt; <span class="tk-s">&quot;woof&quot;</span> }));
+
+<span class="tk-k">const</span> port: <span class="tk-k">number</span> | <span class="tk-k">undefined</span> = <span class="tk-n">8080</span>;
+<span class="tk-f">assertDefined</span>(port, <span class="tk-s">&quot;port&quot;</span>);
+console.<span class="tk-f">log</span>(port + <span class="tk-n">1</span>);      <span class="tk-c">// number from here on</span></code></pre></div>
+<h2>Declaration files</h2>
+<p>A plain JavaScript library has no types. A <strong>declaration file</strong> (<code>.d.ts</code>) describes it without any code:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-c">// greet.d.ts</span>
+<span class="tk-k">export</span> <span class="tk-k">function</span> <span class="tk-f">greet</span>(name: <span class="tk-k">string</span>, options?: { shout?: <span class="tk-k">boolean</span> }): <span class="tk-k">string</span>;
+<span class="tk-k">export</span> <span class="tk-k">const</span> version: <span class="tk-k">string</span>;</code></pre></div>
+<p>Most popular libraries ship their own, and the rest have community ones installed with <code>npm install --save-dev @types/&lt;library&gt;</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/7.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/7.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-04-numbers-dates-and-intl/"><span class="mono">previous</span><b>7.04 Numbers, Dates and Intl</b></a>
+      <a class="lp-next" href="../7-06-node-js/"><span class="mono">next</span><b>7.06 Node.js</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/7-05-advanced-typescript-types"></script>
+</body>
+</html>

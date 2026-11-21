@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Multiple Inheritance and Virtual Base Classes · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/8-07-multiple-inheritance-and-virtual-base-classes/">
+  <meta name="description" content="A class may inherit from several bases. That works well for combining interfaces . When two bases share a common base, the result is the diamond problem ,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Multiple Inheritance and Virtual Base Classes · C++ · Xenon">
+  <meta property="og:description" content="A class may inherit from several bases. That works well for combining interfaces . When two bases share a common base, the result is the diamond problem ,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/8-07-multiple-inheritance-and-virtual-base-classes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Multiple Inheritance and Virtual Base Classes · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Multiple Inheritance and Virtual Base Classes · C++ · Xenon">
+  <meta name="twitter:description" content="A class may inherit from several bases. That works well for combining interfaces . When two bases share a common base, the result is the diamond problem ,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Inheritance and Polymorphism</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Multiple Inheritance and Virtual Base Classes</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.07</b></span><span>7 of 7 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">A class may inherit from several bases. That works well for combining <strong>interfaces</strong>. When two bases share a common base, the result is the <strong>diamond problem</strong>, which <code>virtual</code> inheritance solves. Use it sparingly.</p>
+      <div class="prose">
+<h2>Several base classes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">class</span> IDrawable
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">virtual</span> ~<span class="tk-f">IDrawable</span>() = <span class="tk-k">default</span>;
+    <span class="tk-k">virtual</span> <span class="tk-k">void</span> <span class="tk-f">draw</span>() <span class="tk-k">const</span> = <span class="tk-n">0</span>;
+};
+
+<span class="tk-k">class</span> IClickable
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">virtual</span> ~<span class="tk-f">IClickable</span>() = <span class="tk-k">default</span>;
+    <span class="tk-k">virtual</span> <span class="tk-k">void</span> <span class="tk-f">onClick</span>() = <span class="tk-n">0</span>;
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Button</span> : <span class="tk-k">public</span> IDrawable, <span class="tk-k">public</span> IClickable
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">draw</span>() <span class="tk-k">const</span> <span class="tk-k">override</span> { std::cout &lt;&lt; <span class="tk-s">&quot;[ OK ]\n&quot;</span>; }
+    <span class="tk-k">void</span> <span class="tk-f">onClick</span>() <span class="tk-k">override</span> { std::cout &lt;&lt; <span class="tk-s">&quot;clicked\n&quot;</span>; }
+};
+
+<span class="tk-k">void</span> <span class="tk-f">render</span>(<span class="tk-k">const</span> IDrawable&amp; item) { item.<span class="tk-f">draw</span>(); }
+<span class="tk-k">void</span> <span class="tk-f">press</span>(IClickable&amp; item) { item.<span class="tk-f">onClick</span>(); }
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Button</span> button{};
+    <span class="tk-f">render</span>(button);
+    <span class="tk-f">press</span>(button);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">classDiagram
+    IDrawable &lt;|-- Button
+    IClickable &lt;|-- Button</pre></div>
+<p>A <code>Button</code> is substitutable for either interface. Implementing several interfaces is the common, uncontroversial use of <strong>multiple inheritance</strong>.</p>
+<p>Base subobjects are constructed in the order they are listed after the colon, and each has its own <code>vptr</code>.</p>
+<h3>Name clashes</h3>
+<p>Two bases may supply members with the same name.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> USBDevice
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">int</span> <span class="tk-f">id</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> <span class="tk-n">1</span>; }
+};
+
+<span class="tk-k">class</span> <span class="tk-t">NetworkDevice</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">int</span> <span class="tk-f">id</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> <span class="tk-n">2</span>; }
+};
+
+<span class="tk-k">class</span> <span class="tk-t">WirelessAdapter</span> : <span class="tk-k">public</span> USBDevice, <span class="tk-k">public</span> <span class="tk-t">NetworkDevice</span>
+{
+};
+
+<span class="tk-t">WirelessAdapter</span> adapter{};
+adapter.<span class="tk-f">id</span>();               <span class="tk-c">// error: ambiguous</span>
+adapter.USBDevice::<span class="tk-f">id</span>();    <span class="tk-c">// fine: qualified</span></code></pre></div>
+<h2>The diamond problem</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">classDiagram
+    PoweredDevice &lt;|-- Scanner
+    PoweredDevice &lt;|-- Printer
+    Scanner &lt;|-- Copier
+    Printer &lt;|-- Copier</pre></div>
+<p><code>Scanner</code> and <code>Printer</code> each contain a <code>PoweredDevice</code>. With ordinary inheritance, a <code>Copier</code> therefore contains <strong>two</strong>.</p>
+<div class="codeblock diagram plain"><pre><code> Copier
+ ┌──────────────────────────────┐
+ │ Scanner                      │
+ │   └─ PoweredDevice (first)   │
+ │ Printer                      │
+ │   └─ PoweredDevice (second)  │     two copies of the same base
+ └──────────────────────────────┘</code></pre></div>
+<p>Any use of a <code>PoweredDevice</code> member through a <code>Copier</code> is ambiguous, and state stored in the base exists twice and can disagree.</p>
+<h3>Virtual inheritance</h3>
+<p>Declaring the inheritance <code>virtual</code> asks for <strong>one shared</strong> base subobject, however many paths lead to it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">PoweredDevice</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">PoweredDevice</span>(<span class="tk-k">int</span> watts) { std::cout &lt;&lt; <span class="tk-s">&quot;PoweredDevice &quot;</span> &lt;&lt; watts &lt;&lt; <span class="tk-s">&quot;W\n&quot;</span>; }
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Scanner</span> : <span class="tk-k">virtual</span> <span class="tk-k">public</span> <span class="tk-t">PoweredDevice</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Scanner</span>(<span class="tk-k">int</span>, <span class="tk-k">int</span> watts) : <span class="tk-t">PoweredDevice</span>{ watts } {}
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Printer</span> : <span class="tk-k">virtual</span> <span class="tk-k">public</span> <span class="tk-t">PoweredDevice</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Printer</span>(<span class="tk-k">int</span>, <span class="tk-k">int</span> watts) : <span class="tk-t">PoweredDevice</span>{ watts } {}
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Copier</span> : <span class="tk-k">public</span> <span class="tk-t">Scanner</span>, <span class="tk-k">public</span> <span class="tk-t">Printer</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Copier</span>(<span class="tk-k">int</span> scanner, <span class="tk-k">int</span> printer, <span class="tk-k">int</span> watts)
+        : <span class="tk-t">PoweredDevice</span>{ watts }, <span class="tk-t">Scanner</span>{ scanner, watts }, <span class="tk-t">Printer</span>{ printer, watts }
+    {
+    }
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Copier</span> copier{ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">300</span> };    <span class="tk-c">// prints &quot;PoweredDevice 300W&quot; once</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock diagram plain"><pre><code> Copier
+ ┌──────────────────────────────────────────┐
+ │ Scanner ─┐                               │
+ │ Printer ─┴──▶ PoweredDevice (one, shared)│
+ └──────────────────────────────────────────┘</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Who constructs the virtual base</td>
+<td>The <strong>most-derived</strong> class, here <code>Copier</code></td>
+</tr>
+<tr>
+<td>When</td>
+<td>Before every non-virtual base</td>
+</tr>
+<tr>
+<td>The intermediate classes&#39; initializers</td>
+<td><code>Scanner</code>&#39;s and <code>Printer</code>&#39;s calls to <code>PoweredDevice{ watts }</code> are ignored when they are subobjects of a <code>Copier</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The price is extra indirection: because the shared base&#39;s position varies with the most-derived type, each object locates it through a stored offset. Access to virtual-base members is slightly slower, and objects are slightly larger.</p>
+<h2>Guidelines</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Use</th>
+<th>Advice</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Inheriting several <strong>interfaces</strong> with no data</td>
+<td>Fine and common</td>
+</tr>
+<tr>
+<td>Inheriting several <strong>implementations</strong> with data</td>
+<td>Think hard, and prefer composition</td>
+</tr>
+<tr>
+<td>A diamond</td>
+<td>Avoid if you can. If you cannot, use virtual inheritance.</td>
+</tr>
+<tr>
+<td>Adding reusable behaviour to a class</td>
+<td>Consider template-based mixins: <a href="../11-05-crtp-mixins-and-static-polymorphism/">11.05 CRTP, Mixins and Static Polymorphism</a></td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout tip"><div class="callout-title"><span>Design to avoid the question</span></div><div class="callout-body"><p>Most diamonds arise because a base class carries both an interface and state. Split it: keep the interface free of data, and put shared state in a component the classes hold. The diamond then disappears, or becomes a harmless diamond of pure interfaces.</p>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/8.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/8.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-06-object-slicing-casting-and-composition/"><span class="mono">previous</span><b>8.06 Object Slicing, Casting and Composition</b></a>
+      <a class="lp-next" href="../9-01-class-templates/"><span class="mono">next</span><b>9.01 Class Templates</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/8-07-multiple-inheritance-and-virtual-base-classes"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

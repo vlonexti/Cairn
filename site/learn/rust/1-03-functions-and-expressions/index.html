@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Functions and Expressions · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/1-03-functions-and-expressions/">
+  <meta name="description" content="Declaring functions with typed parameters and return types, statements versus expressions, returning the last expression without a semicolon, blocks as…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Functions and Expressions · Rust · Xenon">
+  <meta property="og:description" content="Declaring functions with typed parameters and return types, statements versus expressions, returning the last expression without a semicolon, blocks as…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/1-03-functions-and-expressions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Functions and Expressions · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Functions and Expressions · Rust · Xenon">
+  <meta name="twitter:description" content="Declaring functions with typed parameters and return types, statements versus expressions, returning the last expression without a semicolon, blocks as…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Functions and Expressions</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.03</b></span><span>3 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Declaring functions with typed parameters and return types, statements versus expressions, returning the last expression without a semicolon, blocks as expressions, early return, unit (), and why Rust has no function overloading or default arguments.</p>
+      <div class="prose">
+<h2>Functions</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">area</span>(<span class="tk-n">3.0</span>, <span class="tk-n">4.0</span>));
+    <span class="tk-f">greet</span>(<span class="tk-s">&quot;Grace&quot;</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">is_even</span>(<span class="tk-n">10</span>));
+    <span class="tk-k">let</span> (q, r) = <span class="tk-f">divide</span>(<span class="tk-n">17</span>, <span class="tk-n">5</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{q} remainder {r}&quot;</span>);
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">area</span>(width: <span class="tk-k">f64</span>, height: <span class="tk-k">f64</span>) -&gt; <span class="tk-k">f64</span> {
+    width * height                     <span class="tk-c">// no semicolon: this is the returned value</span>
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">greet</span>(name: &amp;<span class="tk-k">str</span>) {                 <span class="tk-c">// no return type: returns () (&quot;unit&quot;)</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;Hello, {name}!&quot;</span>);
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">is_even</span>(n: <span class="tk-k">i32</span>) -&gt; <span class="tk-k">bool</span> {
+    n % <span class="tk-n">2</span> == <span class="tk-n">0</span>
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">divide</span>(a: <span class="tk-k">i32</span>, b: <span class="tk-k">i32</span>) -&gt; (<span class="tk-k">i32</span>, <span class="tk-k">i32</span>) {
+    (a / b, a % b)                     <span class="tk-c">// a tuple returns two values</span>
+}</code></pre></div>
+<p>Every parameter needs a type; the return type follows <code>-&gt;</code>. Functions can be defined in any order. Names use <code>snake_case</code>.</p>
+<h2>Statements and expressions</h2>
+<p>Rust is an <strong>expression language</strong>: almost everything produces a value.</p>
+<ul>
+<li>An <strong>expression</strong> evaluates to a value: <code>5</code>, <code>a + b</code>, <code>if ... {} else {}</code>, a block <code>{ ... }</code>, a function call.</li>
+<li>A <strong>statement</strong> does something and has no value: <code>let x = 5;</code>, or any expression followed by <code>;</code>.</li>
+</ul>
+<p>The last expression in a block, <strong>without</strong> a semicolon, is the block&#39;s value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> y = {
+        <span class="tk-k">let</span> x = <span class="tk-n">3</span>;
+        x * x + <span class="tk-n">1</span>               <span class="tk-c">// the block's value</span>
+    };
+    <span class="tk-k">let</span> sign = <span class="tk-k">if</span> y &gt; <span class="tk-n">5</span> { <span class="tk-s">&quot;big&quot;</span> } <span class="tk-k">else</span> { <span class="tk-s">&quot;small&quot;</span> };    <span class="tk-c">// if is an expression too</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{y} {sign}&quot;</span>);
+}</code></pre></div>
+<p>Adding a <code>;</code> after the last expression turns it into a statement, and the block&#39;s value becomes <code>()</code>. That is the most common error for newcomers:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>error[E0308]: mismatched types
+fn square(x: i32) -&gt; i32 {
+                     --- expected `i32` because of return type
+    x * x;
+         - help: remove this semicolon to return this value</code></pre></div>
+<h2>Early return</h2>
+<p><code>return</code> leaves a function early, typically after checking for a special case:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {} {}&quot;</span>, <span class="tk-f">grade</span>(<span class="tk-n">95</span>), <span class="tk-f">grade</span>(<span class="tk-n">72</span>), <span class="tk-f">grade</span>(-<span class="tk-n">5</span>));
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">grade</span>(score: <span class="tk-k">i32</span>) -&gt; <span class="tk-k">char</span> {
+    <span class="tk-k">if</span> !(<span class="tk-n">0</span>..=<span class="tk-n">100</span>).<span class="tk-f">contains</span>(&amp;score) {
+        <span class="tk-k">return</span> <span class="tk-s">'?'</span>;
+    }
+    <span class="tk-k">match</span> score {
+        <span class="tk-n">90</span>..=<span class="tk-n">100</span> =&gt; <span class="tk-s">'A'</span>,
+        <span class="tk-n">70</span>..=<span class="tk-n">89</span> =&gt; <span class="tk-s">'C'</span>,
+        _ =&gt; <span class="tk-s">'F'</span>,
+    }
+}</code></pre></div>
+<p><code>0..=100</code> is an inclusive <strong>range</strong>; <code>0..100</code> excludes the end. <code>match</code> (lesson 2.05) picks a branch by pattern.</p>
+<h2>No overloading, no defaults</h2>
+<p>Rust has no function overloading and no default parameter values. Give different functions different names (<code>area_circle</code>, <code>area_rect</code>), or use an <code>Option</code> parameter, a struct of options, or a trait (milestone 4). This keeps every call unambiguous.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/1.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/1.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-02-variables-mutability-and-types/"><span class="mono">previous</span><b>1.02 Variables, Mutability and Types</b></a>
+      <a class="lp-next" href="../1-04-control-flow/"><span class="mono">next</span><b>1.04 Control Flow</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/1-03-functions-and-expressions"></script>
+</body>
+</html>

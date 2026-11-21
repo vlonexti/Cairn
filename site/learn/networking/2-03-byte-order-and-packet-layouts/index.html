@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Byte Order and Packet Layouts · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/2-03-byte-order-and-packet-layouts/">
+  <meta name="description" content="Network byte order is big-endian - htons, htonl and their inverses, writing and reading binary headers field by field, fields smaller than a byte packed into…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Byte Order and Packet Layouts · Networking · Xenon">
+  <meta property="og:description" content="Network byte order is big-endian - htons, htonl and their inverses, writing and reading binary headers field by field, fields smaller than a byte packed into…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/2-03-byte-order-and-packet-layouts/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Byte Order and Packet Layouts · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Byte Order and Packet Layouts · Networking · Xenon">
+  <meta name="twitter:description" content="Network byte order is big-endian - htons, htonl and their inverses, writing and reading binary headers field by field, fields smaller than a byte packed into…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Sockets</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Byte Order and Packet Layouts</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Network byte order is big-endian - htons, htonl and their inverses, writing and reading binary headers field by field, fields smaller than a byte packed into bit fields, why a C++ struct is the wrong tool for a wire format, and the Internet checksum.</p>
+      <div class="prose">
+<h2>Big-endian on the wire</h2>
+<p>Internet protocols write multi-byte numbers <strong>big-endian</strong>: most significant byte first. This is <strong>network byte order</strong>. A port number 7777 (<code>0x1E61</code>) goes on the wire as <code>1E 61</code>. Your x86 or ARM processor stores it little-endian, as <code>61 1E</code>. Every number in a protocol header must be converted.</p>
+<p>The socket API provides the conversions:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Converts</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>htons</code></td>
+<td>16-bit, host to network</td>
+</tr>
+<tr>
+<td><code>htonl</code></td>
+<td>32-bit, host to network</td>
+</tr>
+<tr>
+<td><code>ntohs</code>, <code>ntohl</code></td>
+<td>network to host</td>
+</tr>
+</tbody></table>
+</div>
+<p>That is why lesson 2.02 wrote <code>addr.sin_port = htons(7777)</code>: the <code>sockaddr_in</code> structure holds the port in network order. Forgetting the conversion is a classic bug: the server listens on port 24862 (<code>0x611E</code>) instead of 7777.</p>
+<h2>Writing headers field by field</h2>
+<p>The portable way to write a binary format is byte by byte, with shifts, which gives the same result on every machine whatever its own byte order:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">put16</span>(std::vector&lt;std::uint8_t&gt;&amp; out, std::uint16_t v)
+{
+    out.<span class="tk-f">push_back</span>(<span class="tk-k">static_cast</span>&lt;std::uint8_t&gt;(v &gt;&gt; <span class="tk-n">8</span>));       <span class="tk-c">// big-endian: high byte first</span>
+    out.<span class="tk-f">push_back</span>(<span class="tk-k">static_cast</span>&lt;std::uint8_t&gt;(v));
+}
+
+std::uint16_t <span class="tk-f">get16</span>(<span class="tk-k">const</span> std::uint8_t* p) { <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;std::uint16_t&gt;((p[<span class="tk-n">0</span>] &lt;&lt; <span class="tk-n">8</span>) | p[<span class="tk-n">1</span>]); }</code></pre></div>
+<p>Your own protocols can choose little-endian (the IPC course did); when you implement a standard protocol, follow its specification, which for internet protocols almost always says big-endian.</p>
+<h2>Bit fields</h2>
+<p>Some header fields are smaller than a byte. The first byte of an IPv4 header holds two 4-bit numbers: the <strong>version</strong> (4) in the high half and the <strong>header length</strong> in 32-bit words in the low half:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>byte 0:  0100 0101   -&gt; version 4, header length 5 words (20 bytes)  = 0x45</code></pre></div>
+<p>Read and write them with shifts and masks:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">int</span> version{ p[<span class="tk-n">0</span>] &gt;&gt; <span class="tk-n">4</span> };
+<span class="tk-k">const</span> <span class="tk-k">int</span> headerLength{ (p[<span class="tk-n">0</span>] &amp; <span class="tk-n">0x0F</span>) * <span class="tk-n">4</span> };
+<span class="tk-k">const</span> std::uint8_t first{ <span class="tk-k">static_cast</span>&lt;std::uint8_t&gt;((<span class="tk-n">4</span> &lt;&lt; <span class="tk-n">4</span>) | <span class="tk-n">5</span>) };</code></pre></div>
+<p>TCP&#39;s flags (SYN, ACK, FIN...) are single bits of one byte, tested with masks such as <code>flags &amp; 0x02</code> for SYN.</p>
+<h2>Why not a struct?</h2>
+<p>It is tempting to declare a C++ struct matching a header and <code>memcpy</code> or cast the packet to it. Every one of these breaks it:</p>
+<ul>
+<li><strong>Padding</strong>: the compiler may insert bytes between fields to align them.</li>
+<li><strong>Byte order</strong>: the struct&#39;s integers are in host order.</li>
+<li><strong>C++ bit fields</strong>: their order within a byte is implementation-defined.</li>
+<li><strong>Alignment</strong>: casting a packet buffer to a struct pointer can read misaligned data, and is an aliasing violation.</li>
+</ul>
+<p>Real network code does use structs with <code>#pragma pack(1)</code> and careful conversions, but reading and writing fields explicitly, as above, is clearer and always correct.</p>
+<h2>The Internet checksum</h2>
+<p>IPv4, TCP, UDP and ICMP headers carry a 16-bit <strong>checksum</strong> so that corrupted packets can be detected. It is computed the same way everywhere (RFC 1071):</p>
+<ol>
+<li>Treat the data as a sequence of 16-bit big-endian words (pad an odd final byte with a zero).</li>
+<li>Add them all up using <strong>one&#39;s complement</strong> addition: whenever the sum overflows 16 bits, add the carry back into the low 16 bits.</li>
+<li>The checksum is the bitwise NOT of the result.</li>
+</ol>
+<p>To <strong>verify</strong>, run the same sum over the data <strong>including</strong> the checksum field: a correct packet gives <code>0xFFFF</code> before the final NOT (zero after it). It is a weak checksum, catching most single errors but not reordered words; TLS and application-level hashes protect data properly.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-a-tcp-client-and-server/"><span class="mono">previous</span><b>2.02 A TCP Client and Server</b></a>
+      <a class="lp-next" href="../2-04-serving-many-connections/"><span class="mono">next</span><b>2.04 Serving Many Connections</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/2-03-byte-order-and-packet-layouts"></script>
+</body>
+</html>

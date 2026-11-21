@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Live Stats Panel for Your Game · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/12-05-a-live-stats-panel-for-your-game/">
+  <meta name="description" content="With Delve publishing its telemetry, a separate tool can show it live: frame times with a graph, the floor, the player's health and position, how many…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Live Stats Panel for Your Game · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="With Delve publishing its telemetry, a separate tool can show it live: frame times with a graph, the floor, the player's health and position, how many…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/12-05-a-live-stats-panel-for-your-game/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Live Stats Panel for Your Game · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Live Stats Panel for Your Game · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="With Delve publishing its telemetry, a separate tool can show it live: frame times with a graph, the floor, the player's health and position, how many…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Inspection and Debugging Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Live Stats Panel for Your Game</h1>
+      <div class="readout lp-readout"><span>lesson <b>12.05</b></span><span>5 of 7 in milestone 12</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">With Delve publishing its telemetry, a separate tool can show it live: frame times with a graph, the floor, the player&#39;s health and position, how many monsters are alive. This lesson builds that tool as a console program (chapter 14 gives it a graphical interface): finding running copies of the game, reading snapshots on a timer, keeping a history for graphs, and coping when the game starts, stops or restarts.</p>
+      <div class="prose">
+<h2>What the panel shows</h2>
+<div class="codeblock diagram plain"><pre><code> Delve telemetry · pid 18324 · v1                      connected
+ ─────────────────────────────────────────────────────────────────
+ frame 48211       frame time 7.9 ms   (min 6.8 · avg 8.2 · max 21.4)
+ ▁▁▂▁▁▁▂▁▁▁▁▂▁▁▇▁▁▁▂▁▁▁▁▁▂▁▁▁▁▁▁▂▁▁▁▁▁▁▁▂▁▁▁▁▁▁▂▁▁▁▁▁▁▁▂▁▁▁▁   last 60 samples
+ floor 3     turn 412     player (17, 9)     hp 14 / 20 ███████░░░
+ monsters alive 6</code></pre></div>
+<p>Every value comes from one consistent snapshot (lesson 12.04). The graph shows the last 60 frame times, scaled so the slowest is the tallest bar, and the spike in it is exactly the kind of stutter lesson 8.08 warned about, now visible while playing.</p>
+<h2>Finding the game</h2>
+<p>The telemetry block&#39;s name includes the game&#39;s process id (lesson 12.04), so the tool:</p>
+<ol>
+<li>Lists processes named <code>delve.exe</code> (lesson 6.07&#39;s snapshot).</li>
+<li>For each, tries <code>OpenFileMappingW(FILE_MAP_READ, FALSE, L&quot;Local\\Delve.Telemetry.&lt;pid&gt;&quot;)</code>.</li>
+<li>Maps the first that opens and checks <code>magic</code>, <code>version</code> and <code>size</code> before reading anything else (lesson 12.06 covers what to do with versions it does not know).</li>
+</ol>
+<p>If several copies are running, it can show a list to choose from.</p>
+<h2>The read loop</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">while</span> (running)
+{
+    <span class="tk-t">TelemetryV1</span> snap{};
+    <span class="tk-k">if</span> (!connected) <span class="tk-f">tryConnect</span>();
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (!<span class="tk-f">readSnapshot</span>(block, snap)) <span class="tk-f">showStatus</span>(<span class="tk-s">&quot;busy&quot;</span>);          <span class="tk-c">// retries exhausted (lesson 12.04)</span>
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (snap.frame == lastFrame) staleFor += interval;           <span class="tk-c">// the game is paused, or frozen</span>
+    <span class="tk-k">else</span> { staleFor = <span class="tk-n">0</span>; lastFrame = snap.frame; history.<span class="tk-f">push</span>(snap.frameMs); <span class="tk-f">draw</span>(snap, history); }
+
+    <span class="tk-k">if</span> (connected &amp;&amp; !<span class="tk-f">processStillRunning</span>(pid)) <span class="tk-f">disconnect</span>();         <span class="tk-c">// the game exited: start looking again</span>
+    <span class="tk-f">Sleep</span>(<span class="tk-n">100</span>);                                                       <span class="tk-c">// 10 updates a second is plenty for people</span>
+}</code></pre></div>
+<p>Three states matter and should be shown clearly:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>State</th>
+<th>Detect</th>
+<th>Show</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Connected and live</strong></td>
+<td>The frame number advances</td>
+<td>The values</td>
+</tr>
+<tr>
+<td><strong>Connected but stale</strong></td>
+<td>The frame number has not changed for a second</td>
+<td>&quot;paused or not responding&quot;, values greyed out</td>
+</tr>
+<tr>
+<td><strong>Not connected</strong></td>
+<td>No mapping found, or the process exited</td>
+<td>&quot;waiting for Delve...&quot;, and keep looking</td>
+</tr>
+</tbody></table>
+</div>
+<p>Checking whether the process is still running uses a process handle opened with <code>SYNCHRONIZE</code> and <code>WaitForSingleObject(handle, 0)</code> (lesson 6.01: a process handle is signalled when it exits). The mapping itself stays valid while the tool has it open, even after the game exits, so the frame counter alone cannot tell &quot;exited&quot; from &quot;frozen&quot;.</p>
+<h2>Drawing in the console</h2>
+<p>Lesson 5.09&#39;s techniques do the drawing: enable virtual terminal sequences, build the whole screen into one string starting with &quot;cursor home&quot;, and write it in one call so it never flickers. The bars use the Unicode block characters <code>▁▂▃▄▅▆▇█</code>, written in UTF-8 after <code>SetConsoleOutputCP(CP_UTF8)</code>. The practice task computes the statistics and the bar characters from the history.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Treating an unchanged frame number as &quot;the game exited&quot;</span></div><div class="callout-body"><p>It also means paused or frozen. Check the process handle separately.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Reading as fast as possible</span></div><div class="callout-body"><p>People cannot read 1,000 updates a second, and it wastes a core. 10 to 30 per second is plenty.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Crashing when the game restarts</span></div><div class="callout-body"><p>Unmap, close and go back to searching; the new copy has a new process id and a new block.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">How does the tool tell &quot;the game is paused&quot; from &quot;the game has exited&quot;?</div><ul><li>The frame number stopping only means not updating; whether the process handle is signalled shows whether it exited</li><li>Both are shown by the frame number</li><li>The tool cannot tell</li></ul><details><summary>Show the answer</summary><p><b>The frame number stopping only means not updating; whether the process handle is signalled shows whether it exited</b> The mapping outlives the game while the tool holds it open.</p></details></li><li><div class="q">Why does the tool include the process id when opening the mapping?</div><ul><li>Each running copy of the game publishes its own block under a name containing its process id</li><li>Mapping names must be numbers</li><li>To make the name secret</li></ul><details><summary>Show the answer</summary><p><b>Each running copy of the game publishes its own block under a name containing its process id</b> It lets several copies run side by side.</p></details></li><li><div class="q">How often should a stats panel read snapshots?</div><ul><li>About 10 to 30 times a second: enough for people, cheap for the machine</li><li>As fast as possible</li><li>Once a minute</li></ul><details><summary>Show the answer</summary><p><b>About 10 to 30 times a second: enough for people, cheap for the machine</b> Faster than people can read wastes CPU for nothing.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/12.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/12.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../12-04-a-telemetry-channel-letting-the-game-publish-its-state/"><span class="mono">previous</span><b>12.04 A Telemetry Channel: Letting the Game Publish Its State</b></a>
+      <a class="lp-next" href="../12-06-versioning-the-interface-between-a-game-and-its-tools/"><span class="mono">next</span><b>12.06 Versioning the Interface Between a Game and Its Tools</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/12-05-a-live-stats-panel-for-your-game"></script>
+</body>
+</html>

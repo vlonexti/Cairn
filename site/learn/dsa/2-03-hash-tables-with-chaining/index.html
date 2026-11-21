@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Hash Tables with Chaining · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/2-03-hash-tables-with-chaining/">
+  <meta name="description" content="The classic hash table - an array of buckets, each holding a chain of entries, insert, find and erase, the load factor and why the expected chain length…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hash Tables with Chaining · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="The classic hash table - an array of buckets, each holding a chain of entries, insert, find and erase, the load factor and why the expected chain length…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/2-03-hash-tables-with-chaining/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Hash Tables with Chaining · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hash Tables with Chaining · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="The classic hash table - an array of buckets, each holding a chain of entries, insert, find and erase, the load factor and why the expected chain length…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Searching and Hashing</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Hash Tables with Chaining</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 5 in milestone 2</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The classic hash table - an array of buckets, each holding a chain of entries, insert, find and erase, the load factor and why the expected chain length stays constant, rehashing by doubling, how std::unordered_map is built and its bucket interface, reserve and max_load_factor, and the worst case.</p>
+      <div class="prose">
+<h2>Buckets of chains</h2>
+<p><strong>Separate chaining</strong> is the simplest way to handle collisions: each bucket holds a small list of every entry that hashed there.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph table[&quot;buckets&quot;]
+        direction TB
+        b0[&quot;0&quot;]
+        b1[&quot;1&quot;]
+        b2[&quot;2&quot;]
+        b3[&quot;3&quot;]
+    end
+    b0 --&gt; e1[&quot;apple: 3&quot;] --&gt; e2[&quot;kiwi: 9&quot;]
+    b2 --&gt; e3[&quot;pear: 1&quot;]
+    b3 --&gt; e4[&quot;fig: 4&quot;] --&gt; e5[&quot;plum: 7&quot;] --&gt; e6[&quot;lime: 2&quot;]</pre></div>
+<ul>
+<li><strong>find(key)</strong>: hash the key, go to its bucket, scan the chain for an equal key.</li>
+<li><strong>insert(key, value)</strong>: find it; if it is there, update it, otherwise add an entry to the chain.</li>
+<li><strong>erase(key)</strong>: find it and remove it from the chain.</li>
+</ul>
+<p>Each operation costs one hash plus the length of one chain.</p>
+<h2>The load factor</h2>
+<p>The <strong>load factor</strong> is α = n / m: the number of entries divided by the number of buckets. With a good hash, entries are spread evenly, so the <strong>expected chain length is α</strong>. If the table keeps α below a constant (say 1), every operation is <strong>expected O(1)</strong>, however many entries there are.</p>
+<p>To keep α bounded, the table <strong>rehashes</strong> when it gets too full: it allocates about twice as many buckets and reinserts every entry (each entry&#39;s bucket changes, because <code>hash % m</code> depends on <code>m</code>). One rehash costs O(n), but as with a dynamic array, doubling makes it <strong>amortised O(1)</strong> per insert.</p>
+<h2>Building one</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;functional&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;optional&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">class</span> K, <span class="tk-k">class</span> V, <span class="tk-k">class</span> <span class="tk-t">Hash</span> = std::hash&lt;K&gt;&gt;
+<span class="tk-k">class</span> <span class="tk-t">ChainedMap</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">ChainedMap</span>() : <span class="tk-f">buckets_</span>(<span class="tk-n">8</span>) {}
+
+    <span class="tk-k">void</span> <span class="tk-f">put</span>(<span class="tk-k">const</span> K&amp; key, <span class="tk-k">const</span> V&amp; value)
+    {
+        <span class="tk-k">auto</span>&amp; chain = <span class="tk-f">bucketFor</span>(key);
+        <span class="tk-k">for</span> (<span class="tk-k">auto</span>&amp; [k, v] : chain)
+            <span class="tk-k">if</span> (k == key) { v = value; <span class="tk-k">return</span>; }
+        chain.<span class="tk-f">emplace_back</span>(key, value);
+        ++size_;
+        <span class="tk-k">if</span> (size_ &gt; buckets_.<span class="tk-f">size</span>()) <span class="tk-f">rehash</span>(buckets_.<span class="tk-f">size</span>() * <span class="tk-n">2</span>);   <span class="tk-c">// keep the load factor at most 1</span>
+    }
+
+    std::optional&lt;V&gt; <span class="tk-f">get</span>(<span class="tk-k">const</span> K&amp; key) <span class="tk-k">const</span>
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; [k, v] : <span class="tk-f">bucketFor</span>(key))
+            <span class="tk-k">if</span> (k == key) <span class="tk-k">return</span> v;
+        <span class="tk-k">return</span> std::nullopt;
+    }
+
+    <span class="tk-k">bool</span> <span class="tk-f">erase</span>(<span class="tk-k">const</span> K&amp; key)
+    {
+        <span class="tk-k">auto</span>&amp; chain = <span class="tk-f">bucketFor</span>(key);
+        <span class="tk-k">for</span> (std::size_t i = <span class="tk-n">0</span>; i &lt; chain.<span class="tk-f">size</span>(); ++i)
+            <span class="tk-k">if</span> (chain[i].first == key)
+            {
+                chain[i] = std::<span class="tk-f">move</span>(chain.<span class="tk-f">back</span>());   <span class="tk-c">// order inside a chain does not matter</span>
+                chain.<span class="tk-f">pop_back</span>();
+                --size_;
+                <span class="tk-k">return</span> <span class="tk-k">true</span>;
+            }
+        <span class="tk-k">return</span> <span class="tk-k">false</span>;
+    }
+
+    std::size_t <span class="tk-f">size</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> size_; }
+    std::size_t <span class="tk-f">bucketCount</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> buckets_.<span class="tk-f">size</span>(); }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">using</span> <span class="tk-t">Chain</span> = std::vector&lt;std::pair&lt;K, V&gt;&gt;;
+
+    <span class="tk-t">Chain</span>&amp; <span class="tk-f">bucketFor</span>(<span class="tk-k">const</span> K&amp; key) { <span class="tk-k">return</span> buckets_[<span class="tk-t">Hash</span>{}(key) % buckets_.<span class="tk-f">size</span>()]; }
+    <span class="tk-k">const</span> <span class="tk-t">Chain</span>&amp; <span class="tk-f">bucketFor</span>(<span class="tk-k">const</span> K&amp; key) <span class="tk-k">const</span> { <span class="tk-k">return</span> buckets_[<span class="tk-t">Hash</span>{}(key) % buckets_.<span class="tk-f">size</span>()]; }
+
+    <span class="tk-k">void</span> <span class="tk-f">rehash</span>(std::size_t count)
+    {
+        std::vector&lt;<span class="tk-t">Chain</span>&gt; old = std::<span class="tk-f">move</span>(buckets_);
+        buckets_ = std::vector&lt;<span class="tk-t">Chain</span>&gt;(count);
+        <span class="tk-k">for</span> (<span class="tk-k">auto</span>&amp; chain : old)
+            <span class="tk-k">for</span> (<span class="tk-k">auto</span>&amp; entry : chain) <span class="tk-f">bucketFor</span>(entry.first).<span class="tk-f">push_back</span>(std::<span class="tk-f">move</span>(entry));
+    }
+
+    std::vector&lt;<span class="tk-t">Chain</span>&gt; buckets_;
+    std::size_t size_ = <span class="tk-n">0</span>;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">ChainedMap</span>&lt;std::string, <span class="tk-k">int</span>&gt; ages;
+    ages.<span class="tk-f">put</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>);
+    ages.<span class="tk-f">put</span>(<span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-n">85</span>);
+    ages.<span class="tk-f">put</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">37</span>);                  <span class="tk-c">// updates</span>
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">100</span>; ++i) ages.<span class="tk-f">put</span>(<span class="tk-s">&quot;user&quot;</span> + std::<span class="tk-f">to_string</span>(i), i);
+    ages.<span class="tk-f">erase</span>(<span class="tk-s">&quot;user50&quot;</span>);
+
+    std::cout &lt;&lt; <span class="tk-s">&quot;Ada &quot;</span> &lt;&lt; ages.<span class="tk-f">get</span>(<span class="tk-s">&quot;Ada&quot;</span>).<span class="tk-f">value_or</span>(-<span class="tk-n">1</span>) &lt;&lt; <span class="tk-s">&quot;, user50 &quot;</span> &lt;&lt; ages.<span class="tk-f">get</span>(<span class="tk-s">&quot;user50&quot;</span>).<span class="tk-f">value_or</span>(-<span class="tk-n">1</span>)
+              &lt;&lt; <span class="tk-s">&quot;, size &quot;</span> &lt;&lt; ages.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot;, buckets &quot;</span> &lt;&lt; ages.<span class="tk-f">bucketCount</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>Each chain here is a small <code>std::vector</code> rather than a linked list: chains are short, and scanning a few contiguous entries is faster than following pointers. Erasing swaps the entry with the last one in its chain, which is O(1) once it is found.</p>
+<h2>std::unordered_map</h2>
+<p>The standard <code>std::unordered_map</code> is a chained hash table. Its rules (iterators and references to elements stay valid when <strong>other</strong> elements are inserted) force it to keep each element in its own heap node, linked in chains. It exposes the bucket structure if you want to look:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;unordered_map&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::unordered_map&lt;std::string, <span class="tk-k">int</span>&gt; m;
+    std::cout &lt;&lt; <span class="tk-s">&quot;empty: &quot;</span> &lt;&lt; m.<span class="tk-f">bucket_count</span>() &lt;&lt; <span class="tk-s">&quot; buckets\n&quot;</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">1000</span>; ++i) m[<span class="tk-s">&quot;key&quot;</span> + std::<span class="tk-f">to_string</span>(i)] = i;
+    std::cout &lt;&lt; <span class="tk-s">&quot;1000 entries: &quot;</span> &lt;&lt; m.<span class="tk-f">bucket_count</span>() &lt;&lt; <span class="tk-s">&quot; buckets, load factor &quot;</span> &lt;&lt; m.<span class="tk-f">load_factor</span>()
+              &lt;&lt; <span class="tk-s">&quot; (max &quot;</span> &lt;&lt; m.<span class="tk-f">max_load_factor</span>() &lt;&lt; <span class="tk-s">&quot;)\n&quot;</span>;
+
+    std::size_t longest = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (std::size_t b = <span class="tk-n">0</span>; b &lt; m.<span class="tk-f">bucket_count</span>(); ++b) longest = std::<span class="tk-f">max</span>(longest, m.<span class="tk-f">bucket_size</span>(b));
+    std::cout &lt;&lt; <span class="tk-s">&quot;longest chain: &quot;</span> &lt;&lt; longest &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    std::unordered_map&lt;std::string, <span class="tk-k">int</span>&gt; sized;
+    sized.<span class="tk-f">reserve</span>(<span class="tk-n">1000</span>);                  <span class="tk-c">// allocate enough buckets once: no rehashing while filling</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;after reserve(1000): &quot;</span> &lt;&lt; sized.<span class="tk-f">bucket_count</span>() &lt;&lt; <span class="tk-s">&quot; buckets\n&quot;</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bucket_count()</code>, <code>bucket(key)</code>, <code>bucket_size(b)</code></td>
+<td>The structure</td>
+</tr>
+<tr>
+<td><code>load_factor()</code>, <code>max_load_factor(f)</code></td>
+<td>The current α and the limit that triggers a rehash (1.0 by default)</td>
+</tr>
+<tr>
+<td><code>reserve(n)</code></td>
+<td>Make room for <code>n</code> elements without rehashing</td>
+</tr>
+<tr>
+<td><code>rehash(m)</code></td>
+<td>At least <code>m</code> buckets</td>
+</tr>
+</tbody></table>
+</div>
+<p>Because of the per-element nodes, <code>std::unordered_map</code> is often slower than tables that store entries directly in an array (open addressing, lesson 2.04). Libraries such as Abseil&#39;s <code>flat_hash_map</code> and Boost&#39;s <code>unordered_flat_map</code> do that and are typically two to three times faster.</p>
+<h2>The worst case</h2>
+<p>Expected O(1) assumes the hash spreads the keys. If every key lands in one bucket, which happens with a terrible hash or a deliberate attack, each operation scans one chain of length n: O(n). Hash tables trade a small chance of a bad worst case for an excellent average. When you need guaranteed O(log n), use a balanced tree (<code>std::map</code>, lesson 4.03).</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A chained hash table has 1,000 buckets and 3,000 entries, with a good hash. What is the expected chain length?</div><ul><li>1</li><li>3</li><li>1,000</li><li>log 3000</li></ul><details><summary>Show the answer</summary><p><b>3</b> The load factor n / m = 3000 / 1000 = 3.</p></details></li><li><div class="q">Why does every entry move to a different bucket (in general) during a rehash?</div><ul><li>The keys change</li><li>The bucket is hash % bucketCount, and the bucket count changed</li><li>Rehashing sorts the entries</li><li>The hash function is replaced</li></ul><details><summary>Show the answer</summary><p><b>The bucket is hash % bucketCount, and the bucket count changed</b> The hash stays the same, but taking it modulo a new count gives a new bucket.</p></details></li><li><div class="q">Why does doubling the buckets when the table is full keep insert at amortised O(1)?</div><ul><li>The total work of all rehashes is proportional to the number of entries, like a growing vector</li><li>Rehashing is O(1)</li><li>The table never rehashes</li><li>Doubling removes collisions</li></ul><details><summary>Show the answer</summary><p><b>The total work of all rehashes is proportional to the number of entries, like a growing vector</b> Each rehash costs O(n), but they happen at sizes 8, 16, 32, ..., which sum to less than 2n.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>Chaining keeps a list of entries per bucket; each operation costs one hash plus one chain.</li>
+<li>With a good hash, the expected chain length is the load factor α = n / m; keeping α bounded makes operations expected O(1).</li>
+<li>Rehashing into twice as many buckets keeps insertion amortised O(1).</li>
+<li><code>std::unordered_map</code> is a chained table with one node per element; <code>reserve</code> avoids rehashing.</li>
+<li>The worst case is O(n) per operation, when keys pile into one bucket.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-hash-functions/"><span class="mono">previous</span><b>2.02 Hash Functions</b></a>
+      <a class="lp-next" href="../2-04-open-addressing/"><span class="mono">next</span><b>2.04 Open Addressing</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/2-03-hash-tables-with-chaining"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

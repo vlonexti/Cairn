@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Pages, Protection and Committing Memory · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/6-03-pages-protection-and-committing-memory/">
+  <meta name="description" content="Under the heap sits VirtualAlloc, which manages memory directly in pages. A region of the address space can be free , reserved (set aside, but with no memory…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pages, Protection and Committing Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Under the heap sits VirtualAlloc, which manages memory directly in pages. A region of the address space can be free , reserved (set aside, but with no memory…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/6-03-pages-protection-and-committing-memory/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pages, Protection and Committing Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pages, Protection and Committing Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Under the heap sits VirtualAlloc, which manages memory directly in pages. A region of the address space can be free , reserved (set aside, but with no memory…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Processes, Threads and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Pages, Protection and Committing Memory</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 9 in milestone 6</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Under the heap sits <code>VirtualAlloc</code>, which manages memory directly in pages. A region of the address space can be <strong>free</strong>, <strong>reserved</strong> (set aside, but with no memory behind it) or <strong>committed</strong> (backed by memory), and every committed page has a <strong>protection</strong>: readable, writable, executable, or none. This lesson uses these tools directly, and shows how games use them for huge growable arrays, guard pages and catching bugs.</p>
+      <div class="prose">
+<h2>Three states for every page</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>State</th>
+<th>Means</th>
+<th>Costs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Free</strong></td>
+<td>Not in use; any access faults</td>
+<td>Nothing</td>
+</tr>
+<tr>
+<td><strong>Reserved</strong></td>
+<td>Set aside: no other allocation will use these addresses. Still no memory behind it; any access faults</td>
+<td>Almost nothing (some bookkeeping)</td>
+</tr>
+<tr>
+<td><strong>Committed</strong></td>
+<td>Backed by memory (RAM or page file). Can be accessed according to its protection</td>
+<td>Counts against the system&#39;s commit limit; RAM used once touched</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>VirtualAlloc</code> moves pages between these states. Reserving is done in units of the <strong>allocation granularity</strong>, 64 KB; committing and protection work per 4 KB page.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-c">// Reserve 1 GB of address space: no memory is used yet.</span>
+    <span class="tk-k">const</span> SIZE_T reserveSize{ <span class="tk-n">1ull</span> &lt;&lt; <span class="tk-n">30</span> };
+    <span class="tk-k">char</span>* base{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">char</span>*&gt;(<span class="tk-f">VirtualAlloc</span>(<span class="tk-k">nullptr</span>, reserveSize, MEM_RESERVE, PAGE_NOACCESS)) };
+    <span class="tk-k">if</span> (!base) { std::cout &lt;&lt; <span class="tk-s">&quot;reserve failed\n&quot;</span>; <span class="tk-k">return</span> <span class="tk-n">1</span>; }
+
+    <span class="tk-c">// Commit just the first two pages, readable and writable.</span>
+    <span class="tk-f">VirtualAlloc</span>(base, <span class="tk-n">2</span> * <span class="tk-n">4096</span>, MEM_COMMIT, PAGE_READWRITE);
+    base[<span class="tk-n">0</span>] = <span class="tk-n">42</span>;                         <span class="tk-c">// fine: committed</span>
+    base[<span class="tk-n">8191</span>] = <span class="tk-n">7</span>;                       <span class="tk-c">// fine: last byte of the second page</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;first byte &quot;</span> &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(base[<span class="tk-n">0</span>]) &lt;&lt; <span class="tk-s">&quot;, committed memory starts zeroed: &quot;</span> &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(base[<span class="tk-n">100</span>]) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-c">// base[8192] = 1;                    // would be an access violation: reserved, not committed</span>
+
+    <span class="tk-f">VirtualFree</span>(base, <span class="tk-n">0</span>, MEM_RELEASE);    <span class="tk-c">// give back the whole reservation</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>first byte 42, committed memory starts zeroed: 0</code></pre></div>
+<p>Reserving a gigabyte took no memory at all, only addresses, which a 64-bit process has plenty of. Committed pages always start filled with zeros: Windows never hands one process another process&#39;s old data.</p>
+<h2>Protection</h2>
+<p>Every committed page carries a protection, enforced by the processor on each access:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Read</th>
+<th>Write</th>
+<th>Execute</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PAGE_NOACCESS</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td>Guard regions, reserved space</td>
+</tr>
+<tr>
+<td><code>PAGE_READONLY</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>Constants (<code>.rdata</code>)</td>
+</tr>
+<tr>
+<td><code>PAGE_READWRITE</code></td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>Heap, stack, globals (<code>.data</code>)</td>
+</tr>
+<tr>
+<td><code>PAGE_EXECUTE_READ</code></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>Code (<code>.text</code>)</td>
+</tr>
+<tr>
+<td><code>PAGE_EXECUTE_READWRITE</code></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>Rarely legitimate: avoid</td>
+</tr>
+</tbody></table>
+</div>
+<p>Combined with the section table of lesson 2.03, this is why writing to a string literal or to your own code crashes: those pages are mapped read-only.</p>
+<p><code>VirtualProtect</code> changes a page&#39;s protection. One legitimate use in games: make a big table <strong>read-only after loading it</strong>, so any accidental write anywhere in the program crashes immediately at the culprit, instead of silently corrupting the data.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">VirtualProtect</span>(itemTable, tableBytes, PAGE_READONLY, &amp;oldProtection);</code></pre></div>
+<div class="callout note"><div class="callout-title"><span>Why writable and executable are kept apart</span></div><div class="callout-body"><p>A page that is both writable and executable lets any bug that writes memory also plant code to run. Windows&#39; <strong>Data Execution Prevention</strong> (DEP) makes data pages non-executable, and modern compilers, the loader and security features all assume code pages are not writable. Programs that generate code at run time (JIT compilers, emulators) write into a read-write page, then switch it to execute-read before running it, never holding both at once.</p>
+</div></div>
+<h2>Guard pages and catching overruns</h2>
+<p>A page marked <code>PAGE_NOACCESS</code> placed right after a buffer turns an overrun into an immediate crash at the exact instruction, much like AddressSanitizer&#39;s red zones (lesson 2.10) but enforced by the hardware for free. Debugging tools use this idea: Windows&#39; <strong>page heap</strong> (enabled per program with the <code>gflags</code> tool) places every heap allocation at the end of its own page, followed by an inaccessible page, so a write one byte past the end faults instantly.</p>
+<p>Thread stacks use the related <code>PAGE_GUARD</code> flag: the page just below the stack&#39;s committed part is a guard page, and touching it commits more stack. That is how a thread&#39;s stack grows up to its reserved size, and why a stack overflow is detected: the guard page is finally hit with nothing reserved below it.</p>
+<h2>Reserve big, commit as you go</h2>
+<p>Reserving and committing separately gives a pattern games use for large, growable data: reserve the maximum size up front (say 4 GB of addresses for an asset buffer), then commit pages only as the buffer actually fills. Unlike <code>std::vector</code> (lesson 3.07):</p>
+<ul>
+<li>the data <strong>never moves</strong>, so pointers into it stay valid forever;</li>
+<li>growing never copies anything;</li>
+<li>unused space costs no memory.</li>
+</ul>
+<p>Some engines build their entity arrays and frame allocators this way.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Using memory that is only reserved</span></div><div class="callout-body"><p>Reserved pages fault on any access. Commit them first.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Freeing with the wrong size</span></div><div class="callout-body"><p><code>VirtualFree(base, 0, MEM_RELEASE)</code> releases an entire reservation; the size must be 0 and the address must be exactly what <code>VirtualAlloc</code> returned.</p>
+</div></div>
+<blockquote><p>[!warning] <code>PAGE_EXECUTE_READWRITE</code> &quot;to be safe&quot;
+It is the opposite of safe. Use the narrowest protection that works.</p>
+</blockquote>
+<blockquote><p>[!warning] Using <code>VirtualAlloc</code> for small objects
+Each allocation is at least one 4 KB page and 64 KB of address space. Use the heap for small objects.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the difference between reserving and committing memory?</div><ul><li>Reserving sets aside addresses only; committing backs them with memory so they can be used</li><li>Reserving is for the stack and committing for the heap</li><li>There is no difference</li></ul><details><summary>Show the answer</summary><p><b>Reserving sets aside addresses only; committing backs them with memory so they can be used</b> Reserved pages still fault on access; committed pages are usable.</p></details></li><li><div class="q">A 1 GB region is reserved and two pages committed. Roughly how much memory does the program use for it?</div><ul><li>About 8 KB, once those pages are touched</li><li>1 GB</li><li>Nothing at all, ever</li></ul><details><summary>Show the answer</summary><p><b>About 8 KB, once those pages are touched</b> Only committed pages are backed, and only touched pages take RAM.</p></details></li><li><div class="q">Why are code pages not writable?</div><ul><li>So bugs or attacks that write memory cannot change or plant code</li><li>Because code is stored on disk</li><li>To make the program faster</li></ul><details><summary>Show the answer</summary><p><b>So bugs or attacks that write memory cannot change or plant code</b> Keeping writable and executable apart is a basic defence.</p></details></li><li><div class="q">What happens when a program writes to a <code>PAGE_NOACCESS</code> page?</div><ul><li>An access violation, at the exact instruction that tried</li><li>The write is ignored</li><li>The page is committed automatically</li></ul><details><summary>Show the answer</summary><p><b>An access violation, at the exact instruction that tried</b> That is what makes no-access guard pages useful for catching overruns.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-virtual-address-spaces/"><span class="mono">previous</span><b>6.02 Virtual Address Spaces</b></a>
+      <a class="lp-next" href="../6-04-exploring-your-own-process-with-virtualquery/"><span class="mono">next</span><b>6.04 Exploring Your Own Process with VirtualQuery</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/6-03-pages-protection-and-committing-memory"></script>
+</body>
+</html>

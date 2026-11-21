@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Gravity, Jumping and Game Feel · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/3-03-gravity-jumping-and-game-feel/">
+  <meta name="description" content="Jumping that feels good is designed, not simulated. This lesson derives gravity and jump speed from the height and time you want, then adds the tricks…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Gravity, Jumping and Game Feel · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="Jumping that feels good is designed, not simulated. This lesson derives gravity and jump speed from the height and time you want, then adds the tricks…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/3-03-gravity-jumping-and-game-feel/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Gravity, Jumping and Game Feel · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Gravity, Jumping and Game Feel · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="Jumping that feels good is designed, not simulated. This lesson derives gravity and jump speed from the height and time you want, then adds the tricks…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>Collision and Physics</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Gravity, Jumping and Game Feel</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Jumping that feels good is designed, not simulated. This lesson derives gravity and jump speed from the height and time you want, then adds the tricks platformers rely on - variable jump height, faster falling, coyote time, jump buffering and acceleration on the ground and in the air.</p>
+      <div class="prose">
+<h2>Gravity is acceleration</h2>
+<p>Gravity adds to the vertical velocity every frame (y points down, so it is positive):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>vel.y += gravity * dt;
+vel.y = std::<span class="tk-f">min</span>(vel.y, maxFallSpeed);     <span class="tk-c">// terminal velocity: falls stay readable</span></code></pre></div>
+<p>A jump sets the vertical velocity upwards once: <code>vel.y = -jumpSpeed</code>.</p>
+<h2>Design the jump, then compute the numbers</h2>
+<p>Guessing <code>gravity = 1500, jumpSpeed = 600</code> and tweaking forever is the slow way. Decide what you want instead: <strong>how high</strong> (in pixels) and <strong>how long</strong> the rise takes (in seconds). Physics gives the rest:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>gravity   = 2 * height / time²
+jumpSpeed = 2 * height / time</code></pre></div>
+<p>A jump of 96 pixels (three 32-pixel tiles) rising in 0.4 s needs <code>gravity = 1200</code> px/s² and <code>jumpSpeed = 480</code> px/s. Change the height and the jump still takes 0.4 s; change the time and it still reaches 96 pixels. Level designers can then rely on &quot;the player can jump three tiles&quot;.</p>
+<h2>Variable jump height</h2>
+<p>Players expect a tap to make a small hop and holding the button to jump high. When the button is <strong>released</strong> while still rising, cut the upward speed:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (<span class="tk-f">IsKeyReleased</span>(KEY_SPACE) &amp;&amp; vel.y &lt; <span class="tk-n">0</span>) vel.y *= <span class="tk-n">0.5f</span>;</code></pre></div>
+<h2>Falling faster</h2>
+<p>Real jumps are symmetrical, but they feel floaty. Most platformers use <strong>stronger gravity on the way down</strong> (1.5 to 2 times), which makes jumps feel snappy and landings decisive:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">float</span> g = vel.y &gt; <span class="tk-n">0</span> ? gravity * <span class="tk-n">1.8f</span> : gravity;</code></pre></div>
+<h2>Coyote time</h2>
+<p>When a player runs off a ledge and presses jump a moment too late, a strict game says &quot;you are in the air, no jump&quot;. It feels unfair, because the player <em>saw</em> themselves on the ledge. <strong>Coyote time</strong> allows a jump for a short time (about 0.1 s) after leaving the ground:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (onGround) coyote = <span class="tk-n">0.1f</span>; <span class="tk-k">else</span> coyote -= dt;</code></pre></div>
+<h2>Jump buffering</h2>
+<p>The opposite case: the player presses jump a moment <strong>before</strong> landing. Remember the press for a short time and jump as soon as it becomes possible:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (<span class="tk-f">IsKeyPressed</span>(KEY_SPACE)) buffer = <span class="tk-n">0.1f</span>; <span class="tk-k">else</span> buffer -= dt;
+<span class="tk-k">if</span> (buffer &gt; <span class="tk-n">0</span> &amp;&amp; coyote &gt; <span class="tk-n">0</span>) { vel.y = -jumpSpeed; buffer = <span class="tk-n">0</span>; coyote = <span class="tk-n">0</span>; }</code></pre></div>
+<p>Both timers must be cleared when the jump happens, or one press makes two jumps.</p>
+<h2>Running</h2>
+<p>Instant full speed feels stiff; slow acceleration feels like ice. Move the horizontal velocity <strong>towards</strong> the target speed by a maximum change per second, with different rates for speeding up, slowing down and turning, and less control in the air:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">float</span> <span class="tk-f">approach</span>(<span class="tk-k">float</span> v, <span class="tk-k">float</span> target, <span class="tk-k">float</span> maxDelta)
+{
+    <span class="tk-k">if</span> (v &lt; target) <span class="tk-k">return</span> std::<span class="tk-f">min</span>(v + maxDelta, target);
+    <span class="tk-k">return</span> std::<span class="tk-f">max</span>(v - maxDelta, target);
+}
+<span class="tk-k">const</span> <span class="tk-k">float</span> target = inputX * runSpeed;
+<span class="tk-k">const</span> <span class="tk-k">float</span> rate = onGround ? (inputX != <span class="tk-n">0</span> ? accel : decel) : airAccel;
+vel.x = <span class="tk-f">approach</span>(vel.x, target, rate * dt);</code></pre></div>
+<h2>Feel is the sum of small things</h2>
+<p>None of these is realistic, and all of them are in nearly every good platformer. Add the small extras too: a puff of dust on landing, a squash of the sprite, a short sound. Lesson 4.03 builds the particles.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-resolving-collisions/"><span class="mono">previous</span><b>3.02 Resolving Collisions</b></a>
+      <a class="lp-next" href="../3-04-fixed-time-steps/"><span class="mono">next</span><b>3.04 Fixed Time Steps</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/3-03-gravity-jumping-and-game-feel"></script>
+</body>
+</html>

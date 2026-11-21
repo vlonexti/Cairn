@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Functions · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/3-01-functions/">
+  <meta name="description" content="Defining functions with function ... end, local functions, parameters and return, returning several values and where the extra values go, and functions that…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Functions · Lua · Xenon">
+  <meta property="og:description" content="Defining functions with function ... end, local functions, parameters and return, returning several values and where the extra values go, and functions that…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/3-01-functions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Functions · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Functions · Lua · Xenon">
+  <meta name="twitter:description" content="Defining functions with function ... end, local functions, parameters and return, returning several values and where the extra values go, and functions that…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Functions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Functions</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Defining functions with function ... end, local functions, parameters and return, returning several values and where the extra values go, and functions that return nothing.</p>
+      <div class="prose">
+<h2>Defining and calling</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">greet</span>(name)
+    <span class="tk-k">return</span> <span class="tk-s">&quot;Hello, &quot;</span> .. name .. <span class="tk-s">&quot;!&quot;</span>
+<span class="tk-k">end</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">greet</span>(<span class="tk-s">&quot;Ada&quot;</span>))
+<span class="tk-f">print</span>(<span class="tk-f">greet</span>(<span class="tk-s">&quot;Lua&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Hello, Ada!
+Hello, Lua!</code></pre></div>
+<p><code>local function name(parameters) ... end</code> defines a function. <code>return</code> hands a value back to the caller and leaves the function at once. A function is defined when Lua <em>runs</em> the definition, so define it above the code that calls it.</p>
+<p>Like variables, functions should be <code>local</code> unless something else needs to find them by name. In the practice tasks, the functions the task names are global (<code>function greet(name)</code>) so the tests can call them.</p>
+<h2>Parameters</h2>
+<p>A parameter is a local variable that starts with the value the caller passed. Lua does not check how many arguments you pass: missing ones are <code>nil</code>, extra ones are dropped.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">describe</span>(name, age)
+    <span class="tk-k">return</span> name .. <span class="tk-s">&quot; is &quot;</span> .. <span class="tk-f">tostring</span>(age)
+<span class="tk-k">end</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">describe</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>))
+<span class="tk-f">print</span>(<span class="tk-f">describe</span>(<span class="tk-s">&quot;Ada&quot;</span>))
+<span class="tk-f">print</span>(<span class="tk-f">describe</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>, <span class="tk-s">&quot;ignored&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Ada is 36
+Ada is nil
+Ada is 36</code></pre></div>
+<p>The next lesson uses this to give parameters default values.</p>
+<h2>Returning several values</h2>
+<p>A function can return several values, and the caller can take as many as it wants:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">min_max</span>(list)
+    <span class="tk-k">local</span> lo, hi = list[<span class="tk-n">1</span>], list[<span class="tk-n">1</span>]
+    <span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(list) <span class="tk-k">do</span>
+        <span class="tk-k">if</span> v &lt; lo <span class="tk-k">then</span> lo = v <span class="tk-k">end</span>
+        <span class="tk-k">if</span> v &gt; hi <span class="tk-k">then</span> hi = v <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> lo, hi
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> lo, hi = <span class="tk-f">min_max</span>({ <span class="tk-n">4</span>, <span class="tk-n">9</span>, <span class="tk-n">2</span>, <span class="tk-n">7</span> })
+<span class="tk-f">print</span>(lo, hi)
+<span class="tk-k">local</span> just_lo = <span class="tk-f">min_max</span>({ <span class="tk-n">4</span>, <span class="tk-n">9</span>, <span class="tk-n">2</span>, <span class="tk-n">7</span> })
+<span class="tk-f">print</span>(just_lo)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>2	9
+2</code></pre></div>
+<p>Lua&#39;s own functions do this too: <code>string.find</code> returns a start and an end, <code>pcall</code> returns a success flag and a result.</p>
+<h3>Where the extra values go</h3>
+<p>Every value of a call is kept only when the call is the <strong>last</strong> item in a list (of arguments, of a table constructor, of a <code>return</code>). Anywhere else, the call is cut down to its first value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">two</span>() <span class="tk-k">return</span> <span class="tk-n">1</span>, <span class="tk-n">2</span> <span class="tk-k">end</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">two</span>())            <span class="tk-c">-- 1 2</span>
+<span class="tk-f">print</span>(<span class="tk-f">two</span>(), <span class="tk-s">&quot;x&quot;</span>)       <span class="tk-c">-- 1 x : not last, so only the first value</span>
+<span class="tk-f">print</span>(<span class="tk-s">&quot;x&quot;</span>, <span class="tk-f">two</span>())       <span class="tk-c">-- x 1 2</span>
+<span class="tk-f">print</span>((<span class="tk-f">two</span>()))          <span class="tk-c">-- 1 : brackets cut it to one value</span>
+
+<span class="tk-k">local</span> t = { <span class="tk-f">two</span>(), <span class="tk-f">two</span>() }
+<span class="tk-f">print</span>(#t)               <span class="tk-c">-- 3 : {1, 1, 2}</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1	2
+1	x
+x	1	2
+1
+3</code></pre></div>
+<h2>Functions that return nothing</h2>
+<p>A function without <code>return</code>, or with a plain <code>return</code>, returns no values. Using its result gives <code>nil</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">log</span>(message)
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;[log] &quot;</span> .. message)
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> result = <span class="tk-f">log</span>(<span class="tk-s">&quot;started&quot;</span>)
+<span class="tk-f">print</span>(result)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>[log] started
+nil</code></pre></div>
+<div class="callout warning"><div class="callout-title"><span>Printing is not returning</span></div><div class="callout-body"><p>A function that prints its answer cannot be used in a calculation. When a task says &quot;returns&quot;, use <code>return</code>; the tests read the returned value, not the printed text.</p>
+</div></div>
+<p><code>return</code> must be the last statement in its block. To leave a function early from the middle, put it inside an <code>if</code>, which is the usual way anyway:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">sign</span>(n)
+    <span class="tk-k">if</span> n &gt; <span class="tk-n">0</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-n">1</span> <span class="tk-k">end</span>
+    <span class="tk-k">if</span> n &lt; <span class="tk-n">0</span> <span class="tk-k">then</span> <span class="tk-k">return</span> -<span class="tk-n">1</span> <span class="tk-k">end</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">sign</span>(-<span class="tk-n">5</span>), <span class="tk-f">sign</span>(<span class="tk-n">0</span>), <span class="tk-f">sign</span>(<span class="tk-n">8</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>-1	0	1</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-nested-tables-and-copies/"><span class="mono">previous</span><b>2.05 Nested Tables and Copies</b></a>
+      <a class="lp-next" href="../3-02-optional-and-variable-arguments/"><span class="mono">next</span><b>3.02 Optional and Variable Arguments</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/3-01-functions"></script>
+</body>
+</html>

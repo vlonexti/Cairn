@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Generic Math and Static Abstract Members · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/8-03-generic-math-and-static-abstract-members/">
+  <meta name="description" content="Writing one method that works for every number type - why generics could not do arithmetic before, the INumber&lt;T family of interfaces, T.Zero, T.One and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Generic Math and Static Abstract Members · C# · Xenon">
+  <meta property="og:description" content="Writing one method that works for every number type - why generics could not do arithmetic before, the INumber&lt;T family of interfaces, T.Zero, T.One and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/8-03-generic-math-and-static-abstract-members/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Generic Math and Static Abstract Members · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Generic Math and Static Abstract Members · C# · Xenon">
+  <meta name="twitter:description" content="Writing one method that works for every number type - why generics could not do arithmetic before, the INumber&lt;T family of interfaces, T.Zero, T.One and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>C# in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Generic Math and Static Abstract Members</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.03</b></span><span>3 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Writing one method that works for every number type - why generics could not do arithmetic before, the INumber&lt;T&gt; family of interfaces, T.Zero, T.One and T.CreateChecked, static abstract and static virtual interface members, defining operators in your own generic interfaces, and when generic math is worth it.</p>
+      <div class="prose">
+<h2>The old problem</h2>
+<p>Before C# 11, this did not compile:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">static</span> T <span class="tk-t">Sum</span>&lt;T&gt;(IEnumerable&lt;T&gt; values)
+{
+    T total = <span class="tk-n">0</span>;              <span class="tk-c">// error: cannot convert 0 to T</span>
+    <span class="tk-k">foreach</span> (<span class="tk-k">var</span> v <span class="tk-k">in</span> values) total += v;   <span class="tk-c">// error: + is not defined for T</span>
+    <span class="tk-k">return</span> total;
+}</code></pre></div>
+<p>Generics could call <strong>instance</strong> methods of an interface, but numbers are added with <strong>static</strong> operators, and interfaces had no way to require those. So libraries wrote the same method once for <code>int</code>, once for <code>double</code>, once for <code>decimal</code>...</p>
+<h2>INumber&lt;T&gt;</h2>
+<p>.NET 7 added interfaces for every ability numbers have, in <code>System.Numerics</code>. <code>INumber&lt;T&gt;</code> gathers the common ones, and every built-in number type implements it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Numerics</span>;
+
+<span class="tk-k">static</span> T <span class="tk-t">Sum</span>&lt;T&gt;(IEnumerable&lt;T&gt; values) <span class="tk-k">where</span> T : INumber&lt;T&gt;
+{
+    T total = T.<span class="tk-t">Zero</span>;
+    <span class="tk-k">foreach</span> (<span class="tk-k">var</span> v <span class="tk-k">in</span> values) total += v;
+    <span class="tk-k">return</span> total;
+}
+
+<span class="tk-k">static</span> T <span class="tk-t">Average</span>&lt;T&gt;(IReadOnlyCollection&lt;T&gt; values) <span class="tk-k">where</span> T : INumber&lt;T&gt;
+    =&gt; <span class="tk-f">Sum</span>(values) / T.<span class="tk-f">CreateChecked</span>(values.<span class="tk-t">Count</span>);
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Sum</span>(<span class="tk-k">new</span>[] { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> }));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Sum</span>(<span class="tk-k">new</span>[] { <span class="tk-n">1.5</span>, <span class="tk-n">2.25</span> }));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Average</span>(<span class="tk-k">new</span>[] { <span class="tk-n">1m</span>, <span class="tk-n">2m</span>, <span class="tk-n">4m</span> }));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Average</span>(<span class="tk-k">new</span>[] { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">4</span> }));       <span class="tk-c">// 2: int division</span></code></pre></div>
+<ul>
+<li><code>T.Zero</code> and <code>T.One</code> are the type&#39;s 0 and 1.</li>
+<li><code>T.CreateChecked(x)</code> converts any number to <code>T</code>, throwing <code>OverflowException</code> if it does not fit; <code>CreateSaturating</code> clamps and <code>CreateTruncating</code> wraps instead.</li>
+<li>Operators such as <code>+</code>, <code>/</code> and <code>&lt;</code> come from interfaces like <code>IAdditionOperators</code> that <code>INumber&lt;T&gt;</code> includes.</li>
+</ul>
+<p>Smaller interfaces let you ask for exactly what you need: <code>IAdditionOperators&lt;T, T, T&gt;</code>, <code>IComparisonOperators&lt;T, T, bool&gt;</code>, <code>IFloatingPoint&lt;T&gt;</code> (adds <code>Floor</code>, <code>Round</code>), <code>IBinaryInteger&lt;T&gt;</code> (adds bit operations and <code>PopCount</code>).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Numerics</span>;
+
+<span class="tk-k">static</span> T <span class="tk-t">Clamp</span>&lt;T&gt;(T value, T min, T max) <span class="tk-k">where</span> T : INumber&lt;T&gt; =&gt; T.<span class="tk-f">Max</span>(min, T.<span class="tk-f">Min</span>(max, value));
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-t">Bits</span>&lt;T&gt;(T value) <span class="tk-k">where</span> T : IBinaryInteger&lt;T&gt; =&gt; <span class="tk-k">int</span>.<span class="tk-f">CreateChecked</span>(T.<span class="tk-f">PopCount</span>(value));
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{Clamp(15, 0, 10)} {Clamp(-0.5, 0.0, 1.0)} {Bits(255)} {Bits((byte)7)}&quot;</span>);</code></pre></div>
+<h2>How it works: static abstract members</h2>
+<p>Interfaces can now declare <strong>static abstract</strong> members, which every implementing type must provide, and generic code calls them through the type parameter (<code>T.Zero</code>):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-t">UnitArea</span>&lt;T&gt;() <span class="tk-k">where</span> T : IShape =&gt; <span class="tk-s">$&quot;unit {T.Kind}: {T.Unit().Area():F2}&quot;</span>;
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">UnitArea</span>&lt;<span class="tk-t">Square</span>&gt;());
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">UnitArea</span>&lt;<span class="tk-t">Circle</span>&gt;());
+
+<span class="tk-k">interface</span> IShape
+{
+    <span class="tk-k">static</span> <span class="tk-k">abstract</span> <span class="tk-k">string</span> <span class="tk-t">Kind</span> { <span class="tk-k">get</span>; }
+    <span class="tk-k">static</span> <span class="tk-k">abstract</span> IShape <span class="tk-f">Unit</span>();
+    <span class="tk-k">double</span> <span class="tk-f">Area</span>();
+}
+
+<span class="tk-k">record</span> <span class="tk-f">Square</span>(<span class="tk-k">double</span> <span class="tk-t">Side</span>) : IShape
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-t">Kind</span> =&gt; <span class="tk-s">&quot;square&quot;</span>;
+    <span class="tk-k">public</span> <span class="tk-k">static</span> IShape <span class="tk-f">Unit</span>() =&gt; <span class="tk-k">new</span> <span class="tk-f">Square</span>(<span class="tk-n">1</span>);
+    <span class="tk-k">public</span> <span class="tk-k">double</span> <span class="tk-f">Area</span>() =&gt; <span class="tk-t">Side</span> * <span class="tk-t">Side</span>;
+}
+
+<span class="tk-k">record</span> <span class="tk-f">Circle</span>(<span class="tk-k">double</span> R) : IShape
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-t">Kind</span> =&gt; <span class="tk-s">&quot;circle&quot;</span>;
+    <span class="tk-k">public</span> <span class="tk-k">static</span> IShape <span class="tk-f">Unit</span>() =&gt; <span class="tk-k">new</span> <span class="tk-f">Circle</span>(<span class="tk-n">1</span>);
+    <span class="tk-k">public</span> <span class="tk-k">double</span> <span class="tk-f">Area</span>() =&gt; <span class="tk-t">Math</span>.PI * R * R;
+}</code></pre></div>
+<p>This is something instance interfaces cannot do: ask a <strong>type</strong> for something without having an object of it. Factory methods, parsing (<code>T.Parse</code>, which <code>IParsable&lt;T&gt;</code> provides) and constants all fit.</p>
+<p><code>static virtual</code> members are the same but come with a default implementation that types may override.</p>
+<h2>Your own operators in a generic interface</h2>
+<p>A type can promise operators through an interface, so generic code can use them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Numerics</span>;
+
+<span class="tk-k">static</span> T <span class="tk-t">Total</span>&lt;T&gt;(IEnumerable&lt;T&gt; items) <span class="tk-k">where</span> T : IAdditionOperators&lt;T, T, T&gt;, IAdditiveIdentity&lt;T, T&gt;
+{
+    T sum = T.<span class="tk-t">AdditiveIdentity</span>;
+    <span class="tk-k">foreach</span> (<span class="tk-k">var</span> x <span class="tk-k">in</span> items) sum += x;
+    <span class="tk-k">return</span> sum;
+}
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Total</span>(<span class="tk-k">new</span>[] { <span class="tk-k">new</span> <span class="tk-f">Money</span>(<span class="tk-n">1.5m</span>), <span class="tk-k">new</span> <span class="tk-f">Money</span>(<span class="tk-n">2m</span>) }));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Total</span>(<span class="tk-k">new</span>[] { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> }));
+
+<span class="tk-k">readonly</span> <span class="tk-k">record</span> <span class="tk-k">struct</span> <span class="tk-f">Money</span>(<span class="tk-k">decimal</span> <span class="tk-t">Amount</span>) :
+    IAdditionOperators&lt;<span class="tk-t">Money</span>, <span class="tk-t">Money</span>, <span class="tk-t">Money</span>&gt;, IAdditiveIdentity&lt;<span class="tk-t">Money</span>, <span class="tk-t">Money</span>&gt;
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-t">Money</span> <span class="tk-k">operator</span> +(<span class="tk-t">Money</span> a, <span class="tk-t">Money</span> b) =&gt; <span class="tk-k">new</span>(a.<span class="tk-t">Amount</span> + b.<span class="tk-t">Amount</span>);
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-t">Money</span> <span class="tk-t">AdditiveIdentity</span> =&gt; <span class="tk-k">new</span>(<span class="tk-n">0</span>);
+}</code></pre></div>
+<p>The same <code>Total</code> adds integers and your <code>Money</code>.</p>
+<h2>Parsing generically</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">static</span> <span class="tk-t">List</span>&lt;T&gt; <span class="tk-t">ParseAll</span>&lt;T&gt;(<span class="tk-k">string</span> csv) <span class="tk-k">where</span> T : IParsable&lt;T&gt;
+    =&gt; csv.<span class="tk-f">Split</span>(<span class="tk-s">','</span>).<span class="tk-f">Select</span>(s =&gt; T.<span class="tk-f">Parse</span>(s.<span class="tk-f">Trim</span>(), <span class="tk-t">System</span>.<span class="tk-t">Globalization</span>.<span class="tk-t">CultureInfo</span>.<span class="tk-t">InvariantCulture</span>)).<span class="tk-f">ToList</span>();
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, <span class="tk-t">ParseAll</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-s">&quot;1, 2, 3&quot;</span>)));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, <span class="tk-t">ParseAll</span>&lt;<span class="tk-k">double</span>&gt;(<span class="tk-s">&quot;1.5, 2&quot;</span>)));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, <span class="tk-t">ParseAll</span>&lt;<span class="tk-t">DateOnly</span>&gt;(<span class="tk-s">&quot;2026-11-20&quot;</span>)));</code></pre></div>
+<h2>When to use it</h2>
+<p>Generic math is worth it in libraries that really serve many number types: maths and statistics helpers, vectors and matrices, parsers. In application code that only ever uses <code>decimal</code>, plain code is simpler to read.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/8.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/8.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-02-pattern-matching-in-depth/"><span class="mono">previous</span><b>8.02 Pattern Matching in Depth</b></a>
+      <a class="lp-next" href="../8-04-dates-times-and-culture/"><span class="mono">next</span><b>8.04 Dates, Times and Culture</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/8-03-generic-math-and-static-abstract-members"></script>
+</body>
+</html>

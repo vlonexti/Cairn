@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Starting Processes Well · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/1-02-starting-processes-well/">
+  <meta name="description" content="Everything that goes into a new process besides its command line - the environment block and how to build one, the working directory, which handles it…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Starting Processes Well · Processes and Communication · Xenon">
+  <meta property="og:description" content="Everything that goes into a new process besides its command line - the environment block and how to build one, the working directory, which handles it…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/1-02-starting-processes-well/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Starting Processes Well · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Starting Processes Well · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="Everything that goes into a new process besides its command line - the environment block and how to build one, the working directory, which handles it…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Processes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Starting Processes Well</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.02</b></span><span>2 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Everything that goes into a new process besides its command line - the environment block and how to build one, the working directory, which handles it inherits and how to limit them to exactly the ones you mean, and the creation flags that matter.</p>
+      <div class="prose">
+<h2>More than a command line</h2>
+<p>The Win32 API course (lesson 5.03) covered <code>CreateProcessW</code>, quoting arguments and waiting for the result. A child process inherits much more than its arguments from the call that creates it, and getting the rest right is what makes launching helpers reliable:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>BOOL <span class="tk-f">CreateProcessW</span>(
+    LPCWSTR application,          <span class="tk-c">// nullptr: take it from the command line</span>
+    LPWSTR commandLine,           <span class="tk-c">// writable buffer</span>
+    LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES,
+    BOOL inheritHandles,          <span class="tk-c">// may the child inherit handles at all?</span>
+    DWORD flags,                  <span class="tk-c">// CREATE_NO_WINDOW, CREATE_UNICODE_ENVIRONMENT, ...</span>
+    LPVOID environment,           <span class="tk-c">// nullptr: a copy of ours</span>
+    LPCWSTR currentDirectory,     <span class="tk-c">// nullptr: ours</span>
+    LPSTARTUPINFOW startup,       <span class="tk-c">// standard handles, window settings, attributes</span>
+    LPPROCESS_INFORMATION info);  <span class="tk-c">// the handles and IDs of the new process and its thread</span></code></pre></div>
+<h2>The environment block</h2>
+<p>Every process has a set of environment variables (<code>PATH</code>, <code>TEMP</code>, your own settings). By default a child gets a <strong>copy</strong> of the parent&#39;s. To give it a different set, pass an <strong>environment block</strong>: one buffer of <code>NAME=value</code> strings, each ending with a zero, the whole block ending with an extra zero.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>A=1\0Path=C:\Tools;C:\Windows\System32\0TEMP=C:\Temp\0\0</code></pre></div>
+<p>Rules that matter:</p>
+<ul>
+<li>With <code>CREATE_UNICODE_ENVIRONMENT</code> the block is UTF-16 (<code>wchar_t</code>); use it always.</li>
+<li>Windows expects the variables <strong>sorted by name, ignoring case</strong>. Names are case-insensitive: <code>Path</code> and <code>PATH</code> are the same variable, and a block must not contain both.</li>
+<li>A block replaces the whole environment. Start from the parent&#39;s (<code>GetEnvironmentStringsW</code>), change what you need, and keep <code>SystemRoot</code>, <code>Path</code> and <code>TEMP</code>, which many programs need to work at all.</li>
+</ul>
+<p>Passing settings to a helper through environment variables is common and simple; but they are visible to anything that can inspect the process, so never put secrets in them.</p>
+<h2>The working directory</h2>
+<p>Relative paths in the child, and the order it searches for some files, depend on its <strong>current directory</strong>. By default it inherits yours, which is often not what you want (your own current directory can be anything the user chose). Pass the directory explicitly, usually the folder of the tool or of the project it works on.</p>
+<h2>Handle inheritance</h2>
+<p>A kernel object handle can be marked <strong>inheritable</strong>. If <code>inheritHandles</code> is <code>TRUE</code>, the child receives a copy of <strong>every</strong> inheritable handle the parent has, at the same values. That is how a child gets the ends of pipes for its standard streams (lesson 1.04).</p>
+<p>The danger is &quot;every&quot;. In a multi-threaded program, another thread may create an inheritable handle at the same moment, and it leaks into your child; the child then keeps a pipe or file open that you expected to close, and the other end never sees end-of-file. The fix is to name the exact handles to inherit with an <strong>attribute list</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>SIZE_T size{};
+<span class="tk-f">InitializeProcThreadAttributeList</span>(<span class="tk-k">nullptr</span>, <span class="tk-n">1</span>, <span class="tk-n">0</span>, &amp;size);
+std::vector&lt;std::byte&gt; <span class="tk-f">storage</span>(size);
+<span class="tk-k">auto</span>* list{ <span class="tk-k">reinterpret_cast</span>&lt;LPPROC_THREAD_ATTRIBUTE_LIST&gt;(storage.<span class="tk-f">data</span>()) };
+<span class="tk-f">InitializeProcThreadAttributeList</span>(list, <span class="tk-n">1</span>, <span class="tk-n">0</span>, &amp;size);
+
+HANDLE inherit[]{ childStdin, childStdout };
+<span class="tk-f">UpdateProcThreadAttribute</span>(list, <span class="tk-n">0</span>, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherit, <span class="tk-k">sizeof</span>(inherit), <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>);
+
+STARTUPINFOEXW si{ { <span class="tk-k">sizeof</span>(si) } };
+si.lpAttributeList = list;
+<span class="tk-f">CreateProcessW</span>(<span class="tk-k">nullptr</span>, cmd.<span class="tk-f">data</span>(), <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>, TRUE, EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
+               env.<span class="tk-f">data</span>(), directory.<span class="tk-f">c_str</span>(), &amp;si.<span class="tk-t">StartupInfo</span>, &amp;pi);
+<span class="tk-f">DeleteProcThreadAttributeList</span>(list);</code></pre></div>
+<p>Now only those two handles are passed, whatever else is inheritable.</p>
+<h2>Creation flags</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CREATE_NO_WINDOW</code></td>
+<td>a console program runs without opening a console window</td>
+</tr>
+<tr>
+<td><code>CREATE_NEW_CONSOLE</code></td>
+<td>give it its own console window</td>
+</tr>
+<tr>
+<td><code>CREATE_SUSPENDED</code></td>
+<td>create it with its main thread paused, for example to add it to a job before it runs (lesson 1.03)</td>
+</tr>
+<tr>
+<td><code>CREATE_UNICODE_ENVIRONMENT</code></td>
+<td>the environment block is UTF-16</td>
+</tr>
+<tr>
+<td><code>EXTENDED_STARTUPINFO_PRESENT</code></td>
+<td><code>startup</code> is a <code>STARTUPINFOEXW</code> with an attribute list</td>
+</tr>
+<tr>
+<td><code>BELOW_NORMAL_PRIORITY_CLASS</code></td>
+<td>run it at lower priority, good for background work</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/1.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/1.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-01-what-a-process-is/"><span class="mono">previous</span><b>1.01 What a Process Is</b></a>
+      <a class="lp-next" href="../1-03-waiting-exit-codes-and-jobs/"><span class="mono">next</span><b>1.03 Waiting, Exit Codes and Jobs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/1-02-starting-processes-well"></script>
+</body>
+</html>

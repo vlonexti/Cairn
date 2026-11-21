@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Processes, Threads and Scheduling · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/6-02-processes-threads-and-scheduling/">
+  <meta name="description" content="A running program is a process - its code, its memory, and its open files. Inside it, threads are the separate lines of execution. The scheduler shares the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Processes, Threads and Scheduling · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="A running program is a process - its code, its memory, and its open files. Inside it, threads are the separate lines of execution. The scheduler shares the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/6-02-processes-threads-and-scheduling/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Processes, Threads and Scheduling · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Processes, Threads and Scheduling · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="A running program is a process - its code, its memory, and its open files. Inside it, threads are the separate lines of execution. The scheduler shares the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Operating Systems and Modern Computers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Processes, Threads and Scheduling</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 6 in milestone 6</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">A running program is a process - its code, its memory, and its open files. Inside it, threads are the separate lines of execution. The scheduler shares the CPU cores by giving each thread a short time slice and switching between them hundreds of times a second, which is why many programs seem to run at once even on one core.</p>
+      <div class="prose">
+<h2>Program vs. process</h2>
+<p>A <strong>program</strong> is a file on disk: machine code and data (3.05). A <strong>process</strong> is a program <strong>while it runs</strong>: the operating system has loaded it into memory and keeps track of it.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>A process has</th>
+<th>Such as</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Its own memory</td>
+<td>its code, its variables, its stack (the Assembly course explains the stack)</td>
+</tr>
+<tr>
+<td>Its registers&#39; values</td>
+<td>including the program counter: where it is up to</td>
+</tr>
+<tr>
+<td>Open files and connections</td>
+<td>file handles, network sockets</td>
+</tr>
+<tr>
+<td>An ID</td>
+<td>the <strong>PID</strong>, a number</td>
+</tr>
+<tr>
+<td>An owner</td>
+<td>the user who started it, which decides what it may access</td>
+</tr>
+</tbody></table>
+</div>
+<p>Run the same program twice (two browser windows from the same app, say) and you get two processes from one program. You can see the processes on your computer with <strong>Task Manager</strong> on Windows, <strong>Activity Monitor</strong> on macOS, or <code>ps</code> and <code>top</code> on Linux.</p>
+<h2>Threads</h2>
+<p>A process starts with one <strong>thread</strong>: one line of execution, with its own program counter, registers and stack, working through the code. A process can start more threads, which run <strong>at the same time</strong> and share the process&#39;s memory.</p>
+<p>A browser, for example, may use one thread to draw the page, another to download images, another to run a page&#39;s JavaScript. On a CPU with several cores (1.05), threads really do run simultaneously, one per core.</p>
+<div class="callout warning"><div class="callout-title"><span>Shared memory is tricky</span></div><div class="callout-body"><p>Two threads changing the same variable at the same moment can lose updates, a bug called a <strong>race condition</strong>. If two threads each do <code>count = count + 1</code> (read, add, write back) at the same time, both may read 5 and both write 6. Programs use <strong>locks</strong> to let only one thread at a time change shared data.</p>
+</div></div>
+<h2>Sharing the CPU: the scheduler</h2>
+<p>A laptop has a handful of cores but hundreds of threads. How do they all run? The kernel&#39;s <strong>scheduler</strong> shares the cores out:</p>
+<ol>
+<li>Pick a thread that is ready to run and give it a core.</li>
+<li>Let it run for a <strong>time slice</strong>, a few milliseconds.</li>
+<li>A timer <strong>interrupt</strong> (a signal from hardware that makes the CPU jump into the kernel) ends the slice.</li>
+<li>Save that thread&#39;s registers, pick the next thread, load its registers, and let it run. This is a <strong>context switch</strong>.</li>
+</ol>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant CPU as One CPU core
+    participant A as Thread A
+    participant B as Thread B
+    participant C as Thread C
+    A-&gt;&gt;CPU: runs for a time slice
+    Note over CPU: timer interrupt: save A, load B
+    B-&gt;&gt;CPU: runs for a time slice
+    Note over CPU: save B, load C
+    C-&gt;&gt;CPU: runs
+    Note over CPU: save C, load A
+    A-&gt;&gt;CPU: carries on where it stopped</pre></div>
+<p>Because this happens hundreds of times a second, everything seems to run at once, even on a single core: that is <strong>multitasking</strong>. Each thread carries on exactly where it stopped, because its registers, including the program counter, were saved and restored.</p>
+<h2>Waiting threads</h2>
+<p>Most threads are not running at all, most of the time: they are <strong>waiting</strong> - for a key press, a network reply, a file read, a timer. The scheduler only gives cores to threads that are <strong>ready</strong>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; Ready
+    Ready --&gt; Running: scheduler picks it
+    Running --&gt; Ready: its time slice ends
+    Running --&gt; Waiting: asks for input, a file, the network...
+    Waiting --&gt; Ready: the data arrived
+    Running --&gt; [*]: it finishes</pre></div>
+<p>That is why a computer with 300 threads can sit at 2% CPU: nearly all of them are waiting.</p>
+<h2>Priorities</h2>
+<p>Schedulers do not treat every thread the same. The thread drawing your mouse pointer or playing music gets priority over a background update, so the computer feels responsive. Modern schedulers also decide which <strong>core</strong> suits a thread best; phone and laptop chips mix fast &quot;performance&quot; cores and low-power &quot;efficiency&quot; cores.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the difference between a program and a process?</div><ul><li>A program is a file; a process is a program running, with its own memory and state</li><li>They are the same thing</li><li>A process is a small program</li></ul><details><summary>Show the answer</summary><p><b>A program is a file; a process is a program running, with its own memory and state</b> One program can be running as several processes at once.</p></details></li><li><div class="q">What does a context switch do?</div><ul><li>Saves one thread&#39;s registers and loads another&#39;s, so the second carries on where it stopped</li><li>Switches the computer to another user</li><li>Changes which program is shown on screen</li></ul><details><summary>Show the answer</summary><p><b>Saves one thread&#39;s registers and loads another&#39;s, so the second carries on where it stopped</b> It is how the scheduler shares a core between threads.</p></details></li><li><div class="q">Why might two threads adding 1 to the same counter lose updates?</div><ul><li>Both may read the old value before either writes back, so one increment is lost</li><li>Threads cannot add</li><li>The scheduler adds numbers wrongly</li></ul><details><summary>Show the answer</summary><p><b>Both may read the old value before either writes back, so one increment is lost</b> A race condition. Locks prevent it.</p></details></li><li><div class="q">Why is CPU usage often low even with hundreds of threads?</div><ul><li>Most threads are waiting for something, and only ready threads use the CPU</li><li>The CPU is broken</li><li>Threads take turns sleeping on purpose</li></ul><details><summary>Show the answer</summary><p><b>Most threads are waiting for something, and only ready threads use the CPU</b> Waiting for input, files or the network takes no CPU time.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-what-an-operating-system-does/"><span class="mono">previous</span><b>6.01 What an Operating System Does</b></a>
+      <a class="lp-next" href="../6-03-virtual-memory/"><span class="mono">next</span><b>6.03 Virtual Memory</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/6-02-processes-threads-and-scheduling"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

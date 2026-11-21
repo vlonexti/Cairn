@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Trait Objects · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/4-05-trait-objects/">
+  <meta name="description" content="Dynamic dispatch with dyn Trait - storing different types in one collection with Box&lt;dyn Trait and &amp;dyn Trait, how vtables work, static versus dynamic…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Trait Objects · Rust · Xenon">
+  <meta property="og:description" content="Dynamic dispatch with dyn Trait - storing different types in one collection with Box&lt;dyn Trait and &amp;dyn Trait, how vtables work, static versus dynamic…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/4-05-trait-objects/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Trait Objects · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Trait Objects · Rust · Xenon">
+  <meta name="twitter:description" content="Dynamic dispatch with dyn Trait - storing different types in one collection with Box&lt;dyn Trait and &amp;dyn Trait, how vtables work, static versus dynamic…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Generics, Traits and Lifetimes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Trait Objects</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Dynamic dispatch with dyn Trait - storing different types in one collection with Box&lt;dyn Trait&gt; and &amp;dyn Trait, how vtables work, static versus dynamic dispatch and when to choose each, dyn-compatibility (object safety) rules, downcasting with Any, and enums as the alternative when the set of types is closed.</p>
+      <div class="prose">
+<h2>Different types in one list</h2>
+<p>Generics fill in <strong>one</strong> concrete type at compile time. To keep circles and squares in the same <code>Vec</code>, use <strong>trait objects</strong>: values of different types behind a pointer, all used through one trait:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">trait</span> <span class="tk-t">Shape</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span>;
+    <span class="tk-k">fn</span> <span class="tk-f">name</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span>;
+}
+
+<span class="tk-k">struct</span> <span class="tk-t">Circle</span> { r: <span class="tk-k">f64</span> }
+<span class="tk-k">struct</span> <span class="tk-t">Square</span> { side: <span class="tk-k">f64</span> }
+
+<span class="tk-k">impl</span> <span class="tk-t">Shape</span> <span class="tk-k">for</span> <span class="tk-t">Circle</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { std::<span class="tk-k">f64</span>::consts::PI * <span class="tk-k">self</span>.r * <span class="tk-k">self</span>.r }
+    <span class="tk-k">fn</span> <span class="tk-f">name</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-p">format!</span>(<span class="tk-s">&quot;circle r={}&quot;</span>, <span class="tk-k">self</span>.r) }
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Shape</span> <span class="tk-k">for</span> <span class="tk-t">Square</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { <span class="tk-k">self</span>.side * <span class="tk-k">self</span>.side }
+    <span class="tk-k">fn</span> <span class="tk-f">name</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-p">format!</span>(<span class="tk-s">&quot;square {}&quot;</span>, <span class="tk-k">self</span>.side) }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">total_area</span>(shapes: &amp;[<span class="tk-t">Box</span>&lt;<span class="tk-k">dyn</span> <span class="tk-t">Shape</span>&gt;]) -&gt; <span class="tk-k">f64</span> {
+    shapes.<span class="tk-f">iter</span>().<span class="tk-f">map</span>(|s| s.<span class="tk-f">area</span>()).<span class="tk-f">sum</span>()
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">print_one</span>(shape: &amp;<span class="tk-k">dyn</span> <span class="tk-t">Shape</span>) {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} -&gt; {:.2}&quot;</span>, shape.<span class="tk-f">name</span>(), shape.<span class="tk-f">area</span>());
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> shapes: <span class="tk-t">Vec</span>&lt;<span class="tk-t">Box</span>&lt;<span class="tk-k">dyn</span> <span class="tk-t">Shape</span>&gt;&gt; = <span class="tk-p">vec!</span>[
+        <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Circle</span> { r: <span class="tk-n">1.0</span> }),
+        <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Square</span> { side: <span class="tk-n">2.0</span> }),
+        <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Circle</span> { r: <span class="tk-n">0.5</span> }),
+    ];
+    <span class="tk-k">for</span> s <span class="tk-k">in</span> &amp;shapes {
+        <span class="tk-f">print_one</span>(s.<span class="tk-f">as_ref</span>());
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;total {:.2}&quot;</span>, <span class="tk-f">total_area</span>(&amp;shapes));
+}</code></pre></div>
+<p><code>dyn Shape</code> is &quot;some type that implements <code>Shape</code>&quot;, whose size is not known at compile time, so it always sits behind a pointer: <code>Box&lt;dyn Shape&gt;</code> (owned), <code>&amp;dyn Shape</code> (borrowed), or <code>Rc&lt;dyn Shape&gt;</code>.</p>
+<h2>How it works</h2>
+<p>A trait object is a <strong>fat pointer</strong>: a pointer to the data plus a pointer to a <strong>vtable</strong>, a table of that type&#39;s method implementations. A call <code>s.area()</code> looks up the method in the vtable at run time: <strong>dynamic dispatch</strong>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Generics (<code>impl Trait</code>, <code>T: Trait</code>)</th>
+<th>Trait objects (<code>dyn Trait</code>)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dispatch</td>
+<td>Static: resolved at compile time, can be inlined</td>
+<td>Dynamic: a vtable lookup per call</td>
+</tr>
+<tr>
+<td>Mixed types in one collection</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Code size</td>
+<td>One copy per type</td>
+<td>One copy</td>
+</tr>
+<tr>
+<td>Typical use</td>
+<td>Algorithms, performance-sensitive code</td>
+<td>Plugins, heterogeneous lists, callbacks</td>
+</tr>
+</tbody></table>
+</div>
+<p>The vtable call costs a few nanoseconds; choose by design, not by fear of speed.</p>
+<h2>Plugins and strategies</h2>
+<p>Trait objects suit &quot;pick behaviour at run time&quot;:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">trait</span> <span class="tk-t">Discount</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">apply</span>(&amp;<span class="tk-k">self</span>, cents: <span class="tk-k">u64</span>) -&gt; <span class="tk-k">u64</span>;
+    <span class="tk-k">fn</span> <span class="tk-f">label</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span>;
+}
+
+<span class="tk-k">struct</span> <span class="tk-f">PercentOff</span>(<span class="tk-k">u64</span>);
+<span class="tk-k">struct</span> <span class="tk-t">FlatOff</span> { cents: <span class="tk-k">u64</span>, minimum: <span class="tk-k">u64</span> }
+
+<span class="tk-k">impl</span> <span class="tk-t">Discount</span> <span class="tk-k">for</span> <span class="tk-t">PercentOff</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">apply</span>(&amp;<span class="tk-k">self</span>, cents: <span class="tk-k">u64</span>) -&gt; <span class="tk-k">u64</span> { cents - cents * <span class="tk-k">self</span>.<span class="tk-n">0</span> / <span class="tk-n">100</span> }
+    <span class="tk-k">fn</span> <span class="tk-f">label</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-p">format!</span>(<span class="tk-s">&quot;{}% off&quot;</span>, <span class="tk-k">self</span>.<span class="tk-n">0</span>) }
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Discount</span> <span class="tk-k">for</span> <span class="tk-t">FlatOff</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">apply</span>(&amp;<span class="tk-k">self</span>, cents: <span class="tk-k">u64</span>) -&gt; <span class="tk-k">u64</span> { <span class="tk-k">if</span> cents &gt;= <span class="tk-k">self</span>.minimum { cents.<span class="tk-f">saturating_sub</span>(<span class="tk-k">self</span>.cents) } <span class="tk-k">else</span> { cents } }
+    <span class="tk-k">fn</span> <span class="tk-f">label</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-p">format!</span>(<span class="tk-s">&quot;{} off over {}&quot;</span>, <span class="tk-k">self</span>.cents, <span class="tk-k">self</span>.minimum) }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">best</span>(cents: <span class="tk-k">u64</span>, offers: &amp;[<span class="tk-t">Box</span>&lt;<span class="tk-k">dyn</span> <span class="tk-t">Discount</span>&gt;]) -&gt; (<span class="tk-t">String</span>, <span class="tk-k">u64</span>) {
+    offers.<span class="tk-f">iter</span>()
+        .<span class="tk-f">map</span>(|d| (d.<span class="tk-f">label</span>(), d.<span class="tk-f">apply</span>(cents)))
+        .<span class="tk-f">min_by_key</span>(|(_, price)| *price)
+        .<span class="tk-f">unwrap_or</span>((<span class="tk-s">&quot;none&quot;</span>.<span class="tk-f">to_string</span>(), cents))
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> offers: <span class="tk-t">Vec</span>&lt;<span class="tk-t">Box</span>&lt;<span class="tk-k">dyn</span> <span class="tk-t">Discount</span>&gt;&gt; = <span class="tk-p">vec!</span>[<span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-f">PercentOff</span>(<span class="tk-n">10</span>)), <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">FlatOff</span> { cents: <span class="tk-n">800</span>, minimum: <span class="tk-n">5000</span> })];
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} {:?}&quot;</span>, <span class="tk-f">best</span>(<span class="tk-n">4000</span>, &amp;offers), <span class="tk-f">best</span>(<span class="tk-n">9000</span>, &amp;offers));
+}</code></pre></div>
+<h2>Dyn compatibility</h2>
+<p>Not every trait can be used as <code>dyn Trait</code>. A trait is <strong>dyn-compatible</strong> (formerly &quot;object safe&quot;) when the compiler can build a vtable for it, which rules out, among other things:</p>
+<ul>
+<li>methods that return <code>Self</code> (the size of <code>Self</code> is unknown behind the pointer);</li>
+<li>generic methods (<code>fn convert&lt;T&gt;(&amp;self)</code>): there would be one per <code>T</code>, too many for a table.</li>
+</ul>
+<p><code>Clone</code> returns <code>Self</code>, so <code>dyn Clone</code> is not allowed. Methods that do not fit can be excluded with <code>where Self: Sized</code>.</p>
+<h2>Closed sets: use an enum</h2>
+<p>If you know every variant up front (the shapes your program supports), an <code>enum</code> with a <code>match</code> (lesson 2.05) is often simpler and faster than trait objects, and the compiler checks you handle every case. Use trait objects when the set is <strong>open</strong>: other modules, crates or plugins may add types later.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-lifetimes/"><span class="mono">previous</span><b>4.04 Lifetimes</b></a>
+      <a class="lp-next" href="../5-01-closures/"><span class="mono">next</span><b>5.01 Closures</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/4-05-trait-objects"></script>
+</body>
+</html>

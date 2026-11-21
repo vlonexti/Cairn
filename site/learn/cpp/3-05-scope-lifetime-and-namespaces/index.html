@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Scope, Lifetime and Namespaces · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/3-05-scope-lifetime-and-namespaces/">
+  <meta name="description" content="Scope is where in the code a name can be used. Lifetime is when during the run the variable exists. Namespaces group names so that two things called the same…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Scope, Lifetime and Namespaces · C++ · Xenon">
+  <meta property="og:description" content="Scope is where in the code a name can be used. Lifetime is when during the run the variable exists. Namespaces group names so that two things called the same…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/3-05-scope-lifetime-and-namespaces/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scope, Lifetime and Namespaces · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Scope, Lifetime and Namespaces · C++ · Xenon">
+  <meta name="twitter:description" content="Scope is where in the code a name can be used. Lifetime is when during the run the variable exists. Namespaces group names so that two things called the same…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Control Flow and Scope</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Scope, Lifetime and Namespaces</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 8 in milestone 3</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary"><strong>Scope</strong> is <em>where in the code</em> a name can be used. <strong>Lifetime</strong> is <em>when during the run</em> the variable exists. <strong>Namespaces</strong> group names so that two things called the same do not clash.</p>
+      <div class="prose">
+<h2>Two questions about every variable</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Called</th>
+<th>Decided</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>On which lines may I use this name?</td>
+<td><strong>Scope</strong></td>
+<td>By where it is declared in the source</td>
+</tr>
+<tr>
+<td>For how long does the value exist in memory?</td>
+<td><strong>Lifetime</strong></td>
+<td>While the program runs</td>
+</tr>
+</tbody></table>
+</div>
+<p>For the local variables you have used so far the two coincide, which is why they are easy to mix up. They come apart in the next lesson.</p>
+<h2>Every pair of braces is a scope</h2>
+<p>A name declared inside a block can be used from its declaration to the block&#39;s closing brace.</p>
+<div class="codeblock diagram plain"><pre><code>┌─ main ───────────────────────────────────┐
+│  int x{ 1 };                             │
+│                                          │
+│  ┌─ if block ─────────────────────────┐  │
+│  │  int y{ 2 };                       │  │
+│  │  can use: x, y                     │  │
+│  │                                    │  │
+│  │  ┌─ for block ──────────────────┐  │  │
+│  │  │  int z{ 3 };                 │  │  │
+│  │  │  can use: x, y, z            │  │  │
+│  │  └──────────────────────────────┘  │  │
+│  │  z is out of scope                 │  │
+│  └────────────────────────────────────┘  │
+│  y and z are out of scope                │
+└──────────────────────────────────────────┘</code></pre></div>
+<p><strong>Code can see outwards, never inwards.</strong> An inner block can use names from the blocks around it. An outer block cannot reach into an inner one.</p>
+<h2>Lifetime of a local variable</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant Code
+    participant Memory
+    Code-&gt;&gt;Memory: execution reaches int y{ 2 }
+    Note over Memory: y exists
+    Code-&gt;&gt;Memory: execution reaches the closing brace
+    Note over Memory: y is destroyed</pre></div>
+<p>A local variable is created when execution reaches its definition and destroyed at the closing brace of its block. That is automatic, and it explains the name for this kind of lifetime: <strong>automatic storage duration</strong>.</p>
+<div class="callout tip"><div class="callout-title"><span>Keep scopes small</span></div><div class="callout-body"><p>Declare each variable in the smallest block that needs it, as close to its first use as you can. Fewer lines can touch it, so fewer lines can break it.</p>
+</div></div>
+<h2>Shadowing</h2>
+<p>An inner block may declare a name that already exists in an outer block. The inner one <strong>hides</strong> the outer one until its block ends.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> apples{ <span class="tk-n">5</span> };
+    {
+        <span class="tk-k">int</span> apples{ <span class="tk-n">10</span> };               <span class="tk-c">// a second, separate variable</span>
+        std::cout &lt;&lt; apples &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 10</span>
+    }
+    std::cout &lt;&lt; apples &lt;&lt; <span class="tk-s">'\n'</span>;        <span class="tk-c">// 5</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>This is legal and almost always a mistake. You think you are changing one variable and you are changing another. Give the inner variable a different name.</p>
+<h2>Namespaces</h2>
+<p>As programs grow, names collide. Two libraries may each have a function called <code>add</code>. A <strong>namespace</strong> is a named group that keeps them apart, in the way a surname separates two people called Sam.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    G[&quot;the global namespace&quot;] --&gt; STD[&quot;std&lt;br/&gt;cout, string, ...&quot;]
+    G --&gt; M[&quot;Math&lt;br/&gt;add, pi&quot;]
+    G --&gt; GA[&quot;Game&lt;br/&gt;add, Player&quot;]
+    GA --&gt; GAU[&quot;Game::Utils&lt;br/&gt;clamp&quot;]</pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">namespace</span> <span class="tk-t">Math</span>
+{
+    <span class="tk-k">constexpr</span> <span class="tk-k">double</span> pi{ <span class="tk-n">3.14159</span> };
+
+    <span class="tk-k">int</span> <span class="tk-f">add</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b)
+    {
+        <span class="tk-k">return</span> a + b;
+    }
+}
+
+<span class="tk-k">namespace</span> <span class="tk-t">Game</span>::<span class="tk-t">Utils</span>
+{
+    <span class="tk-k">int</span> <span class="tk-f">clamp</span>(<span class="tk-k">int</span> value, <span class="tk-k">int</span> low, <span class="tk-k">int</span> high)
+    {
+        <span class="tk-k">return</span> value &lt; low ? low : (value &gt; high ? high : value);
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-t">Math</span>::<span class="tk-f">add</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>) &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; <span class="tk-t">Math</span>::pi &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-t">Game</span>::<span class="tk-t">Utils</span>::<span class="tk-f">clamp</span>(<span class="tk-n">15</span>, <span class="tk-n">0</span>, <span class="tk-n">10</span>) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 10</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>::</code> is the <strong>scope resolution operator</strong>. Read <code>Math::add</code> as &quot;the <code>add</code> that lives in <code>Math</code>&quot;. You have used it since your first program: <code>std::cout</code> is &quot;the <code>cout</code> in <code>std</code>&quot;.</p>
+<p>A name declared outside every function and every namespace belongs to the <strong>global namespace</strong>.</p>
+<h2><code>using</code>: shorter names, with a cost</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Effect</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>using std::cout;</code></td>
+<td>Lets you write <code>cout</code> for this one name</td>
+<td>Fine inside a function or a <code>.cpp</code> file</td>
+</tr>
+<tr>
+<td><code>using namespace std;</code></td>
+<td>Brings in <strong>every</strong> name from <code>std</code></td>
+<td>Avoid</td>
+</tr>
+<tr>
+<td><code>namespace GU = Game::Utils;</code></td>
+<td>A short alias for a long namespace</td>
+<td>Fine</td>
+</tr>
+</tbody></table>
+</div>
+<blockquote><p>[!danger] Why this course never writes <code>using namespace std;</code>
+<code>std</code> contains thousands of names, including common words such as <code>count</code>, <code>max</code>, <code>distance</code> and <code>swap</code>. Importing all of them invites clashes with your own names, and the errors that result are baffling. In a <strong>header</strong> it is worse still, because it leaks into every file that includes that header.</p>
+</blockquote>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-random-numbers/"><span class="mono">previous</span><b>3.04 Random Numbers</b></a>
+      <a class="lp-next" href="../3-06-global-variables-static-and-linkage/"><span class="mono">next</span><b>3.06 Global Variables, static and Linkage</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/3-05-scope-lifetime-and-namespaces"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

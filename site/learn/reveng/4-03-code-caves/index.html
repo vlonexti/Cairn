@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Code Caves · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/4-03-code-caves/">
+  <meta name="description" content="When a patch needs more room than the instructions it replaces - finding unused space in a binary, jumping out to it with a detour, running the overwritten…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Code Caves · Reverse Engineering · Xenon">
+  <meta property="og:description" content="When a patch needs more room than the instructions it replaces - finding unused space in a binary, jumping out to it with a detour, running the overwritten…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/4-03-code-caves/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Code Caves · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Code Caves · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="When a patch needs more room than the instructions it replaces - finding unused space in a binary, jumping out to it with a detour, running the overwritten…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Patching Programs You Build</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Code Caves</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.03</b></span><span>3 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">When a patch needs more room than the instructions it replaces - finding unused space in a binary, jumping out to it with a detour, running the overwritten instructions there, and jumping back - plus adding a section or allocating memory instead.</p>
+      <div class="prose">
+<h2>When a patch does not fit</h2>
+<p>Turning a <code>je</code> into a <code>jmp</code> fits in the same two bytes. Adding behaviour does not: logging a value, adding a check, calling a function. You need somewhere to put new code. A <strong>code cave</strong> is unused space in the program where new code can live, reached by a jump from the original code.</p>
+<h2>Where caves are</h2>
+<ul>
+<li><strong>Padding between functions</strong>: MSVC aligns functions to 16 bytes and fills the gaps with <code>CC</code> (lesson 2.02). Each gap is small (up to 15 bytes) but there are many.</li>
+<li><strong>The end of a section</strong>: sections are padded in the file to a multiple of <code>FileAlignment</code> (0x200) with zeros, and in memory to <code>SectionAlignment</code> (0x1000). The space between a section&#39;s <code>VirtualSize</code> and its padded size is mapped with the section&#39;s permissions, so in <code>.text</code> it is executable. In the file, it is the bytes between <code>VirtualSize</code> and <code>SizeOfRawData</code>.</li>
+<li><strong>A new section</strong>: a PE editor (CFF Explorer, or a few lines of code) can add a section with read+execute permissions and as much room as you like, updating <code>NumberOfSections</code> and <code>SizeOfImage</code>.</li>
+<li><strong>At run time</strong>: <code>VirtualAlloc</code> a page of executable memory, preferably within 2 GB of the module so 5-byte jumps reach it (lesson 4.02).</li>
+</ul>
+<p>To find caves in a section, look for runs of <code>00</code> or <code>CC</code> at least as long as the code you need, preferably <strong>not</strong> directly after real code (a run of zeros can be a legitimate array of zeros that something reads).</p>
+<h2>The detour</h2>
+<p>Say you want to log every value passed to a function in your own program, at an instruction in the middle of it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>140001A30:  8B <span class="tk-n">47</span> 1C         mov <span class="tk-t">eax</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rdi</span>+<span class="tk-n">1Ch</span>]
+140001A33:  2B C3            sub <span class="tk-t">eax</span>, <span class="tk-t">ebx</span>
+140001A35:  <span class="tk-n">89</span> <span class="tk-n">47</span> 1C         mov <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rdi</span>+<span class="tk-n">1Ch</span>], <span class="tk-t">eax</span>
+140001A38:  ...</code></pre></div>
+<p>A 5-byte <code>jmp</code> to the cave must overwrite <strong>whole</strong> instructions, so it takes the first two (3 + 2 = 5 bytes, exactly; with other lengths, the leftover bytes become <code>nop</code>s). Those overwritten instructions are called the <strong>stolen bytes</strong>, and the cave must run them, or the program loses them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; at 140001A30, the patch:</span>
+E9 xx xx xx xx               jmp cave
+
+<span class="tk-c">; in the cave:</span>
+<span class="tk-f">cave:</span>
+    <span class="tk-c">; ... your new code: save registers, call a logger, restore registers ...</span>
+    8B <span class="tk-n">47</span> 1C                 mov <span class="tk-t">eax</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rdi</span>+<span class="tk-n">1Ch</span>]    <span class="tk-c">; the stolen instructions,</span>
+    2B C3                    sub <span class="tk-t">eax</span>, <span class="tk-t">ebx</span>                    <span class="tk-c">; exactly as they were</span>
+    E9 xx xx xx xx           jmp 140001A35                   <span class="tk-c">; back to the next original instruction</span></code></pre></div>
+<p>Rules that keep a detour correct:</p>
+<ol>
+<li><strong>Steal whole instructions</strong>: at least 5 bytes&#39; worth, rounded up to the next instruction boundary.</li>
+<li><strong>Do not steal a jump target</strong>: if any other code jumps into the middle of the stolen range, that jump now lands inside your <code>jmp</code>. Check the cross-references for each stolen address.</li>
+<li><strong>Relocate relative instructions</strong>: a stolen <code>call</code>, <code>jmp</code> or <code>jcc</code>, or any instruction with a RIP-relative operand (<code>mov eax, [rip+...]</code>), means something else once it runs at the cave&#39;s address. Its displacement must be recalculated for the new location, or the instruction replaced.</li>
+<li><strong>Preserve state</strong>: your new code must save and restore every register and the flags it changes (<code>pushfq</code>/<code>popfq</code>), and keep the stack 16-byte aligned before any <code>call</code>.</li>
+</ol>
+<h2>Planning the stolen bytes</h2>
+<p>Given the lengths of the instructions at the patch point, the number of bytes to steal is the smallest sum of whole instructions that reaches 5:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>lengths 3, 2, 3, ...  -&gt; steal 5 (two instructions)
+lengths 2, 2, 4, ...  -&gt; steal 8 (three instructions; 3 nops after the jmp)
+lengths 7, ...        -&gt; steal 7 (one instruction; 2 nops)</code></pre></div>
+<p>Your disassembler (or the one you build in milestone 5) gives the lengths.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/4.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/4.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-02-encoding-jumps-and-calls/"><span class="mono">previous</span><b>4.02 Encoding Jumps and Calls</b></a>
+      <a class="lp-next" href="../4-04-hooking-functions-in-your-own-programs/"><span class="mono">next</span><b>4.04 Hooking Functions in Your Own Programs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/4-03-code-caves"></script>
+</body>
+</html>

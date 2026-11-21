@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Sorting, Key Functions and Lambdas · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/5-03-sorting-key-functions-and-lambdas/">
+  <meta name="description" content="Putting things in order - sorted and sort with key functions, sorting by several criteria, stable sorting, reverse order per field, operator.itemgetter and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Sorting, Key Functions and Lambdas · Python · Xenon">
+  <meta property="og:description" content="Putting things in order - sorted and sort with key functions, sorting by several criteria, stable sorting, reverse order per field, operator.itemgetter and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/5-03-sorting-key-functions-and-lambdas/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Sorting, Key Functions and Lambdas · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sorting, Key Functions and Lambdas · Python · Xenon">
+  <meta name="twitter:description" content="Putting things in order - sorted and sort with key functions, sorting by several criteria, stable sorting, reverse order per field, operator.itemgetter and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Pythonic Code</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Sorting, Key Functions and Lambdas</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Putting things in order - sorted and sort with key functions, sorting by several criteria, stable sorting, reverse order per field, operator.itemgetter and attrgetter, min and max with keys, and structural pattern matching on sequences.</p>
+      <div class="prose">
+<h2>Key functions</h2>
+<p><code>sorted(items, key=f)</code> sorts by <code>f(item)</code> instead of the items themselves. <code>key</code> takes any function of one argument:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>words = [<span class="tk-s">&quot;banana&quot;</span>, <span class="tk-s">&quot;Apple&quot;</span>, <span class="tk-s">&quot;cherry&quot;</span>, <span class="tk-s">&quot;fig&quot;</span>]
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(words))                    <span class="tk-c"># ['Apple', 'banana', 'cherry', 'fig']: capitals first</span>
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(words, key=str.lower))     <span class="tk-c"># case-insensitive</span>
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(words, key=len))           <span class="tk-c"># by length: ['fig', 'Apple', 'banana', 'cherry']</span></code></pre></div>
+<p><code>min</code> and <code>max</code> take a <code>key</code> too: <code>max(words, key=len)</code> is the longest word.</p>
+<h2>Several criteria</h2>
+<p>Return a <strong>tuple</strong> from the key: tuples compare item by item, so the second item breaks ties of the first:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>people = [(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>), (<span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-n">85</span>), (<span class="tk-s">&quot;Alan&quot;</span>, <span class="tk-n">36</span>), (<span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-n">85</span>)]
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(people, key=<span class="tk-k">lambda</span> p: (p[<span class="tk-n">1</span>], p[<span class="tk-n">0</span>])))      <span class="tk-c"># by age, then name</span></code></pre></div>
+<p>To sort one field descending and another ascending, negate the number: <code>key=lambda p: (-p[1], p[0])</code> is &quot;oldest first, then by name&quot;. For text fields that cannot be negated, use stability (below).</p>
+<h2>Stable sorting</h2>
+<p>Python&#39;s sort is <strong>stable</strong>: items with equal keys keep their original order. That allows sorting in several passes, <strong>least important key first</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>people = [(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>), (<span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-n">85</span>), (<span class="tk-s">&quot;Alan&quot;</span>, <span class="tk-n">36</span>), (<span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-n">85</span>)]
+by_name = <span class="tk-f">sorted</span>(people, key=<span class="tk-k">lambda</span> p: p[<span class="tk-n">0</span>], reverse=<span class="tk-k">True</span>)    <span class="tk-c"># names Z-A</span>
+result = <span class="tk-f">sorted</span>(by_name, key=<span class="tk-k">lambda</span> p: p[<span class="tk-n">1</span>])                  <span class="tk-c"># then ages ascending, names stay Z-A</span>
+<span class="tk-f">print</span>(result)</code></pre></div>
+<h2>operator helpers</h2>
+<p><code>operator.itemgetter</code> and <code>attrgetter</code> build key functions that are clearer and a little faster than lambdas:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> operator <span class="tk-k">import</span> itemgetter, attrgetter
+<span class="tk-k">from</span> dataclasses <span class="tk-k">import</span> dataclass
+
+rows = [{<span class="tk-s">&quot;name&quot;</span>: <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;score&quot;</span>: <span class="tk-n">95</span>}, {<span class="tk-s">&quot;name&quot;</span>: <span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-s">&quot;score&quot;</span>: <span class="tk-n">72</span>}]
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(rows, key=<span class="tk-f">itemgetter</span>(<span class="tk-s">&quot;score&quot;</span>), reverse=<span class="tk-k">True</span>))
+
+<span class="tk-p">@dataclass</span>
+<span class="tk-k">class</span> Player:
+    name: str
+    level: int
+
+team = [<span class="tk-f">Player</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">7</span>), <span class="tk-f">Player</span>(<span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-n">3</span>)]
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(team, key=<span class="tk-f">attrgetter</span>(<span class="tk-s">&quot;level&quot;</span>)))</code></pre></div>
+<h2>Sorting your own objects</h2>
+<p>Objects without a key need <code>__lt__</code> (lesson 4.02) or <code>@dataclass(order=True)</code> (lesson 4.04) to be sortable. A key function is usually better: it does not fix one &quot;natural&quot; order for a class that can be sorted many ways.</p>
+<h2>match on sequences</h2>
+<p><code>match</code> (lesson 1.05) can also take sequences apart by shape, which helps when processing commands or records:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">describe</span>(command):
+    <span class="tk-k">match</span> command.<span class="tk-f">split</span>():
+        <span class="tk-k">case</span> [<span class="tk-s">&quot;go&quot;</span>, direction]:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;going {direction}&quot;</span>
+        <span class="tk-k">case</span> [<span class="tk-s">&quot;take&quot;</span>, *items] <span class="tk-k">if</span> items:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;taking {', '.join(items)}&quot;</span>
+        <span class="tk-k">case</span> [<span class="tk-s">&quot;quit&quot;</span> | <span class="tk-s">&quot;exit&quot;</span>]:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;bye&quot;</span>
+        <span class="tk-k">case</span> _:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;unknown&quot;</span>
+
+<span class="tk-k">for</span> c <span class="tk-k">in</span> [<span class="tk-s">&quot;go north&quot;</span>, <span class="tk-s">&quot;take key lamp&quot;</span>, <span class="tk-s">&quot;exit&quot;</span>, <span class="tk-s">&quot;dance&quot;</span>]:
+    <span class="tk-f">print</span>(<span class="tk-f">describe</span>(c))</code></pre></div>
+<p>Each <code>case</code> matches the list&#39;s length and literal words, binds the other positions to names, and can add a guard with <code>if</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-iterators-and-generators/"><span class="mono">previous</span><b>5.02 Iterators and Generators</b></a>
+      <a class="lp-next" href="../5-04-the-standard-library-toolbox/"><span class="mono">next</span><b>5.04 The Standard Library Toolbox</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/5-03-sorting-key-functions-and-lambdas"></script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Desktop UI and MVVM · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/6-04-desktop-ui-and-mvvm/">
+  <meta name="description" content="Building desktop applications with C - the choices (WinForms, WPF, WinUI, Avalonia, .NET MAUI), event-driven UI and the UI thread, XAML and data binding, the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Desktop UI and MVVM · C# · Xenon">
+  <meta property="og:description" content="Building desktop applications with C - the choices (WinForms, WPF, WinUI, Avalonia, .NET MAUI), event-driven UI and the UI thread, XAML and data binding, the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/6-04-desktop-ui-and-mvvm/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Desktop UI and MVVM · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Desktop UI and MVVM · C# · Xenon">
+  <meta name="twitter:description" content="Building desktop applications with C - the choices (WinForms, WPF, WinUI, Avalonia, .NET MAUI), event-driven UI and the UI thread, XAML and data binding, the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Building Applications</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Desktop UI and MVVM</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Building desktop applications with C# - the choices (WinForms, WPF, WinUI, Avalonia, .NET MAUI), event-driven UI and the UI thread, XAML and data binding, the MVVM pattern with INotifyPropertyChanged, ObservableCollection and ICommand, keeping the UI responsive with async, and testing view models without a window.</p>
+      <div class="prose">
+<h2>The choices</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Runs on</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>WinForms</strong></td>
+<td>Windows</td>
+<td>The oldest; drag-and-drop designer, quick for simple tools</td>
+</tr>
+<tr>
+<td><strong>WPF</strong></td>
+<td>Windows</td>
+<td>XAML markup, data binding, rich styling; very widely used</td>
+</tr>
+<tr>
+<td><strong>WinUI 3</strong></td>
+<td>Windows</td>
+<td>Microsoft&#39;s newest Windows UI</td>
+</tr>
+<tr>
+<td><strong>Avalonia</strong></td>
+<td>Windows, macOS, Linux</td>
+<td>WPF-like XAML that runs everywhere</td>
+</tr>
+<tr>
+<td><strong>.NET MAUI</strong></td>
+<td>Windows, macOS, Android, iOS</td>
+<td>One code base for desktop and mobile</td>
+</tr>
+</tbody></table>
+</div>
+<p>This lesson&#39;s ideas apply to all of them. The practice sandbox has no screen, so UI code here is for reading; the <strong>view model</strong> logic below runs anywhere and is what the practice tests.</p>
+<h2>Event-driven code and the UI thread</h2>
+<p>A UI program waits for <strong>events</strong>: a click, a key, a timer. Each handler runs on the <strong>UI thread</strong>, the one thread allowed to touch the window. While a handler runs, the window cannot redraw or respond. So handlers must be quick, and slow work must be awaited (lesson 5.01):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-c">// WinForms: a button's Click event</span>
+<span class="tk-k">private</span> <span class="tk-k">async</span> <span class="tk-k">void</span> <span class="tk-f">LoadButton_Click</span>(<span class="tk-k">object</span> sender, <span class="tk-t">EventArgs</span> e)    <span class="tk-c">// async void is right for event handlers</span>
+{
+    loadButton.<span class="tk-t">Enabled</span> = <span class="tk-k">false</span>;
+    statusLabel.<span class="tk-t">Text</span> = <span class="tk-s">&quot;Loading...&quot;</span>;
+    <span class="tk-k">try</span>
+    {
+        <span class="tk-k">var</span> report = <span class="tk-k">await</span> _service.<span class="tk-f">LoadReportAsync</span>();   <span class="tk-c">// the window stays responsive while waiting</span>
+        reportGrid.<span class="tk-t">DataSource</span> = report.<span class="tk-t">Rows</span>;              <span class="tk-c">// back on the UI thread after await</span>
+    }
+    <span class="tk-k">catch</span> (<span class="tk-t">HttpRequestException</span> ex)
+    {
+        <span class="tk-t">MessageBox</span>.<span class="tk-f">Show</span>(<span class="tk-k">this</span>, ex.<span class="tk-t">Message</span>, <span class="tk-s">&quot;Could not load&quot;</span>);
+    }
+    <span class="tk-k">finally</span>
+    {
+        loadButton.<span class="tk-t">Enabled</span> = <span class="tk-k">true</span>;
+        statusLabel.<span class="tk-t">Text</span> = <span class="tk-s">&quot;&quot;</span>;
+    }
+}</code></pre></div>
+<h2>XAML and binding</h2>
+<p>WPF, WinUI, Avalonia and MAUI describe windows in <strong>XAML</strong> and connect them to data with <strong>bindings</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">xml</span></div><pre><code>&lt;StackPanel Margin=&quot;12&quot;&gt;
+  &lt;TextBox Text=&quot;{Binding NewTitle, UpdateSourceTrigger=PropertyChanged}&quot; /&gt;
+  &lt;Button Content=&quot;Add&quot; Command=&quot;{Binding AddCommand}&quot; /&gt;
+  &lt;ListBox ItemsSource=&quot;{Binding Items}&quot; /&gt;
+  &lt;TextBlock Text=&quot;{Binding Summary}&quot; /&gt;
+&lt;/StackPanel&gt;</code></pre></div>
+<p><code>{Binding NewTitle}</code> keeps the text box and the <code>NewTitle</code> property of the window&#39;s <strong>DataContext</strong> in sync, in both directions. The XAML contains no logic at all.</p>
+<h2>MVVM</h2>
+<p><strong>Model-View-ViewModel</strong> separates a UI into three parts:</p>
+<ul>
+<li><strong>Model</strong>: the domain data and rules (your class library).</li>
+<li><strong>View</strong>: the XAML window: layout and looks only.</li>
+<li><strong>ViewModel</strong>: a plain class exposing what the view shows (properties) and does (commands). It knows nothing about controls.</li>
+</ul>
+<p>For bindings to notice changes, the view model implements <code>INotifyPropertyChanged</code>, lists use <code>ObservableCollection&lt;T&gt;</code>, and actions are <code>ICommand</code>s:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Collections</span>.<span class="tk-t">ObjectModel</span>;
+<span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">ComponentModel</span>;
+<span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Runtime</span>.<span class="tk-t">CompilerServices</span>;
+<span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Windows</span>.<span class="tk-t">Input</span>;
+
+<span class="tk-k">var</span> vm = <span class="tk-k">new</span> <span class="tk-f">TodoViewModel</span>();
+vm.<span class="tk-t">PropertyChanged</span> += (_, e) =&gt; <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;changed: {e.PropertyName}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(vm.<span class="tk-t">AddCommand</span>.<span class="tk-f">CanExecute</span>(<span class="tk-k">null</span>));
+vm.<span class="tk-t">NewTitle</span> = <span class="tk-s">&quot;Buy tea&quot;</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(vm.<span class="tk-t">AddCommand</span>.<span class="tk-f">CanExecute</span>(<span class="tk-k">null</span>));
+vm.<span class="tk-t">AddCommand</span>.<span class="tk-f">Execute</span>(<span class="tk-k">null</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{vm.Items.Count} item, title now '{vm.NewTitle}', {vm.Summary}&quot;</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">abstract</span> <span class="tk-k">class</span> <span class="tk-t">ViewModelBase</span> : INotifyPropertyChanged
+{
+    <span class="tk-k">public</span> <span class="tk-k">event</span> <span class="tk-t">PropertyChangedEventHandler</span>? <span class="tk-t">PropertyChanged</span>;
+
+    <span class="tk-k">protected</span> <span class="tk-k">bool</span> <span class="tk-t">Set</span>&lt;T&gt;(<span class="tk-k">ref</span> T field, T value, [<span class="tk-t">CallerMemberName</span>] <span class="tk-k">string</span>? name = <span class="tk-k">null</span>)
+    {
+        <span class="tk-k">if</span> (<span class="tk-t">EqualityComparer</span>&lt;T&gt;.<span class="tk-t">Default</span>.<span class="tk-f">Equals</span>(field, value)) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+        field = value;
+        <span class="tk-t">PropertyChanged</span>?.<span class="tk-f">Invoke</span>(<span class="tk-k">this</span>, <span class="tk-k">new</span> <span class="tk-f">PropertyChangedEventArgs</span>(name));
+        <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+
+    <span class="tk-k">protected</span> <span class="tk-k">void</span> <span class="tk-f">Raise</span>(<span class="tk-k">string</span> name) =&gt; <span class="tk-t">PropertyChanged</span>?.<span class="tk-f">Invoke</span>(<span class="tk-k">this</span>, <span class="tk-k">new</span> <span class="tk-f">PropertyChangedEventArgs</span>(name));
+}
+
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-f">RelayCommand</span>(<span class="tk-t">Action</span> execute, <span class="tk-t">Func</span>&lt;<span class="tk-k">bool</span>&gt; canExecute) : ICommand
+{
+    <span class="tk-k">public</span> <span class="tk-k">event</span> <span class="tk-t">EventHandler</span>? <span class="tk-t">CanExecuteChanged</span>;
+    <span class="tk-k">public</span> <span class="tk-k">bool</span> <span class="tk-f">CanExecute</span>(<span class="tk-k">object</span>? parameter) =&gt; <span class="tk-f">canExecute</span>();
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Execute</span>(<span class="tk-k">object</span>? parameter) { <span class="tk-k">if</span> (<span class="tk-f">CanExecute</span>(parameter)) <span class="tk-f">execute</span>(); }
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">NotifyCanExecuteChanged</span>() =&gt; <span class="tk-t">CanExecuteChanged</span>?.<span class="tk-f">Invoke</span>(<span class="tk-k">this</span>, <span class="tk-t">EventArgs</span>.<span class="tk-t">Empty</span>);
+}
+
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">TodoViewModel</span> : <span class="tk-t">ViewModelBase</span>
+{
+    <span class="tk-k">private</span> <span class="tk-k">string</span> _newTitle = <span class="tk-s">&quot;&quot;</span>;
+    <span class="tk-k">public</span> <span class="tk-t">ObservableCollection</span>&lt;<span class="tk-k">string</span>&gt; <span class="tk-t">Items</span> { <span class="tk-k">get</span>; } = <span class="tk-k">new</span>();
+    <span class="tk-k">public</span> <span class="tk-t">RelayCommand</span> <span class="tk-t">AddCommand</span> { <span class="tk-k">get</span>; }
+
+    <span class="tk-k">public</span> <span class="tk-f">TodoViewModel</span>()
+    {
+        <span class="tk-t">AddCommand</span> = <span class="tk-k">new</span> <span class="tk-f">RelayCommand</span>(<span class="tk-t">Add</span>, () =&gt; !<span class="tk-k">string</span>.<span class="tk-f">IsNullOrWhiteSpace</span>(<span class="tk-t">NewTitle</span>));
+        <span class="tk-t">Items</span>.<span class="tk-t">CollectionChanged</span> += (_, _) =&gt; <span class="tk-f">Raise</span>(<span class="tk-f">nameof</span>(<span class="tk-t">Summary</span>));
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-t">NewTitle</span>
+    {
+        <span class="tk-k">get</span> =&gt; _newTitle;
+        <span class="tk-k">set</span> { <span class="tk-k">if</span> (<span class="tk-f">Set</span>(<span class="tk-k">ref</span> _newTitle, value)) <span class="tk-t">AddCommand</span>.<span class="tk-f">NotifyCanExecuteChanged</span>(); }
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-t">Summary</span> =&gt; <span class="tk-t">Items</span>.<span class="tk-t">Count</span> == <span class="tk-n">1</span> ? <span class="tk-s">&quot;1 item&quot;</span> : <span class="tk-s">$&quot;{Items.Count} items&quot;</span>;
+
+    <span class="tk-k">private</span> <span class="tk-k">void</span> <span class="tk-f">Add</span>()
+    {
+        <span class="tk-t">Items</span>.<span class="tk-f">Add</span>(<span class="tk-t">NewTitle</span>.<span class="tk-f">Trim</span>());
+        <span class="tk-t">NewTitle</span> = <span class="tk-s">&quot;&quot;</span>;
+    }
+}</code></pre></div>
+<p><code>[CallerMemberName]</code> fills in the property&#39;s name automatically. The CommunityToolkit.Mvvm package generates this plumbing from attributes (<code>[ObservableProperty]</code>, <code>[RelayCommand]</code>), but it is worth knowing what it writes.</p>
+<h2>Why MVVM pays off</h2>
+<p>The whole behaviour of the screen (when Add is enabled, what the summary says, what happens after adding) is in <code>TodoViewModel</code>, an ordinary class. It is tested like any other code, without opening a window, which is exactly what practice 6.04 does. The view can be redesigned without touching the logic, and the same view model can serve a WPF and an Avalonia view.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-dependency-injection-and-configuration/"><span class="mono">previous</span><b>6.03 Dependency Injection and Configuration</b></a>
+      <a class="lp-next" href="../6-05-project-a-complete-application/"><span class="mono">next</span><b>6.05 Project: A Complete Application</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/6-04-desktop-ui-and-mvvm"></script>
+</body>
+</html>

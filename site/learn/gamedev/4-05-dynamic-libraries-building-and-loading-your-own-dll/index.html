@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Dynamic Libraries: Building and Loading Your Own DLL · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/4-05-dynamic-libraries-building-and-loading-your-own-dll/">
+  <meta name="description" content="A DLL is a library that stays a separate file and is joined to a program when it runs. This lesson builds a DLL, exports functions from it, uses it in the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dynamic Libraries: Building and Loading Your Own DLL · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A DLL is a library that stays a separate file and is joined to a program when it runs. This lesson builds a DLL, exports functions from it, uses it in the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/4-05-dynamic-libraries-building-and-loading-your-own-dll/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Dynamic Libraries: Building and Loading Your Own DLL · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dynamic Libraries: Building and Loading Your Own DLL · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A DLL is a library that stays a separate file and is joined to a program when it runs. This lesson builds a DLL, exports functions from it, uses it in the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Visual Studio and the Build Pipeline</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Dynamic Libraries: Building and Loading Your Own DLL</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 10 in milestone 4</span><span>7 min</span></div>
+      <p class="lp-summary">A <strong>DLL</strong> is a library that stays a separate file and is joined to a program when it runs. This lesson builds a DLL, exports functions from it, uses it in the two ways Windows offers (<strong>load-time linking</strong> through an import library, and <strong>run-time loading</strong> with <code>LoadLibrary</code> and <code>GetProcAddress</code>), and covers the rules about <code>DllMain</code>, memory and C++ types across the boundary.</p>
+      <div class="prose">
+<h2>What a DLL is</h2>
+<p>A <strong>dynamic-link library</strong> is built much like an <code>.exe</code>: compiled and linked into a PE file (chapter 9) with code, data and imports. The difference is that it has no <code>main</code>; instead it <strong>exports</strong> functions and variables for programs to use. <code>kernel32.dll</code>, <code>user32.dll</code> and the C++ runtime are all DLLs, and every Windows program uses dozens of them.</p>
+<p>The Windows loader maps a DLL into the process&#39;s address space and fills in the addresses of its exports wherever the program needs them. One DLL file on disk can be loaded into many processes at once.</p>
+<h2>Building one</h2>
+<p>Add a project to the course solution: <strong>Dynamic-Link Library (DLL)</strong>, named <code>plugin</code>. Replace its code with:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// plugin/plugin.h: shared with the programs that use the DLL</span>
+<span class="tk-p">#pragma</span> once
+
+<span class="tk-p">#ifdef</span> PLUGIN_EXPORTS
+<span class="tk-p">#define</span> PLUGIN_API <span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> <span class="tk-f">__declspec</span>(dllexport)
+<span class="tk-p">#else</span>
+<span class="tk-p">#define</span> PLUGIN_API <span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> <span class="tk-f">__declspec</span>(dllimport)
+<span class="tk-p">#endif</span>
+
+PLUGIN_API <span class="tk-k">int</span> <span class="tk-f">pluginVersion</span>();
+PLUGIN_API <span class="tk-k">int</span> <span class="tk-f">scaleDamage</span>(<span class="tk-k">int</span> damage, <span class="tk-k">int</span> level);</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// plugin/plugin.cpp</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;plugin.h&quot;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">pluginVersion</span>() { <span class="tk-k">return</span> <span class="tk-n">3</span>; }
+
+<span class="tk-k">int</span> <span class="tk-f">scaleDamage</span>(<span class="tk-k">int</span> damage, <span class="tk-k">int</span> level)
+{
+    <span class="tk-k">return</span> damage + damage * level / <span class="tk-n">10</span>;
+}</code></pre></div>
+<p>In the <code>plugin</code> project&#39;s properties, add <code>PLUGIN_EXPORTS</code> to <strong>C/C++ → Preprocessor → Preprocessor Definitions</strong> (the DLL template usually adds a similar name already). The same header then means &quot;export&quot; inside the DLL and &quot;import&quot; everywhere else.</p>
+<ul>
+<li><code>__declspec(dllexport)</code> puts the function in the DLL&#39;s <strong>export table</strong>.</li>
+<li><code>extern &quot;C&quot;</code> gives it a plain, unmangled name (lesson 4.02), so it can be found as <code>scaleDamage</code> rather than <code>?scaleDamage@@YAHHH@Z</code>.</li>
+</ul>
+<p>Building produces two files: <code>plugin.dll</code>, the code, and <code>plugin.lib</code>, a small <strong>import library</strong> that only says &quot;these symbols live in plugin.dll&quot;.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>dumpbin /exports plugin.dll</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>    ordinal hint RVA      name
+          1    0 00011023 pluginVersion
+          2    1 00011028 scaleDamage</code></pre></div>
+<h2>Using it, way 1: load-time linking</h2>
+<p>Add a project reference from <code>game</code> to <code>plugin</code> (or link <code>plugin.lib</code>), include <code>plugin.h</code>, and call the functions normally:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;plugin.h&quot;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-s">&quot;plugin version &quot;</span> &lt;&lt; <span class="tk-f">pluginVersion</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;level 5 damage: &quot;</span> &lt;&lt; <span class="tk-f">scaleDamage</span>(<span class="tk-n">40</span>, <span class="tk-n">5</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The linker uses the import library to record, in <code>game.exe</code>&#39;s <strong>import table</strong>, that it needs <code>scaleDamage</code> from <code>plugin.dll</code>. When the game starts, the loader finds <code>plugin.dll</code> (in the <code>.exe</code>&#39;s folder first, then the system folders and <code>PATH</code>), maps it, and fills in the addresses. If the DLL is missing, the game does not start at all: Windows shows &quot;The code execution cannot proceed because plugin.dll was not found.&quot;</p>
+<h2>Using it, way 2: run-time loading</h2>
+<p>The program can instead load the DLL itself, when and if it chooses, and look functions up by name. No import library and no reference are needed, which is exactly what a plugin system wants: the game does not know at build time which plugins exist.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">using</span> <span class="tk-t">ScaleDamageFn</span> = <span class="tk-k">int</span> (*)(<span class="tk-k">int</span>, <span class="tk-k">int</span>);
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    HMODULE <span class="tk-k">module</span>{ <span class="tk-f">LoadLibraryW</span>(<span class="tk-s">L&quot;plugin.dll&quot;</span>) };
+    <span class="tk-k">if</span> (!<span class="tk-k">module</span>)
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;no plugin found, error &quot;</span> &lt;&lt; <span class="tk-f">GetLastError</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    }
+
+    <span class="tk-k">auto</span> scale{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-t">ScaleDamageFn</span>&gt;(<span class="tk-f">GetProcAddress</span>(<span class="tk-k">module</span>, <span class="tk-s">&quot;scaleDamage&quot;</span>)) };
+    <span class="tk-k">if</span> (scale)
+        std::cout &lt;&lt; <span class="tk-s">&quot;level 5 damage: &quot;</span> &lt;&lt; <span class="tk-f">scale</span>(<span class="tk-n">40</span>, <span class="tk-n">5</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-f">FreeLibrary</span>(<span class="tk-k">module</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<ul>
+<li><code>LoadLibraryW</code> maps the DLL and returns an <code>HMODULE</code>, which is the address the DLL was loaded at.</li>
+<li><code>GetProcAddress</code> looks a name up in its export table and returns the function&#39;s address, or null.</li>
+<li>The result is cast to the right function pointer type (lesson 3.04). The cast is a promise you make: if the signature is wrong, the call corrupts the stack or registers.</li>
+<li><code>FreeLibrary</code> unloads it. Any pointer into the DLL is invalid after that.</li>
+</ul>
+<p>Chapter 13 builds a full plugin system on this.</p>
+<h2>DllMain: keep it tiny</h2>
+<p>A DLL may define <code>DllMain</code>, which Windows calls when the DLL is loaded into a process, unloaded, and when threads start and stop:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+
+BOOL APIENTRY <span class="tk-f">DllMain</span>(HMODULE <span class="tk-k">module</span>, DWORD reason, LPVOID)
+{
+    <span class="tk-k">if</span> (reason == DLL_PROCESS_ATTACH) <span class="tk-f">DisableThreadLibraryCalls</span>(<span class="tk-k">module</span>);
+    <span class="tk-k">return</span> TRUE;
+}</code></pre></div>
+<p><code>DllMain</code> runs while Windows holds the <strong>loader lock</strong>, a lock that serialises all DLL loading in the process. Doing almost anything interesting there (loading another DLL, waiting for a thread, calling into COM, even some C++ static initialisation that does those things) can deadlock the process. The rule: in <code>DllMain</code>, do nothing that could wait or load. Put real initialisation in an exported <code>init</code> function that the program calls after loading.</p>
+<h2>Rules for the boundary</h2>
+<p>A DLL and the program that loads it are built separately, possibly by different compilers or settings. So the interface between them should be simple:</p>
+<ul>
+<li><strong>Plain C types across the boundary</strong>: integers, floats, pointers to plain structs, function pointers. Passing <code>std::string</code> or <code>std::vector</code> across works only if both sides were built with the same compiler version and settings, and is a common source of crashes.</li>
+<li><strong>Free memory on the side that allocated it.</strong> If the DLL allocates with its own runtime, it should provide a function to free it too. Mixing heaps between modules is a classic crash.</li>
+<li><strong>Version your interface.</strong> An exported <code>pluginVersion</code> (like the one above) lets the program refuse a plugin built for an incompatible interface.</li>
+</ul>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] The DLL is not next to the <code>.exe</code>
+Set every project&#39;s output directory to the same folder (lesson 4.01), or the loader cannot find it.</p>
+</blockquote>
+<blockquote><p>[!warning] Forgetting <code>extern &quot;C&quot;</code>
+<code>GetProcAddress(module, &quot;scaleDamage&quot;)</code> returns null because the exported name is mangled.</p>
+</blockquote>
+<blockquote><p>[!warning] Calling functions after <code>FreeLibrary</code>
+The code is gone from memory; the call jumps into nothing and crashes.</p>
+</blockquote>
+<blockquote><p>[!warning] Real work inside <code>DllMain</code>
+Deadlocks under the loader lock are hard to diagnose. Export an <code>init</code> function instead.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the import library (<code>plugin.lib</code>) produced alongside <code>plugin.dll</code> for?</div><ul><li>It tells the linker which symbols live in the DLL, so a program can link to them at build time</li><li>It contains a copy of the DLL&#39;s code</li><li>It is needed by <code>LoadLibrary</code></li></ul><details><summary>Show the answer</summary><p><b>It tells the linker which symbols live in the DLL, so a program can link to them at build time</b> The import library holds no code. It lets the linker record the DLL dependency in the program&#39;s import table.</p></details></li><li><div class="q">Why is <code>extern &quot;C&quot;</code> usually used for DLL exports meant for <code>GetProcAddress</code>?</div><ul><li>It exports the plain function name instead of a mangled C++ name</li><li>It makes the function faster</li><li><code>GetProcAddress</code> only works with C code</li></ul><details><summary>Show the answer</summary><p><b>It exports the plain function name instead of a mangled C++ name</b> <code>GetProcAddress</code> looks names up exactly as they appear in the export table.</p></details></li><li><div class="q">A program links to <code>plugin.dll</code> at load time, and the DLL is missing. What happens?</div><ul><li>The program fails to start, with a message naming the missing DLL</li><li>The program starts and calls to the DLL return 0</li><li>The program starts and crashes on the first call</li></ul><details><summary>Show the answer</summary><p><b>The program fails to start, with a message naming the missing DLL</b> Load-time dependencies are resolved before <code>main</code> runs. Run-time loading lets a program cope with a missing DLL.</p></details></li><li><div class="q">Why should <code>DllMain</code> do as little as possible?</div><ul><li>It runs under the loader lock, and waiting or loading other DLLs there can deadlock</li><li>It runs before memory is available</li><li>It is called only once per computer</li></ul><details><summary>Show the answer</summary><p><b>It runs under the loader lock, and waiting or loading other DLLs there can deadlock</b> Do real setup in a separate exported function the program calls after loading.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-static-libraries/"><span class="mono">previous</span><b>4.04 Static Libraries</b></a>
+      <a class="lp-next" href="../4-06-managing-dependencies-with-vcpkg/"><span class="mono">next</span><b>4.06 Managing Dependencies with vcpkg</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/4-05-dynamic-libraries-building-and-loading-your-own-dll"></script>
+</body>
+</html>

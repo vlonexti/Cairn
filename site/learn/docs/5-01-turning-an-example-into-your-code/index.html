@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Turning an Example into Your Code · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/5-01-turning-an-example-into-your-code/">
+  <meta name="description" content="Why documentation examples are not production code - what they leave out on purpose - and a dependable routine for adapting one - run it unchanged,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Turning an Example into Your Code · Reading Documentation · Xenon">
+  <meta property="og:description" content="Why documentation examples are not production code - what they leave out on purpose - and a dependable routine for adapting one - run it unchanged,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/5-01-turning-an-example-into-your-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Turning an Example into Your Code · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Turning an Example into Your Code · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="Why documentation examples are not production code - what they leave out on purpose - and a dependable routine for adapting one - run it unchanged,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>From Docs to Working Code</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Turning an Example into Your Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 4 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Why documentation examples are not production code - what they leave out on purpose - and a dependable routine for adapting one - run it unchanged, understand every line against the reference, make it a function, add every error path the reference describes, release resources on every path, and test the edges.</p>
+      <div class="prose">
+<h2>Examples are written to teach</h2>
+<p>The example on a reference page exists to show <strong>one idea</strong> as clearly as possible. To stay short it usually leaves out exactly what your program needs:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Left out</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>error handling</td>
+<td>the failure cases are on the page, just not in the example</td>
+</tr>
+<tr>
+<td>cleanup on error paths</td>
+<td>a handle or allocation leaks when something fails halfway</td>
+</tr>
+<tr>
+<td>loops for partial results</td>
+<td>a single <code>read</code> or <code>send</code> may do only part of the work</td>
+</tr>
+<tr>
+<td>buffer sizing</td>
+<td>fixed buffers like <code>char buf[256]</code> that are too small for real data</td>
+</tr>
+<tr>
+<td>real inputs</td>
+<td>hard-coded names, paths and values</td>
+</tr>
+<tr>
+<td>thread safety, encoding, limits</td>
+<td>outside the example&#39;s one idea</td>
+</tr>
+</tbody></table>
+</div>
+<p>Copying an example straight into a program is the most common way documentation causes bugs. The fix is a routine.</p>
+<h2>The routine</h2>
+<ol>
+<li><strong>Run it unchanged.</strong> In a scratch project, or Compiler Explorer. If it does not work as shown, you have learned something about your setup (version, platform, missing library) before mixing it with your own code.</li>
+<li><strong>Explain every line.</strong> For each call, open its reference page and check: what does each argument mean here? What can it return? This is where you find the cases the example ignores.</li>
+<li><strong>Make it a function</strong> with real parameters instead of hard-coded values, and a return type that can express failure (<code>std::optional</code>, an error code, an exception, matching the rest of your program).</li>
+<li><strong>Add every error path</strong> the reference pages list. For each call: what happens if it fails, and what must already-acquired resources do then?</li>
+<li><strong>Release resources on every path.</strong> Wrap handles in RAII types (a small class whose destructor closes them, or <code>std::unique_ptr</code> with a custom deleter), so early returns cannot leak.</li>
+<li><strong>Handle partial results.</strong> Anything that reads, writes, sends or receives in pieces needs a loop (the Networking course&#39;s <code>sendAll</code> is the classic case).</li>
+<li><strong>Test the edges</strong> the reference describes: empty input, the largest input, the failure of each call (practice 5.01 fakes them).</li>
+</ol>
+<h2>An example, adapted</h2>
+<p>A typical example for a file API looks like this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Handle</span> h = <span class="tk-f">fakeOpen</span>(<span class="tk-s">&quot;notes.txt&quot;</span>);
+<span class="tk-k">char</span> buffer[<span class="tk-n">256</span>];
+<span class="tk-k">long</span> n = <span class="tk-f">fakeRead</span>(h, buffer, <span class="tk-k">sizeof</span> buffer);
+std::cout &lt;&lt; std::<span class="tk-f">string</span>(buffer, n);
+<span class="tk-f">fakeClose</span>(h);</code></pre></div>
+<p>Reading the three reference pages shows five problems: <code>fakeOpen</code> can fail and return <code>INVALID</code>; <code>fakeRead</code> may return fewer bytes than the file has, so one call does not read the whole file; it returns <code>-1</code> on an error, which <code>std::string(buffer, n)</code> would turn into a huge length; a file longer than 256 bytes is cut off; and if anything throws between open and close, the handle leaks.</p>
+<p>The adapted version:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">File</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">File</span>(<span class="tk-t">Handle</span> h) : h_{ h } {}
+    ~<span class="tk-f">File</span>() { <span class="tk-k">if</span> (h_ != INVALID) <span class="tk-f">fakeClose</span>(h_); }
+    <span class="tk-f">File</span>(<span class="tk-k">const</span> <span class="tk-t">File</span>&amp;) = <span class="tk-k">delete</span>;
+    <span class="tk-t">File</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-k">const</span> <span class="tk-t">File</span>&amp;) = <span class="tk-k">delete</span>;
+    <span class="tk-t">Handle</span> <span class="tk-f">get</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> h_; }
+<span class="tk-k">private</span>:
+    <span class="tk-t">Handle</span> h_;
+};
+
+std::optional&lt;std::string&gt; <span class="tk-f">readWholeFile</span>(<span class="tk-k">const</span> std::string&amp; name)
+{
+    <span class="tk-t">File</span> file{ <span class="tk-f">fakeOpen</span>(name) };
+    <span class="tk-k">if</span> (file.<span class="tk-f">get</span>() == INVALID) <span class="tk-k">return</span> std::nullopt;
+    std::string contents;
+    <span class="tk-k">char</span> buffer[<span class="tk-n">4096</span>];
+    <span class="tk-k">for</span> (;;)
+    {
+        <span class="tk-k">const</span> <span class="tk-k">long</span> n{ <span class="tk-f">fakeRead</span>(file.<span class="tk-f">get</span>(), buffer, <span class="tk-k">sizeof</span> buffer) };
+        <span class="tk-k">if</span> (n &lt; <span class="tk-n">0</span>) <span class="tk-k">return</span> std::nullopt;          <span class="tk-c">// error: the destructor still closes</span>
+        <span class="tk-k">if</span> (n == <span class="tk-n">0</span>) <span class="tk-k">return</span> contents;             <span class="tk-c">// end of file</span>
+        contents.<span class="tk-f">append</span>(buffer, <span class="tk-k">static_cast</span>&lt;std::size_t&gt;(n));
+    }
+}</code></pre></div>
+<p>Longer than the example, and every added line traces back to a sentence on a reference page.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-man-pages-rfcs-and-specifications/"><span class="mono">previous</span><b>4.04 Man Pages, RFCs and Specifications</b></a>
+      <a class="lp-next" href="../5-02-checking-your-understanding-with-experiments/"><span class="mono">next</span><b>5.02 Checking Your Understanding with Experiments</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/5-01-turning-an-example-into-your-code"></script>
+</body>
+</html>

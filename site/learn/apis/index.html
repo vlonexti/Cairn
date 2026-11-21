@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Working with APIs course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/">
+  <meta name="description" content="Call web APIs, connect services together, and reach into C libraries from Python. How programs talk to other programs, in Python: HTTP requests and JSON,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Working with APIs course · Xenon">
+  <meta property="og:description" content="Call web APIs, connect services together, and reach into C libraries from Python. How programs talk to other programs, in Python: HTTP requests and JSON,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Working with APIs course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Working with APIs course · Xenon">
+  <meta name="twitter:description" content="Call web APIs, connect services together, and reach into C libraries from Python. How programs talk to other programs, in Python: HTTP requests and JSON,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Working with APIs</span></div>
+    <h1 class="display">Working with APIs</h1>
+    <div class="readout lp-readout"><span><b>6</b> milestones</span><span><b>30</b> lessons</span><span><b>30</b> practice tasks</span><span><b>30</b> projects</span></div>
+    <p class="lp-lede">How programs talk to other programs, in Python: HTTP requests and JSON, reading an API's documentation, API keys, tokens and OAuth with PKCE, signed requests, paging, rate limits, retries with backoff, idempotency and caching, receiving and verifying webhooks, joining two services together with mapping, incremental sync and failure handling, and finally calling C libraries with ctypes. The practice uses small fake servers, so every task runs anywhere and every edge case can be tested; each milestone ends with five projects, from small to large. It assumes the Python course.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-what-a-web-api-is/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/apis">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> HTTP and JSON</h2>
+      <p class="lp-ms-blurb">What a web API is, requests and responses, JSON in Python, reading an API's reference, and building URLs and clients that do not break on unusual input.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-what-a-web-api-is/"><span class="mono">1.01</span><span class="t">What a Web API Is</span><span class="n">1 task</span></a></li>
+        <li><a href="1-02-requests-and-responses/"><span class="mono">1.02</span><span class="t">Requests and Responses</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-json-in-python/"><span class="mono">1.03</span><span class="t">JSON in Python</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-reading-an-api-reference/"><span class="mono">1.04</span><span class="t">Reading an API Reference</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-building-urls-and-clients-safely/"><span class="mono">1.05</span><span class="t">Building URLs and Clients Safely</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Keys and Sign-in</h2>
+      <p class="lp-ms-blurb">API keys and where secrets belong, bearer tokens that expire, OAuth 2.0 with PKCE, signing requests with HMAC, and keeping secrets out of logs.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-api-keys-and-where-secrets-belong/"><span class="mono">2.01</span><span class="t">API Keys and Where Secrets Belong</span><span class="n">1 task</span></a></li>
+        <li><a href="2-02-bearer-tokens-and-expiry/"><span class="mono">2.02</span><span class="t">Bearer Tokens and Expiry</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-oauth-2-0-and-pkce/"><span class="mono">2.03</span><span class="t">OAuth 2.0 and PKCE</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-signing-requests-with-hmac/"><span class="mono">2.04</span><span class="t">Signing Requests with HMAC</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-keeping-secrets-out-of-logs/"><span class="mono">2.05</span><span class="t">Keeping Secrets Out of Logs</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Paging, Rate Limits and Retries</h2>
+      <p class="lp-ms-blurb">Offset, page and cursor pagination, rate limits and Retry-After, retries with exponential backoff and jitter, idempotency keys, and caching with ETags.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-pagination/"><span class="mono">3.01</span><span class="t">Pagination</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-rate-limits/"><span class="mono">3.02</span><span class="t">Rate Limits</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-retries-with-backoff/"><span class="mono">3.03</span><span class="t">Retries with Backoff</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-idempotency-keys-and-timeouts/"><span class="mono">3.04</span><span class="t">Idempotency Keys and Timeouts</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-caching-with-etags/"><span class="mono">3.05</span><span class="t">Caching with ETags</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Webhooks</h2>
+      <p class="lp-ms-blurb">Webhooks versus polling, verifying signatures, handling retried, duplicated and out-of-order deliveries, a receiver from raw HTTP, and testing webhooks.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-webhooks-versus-polling/"><span class="mono">4.01</span><span class="t">Webhooks versus Polling</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-verifying-webhook-signatures/"><span class="mono">4.02</span><span class="t">Verifying Webhook Signatures</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-handling-deliveries/"><span class="mono">4.03</span><span class="t">Handling Deliveries</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-a-webhook-receiver/"><span class="mono">4.04</span><span class="t">A Webhook Receiver</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-testing-webhooks/"><span class="mono">4.05</span><span class="t">Testing Webhooks</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Joining Services Together</h2>
+      <p class="lp-ms-blurb">Designing an integration, mapping data between two APIs, incremental sync with checkpoints and deletes, partial failure and dead letters, and keeping an integration observable.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-designing-an-integration/"><span class="mono">5.01</span><span class="t">Designing an Integration</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-mapping-data-between-apis/"><span class="mono">5.02</span><span class="t">Mapping Data Between APIs</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-incremental-sync/"><span class="mono">5.03</span><span class="t">Incremental Sync</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-partial-failure-and-dead-letters/"><span class="mono">5.04</span><span class="t">Partial Failure and Dead Letters</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-keeping-an-integration-observable/"><span class="mono">5.05</span><span class="t">Keeping an Integration Observable</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Calling C Libraries</h2>
+      <p class="lp-ms-blurb">Why and how Python calls C, ctypes types and function signatures, structures, pointers and buffers, callbacks and errors, and the other ways languages bind to C.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-why-python-calls-c/"><span class="mono">6.01</span><span class="t">Why Python Calls C</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-ctypes-basics/"><span class="mono">6.02</span><span class="t">ctypes Basics</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-structures-pointers-and-buffers/"><span class="mono">6.03</span><span class="t">Structures, Pointers and Buffers</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-callbacks-and-errors/"><span class="mono">6.04</span><span class="t">Callbacks and Errors</span><span class="n">1 task</span></a></li>
+        <li><a href="6-05-other-ways-to-bind-c/"><span class="mono">6.05</span><span class="t">Other Ways to Bind C</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis"></script>
+</body>
+</html>

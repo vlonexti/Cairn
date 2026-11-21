@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Keeping Secrets Out of Logs · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/2-05-keeping-secrets-out-of-logs/">
+  <meta name="description" content="The many quiet ways secrets leak - URLs, headers and bodies in logs, error messages, tracebacks, object reprs and debugging output - and how to redact them…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Keeping Secrets Out of Logs · Working with APIs · Xenon">
+  <meta property="og:description" content="The many quiet ways secrets leak - URLs, headers and bodies in logs, error messages, tracebacks, object reprs and debugging output - and how to redact them…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/2-05-keeping-secrets-out-of-logs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Keeping Secrets Out of Logs · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Keeping Secrets Out of Logs · Working with APIs · Xenon">
+  <meta name="twitter:description" content="The many quiet ways secrets leak - URLs, headers and bodies in logs, error messages, tracebacks, object reprs and debugging output - and how to redact them…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Keys and Sign-in</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Keeping Secrets Out of Logs</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The many quiet ways secrets leak - URLs, headers and bodies in logs, error messages, tracebacks, object reprs and debugging output - and how to redact them systematically, from masking a key for display to scrubbing nested JSON, plus a test that proves no secret reaches the log.</p>
+      <div class="prose">
+<h2>Logs are where keys leak</h2>
+<p>Logging requests is essential for debugging an integration (lesson 5.05). It is also the most common way secrets escape: logs are kept for months, copied into tickets, shipped to monitoring services, and read by many people. The leaks are rarely deliberate:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Leak</th>
+<th>How it happens</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>URL</td>
+<td>a token or key in the query string, logged with the request line</td>
+</tr>
+<tr>
+<td>headers</td>
+<td>logging all request headers, including <code>Authorization</code> and <code>Cookie</code></td>
+</tr>
+<tr>
+<td>bodies</td>
+<td>logging a token response, or a login form with a password</td>
+</tr>
+<tr>
+<td>exceptions</td>
+<td>a library&#39;s error message includes the URL or the body</td>
+</tr>
+<tr>
+<td>reprs</td>
+<td><code>print(settings)</code> shows every field of a config object</td>
+</tr>
+<tr>
+<td>debugging</td>
+<td>a temporary <code>print(headers)</code> that is never removed</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Redact at one place</h2>
+<p>The reliable fix is a <strong>redaction step</strong> that every log line passes through, rather than remembering at each call:</p>
+<ul>
+<li><strong>Headers</strong>: replace the values of <code>Authorization</code>, <code>Proxy-Authorization</code>, <code>Cookie</code>, <code>Set-Cookie</code> and any <code>X-...-Key</code> or <code>X-...-Token</code> header. For <code>Authorization</code>, keeping the scheme (<code>Bearer REDACTED</code>) still helps debugging.</li>
+<li><strong>URLs</strong>: parse the query string and replace the values of known secret parameters (<code>api_key</code>, <code>token</code>, <code>access_token</code>, <code>client_secret</code>, <code>signature</code>).</li>
+<li><strong>Bodies</strong>: walk the parsed JSON and replace values of keys such as <code>password</code>, <code>secret</code>, <code>token</code>, <code>refresh_token</code>, at any depth.</li>
+<li><strong>Display</strong>: when a human must recognise which key is configured, show only the last few characters: <code>****a1b2</code>.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> urllib.parse <span class="tk-k">import</span> parse_qsl, urlencode, urlsplit, urlunsplit
+
+SECRET_PARAMS = {<span class="tk-s">&quot;api_key&quot;</span>, <span class="tk-s">&quot;token&quot;</span>, <span class="tk-s">&quot;access_token&quot;</span>, <span class="tk-s">&quot;client_secret&quot;</span>, <span class="tk-s">&quot;signature&quot;</span>}
+
+<span class="tk-k">def</span> <span class="tk-f">redact_url</span>(url):
+    parts = <span class="tk-f">urlsplit</span>(url)
+    query = [(k, <span class="tk-s">&quot;REDACTED&quot;</span> <span class="tk-k">if</span> k.<span class="tk-f">lower</span>() <span class="tk-k">in</span> SECRET_PARAMS <span class="tk-k">else</span> v) <span class="tk-k">for</span> k, v <span class="tk-k">in</span> <span class="tk-f">parse_qsl</span>(parts.query, keep_blank_values=<span class="tk-k">True</span>)]
+    <span class="tk-k">return</span> <span class="tk-f">urlunsplit</span>(parts.<span class="tk-f">_replace</span>(query=<span class="tk-f">urlencode</span>(query)))
+
+<span class="tk-f">print</span>(<span class="tk-f">redact_url</span>(<span class="tk-s">&quot;https://api.example.com/v1/books?limit=5&amp;api_key=sk_live_abc&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>https://api.example.com/v1/books?limit=5&amp;api_key=REDACTED</code></pre></div>
+<h2>Objects that hide their secrets</h2>
+<p>Give configuration and credential classes a <code>__repr__</code> that masks the secret, so an accidental <code>print</code>, a debugger view or an exception message cannot show it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">class</span> Settings:
+    <span class="tk-k">def</span> <span class="tk-f">__repr__</span>(<span class="tk-k">self</span>):
+        <span class="tk-k">return</span> <span class="tk-s">f&quot;Settings(base_url={self.base_url!r}, api_key='****{self.api_key[-4:]}')&quot;</span></code></pre></div>
+<h2>Test it</h2>
+<p>Write a test that runs a request through your client with a known fake secret and asserts that the secret appears <strong>nowhere</strong> in the captured log. It costs a few lines and catches the regression the day someone adds <code>log(headers)</code> for debugging.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-signing-requests-with-hmac/"><span class="mono">previous</span><b>2.04 Signing Requests with HMAC</b></a>
+      <a class="lp-next" href="../3-01-pagination/"><span class="mono">next</span><b>3.01 Pagination</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/2-05-keeping-secrets-out-of-logs"></script>
+</body>
+</html>

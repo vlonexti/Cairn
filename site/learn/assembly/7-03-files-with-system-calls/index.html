@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Files with System Calls · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/7-03-files-with-system-calls/">
+  <meta name="description" content="Working with files without any library - open with its flags and permission mode, read and write loops that handle partial transfers, close, lseek to move…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Files with System Calls · Assembly · Xenon">
+  <meta property="og:description" content="Working with files without any library - open with its flags and permission mode, read and write loops that handle partial transfers, close, lseek to move…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/7-03-files-with-system-calls/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Files with System Calls · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Files with System Calls · Assembly · Xenon">
+  <meta name="twitter:description" content="Working with files without any library - open with its flags and permission mode, read and write loops that handle partial transfers, close, lseek to move…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Deeper Assembly</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Files with System Calls</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.03</b></span><span>3 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Working with files without any library - open with its flags and permission mode, read and write loops that handle partial transfers, close, lseek to move and to find a size, unlink, and reading errors from the negative value the kernel returns.</p>
+      <div class="prose">
+<h2>Files are numbers</h2>
+<p>Lesson 1.04 wrote to the screen with system call 1, <code>write</code>, on <strong>file descriptor</strong> 1 (standard output). A file you open is just another descriptor: a small number the kernel hands out, which <code>read</code>, <code>write</code> and <code>close</code> then use.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th>rax</th>
+<th>Arguments</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>read</code></td>
+<td>0</td>
+<td>rdi = fd, rsi = buffer, rdx = size</td>
+<td>bytes read, 0 at the end</td>
+</tr>
+<tr>
+<td><code>write</code></td>
+<td>1</td>
+<td>rdi = fd, rsi = buffer, rdx = count</td>
+<td>bytes written</td>
+</tr>
+<tr>
+<td><code>open</code></td>
+<td>2</td>
+<td>rdi = path (zero-terminated), rsi = flags, rdx = mode</td>
+<td>the new fd</td>
+</tr>
+<tr>
+<td><code>close</code></td>
+<td>3</td>
+<td>rdi = fd</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>lseek</code></td>
+<td>8</td>
+<td>rdi = fd, rsi = offset, rdx = whence</td>
+<td>the new position</td>
+</tr>
+<tr>
+<td><code>unlink</code></td>
+<td>87</td>
+<td>rdi = path</td>
+<td>0</td>
+</tr>
+</tbody></table>
+</div>
+<p>(Newer programs use <code>openat</code>, 257, which takes a directory fd first; <code>open</code> is the same with the current directory.)</p>
+<h2>Errors are negative</h2>
+<p>A system call that fails returns a <strong>negative error number</strong> in <code>rax</code>: −2 is <code>ENOENT</code> (no such file), −13 <code>EACCES</code> (permission denied), −9 <code>EBADF</code> (bad descriptor). C&#39;s <code>errno</code> is just that number made positive by the library. So every call is followed by a check:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        syscall
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        js      .failed             <span class="tk-c">; negative: an error</span></code></pre></div>
+<h2>Opening</h2>
+<p>The flags are bits ORed together:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>O_RDONLY</code></td>
+<td>0</td>
+<td>read only</td>
+</tr>
+<tr>
+<td><code>O_WRONLY</code></td>
+<td>1</td>
+<td>write only</td>
+</tr>
+<tr>
+<td><code>O_RDWR</code></td>
+<td>2</td>
+<td>both</td>
+</tr>
+<tr>
+<td><code>O_CREAT</code></td>
+<td>0x40</td>
+<td>create it if it does not exist</td>
+</tr>
+<tr>
+<td><code>O_TRUNC</code></td>
+<td>0x200</td>
+<td>empty it if it does</td>
+</tr>
+<tr>
+<td><code>O_APPEND</code></td>
+<td>0x400</td>
+<td>every write goes to the end</td>
+</tr>
+</tbody></table>
+</div>
+<p>With <code>O_CREAT</code>, <code>rdx</code> is the permission <strong>mode</strong> of a new file, usually written in octal: <code>0o644</code> means the owner may read and write, everyone else may only read.</p>
+<h2>Write, then read back</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">path:</span>   <span class="tk-k">db</span>      <span class="tk-s">&quot;xenon_demo.txt&quot;</span>, <span class="tk-n">0</span>
+<span class="tk-f">text:</span>   <span class="tk-k">db</span>      <span class="tk-s">&quot;written by assembly&quot;</span>, <span class="tk-n">10</span>
+length  <span class="tk-k">equ</span>     $ - text
+
+        <span class="tk-k">section</span> .bss
+<span class="tk-f">buffer:</span> <span class="tk-k">resb</span>    <span class="tk-n">64</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        <span class="tk-c">; fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644)</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">2</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> path]
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">0x241</span>
+        mov     <span class="tk-t">edx</span>, 0o644
+        syscall
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        js      .fail
+        mov     <span class="tk-t">rbx</span>, <span class="tk-t">rax</span>                <span class="tk-c">; keep the fd</span>
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>                  <span class="tk-c">; write(fd, text, length)</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> text]
+        mov     <span class="tk-t">edx</span>, length
+        syscall
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">3</span>                  <span class="tk-c">; close(fd)</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        syscall
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">2</span>                  <span class="tk-c">; fd = open(path, O_RDONLY)</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> path]
+        xor     <span class="tk-t">esi</span>, <span class="tk-t">esi</span>
+        syscall
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        js      .fail
+        mov     <span class="tk-t">rbx</span>, <span class="tk-t">rax</span>
+
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>                <span class="tk-c">; n = read(fd, buffer, 64)</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> buffer]
+        mov     <span class="tk-t">edx</span>, <span class="tk-n">64</span>
+        syscall
+        mov     <span class="tk-t">r12</span>, <span class="tk-t">rax</span>
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">3</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        syscall
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>                  <span class="tk-c">; show what came back</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> buffer]
+        mov     <span class="tk-t">rdx</span>, <span class="tk-t">r12</span>
+        syscall
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">87</span>                 <span class="tk-c">; unlink(path): tidy up</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> path]
+        syscall
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        jmp     .exit
+<span class="tk-f">.fail:</span>  mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; the negative error number</span>
+        call    print_newline
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>
+<span class="tk-f">.exit:</span>  mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        syscall</code></pre></div>
+<h2>Partial reads and writes</h2>
+<p><code>read</code> may return <strong>fewer</strong> bytes than asked for, even before the end of the file (always with pipes and sockets), and <code>write</code> may write fewer than given. Robust code loops:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; write_all: rdi = fd, rsi = buffer, rdx = count. Returns 0, or the negative error.</span>
+<span class="tk-f">write_all:</span>
+<span class="tk-f">.again:</span> test    <span class="tk-t">rdx</span>, <span class="tk-t">rdx</span>
+        jz      .ok
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+        push    <span class="tk-t">rdi</span>
+        push    <span class="tk-t">rsi</span>
+        push    <span class="tk-t">rdx</span>
+        syscall
+        pop     <span class="tk-t">rdx</span>
+        pop     <span class="tk-t">rsi</span>
+        pop     <span class="tk-t">rdi</span>
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        js      .error
+        add     <span class="tk-t">rsi</span>, <span class="tk-t">rax</span>                <span class="tk-c">; skip what was written</span>
+        sub     <span class="tk-t">rdx</span>, <span class="tk-t">rax</span>
+        jmp     .again
+<span class="tk-f">.ok:</span>    xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+<span class="tk-f">.error:</span> ret</code></pre></div>
+<p>(The <code>syscall</code> instruction itself overwrites <code>rcx</code> and <code>r11</code>; the pushes here keep the arguments for the next round.)</p>
+<h2>lseek</h2>
+<p><code>lseek(fd, offset, whence)</code> moves the read and write position: <code>whence</code> 0 (<code>SEEK_SET</code>) from the start, 1 (<code>SEEK_CUR</code>) from the current position, 2 (<code>SEEK_END</code>) from the end. <code>lseek(fd, 0, SEEK_END)</code> returns the file&#39;s size.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/7.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/7.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-02-nasm-macros-and-conditional-assembly/"><span class="mono">previous</span><b>7.02 NASM Macros and Conditional Assembly</b></a>
+      <a class="lp-next" href="../7-04-structures-and-data-layout/"><span class="mono">next</span><b>7.04 Structures and Data Layout</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/7-03-files-with-system-calls"></script>
+</body>
+</html>

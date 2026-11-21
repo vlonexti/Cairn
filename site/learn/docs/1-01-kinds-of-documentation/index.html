@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Kinds of Documentation · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/1-01-kinds-of-documentation/">
+  <meta name="description" content="Why reading documentation is a core programming skill, the four kinds of documentation (tutorials, how-to guides, reference and explanation) and what each is…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Kinds of Documentation · Reading Documentation · Xenon">
+  <meta property="og:description" content="Why reading documentation is a core programming skill, the four kinds of documentation (tutorials, how-to guides, reference and explanation) and what each is…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/1-01-kinds-of-documentation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Kinds of Documentation · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Kinds of Documentation · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="Why reading documentation is a core programming skill, the four kinds of documentation (tutorials, how-to guides, reference and explanation) and what each is…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>How Reference Docs Work</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Kinds of Documentation</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 4 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Why reading documentation is a core programming skill, the four kinds of documentation (tutorials, how-to guides, reference and explanation) and what each is for, the other sources you will meet, and how to pick the right one for the question you have.</p>
+      <div class="prose">
+<h2>The skill under every other skill</h2>
+<p>Nobody remembers every function. Working programmers spend a large part of each day reading: a reference page to check what a function returns on failure, a guide to set up a library, a specification to see what a file format allows. The difference between a beginner and an experienced programmer is often not what they know, but <strong>how quickly and precisely they can find out</strong>.</p>
+<p>Reading documentation well means three things:</p>
+<ol>
+<li>Knowing <strong>which kind</strong> of document answers your question.</li>
+<li>Reading it <strong>precisely</strong>: every word on a reference page is there for a reason.</li>
+<li>Turning what it says into <strong>code that handles every case</strong> it describes.</li>
+</ol>
+<p>This course trains all three, mostly with C++, then with Windows, Python, JavaScript and specifications.</p>
+<h2>Four kinds of documentation</h2>
+<p>Good documentation sets are usually split into four kinds, because each answers a different need. (This division is often called the Diátaxis framework.)</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Answers</th>
+<th>Reads like</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Tutorial</strong></td>
+<td>&quot;I&#39;m new, show me&quot;</td>
+<td>a lesson: do this, then this</td>
+<td>&quot;Your first window with raylib&quot;</td>
+</tr>
+<tr>
+<td><strong>How-to guide</strong></td>
+<td>&quot;How do I do X?&quot;</td>
+<td>a recipe with steps</td>
+<td>&quot;How to read a file asynchronously&quot;</td>
+</tr>
+<tr>
+<td><strong>Reference</strong></td>
+<td>&quot;What exactly does this do?&quot;</td>
+<td>a dry, complete description</td>
+<td>the page for <code>std::vector::insert</code></td>
+</tr>
+<tr>
+<td><strong>Explanation</strong></td>
+<td>&quot;Why is it like this?&quot;</td>
+<td>an essay or background article</td>
+<td>&quot;About processes and threads&quot;</td>
+</tr>
+</tbody></table>
+</div>
+<p>They mix badly. A tutorial that stops to list every parameter loses the learner; a reference page that tells a story hides the one fact you need. So when you search, decide first which one you want:</p>
+<ul>
+<li>Learning something new: a <strong>tutorial</strong>, then <strong>explanation</strong>.</li>
+<li>Trying to get a task done: a <strong>how-to</strong>, then the <strong>reference</strong> for each function it uses.</li>
+<li>Debugging, or checking an edge case: the <strong>reference</strong>, always.</li>
+</ul>
+<h2>Other sources you will meet</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Good for</th>
+<th>Watch out for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Specifications and standards</strong> (the C++ standard, RFCs, file format specs)</td>
+<td>the final word on what is allowed</td>
+<td>dense, precise language (milestone 4)</td>
+</tr>
+<tr>
+<td><strong>Header files and source code</strong></td>
+<td>what really exists, in the version you have</td>
+<td>no explanations, easy to misread (lesson 4.03)</td>
+</tr>
+<tr>
+<td><strong>Doc comments</strong> in code (<code>///</code>, docstrings)</td>
+<td>quick help in your editor</td>
+<td>may be short or out of date</td>
+</tr>
+<tr>
+<td><strong>Release notes and changelogs</strong></td>
+<td>what changed between versions</td>
+<td>easy to skip, costly when you do (lesson 5.03)</td>
+</tr>
+<tr>
+<td><strong>Examples and samples</strong></td>
+<td>seeing the pieces used together</td>
+<td>usually skip error handling (lesson 5.01)</td>
+</tr>
+<tr>
+<td><strong>Q&amp;A sites, forums, blog posts, AI answers</strong></td>
+<td>quick pointers to the right function</td>
+<td>may be old, wrong, or for another version; confirm against the reference</td>
+</tr>
+</tbody></table>
+</div>
+<p>Treat the last row as <strong>leads, not facts</strong>: they tell you where to look, and the reference page tells you whether it is true.</p>
+<h2>Where documentation lives</h2>
+<p>For the languages and platforms in this course:</p>
+<ul>
+<li><strong>C++ standard library</strong>: cppreference.com (community reference), the standard itself for the final word.</li>
+<li><strong>Windows</strong>: Microsoft Learn (learn.microsoft.com), the Win32 and C runtime references.</li>
+<li><strong>Python</strong>: docs.python.org, the library reference and the language reference.</li>
+<li><strong>JavaScript</strong>: MDN Web Docs for the language and browser APIs, nodejs.org/docs for Node.</li>
+<li><strong>Unix-like systems</strong>: man pages (<code>man 2 open</code>).</li>
+<li><strong>Libraries</strong>: their own site, README, and headers.</li>
+</ul>
+<p>Bookmark the reference for each language you use. Searching the web for every question costs time and often lands on an old forum answer instead of the reference.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-anatomy-of-a-reference-page/"><span class="mono">next</span><b>1.02 Anatomy of a Reference Page</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/1-01-kinds-of-documentation"></script>
+</body>
+</html>

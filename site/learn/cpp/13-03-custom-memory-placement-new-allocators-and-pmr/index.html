@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Custom Memory: Placement new, Allocators and PMR · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/13-03-custom-memory-placement-new-allocators-and-pmr/">
+  <meta name="description" content="new does two things: it obtains raw memory and constructs an object in it. The two can be separated. Placement new , or std::construct at, constructs in…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Custom Memory: Placement new, Allocators and PMR · C++ · Xenon">
+  <meta property="og:description" content="new does two things: it obtains raw memory and constructs an object in it. The two can be separated. Placement new , or std::construct at, constructs in…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/13-03-custom-memory-placement-new-allocators-and-pmr/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Custom Memory: Placement new, Allocators and PMR · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Custom Memory: Placement new, Allocators and PMR · C++ · Xenon">
+  <meta name="twitter:description" content="new does two things: it obtains raw memory and constructs an object in it. The two can be separated. Placement new , or std::construct at, constructs in…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Expert C++</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Custom Memory: Placement new, Allocators and PMR</h1>
+      <div class="readout lp-readout"><span>lesson <b>13.03</b></span><span>3 of 10 in milestone 13</span><span>6 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary"><code>new</code> does two things: it obtains raw memory <strong>and</strong> constructs an object in it. The two can be separated. <strong>Placement new</strong>, or <code>std::construct_at</code>, constructs in memory you already have. Custom <strong>allocators</strong> and <strong>PMR</strong> (polymorphic memory resources) let containers draw their memory from arenas, pools or the stack.</p>
+      <div class="prose">
+<h2><code>new</code> is two operations</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    N[&quot;new Widget(args)&quot;] --&gt; A[&quot;1. operator new(sizeof(Widget))&lt;br/&gt;obtain raw bytes&quot;] --&gt; C[&quot;2. construct a Widget&lt;br/&gt;in those bytes&quot;]
+    D[&quot;delete p&quot;] --&gt; X[&quot;1. run ~Widget()&quot;] --&gt; F[&quot;2. operator delete(p)&lt;br/&gt;release the bytes&quot;]</pre></div>
+<p>Separating allocation from construction is what makes most of the standard library possible.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstddef&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;new&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Widget</span>
+{
+    <span class="tk-f">Widget</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b) : sum{ a + b } { std::cout &lt;&lt; <span class="tk-s">&quot;constructed\n&quot;</span>; }
+    ~<span class="tk-f">Widget</span>() { std::cout &lt;&lt; <span class="tk-s">&quot;destroyed\n&quot;</span>; }
+    <span class="tk-k">int</span> sum{};
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">alignas</span>(<span class="tk-t">Widget</span>) std::byte storage[<span class="tk-k">sizeof</span>(<span class="tk-t">Widget</span>)];
+
+    <span class="tk-t">Widget</span>* w{ ::<span class="tk-k">new</span> (<span class="tk-k">static_cast</span>&lt;<span class="tk-k">void</span>*&gt;(storage)) <span class="tk-t">Widget</span>{ <span class="tk-n">1</span>, <span class="tk-n">2</span> } };    <span class="tk-c">// construct only</span>
+    std::cout &lt;&lt; w-&gt;sum &lt;&lt; <span class="tk-s">'\n'</span>;
+    w-&gt;~<span class="tk-f">Widget</span>();                                                       <span class="tk-c">// destroy only</span>
+
+    <span class="tk-t">Widget</span>* w2{ std::<span class="tk-f">construct_at</span>(<span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-t">Widget</span>*&gt;(storage), <span class="tk-n">3</span>, <span class="tk-n">4</span>) };
+    std::cout &lt;&lt; w2-&gt;sum &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::<span class="tk-f">destroy_at</span>(w2);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>::new (address) T{ args }</code></td>
+<td><strong>Placement new</strong>: constructs a <code>T</code> at <code>address</code>; allocates nothing</td>
+</tr>
+<tr>
+<td><code>std::construct_at(pointer, args...)</code></td>
+<td>The same, as a function usable in <code>constexpr</code> code</td>
+</tr>
+<tr>
+<td><code>p-&gt;~T()</code>, <code>std::destroy_at(p)</code></td>
+<td>Runs the destructor; releases nothing</td>
+</tr>
+</tbody></table>
+</div>
+<p>The storage must be large enough and suitably aligned, hence <code>alignas(Widget)</code>. The destructor call is the one place where invoking a destructor explicitly is correct: nothing else will do it.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Library type</th>
+<th>How it uses the separation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::vector</code></td>
+<td><code>reserve</code> obtains capacity without constructing elements; <code>push_back</code> constructs into it</td>
+</tr>
+<tr>
+<td><code>std::optional</code></td>
+<td>Holds storage for a <code>T</code> inline and constructs it only when given a value</td>
+</tr>
+<tr>
+<td><code>std::variant</code></td>
+<td>One buffer, re-used for whichever alternative is active</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Replacing <code>operator new</code></h2>
+<p>A class can supply its own allocation functions, which <code>new</code> and <code>delete</code> then use for that class.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Particle</span>
+{
+    <span class="tk-k">static</span> <span class="tk-k">void</span>* <span class="tk-k">operator</span> <span class="tk-k">new</span>(std::size_t size);
+    <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-k">operator</span> <span class="tk-k">delete</span>(<span class="tk-k">void</span>* p) <span class="tk-k">noexcept</span>;
+};</code></pre></div>
+<p>The global <code>operator new</code> can be replaced too, by defining it once in the program. That is how tools count or trace every allocation.</p>
+<h2>Why replace the allocator at all?</h2>
+<p>A general-purpose allocator must cope with any size, any lifetime and any thread. That generality costs time per call, and it scatters objects across memory. When you know more about the pattern of use, you can do far better.</p>
+<h3>The arena</h3>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> arena:  [■■■■■■■■■■■■■■■■□□□□□□□□□□□□□□□□□□□□□□]
+                           ▲ next
+
+ allocate(n):   result = next;  next += n;         a pointer increment
+ deallocate:    nothing
+ reset:         next = start;                      everything released at once</code></pre></div>
+<p>An <strong>arena</strong> (also called a bump or monotonic allocator) hands out consecutive pieces of one large block. Individual deallocation does nothing; the whole arena is released or reset in one step. It is the fastest allocation strategy there is, and suits anything with a shared lifetime: the objects for one frame, one request or one parse.</p>
+<h2>Polymorphic memory resources</h2>
+<p>Since C++17, the containers in namespace <code>std::pmr</code> take a <strong>memory resource</strong> chosen at run time.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;array&gt;</span>
+<span class="tk-p">#include &lt;cstddef&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory_resource&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::array&lt;std::byte, <span class="tk-n">64</span> * <span class="tk-n">1024</span>&gt; buffer{};
+    std::pmr::monotonic_buffer_resource arena{ buffer.<span class="tk-f">data</span>(), buffer.<span class="tk-f">size</span>() };
+
+    std::pmr::vector&lt;<span class="tk-k">int</span>&gt; numbers{ &amp;arena };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; <span class="tk-n">1000</span>; ++i)
+    {
+        numbers.<span class="tk-f">push_back</span>(i);    <span class="tk-c">// no call to the heap</span>
+    }
+
+    std::pmr::vector&lt;std::pmr::string&gt; names{ &amp;arena };
+    names.<span class="tk-f">emplace_back</span>(<span class="tk-s">&quot;a string long enough to need an allocation of its own&quot;</span>);
+
+    std::cout &lt;&lt; numbers.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; names.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}    <span class="tk-c">// the arena is released in one step</span></code></pre></div>
+<p><code>std::pmr::vector&lt;T&gt;</code> is an alias for <code>std::vector&lt;T, std::pmr::polymorphic_allocator&lt;T&gt;&gt;</code>. The allocator holds a pointer to a <code>std::pmr::memory_resource</code>, an abstract base class, and forwards to it. Because the resource is not part of the container&#39;s <strong>type</strong>, two pmr vectors using different resources are the same type and can be passed to the same functions. It is type erasure applied to allocation (<a href="../11-06-type-erasure/">11.06 Type Erasure</a>).</p>
+<p>Note <code>std::pmr::vector&lt;std::pmr::string&gt;</code>: a pmr container passes its resource on to elements that are themselves pmr-aware, so the strings&#39; characters come from the arena too. A plain <code>std::string</code> element would still use the heap.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    V[&quot;std::pmr::vector&quot;] --&gt;|&quot;allocates through&quot;| MR[&quot;std::pmr::memory_resource*&lt;br/&gt;a virtual interface&quot;]
+    MR --&gt; M1[&quot;monotonic_buffer_resource&lt;br/&gt;an arena&quot;]
+    MR --&gt; M2[&quot;unsynchronized_pool_resource&lt;br/&gt;pools by size, one thread&quot;]
+    MR --&gt; M3[&quot;synchronized_pool_resource&lt;br/&gt;pools by size, thread-safe&quot;]
+    MR --&gt; M4[&quot;new_delete_resource()&lt;br/&gt;the ordinary heap&quot;]
+    MR --&gt; M5[&quot;a resource of your own&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Suits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>monotonic_buffer_resource</code></td>
+<td>Short bursts with one shared lifetime: parsing, per-frame scratch data</td>
+</tr>
+<tr>
+<td><code>unsynchronized_pool_resource</code></td>
+<td>Many small allocations and deallocations on one thread</td>
+</tr>
+<tr>
+<td><code>synchronized_pool_resource</code></td>
+<td>The same, across threads</td>
+</tr>
+<tr>
+<td><code>null_memory_resource()</code></td>
+<td>As the upstream of an arena: it throws, proving the buffer was never exceeded</td>
+</tr>
+</tbody></table>
+</div>
+<p>Resources chain. Each has an <strong>upstream</strong> resource to fall back on when it runs out, the default being the heap.</p>
+<h3>Writing a resource</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">CountingResource</span> : <span class="tk-k">public</span> std::pmr::memory_resource
+{
+<span class="tk-k">public</span>:
+    std::size_t allocations{ <span class="tk-n">0</span> };
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">void</span>* <span class="tk-f">do_allocate</span>(std::size_t bytes, std::size_t alignment) <span class="tk-k">override</span>
+    {
+        ++allocations;
+        <span class="tk-k">return</span> m_upstream-&gt;<span class="tk-f">allocate</span>(bytes, alignment);
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">do_deallocate</span>(<span class="tk-k">void</span>* p, std::size_t bytes, std::size_t alignment) <span class="tk-k">override</span>
+    {
+        m_upstream-&gt;<span class="tk-f">deallocate</span>(p, bytes, alignment);
+    }
+
+    <span class="tk-k">bool</span> <span class="tk-f">do_is_equal</span>(<span class="tk-k">const</span> std::pmr::memory_resource&amp; other) <span class="tk-k">const</span> <span class="tk-k">noexcept</span> <span class="tk-k">override</span>
+    {
+        <span class="tk-k">return</span> <span class="tk-k">this</span> == &amp;other;
+    }
+
+    std::pmr::memory_resource* m_upstream{ std::pmr::<span class="tk-f">get_default_resource</span>() };
+};</code></pre></div>
+<p>Three virtual functions define a resource. The public <code>allocate</code> and <code>deallocate</code> are non-virtual and call them: the non-virtual interface idiom from <a href="../8-05-abstract-classes-and-interfaces/">8.05 Abstract Classes and Interfaces</a>.</p>
+<h2>Classic allocators</h2>
+<p>The older mechanism makes the allocator a template parameter: <code>std::vector&lt;T, MyAllocator&lt;T&gt;&gt;</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Template allocator</th>
+<th>PMR</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The strategy is fixed</td>
+<td>At compile time, in the container&#39;s type</td>
+<td>At run time</td>
+</tr>
+<tr>
+<td>Containers with different strategies</td>
+<td>Are different types</td>
+<td>Are the same type</td>
+</tr>
+<tr>
+<td>Cost per allocation</td>
+<td>None beyond the allocation</td>
+<td>One virtual call</td>
+</tr>
+<tr>
+<td>Effort to write</td>
+<td>Considerable</td>
+<td>Three functions</td>
+</tr>
+</tbody></table>
+</div>
+<p>Prefer PMR unless the virtual call is shown to matter.</p>
+<div class="callout warning"><div class="callout-title"><span>The resource must outlive the container</span></div><div class="callout-body"><p>A pmr container stores a raw pointer to its resource. Destroy the arena first and every later allocation or deallocation touches a dead object. Declare the resource before the containers that use it, so it is destroyed after them.</p>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/13.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/13.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../13-02-memory-layout-alignment-unions-and-bit-fields/"><span class="mono">previous</span><b>13.02 Memory Layout, Alignment, Unions and Bit Fields</b></a>
+      <a class="lp-next" href="../13-04-performance-caches-and-data-oriented-design/"><span class="mono">next</span><b>13.04 Performance, Caches and Data-Oriented Design</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/13-03-custom-memory-placement-new-allocators-and-pmr"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>SIMD Many Numbers at Once · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/6-04-simd-many-numbers-at-once/">
+  <meta name="description" content="SIMD instructions do the same operation on several values at once. Every x86-64 processor has sixteen 128-bit xmm registers that hold 16 bytes, 8 words, 4…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SIMD Many Numbers at Once · Assembly · Xenon">
+  <meta property="og:description" content="SIMD instructions do the same operation on several values at once. Every x86-64 processor has sixteen 128-bit xmm registers that hold 16 bytes, 8 words, 4…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/6-04-simd-many-numbers-at-once/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SIMD Many Numbers at Once · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SIMD Many Numbers at Once · Assembly · Xenon">
+  <meta name="twitter:description" content="SIMD instructions do the same operation on several values at once. Every x86-64 processor has sixteen 128-bit xmm registers that hold 16 bytes, 8 words, 4…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Real Programs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">SIMD Many Numbers at Once</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">SIMD instructions do the same operation on several values at once. Every x86-64 processor has sixteen 128-bit xmm registers that hold 16 bytes, 8 words, 4 dwords or 2 qwords, with instructions like paddb, paddd and paddq. movdqu loads and stores 16 bytes, and a horizontal sum combines the lanes at the end. AVX widens this to 256 and 512 bits.</p>
+      <div class="prose">
+<h2>One instruction, many values</h2>
+<p><strong>SIMD</strong> means &quot;single instruction, multiple data&quot;. An x86-64 processor has 16 registers <code>xmm0</code> to <code>xmm15</code>, each 128 bits wide, and instructions that treat them as several <strong>lanes</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Lanes</th>
+<th>Add</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>16 × 8-bit bytes</td>
+<td><code>paddb</code></td>
+<td>pixels, text</td>
+</tr>
+<tr>
+<td>8 × 16-bit words</td>
+<td><code>paddw</code></td>
+<td>audio samples</td>
+</tr>
+<tr>
+<td>4 × 32-bit dwords</td>
+<td><code>paddd</code></td>
+<td><code>int</code> arrays</td>
+</tr>
+<tr>
+<td>2 × 64-bit qwords</td>
+<td><code>paddq</code></td>
+<td><code>long</code> arrays</td>
+</tr>
+<tr>
+<td>4 floats / 2 doubles</td>
+<td><code>addps</code> / <code>addpd</code></td>
+<td>graphics, physics</td>
+</tr>
+</tbody></table>
+</div>
+<p>Every x86-64 processor has SSE2, so these always work. Each lane is separate: a carry never crosses into the next lane.</p>
+<h2>Moving data in and out</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>movdqu xmm0, [rsi]</code></td>
+<td>load 16 bytes from any address (&quot;u&quot; for unaligned)</td>
+</tr>
+<tr>
+<td><code>movdqu [rdi], xmm0</code></td>
+<td>store 16 bytes</td>
+</tr>
+<tr>
+<td><code>movdqa</code></td>
+<td>the same, but the address must be a multiple of 16</td>
+</tr>
+<tr>
+<td><code>movq xmm0, rax</code> / <code>movq rax, xmm0</code></td>
+<td>move 64 bits between a general register and the low lane</td>
+</tr>
+<tr>
+<td><code>pxor xmm0, xmm0</code></td>
+<td>zero a vector register</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Adding arrays</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">a:</span>      <span class="tk-k">dq</span>      <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>, <span class="tk-n">6</span>
+<span class="tk-f">b:</span>      <span class="tk-k">dq</span>      <span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">40</span>, <span class="tk-n">50</span>, <span class="tk-n">60</span>
+        <span class="tk-k">section</span> .bss
+<span class="tk-f">c:</span>      <span class="tk-k">resq</span>    <span class="tk-n">6</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> a]
+        lea     <span class="tk-t">rdx</span>, [<span class="tk-k">rel</span> b]
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> c]
+        xor     <span class="tk-t">ecx</span>, <span class="tk-t">ecx</span>                <span class="tk-c">; byte offset</span>
+<span class="tk-f">.loop:</span>
+        movdqu  <span class="tk-t">xmm0</span>, [<span class="tk-t">rsi</span> + <span class="tk-t">rcx</span>]       <span class="tk-c">; two numbers of a</span>
+        movdqu  <span class="tk-t">xmm1</span>, [<span class="tk-t">rdx</span> + <span class="tk-t">rcx</span>]       <span class="tk-c">; two numbers of b</span>
+        paddq   <span class="tk-t">xmm0</span>, <span class="tk-t">xmm1</span>              <span class="tk-c">; two additions at once</span>
+        movdqu  [<span class="tk-t">rdi</span> + <span class="tk-t">rcx</span>], <span class="tk-t">xmm0</span>
+        add     <span class="tk-t">rcx</span>, <span class="tk-n">16</span>
+        cmp     <span class="tk-t">rcx</span>, <span class="tk-n">6</span>*<span class="tk-n">8</span>
+        jb      .loop
+
+        xor     <span class="tk-t">ebx</span>, <span class="tk-t">ebx</span>                <span class="tk-c">; print c</span>
+<span class="tk-f">.print:</span> lea     <span class="tk-t">rax</span>, [<span class="tk-k">rel</span> c]
+        mov     <span class="tk-t">rdi</span>, [<span class="tk-t">rax</span> + <span class="tk-t">rbx</span>*<span class="tk-n">8</span>]
+        call    print_int
+        mov     <span class="tk-t">edi</span>, <span class="tk-s">' '</span>
+        call    print_char
+        inc     <span class="tk-t">rbx</span>
+        cmp     <span class="tk-t">rbx</span>, <span class="tk-n">6</span>
+        jb      .print
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<h2>Horizontal sum</h2>
+<p>Adding up all the elements of an array uses lanes as separate running totals (like the four accumulators of lesson 6.03), then combines them at the end, a <strong>horizontal</strong> step:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        pxor    <span class="tk-t">xmm0</span>, <span class="tk-t">xmm0</span>              <span class="tk-c">; two totals: 0, 0</span>
+<span class="tk-f">.loop:</span>  movdqu  <span class="tk-t">xmm1</span>, [<span class="tk-t">rdi</span>]
+        paddq   <span class="tk-t">xmm0</span>, <span class="tk-t">xmm1</span>              <span class="tk-c">; add two elements, one into each total</span>
+        add     <span class="tk-t">rdi</span>, <span class="tk-n">16</span>
+        cmp     <span class="tk-t">rdi</span>, <span class="tk-t">rdx</span>
+        jb      .loop
+        pshufd  <span class="tk-t">xmm1</span>, <span class="tk-t">xmm0</span>, <span class="tk-n">0x4E</span>        <span class="tk-c">; swap the two 64-bit halves</span>
+        paddq   <span class="tk-t">xmm0</span>, <span class="tk-t">xmm1</span>              <span class="tk-c">; now both lanes hold the sum</span>
+        movq    <span class="tk-t">rax</span>, <span class="tk-t">xmm0</span></code></pre></div>
+<p><code>pshufd</code> rearranges the four 32-bit pieces of a register; the constant <code>0x4E</code> (binary <code>01 00 11 10</code>) picks pieces 2, 3, 0, 1, which swaps the halves.</p>
+<h2>Saturation and comparisons</h2>
+<p>Some SIMD instructions have no ordinary equivalent:</p>
+<ul>
+<li><code>paddusb</code> adds bytes <strong>with saturation</strong>: 200 + 100 gives 255 instead of wrapping to 44. Perfect for brightening pixels.</li>
+<li><code>pcmpeqb</code> compares 16 bytes at once, giving 0xFF where they are equal and 0 elsewhere, and <code>pmovmskb</code> turns those 16 results into 16 bits of a general register. That is how fast <code>strlen</code> and <code>memchr</code> implementations scan 16 bytes per step.</li>
+<li><code>pminub</code>, <code>pmaxub</code>, <code>pavgb</code>: lane-wise minimum, maximum, average.</li>
+</ul>
+<h2>Wider: AVX</h2>
+<p>Newer processors add <strong>AVX2</strong> (256-bit <code>ymm</code> registers: 8 ints at once) and <strong>AVX-512</strong> (512-bit <code>zmm</code>: 16 ints). Code must check the processor supports them first (with the <code>cpuid</code> instruction), which is why compilers use only SSE2 unless told <code>-mavx2</code> or <code>-march=native</code>. ARM&#39;s version is called <strong>NEON</strong>.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">How many 32-bit ints does one xmm register hold?</div><ul><li>4</li><li>2</li><li>8</li></ul><details><summary>Show the answer</summary><p><b>4</b> 128 bits / 32.</p></details></li><li><div class="q">What does paddq xmm0, xmm1 do?</div><ul><li>Two separate 64-bit additions, one per lane</li><li>One 128-bit addition</li><li>Four 32-bit additions</li></ul><details><summary>Show the answer</summary><p><b>Two separate 64-bit additions, one per lane</b> q for quad word.</p></details></li><li><div class="q">Why is movdqu used instead of movdqa for arrays from anywhere?</div><ul><li>movdqa requires a 16-byte-aligned address</li><li>movdqu is faster</li><li>movdqa only loads</li></ul><details><summary>Show the answer</summary><p><b>movdqa requires a 16-byte-aligned address</b> u for unaligned.</p></details></li><li><div class="q">200 + 100 with paddusb gives...</div><ul><li>255</li><li>44</li><li>300</li></ul><details><summary>Show the answer</summary><p><b>255</b> Unsigned saturation stops at the maximum.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-optimisation-basics/"><span class="mono">previous</span><b>6.03 Optimisation Basics</b></a>
+      <a class="lp-next" href="../6-05-beyond-x86-arm64-and-debuggers/"><span class="mono">next</span><b>6.05 Beyond x86 ARM64 and Debuggers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/6-04-simd-many-numbers-at-once"></script>
+</body>
+</html>

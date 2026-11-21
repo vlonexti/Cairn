@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Polish and Packaging · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/11-08-polish-and-packaging/">
+  <meta name="description" content="The difference between a working prototype and a game people enjoy is polish : feedback for every action, a little motion, sound, and no rough edges. The…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Polish and Packaging · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The difference between a working prototype and a game people enjoy is polish : feedback for every action, a little motion, sound, and no rough edges. The…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/11-08-polish-and-packaging/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Polish and Packaging · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Polish and Packaging · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The difference between a working prototype and a game people enjoy is polish : feedback for every action, a little motion, sound, and no rough edges. The…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Building a Small Game</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Polish and Packaging</h1>
+      <div class="readout lp-readout"><span>lesson <b>11.08</b></span><span>8 of 8 in milestone 11</span><span>5 min</span></div>
+      <p class="lp-summary">The difference between a working prototype and a game people enjoy is <strong>polish</strong>: feedback for every action, a little motion, sound, and no rough edges. The difference between a game on your machine and one on a friend&#39;s is <strong>packaging</strong>: a Release build with everything it needs, version information, and a test on a clean system. This lesson finishes Delve.</p>
+      <div class="prose">
+<h2>Feedback for every action</h2>
+<p>Players should never wonder whether something happened. Each action gets a visible, and ideally audible, response:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Feedback</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Hitting a monster</td>
+<td>A brief flash on the monster, a number floating up, a short sound</td>
+</tr>
+<tr>
+<td>Being hit</td>
+<td>A red flash at the screen&#39;s edges, a small <strong>screen shake</strong></td>
+</tr>
+<tr>
+<td>Missing</td>
+<td>&quot;miss&quot; floating up, a different sound</td>
+</tr>
+<tr>
+<td>Picking up an item</td>
+<td>The item slides to the inventory bar; the slot pulses</td>
+</tr>
+<tr>
+<td>Low health</td>
+<td>The health bar pulses; a heartbeat sound</td>
+</tr>
+<tr>
+<td>Bumping a wall</td>
+<td>A tiny nudge of the player sprite towards the wall and back</td>
+</tr>
+</tbody></table>
+</div>
+<p>All of these are <strong>presentation only</strong>: they live in the renderer and never change game state (lesson 10.01), so they cannot introduce gameplay bugs.</p>
+<p>Screen shake, for example, is a random offset added to the camera that decays over a fraction of a second:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// Called when the player is hit: strength in pixels.</span>
+<span class="tk-k">void</span> <span class="tk-f">addShake</span>(<span class="tk-k">float</span> strength) { m_shake = std::<span class="tk-f">min</span>(m_shake + strength, <span class="tk-n">12.0f</span>); }
+
+<span class="tk-c">// Each frame, in the renderer:</span>
+<span class="tk-k">const</span> <span class="tk-k">float</span> ox{ m_shake * rng.<span class="tk-f">unit</span>() * <span class="tk-n">2</span> - m_shake };
+<span class="tk-k">const</span> <span class="tk-k">float</span> oy{ m_shake * rng.<span class="tk-f">unit</span>() * <span class="tk-n">2</span> - m_shake };
+<span class="tk-f">drawWorld</span>(cameraX + ox, cameraY + oy);
+m_shake = std::<span class="tk-f">max</span>(<span class="tk-n">0.0f</span>, m_shake - <span class="tk-n">40.0f</span> * frameTime);   <span class="tk-c">// fades in about a quarter of a second</span></code></pre></div>
+<p>Use a separate random generator for presentation, so effects do not consume numbers from the gameplay generator and change the game&#39;s outcomes (lesson 11.05).</p>
+<h2>Sound</h2>
+<p>SDL_mixer (<code>vcpkg add port sdl2-mixer</code>) plays sound effects and music in a few lines. Keep sounds short and quiet by default, give every sound a slight random pitch or choose between two or three variants so repetition does not grate, and give players volume settings for effects and music separately.</p>
+<h2>Settings and accessibility</h2>
+<p>A settings screen (saved like lesson 10.07&#39;s files, in AppData) should cover at least: key bindings (lesson 10.05), volume, window or full screen, screen shake on/off, and text size. Turning off screen shake and flashes matters to players sensitive to motion, and costs one boolean.</p>
+<h2>The Release build</h2>
+<p>Lesson 4.10&#39;s checklist, applied:</p>
+<ol>
+<li>Build <strong>Release x64</strong> with <code>/Zi</code> and linker <code>/DEBUG</code>, and <strong>archive the PDB</strong> with the version number (lesson 8.02): crash dumps from players are useless without it.</li>
+<li>Define <code>DELVE_SHIPPING</code> to remove debug commands (lesson 11.07).</li>
+<li>Install the crash handler that writes a minidump and the recent log (lesson 8.04).</li>
+<li>Add <strong>version information</strong>: a <code>VERSIONINFO</code> resource (Add → Resource → Version) with the product name and version, shown in the file&#39;s Properties dialog and recorded in crash dumps.</li>
+<li>Turn on all the security options that are on by default (ASLR, DEP, <code>/GS</code>, control-flow guard) and leave them on.</li>
+</ol>
+<h2>Packaging</h2>
+<p>A Delve release is a folder:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Delve-1.0.0\
+    Delve.exe
+    SDL2.dll              from vcpkg_installed\x64-windows\bin
+    SDL2_mixer.dll
+    data\
+        levels\*.txt
+        items.ini  monsters.ini
+        sounds\*.wav
+    README.txt            how to play, controls, where saves are kept
+    LICENSES.txt          SDL's licence (zlib) and any others you used</code></pre></div>
+<p>Zip it, or build an installer (Inno Setup and WiX are free; MSIX for the Microsoft Store). Two details people forget:</p>
+<ul>
+<li><strong>Third-party licences.</strong> SDL&#39;s zlib licence is permissive, but you must keep its notice; check every library you ship.</li>
+<li><strong>The Visual C++ runtime.</strong> If you build with <code>/MD</code> (the default), players need the Visual C++ Redistributable. Either ship its installer, or build with <code>/MT</code> so the runtime is inside your exe (lesson 4.04).</li>
+</ul>
+<h2>Test on a clean machine</h2>
+<p>The game works on your PC because everything it needs is already installed there. Test the zip on a <strong>clean</strong> Windows installation, ideally a virtual machine (lesson 15.08 sets one up) restored to a fresh snapshot each time: missing DLLs, a missing runtime, paths that assume your folders, and writing next to the exe (lesson 5.04) all show up immediately.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Not keeping the PDB of the build you released</span></div><div class="callout-body"><p>Every crash report from that version becomes unreadable.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Testing only on the development machine</span></div><div class="callout-body"><p>Use a clean virtual machine.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Polish that changes the game</span></div><div class="callout-body"><p>Effects belong in the renderer, with their own random numbers.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why should screen shake use a different random generator from the gameplay?</div><ul><li>So turning effects on or off cannot change the game&#39;s random outcomes</li><li>Because shake needs better random numbers</li><li>To make it faster</li></ul><details><summary>Show the answer</summary><p><b>So turning effects on or off cannot change the game&#39;s random outcomes</b> Presentation must never affect game state.</p></details></li><li><div class="q">Why test the packaged game on a clean virtual machine?</div><ul><li>It reveals missing DLLs, runtimes and assumptions about your own machine&#39;s setup</li><li>Games run faster in virtual machines</li><li>To check the graphics card</li></ul><details><summary>Show the answer</summary><p><b>It reveals missing DLLs, runtimes and assumptions about your own machine&#39;s setup</b> Your development PC hides missing dependencies.</p></details></li><li><div class="q">What must you keep for every build you release?</div><ul><li>Its PDB files, to read crash dumps from that version</li><li>The obj files</li><li>The vcpkg cache</li></ul><details><summary>Show the answer</summary><p><b>Its PDB files, to read crash dumps from that version</b> Symbols match exactly one build.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/11.08">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/11.08">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../11-07-a-debug-console/"><span class="mono">previous</span><b>11.07 A Debug Console</b></a>
+      <a class="lp-next" href="../12-01-looking-at-another-process-with-documented-apis/"><span class="mono">next</span><b>12.01 Looking at Another Process with Documented APIs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/11-08-polish-and-packaging"></script>
+</body>
+</html>

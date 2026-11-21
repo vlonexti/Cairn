@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Static Libraries · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/4-04-static-libraries/">
+  <meta name="description" content="A static library (.lib) is a bundle of object files. Linking it into a program copies in the parts the program uses, so the result is one self-contained…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Static Libraries · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A static library (.lib) is a bundle of object files. Linking it into a program copies in the parts the program uses, so the result is one self-contained…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/4-04-static-libraries/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Static Libraries · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Static Libraries · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A static library (.lib) is a bundle of object files. Linking it into a program copies in the parts the program uses, so the result is one self-contained…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Visual Studio and the Build Pipeline</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Static Libraries</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 10 in milestone 4</span><span>6 min</span></div>
+      <p class="lp-summary">A <strong>static library</strong> (<code>.lib</code>) is a bundle of object files. Linking it into a program copies in the parts the program uses, so the result is one self-contained <code>.exe</code>. This lesson builds the course&#39;s <code>engine</code> library, shows how the linker pulls code out of it, and covers the settings that must match between a library and the program that uses it.</p>
+      <div class="prose">
+<h2>A bundle of object files</h2>
+<p>When a project&#39;s <strong>Configuration Type</strong> is <strong>Static library (.lib)</strong>, its build stops after compiling: instead of linking the object files into an executable, the <strong>librarian</strong> (<code>lib.exe</code>) packs them into one <code>.lib</code> file with an index of the symbols each defines.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;math.cpp&quot;] --&gt; AO[&quot;math.obj&quot;]
+    B[&quot;tilemap.cpp&quot;] --&gt; BO[&quot;tilemap.obj&quot;]
+    C[&quot;random.cpp&quot;] --&gt; CO[&quot;random.obj&quot;]
+    AO --&gt; L[&quot;lib.exe&quot;]
+    BO --&gt; L
+    CO --&gt; L
+    L --&gt; LIB[&quot;engine.lib&lt;br/&gt;(index + 3 object files)&quot;]</pre></div>
+<p>When a program links against <code>engine.lib</code>, the linker looks up each unresolved symbol in the index and copies in <strong>only the object files that define what is needed</strong>. If the game never calls anything in <code>random.obj</code>, none of it ends up in the <code>.exe</code>.</p>
+<h2>Building the engine library</h2>
+<p>In the course solution from lesson 4.01, <code>engine</code> is already a static library project. Give it some real code:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// engine/vec2.h</span>
+<span class="tk-p">#pragma</span> once
+
+<span class="tk-k">struct</span> <span class="tk-t">Vec2</span>
+{
+    <span class="tk-k">float</span> x{ <span class="tk-n">0</span> };
+    <span class="tk-k">float</span> y{ <span class="tk-n">0</span> };
+};
+
+<span class="tk-t">Vec2</span> <span class="tk-k">operator</span>+(<span class="tk-t">Vec2</span> a, <span class="tk-t">Vec2</span> b);
+<span class="tk-t">Vec2</span> <span class="tk-k">operator</span>*(<span class="tk-t">Vec2</span> v, <span class="tk-k">float</span> s);
+<span class="tk-k">float</span> <span class="tk-f">length</span>(<span class="tk-t">Vec2</span> v);</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// engine/vec2.cpp</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;vec2.h&quot;</span>
+<span class="tk-p">#include &lt;cmath&gt;</span>
+
+<span class="tk-t">Vec2</span> <span class="tk-k">operator</span>+(<span class="tk-t">Vec2</span> a, <span class="tk-t">Vec2</span> b) { <span class="tk-k">return</span> { a.x + b.x, a.y + b.y }; }
+<span class="tk-t">Vec2</span> <span class="tk-k">operator</span>*(<span class="tk-t">Vec2</span> v, <span class="tk-k">float</span> s) { <span class="tk-k">return</span> { v.x * s, v.y * s }; }
+<span class="tk-k">float</span> <span class="tk-f">length</span>(<span class="tk-t">Vec2</span> v) { <span class="tk-k">return</span> std::<span class="tk-f">sqrt</span>(v.x * v.x + v.y * v.y); }</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// game/main.cpp</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;vec2.h&quot;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Vec2</span> position{ <span class="tk-n">1</span>, <span class="tk-n">2</span> };
+    <span class="tk-t">Vec2</span> velocity{ <span class="tk-n">3</span>, <span class="tk-n">4</span> };
+    position = position + velocity * <span class="tk-n">0.5f</span>;
+    std::cout &lt;&lt; position.x &lt;&lt; <span class="tk-s">&quot;, &quot;</span> &lt;&lt; position.y &lt;&lt; <span class="tk-s">&quot;  speed &quot;</span> &lt;&lt; <span class="tk-f">length</span>(velocity) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>With the project reference and include directory from lesson 4.01 in place, building the solution builds <code>engine.lib</code> first, then compiles <code>main.cpp</code> and links it with <code>engine.lib</code>. The output prints <code>2.5, 4  speed 5</code>.</p>
+<p>Without a project reference (for example, a library someone else built), you tell the linker yourself:</p>
+<ul>
+<li><strong>Linker → General → Additional Library Directories</strong>: the folder containing the <code>.lib</code>;</li>
+<li><strong>Linker → Input → Additional Dependencies</strong>: the file name, <code>engine.lib</code>;</li>
+<li>or, in code, <code>#pragma comment(lib, &quot;engine.lib&quot;)</code>.</li>
+</ul>
+<h2>Settings that must match</h2>
+<p>Object files compiled with different settings may not work together, and the linker catches some (not all) of these mismatches:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Must match because</th>
+<th>Mismatch error</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Platform (x64 / x86)</td>
+<td>64-bit and 32-bit code cannot be mixed</td>
+<td>LNK1112: module machine type conflicts</td>
+</tr>
+<tr>
+<td>Runtime library (<code>/MD</code>, <code>/MDd</code>, <code>/MT</code>, <code>/MTd</code>)</td>
+<td>Each object file asks for a particular C runtime; they must agree</td>
+<td>LNK2038: mismatch detected for &#39;RuntimeLibrary&#39;</td>
+</tr>
+<tr>
+<td>Debug / Release (<code>_ITERATOR_DEBUG_LEVEL</code>)</td>
+<td>Standard containers have different layouts in Debug and Release</td>
+<td>LNK2038: mismatch detected for &#39;_ITERATOR_DEBUG_LEVEL&#39;</td>
+</tr>
+<tr>
+<td>C++ standard, struct packing, other defines that change layout</td>
+<td>A class laid out differently in two files is a silent ODR violation</td>
+<td>Usually none: just strange crashes</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <code>LNK2038</code> checks exist because these mismatches used to cause baffling crashes: a <code>std::vector</code> passed from a Release library to Debug code has a different layout on each side. So <strong>build every library in the same configuration as the program</strong>. A project reference does this automatically; a pre-built library usually ships in both Debug and Release forms for this reason.</p>
+<p>The <strong>runtime library</strong> choice deserves a note. <code>/MD</code> links the C and C++ runtime as DLLs (the user needs the Visual C++ Redistributable installed); <code>/MT</code> copies the runtime into your executable. Either is fine for this course; just be consistent across every project in the solution.</p>
+<h2>Static libraries versus DLLs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Static library</th>
+<th>DLL (next lesson)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>When code is joined</td>
+<td>At link time, copied into the <code>.exe</code></td>
+<td>At run time, loaded from a separate file</td>
+</tr>
+<tr>
+<td>Files to ship</td>
+<td>Just the <code>.exe</code></td>
+<td>The <code>.exe</code> and every <code>.dll</code></td>
+</tr>
+<tr>
+<td>Updating the library</td>
+<td>Rebuild and relink the program</td>
+<td>Replace the <code>.dll</code></td>
+</tr>
+<tr>
+<td>Loading code chosen at run time (plugins)</td>
+<td>Not possible</td>
+<td>Possible</td>
+</tr>
+<tr>
+<td>Sharing between programs</td>
+<td>Each program has its own copy</td>
+<td>One file can be shared</td>
+</tr>
+</tbody></table>
+</div>
+<p>The course uses a static library for the engine, which the game always needs, and a DLL for plugins, which the game chooses to load.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Linking a Debug library into a Release program</span></div><div class="callout-body"><p><code>LNK2038</code> warns you. Use project references, or link the matching build of the library.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Expecting a static library to work without its headers</span></div><div class="callout-body"><p>The <code>.lib</code> holds code; your program still needs the declarations from its headers to call it.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Global objects in a static library that nothing references</span></div><div class="callout-body"><p>The linker only pulls in object files that define something needed. A self-registering global in an otherwise unreferenced <code>.obj</code> is silently left out.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does a static library contain?</div><ul><li>Object files, plus an index of the symbols they define</li><li>A finished program</li><li>Only header files</li></ul><details><summary>Show the answer</summary><p><b>Object files, plus an index of the symbols they define</b> It is an archive of compiled code, ready to be linked.</p></details></li><li><div class="q">The game uses only <code>length</code> from <code>engine.lib</code>. What gets copied into <code>game.exe</code>?</div><ul><li>The object file that defines <code>length</code> (and anything it needs)</li><li>The whole library</li><li>Nothing; it is loaded at run time</li></ul><details><summary>Show the answer</summary><p><b>The object file that defines <code>length</code> (and anything it needs)</b> The linker pulls in object files on demand, by symbol.</p></details></li><li><div class="q"><code>LNK2038: mismatch detected for &#39;_ITERATOR_DEBUG_LEVEL&#39;</code>. What does it mean?</div><ul><li>A Debug-built library is being linked with Release-built code, or the other way round</li><li>The library is 32-bit</li><li>A function is missing</li></ul><details><summary>Show the answer</summary><p><b>A Debug-built library is being linked with Release-built code, or the other way round</b> Debug and Release standard containers have different layouts; mixing them is unsafe.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-reading-compiler-and-linker-errors/"><span class="mono">previous</span><b>4.03 Reading Compiler and Linker Errors</b></a>
+      <a class="lp-next" href="../4-05-dynamic-libraries-building-and-loading-your-own-dll/"><span class="mono">next</span><b>4.05 Dynamic Libraries: Building and Loading Your Own DLL</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/4-04-static-libraries"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Arrays and Array Methods · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/2-02-arrays-and-array-methods/">
+  <meta name="description" content="Creating and changing arrays, and the methods that make array code short and clear - map, filter, reduce, find, some and every, includes, sort with a compare…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Arrays and Array Methods · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Creating and changing arrays, and the methods that make array code short and clear - map, filter, reduce, find, some and every, includes, sort with a compare…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/2-02-arrays-and-array-methods/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Arrays and Array Methods · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Arrays and Array Methods · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Creating and changing arrays, and the methods that make array code short and clear - map, filter, reduce, find, some and every, includes, sort with a compare…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Functions and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Arrays and Array Methods</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Creating and changing arrays, and the methods that make array code short and clear - map, filter, reduce, find, some and every, includes, sort with a compare function, slice versus splice, flat and flatMap, and which methods change the array.</p>
+      <div class="prose">
+<h2>Basics</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> fruits = [<span class="tk-s">&quot;apple&quot;</span>, <span class="tk-s">&quot;pear&quot;</span>];
+fruits.<span class="tk-f">push</span>(<span class="tk-s">&quot;plum&quot;</span>);             <span class="tk-c">// add at the end</span>
+fruits.<span class="tk-f">unshift</span>(<span class="tk-s">&quot;fig&quot;</span>);           <span class="tk-c">// add at the start</span>
+<span class="tk-k">const</span> last = fruits.<span class="tk-f">pop</span>();       <span class="tk-c">// remove from the end</span>
+console.<span class="tk-f">log</span>(fruits, last, fruits.length, fruits.<span class="tk-f">includes</span>(<span class="tk-s">&quot;pear&quot;</span>), fruits.<span class="tk-f">indexOf</span>(<span class="tk-s">&quot;pear&quot;</span>));</code></pre></div>
+<h2>Transforming without loops</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>map(f)</code></td>
+<td>A new array of <code>f(item)</code> for each item</td>
+</tr>
+<tr>
+<td><code>filter(f)</code></td>
+<td>A new array of the items where <code>f(item)</code> is truthy</td>
+</tr>
+<tr>
+<td><code>reduce(f, start)</code></td>
+<td>One value built up from all items</td>
+</tr>
+<tr>
+<td><code>find(f)</code> / <code>findIndex(f)</code></td>
+<td>The first matching item / its index (<code>undefined</code> / <code>-1</code> if none)</td>
+</tr>
+<tr>
+<td><code>some(f)</code> / <code>every(f)</code></td>
+<td>Whether any / all items match</td>
+</tr>
+<tr>
+<td><code>forEach(f)</code></td>
+<td>Nothing: just runs <code>f</code> on each item</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> orders = [
+  { item: <span class="tk-s">&quot;tea&quot;</span>, qty: <span class="tk-n">2</span>, price: <span class="tk-n">2.5</span> },
+  { item: <span class="tk-s">&quot;cake&quot;</span>, qty: <span class="tk-n">1</span>, price: <span class="tk-n">4</span> },
+  { item: <span class="tk-s">&quot;mug&quot;</span>, qty: <span class="tk-n">3</span>, price: <span class="tk-n">8</span> },
+];
+<span class="tk-k">const</span> totals = orders.<span class="tk-f">map</span>(o =&gt; o.qty * o.price);
+<span class="tk-k">const</span> big = orders.<span class="tk-f">filter</span>(o =&gt; o.qty * o.price &gt; <span class="tk-n">5</span>).<span class="tk-f">map</span>(o =&gt; o.item);
+<span class="tk-k">const</span> sum = totals.<span class="tk-f">reduce</span>((acc, t) =&gt; acc + t, <span class="tk-n">0</span>);
+console.<span class="tk-f">log</span>(totals, big, sum, orders.<span class="tk-f">find</span>(o =&gt; o.item === <span class="tk-s">&quot;cake&quot;</span>), orders.<span class="tk-f">some</span>(o =&gt; o.qty &gt; <span class="tk-n">2</span>));</code></pre></div>
+<p>Chaining <code>filter</code> then <code>map</code> then <code>reduce</code> reads like a description of the result. The callbacks also receive the index as a second argument: <code>map((item, i) =&gt; ...)</code>.</p>
+<h2>Sorting</h2>
+<p><code>sort()</code> <strong>changes</strong> the array and, without arguments, compares items <strong>as strings</strong>: <code>[10, 9, 1].sort()</code> gives <code>[1, 10, 9]</code>. Always give numbers a compare function, which returns a negative number when <code>a</code> comes first:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> nums = [<span class="tk-n">10</span>, <span class="tk-n">9</span>, <span class="tk-n">1</span>, <span class="tk-n">100</span>];
+console.<span class="tk-f">log</span>([...nums].<span class="tk-f">sort</span>((a, b) =&gt; a - b));          <span class="tk-c">// ascending</span>
+<span class="tk-k">const</span> people = [{ name: <span class="tk-s">&quot;bob&quot;</span>, age: <span class="tk-n">30</span> }, { name: <span class="tk-s">&quot;Ada&quot;</span>, age: <span class="tk-n">36</span> }, { name: <span class="tk-s">&quot;carol&quot;</span>, age: <span class="tk-n">30</span> }];
+people.<span class="tk-f">sort</span>((a, b) =&gt; a.age - b.age || a.name.<span class="tk-f">localeCompare</span>(b.name));
+console.<span class="tk-f">log</span>(people.<span class="tk-f">map</span>(p =&gt; p.name));                  <span class="tk-c">// by age, then name</span></code></pre></div>
+<p><code>a.localeCompare(b)</code> compares text the way people expect. <code>||</code> chains criteria: if the first difference is 0, the second decides. <code>toSorted()</code> returns a sorted <strong>copy</strong> instead of changing the array.</p>
+<h2>Changing versus copying</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Changes the array</th>
+<th>Returns a new array</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code></td>
+<td><code>map</code>, <code>filter</code>, <code>concat</code></td>
+</tr>
+<tr>
+<td><code>splice(start, deleteCount, ...items)</code></td>
+<td><code>slice(start, end)</code></td>
+</tr>
+<tr>
+<td><code>sort</code>, <code>reverse</code>, <code>fill</code></td>
+<td><code>toSorted</code>, <code>toReversed</code>, <code>with(i, value)</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Copy an array with <code>[...arr]</code> or <code>arr.slice()</code>. Code that does not change its inputs is easier to reason about: prefer the right-hand column.</p>
+<h2>Nested arrays</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code>console.<span class="tk-f">log</span>([[<span class="tk-n">1</span>, <span class="tk-n">2</span>], [<span class="tk-n">3</span>], []].<span class="tk-f">flat</span>());                        <span class="tk-c">// [1, 2, 3]</span>
+console.<span class="tk-f">log</span>([<span class="tk-s">&quot;a b&quot;</span>, <span class="tk-s">&quot;c&quot;</span>].<span class="tk-f">flatMap</span>(s =&gt; s.<span class="tk-f">split</span>(<span class="tk-s">&quot; &quot;</span>)));         <span class="tk-c">// [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]</span>
+<span class="tk-k">const</span> grid = Array.<span class="tk-k">from</span>({ length: <span class="tk-n">2</span> }, () =&gt; <span class="tk-f">Array</span>(<span class="tk-n">3</span>).<span class="tk-f">fill</span>(<span class="tk-n">0</span>));   <span class="tk-c">// 2 separate rows of 3 zeros</span></code></pre></div>
+<p><code>Array.from({ length: n }, (_, i) =&gt; ...)</code> builds an array of n computed items.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-functions/"><span class="mono">previous</span><b>2.01 Functions</b></a>
+      <a class="lp-next" href="../2-03-objects-and-destructuring/"><span class="mono">next</span><b>2.03 Objects and Destructuring</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/2-02-arrays-and-array-methods"></script>
+</body>
+</html>

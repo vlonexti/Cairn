@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A TCP Client and Server · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/2-02-a-tcp-client-and-server/">
+  <meta name="description" content="The server side - bind, listen and accept - a complete echo server and client, sending everything with a loop, reading until a whole message has arrived,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A TCP Client and Server · Networking · Xenon">
+  <meta property="og:description" content="The server side - bind, listen and accept - a complete echo server and client, sending everything with a loop, reading until a whole message has arrived,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/2-02-a-tcp-client-and-server/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A TCP Client and Server · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A TCP Client and Server · Networking · Xenon">
+  <meta name="twitter:description" content="The server side - bind, listen and accept - a complete echo server and client, sending everything with a loop, reading until a whole message has arrived,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Sockets</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A TCP Client and Server</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The server side - bind, listen and accept - a complete echo server and client, sending everything with a loop, reading until a whole message has arrived, closing gracefully with shutdown, and the TIME_WAIT state that sometimes stops a server restarting.</p>
+      <div class="prose">
+<h2>The server&#39;s calls</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>SOCKET listener{ <span class="tk-f">socket</span>(AF_INET, SOCK_STREAM, IPPROTO_TCP) };
+
+sockaddr_in addr{};
+addr.sin_family = AF_INET;
+addr.sin_addr.s_addr = <span class="tk-f">htonl</span>(INADDR_ANY);        <span class="tk-c">// every interface (127.0.0.1 for local only)</span>
+addr.sin_port = <span class="tk-f">htons</span>(<span class="tk-n">7777</span>);                     <span class="tk-c">// htons: byte order, lesson 2.03</span>
+<span class="tk-k">if</span> (<span class="tk-f">bind</span>(listener, <span class="tk-k">reinterpret_cast</span>&lt;sockaddr*&gt;(&amp;addr), <span class="tk-k">sizeof</span>(addr)) == SOCKET_ERROR) { <span class="tk-c">/* port in use? */</span> }
+
+<span class="tk-f">listen</span>(listener, SOMAXCONN);                     <span class="tk-c">// start accepting; queue pending connections</span>
+
+<span class="tk-k">for</span> (;;)
+{
+    sockaddr_in from{};
+    <span class="tk-k">int</span> fromLength{ <span class="tk-k">sizeof</span>(from) };
+    SOCKET client{ <span class="tk-f">accept</span>(listener, <span class="tk-k">reinterpret_cast</span>&lt;sockaddr*&gt;(&amp;from), &amp;fromLength) };
+    <span class="tk-k">if</span> (client == INVALID_SOCKET) <span class="tk-k">break</span>;
+    <span class="tk-f">serve</span>(client);                               <span class="tk-c">// one client at a time, for now</span>
+    <span class="tk-f">closesocket</span>(client);
+}</code></pre></div>
+<ul>
+<li><code>bind</code> claims an address and port.</li>
+<li><code>listen</code> turns the socket into a <strong>listening</strong> socket. The operating system completes handshakes on its own and queues the new connections.</li>
+<li><code>accept</code> takes the next connection from the queue and returns a <strong>new socket</strong> for it. The listening socket keeps listening.</li>
+</ul>
+<p>This server handles one client at a time; lesson 2.04 fixes that.</p>
+<h2>Sending everything</h2>
+<p><code>send</code> may accept fewer bytes than you gave it, so real code always loops:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">sendAll</span>(SOCKET s, <span class="tk-k">const</span> <span class="tk-k">char</span>* data, <span class="tk-k">int</span> length)
+{
+    <span class="tk-k">while</span> (length &gt; <span class="tk-n">0</span>)
+    {
+        <span class="tk-k">const</span> <span class="tk-k">int</span> sent{ <span class="tk-f">send</span>(s, data, length, <span class="tk-n">0</span>) };
+        <span class="tk-k">if</span> (sent == SOCKET_ERROR) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+        data += sent;
+        length -= sent;
+    }
+    <span class="tk-k">return</span> <span class="tk-k">true</span>;
+}</code></pre></div>
+<h2>Receiving whole messages</h2>
+<p>Likewise, one <code>recv</code> returns whatever has arrived. A line-based protocol reads into a buffer and takes out complete lines:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::string buffer;
+<span class="tk-k">char</span> chunk[<span class="tk-n">4096</span>];
+<span class="tk-k">for</span> (;;)
+{
+    <span class="tk-k">const</span> <span class="tk-k">int</span> got{ <span class="tk-f">recv</span>(s, chunk, <span class="tk-k">sizeof</span>(chunk), <span class="tk-n">0</span>) };
+    <span class="tk-k">if</span> (got &lt;= <span class="tk-n">0</span>) <span class="tk-k">break</span>;                                    <span class="tk-c">// closed (0) or error</span>
+    buffer.<span class="tk-f">append</span>(chunk, <span class="tk-k">static_cast</span>&lt;std::size_t&gt;(got));
+    <span class="tk-k">for</span> (std::size_t end{ buffer.<span class="tk-f">find</span>(<span class="tk-s">'\n'</span>) }; end != std::string::npos; end = buffer.<span class="tk-f">find</span>(<span class="tk-s">'\n'</span>))
+    {
+        <span class="tk-f">handleLine</span>(buffer.<span class="tk-f">substr</span>(<span class="tk-n">0</span>, end));
+        buffer.<span class="tk-f">erase</span>(<span class="tk-n">0</span>, end + <span class="tk-n">1</span>);
+    }
+}</code></pre></div>
+<p>The same shape with a length prefix instead of <code>\n</code> handles binary messages. A test that sends one short message over loopback will seem to work without the loop, because small messages usually arrive in one piece locally; across a real network, they do not.</p>
+<h2>Closing gracefully</h2>
+<p>Closing a TCP connection properly is a small dance:</p>
+<ol>
+<li>The side that has finished sending calls <code>shutdown(s, SD_SEND)</code>: a FIN goes out.</li>
+<li>The other side&#39;s <code>recv</code> returns 0 after it has read everything. It sends whatever it still has, then shuts down its own sending.</li>
+<li>The first side&#39;s <code>recv</code> returns 0. Both call <code>closesocket</code>.</li>
+</ol>
+<p>Calling <code>closesocket</code> while data from the peer is still unread makes Windows send a <strong>reset</strong> instead, and the peer may lose the last data it sent you. A client that sends a request and then <code>shutdown(SD_SEND)</code> to say &quot;that is all&quot; (as many simple protocols do) gets the full reply reliably.</p>
+<h2>TIME_WAIT</h2>
+<p>After a connection closes, the side that closed <strong>first</strong> keeps a record of it for a while (up to a few minutes) in the <strong>TIME_WAIT</strong> state, so that stray delayed packets of the old connection are not mistaken for a new one. A consequence: a server that is stopped and immediately restarted can fail to <code>bind</code> its port with <code>WSAEADDRINUSE</code>, because old connections are still in TIME_WAIT.</p>
+<p>On Windows, <code>SO_REUSEADDR</code> has dangerous semantics (it allows another program to bind the same port too); use <code>SO_EXCLUSIVEADDRUSE</code> to protect a server&#39;s port, and design restarts to tolerate a short wait.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-the-socket-api/"><span class="mono">previous</span><b>2.01 The Socket API</b></a>
+      <a class="lp-next" href="../2-03-byte-order-and-packet-layouts/"><span class="mono">next</span><b>2.03 Byte Order and Packet Layouts</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/2-02-a-tcp-client-and-server"></script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Interfaces · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/3-04-interfaces/">
+  <meta name="description" content="Interfaces as contracts, implementing several interfaces, programming against interfaces instead of concrete classes, the built-in IComparable, IEquatable…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Interfaces · C# · Xenon">
+  <meta property="og:description" content="Interfaces as contracts, implementing several interfaces, programming against interfaces instead of concrete classes, the built-in IComparable, IEquatable…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/3-04-interfaces/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Interfaces · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Interfaces · C# · Xenon">
+  <meta name="twitter:description" content="Interfaces as contracts, implementing several interfaces, programming against interfaces instead of concrete classes, the built-in IComparable, IEquatable…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Object-Oriented C#</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Interfaces</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.04</b></span><span>4 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Interfaces as contracts, implementing several interfaces, programming against interfaces instead of concrete classes, the built-in IComparable, IEquatable and IEnumerable, default interface methods, explicit implementation, and using interfaces to swap implementations and test code.</p>
+      <div class="prose">
+<h2>A contract</h2>
+<p>An <strong>interface</strong> lists members that a type promises to have, without saying how. A class or struct <strong>implements</strong> it by providing them all:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code>INotifier[] channels = [<span class="tk-k">new</span> <span class="tk-f">EmailNotifier</span>(<span class="tk-s">&quot;ada@example.com&quot;</span>), <span class="tk-k">new</span> <span class="tk-f">SmsNotifier</span>(<span class="tk-s">&quot;+3161234&quot;</span>)];
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> c <span class="tk-k">in</span> channels) c.<span class="tk-f">Send</span>(<span class="tk-s">&quot;Your order has shipped&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(channels.<span class="tk-f">Count</span>(c =&gt; c.<span class="tk-t">IsAvailable</span>));
+
+<span class="tk-k">public</span> <span class="tk-k">interface</span> INotifier
+{
+    <span class="tk-k">bool</span> <span class="tk-t">IsAvailable</span> { <span class="tk-k">get</span>; }
+    <span class="tk-k">void</span> <span class="tk-f">Send</span>(<span class="tk-k">string</span> message);
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">EmailNotifier</span>(<span class="tk-k">string</span> address) : INotifier
+{
+    <span class="tk-k">public</span> <span class="tk-k">bool</span> <span class="tk-t">IsAvailable</span> =&gt; address.<span class="tk-f">Contains</span>(<span class="tk-s">'@'</span>);
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Send</span>(<span class="tk-k">string</span> message) =&gt; <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;email to {address}: {message}&quot;</span>);
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">SmsNotifier</span>(<span class="tk-k">string</span> number) : INotifier
+{
+    <span class="tk-k">public</span> <span class="tk-k">bool</span> <span class="tk-t">IsAvailable</span> =&gt; number.<span class="tk-f">StartsWith</span>(<span class="tk-s">'+'</span>);
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Send</span>(<span class="tk-k">string</span> message) =&gt; <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;sms to {number}: {message[..Math.Min(20, message.Length)]}&quot;</span>);
+}</code></pre></div>
+<p>Interface names start with <code>I</code> by convention. A class can inherit from <strong>one</strong> class but implement <strong>any number</strong> of interfaces: <code>class Report : Document, IPrintable, IExportable</code>.</p>
+<h2>Program against interfaces</h2>
+<p>Code that takes an interface works with every implementation, including ones that do not exist yet, and including fakes in tests:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> clock = <span class="tk-k">new</span> <span class="tk-f">FixedClock</span>(<span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">3</span>, <span class="tk-n">14</span>, <span class="tk-n">9</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>));
+<span class="tk-k">var</span> greeter = <span class="tk-k">new</span> <span class="tk-f">Greeter</span>(clock);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(greeter.<span class="tk-f">Greeting</span>(<span class="tk-s">&quot;Ada&quot;</span>));
+
+<span class="tk-k">public</span> <span class="tk-k">interface</span> IClock { <span class="tk-t">DateTime</span> <span class="tk-t">Now</span> { <span class="tk-k">get</span>; } }
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">SystemClock</span> : IClock { <span class="tk-k">public</span> <span class="tk-t">DateTime</span> <span class="tk-t">Now</span> =&gt; <span class="tk-t">DateTime</span>.<span class="tk-t">Now</span>; }
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">FixedClock</span>(<span class="tk-t">DateTime</span> time) : IClock { <span class="tk-k">public</span> <span class="tk-t">DateTime</span> <span class="tk-t">Now</span> =&gt; time; }
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">Greeter</span>(IClock clock)
+{
+    <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-f">Greeting</span>(<span class="tk-k">string</span> name) =&gt; clock.<span class="tk-t">Now</span>.<span class="tk-t">Hour</span> <span class="tk-k">switch</span>
+    {
+        &lt; <span class="tk-n">12</span> =&gt; <span class="tk-s">$&quot;Good morning, {name}&quot;</span>,
+        &lt; <span class="tk-n">18</span> =&gt; <span class="tk-s">$&quot;Good afternoon, {name}&quot;</span>,
+        _ =&gt; <span class="tk-s">$&quot;Good evening, {name}&quot;</span>,
+    };
+}</code></pre></div>
+<p><code>Greeter</code> does not care where the time comes from. The real program passes a <code>SystemClock</code>; a test passes a <code>FixedClock</code> and gets the same answer every time. This is the idea behind <strong>dependency injection</strong> (lesson 6.03).</p>
+<p>Accept the most general type you need: a method that only loops over items should take <code>IEnumerable&lt;T&gt;</code>, not <code>List&lt;T&gt;</code>; one that needs indexing takes <code>IReadOnlyList&lt;T&gt;</code>.</p>
+<h2>Built-in interfaces</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Interface</th>
+<th>Lets a type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>IComparable&lt;T&gt;</code></td>
+<td>Be sorted: <code>CompareTo(other)</code></td>
+</tr>
+<tr>
+<td><code>IEquatable&lt;T&gt;</code></td>
+<td>Compare for equality efficiently: <code>Equals(other)</code></td>
+</tr>
+<tr>
+<td><code>IEnumerable&lt;T&gt;</code></td>
+<td>Be looped over with <code>foreach</code> and queried with LINQ</td>
+</tr>
+<tr>
+<td><code>IDisposable</code></td>
+<td>Release resources with <code>using</code> (lesson 4.04)</td>
+</tr>
+<tr>
+<td><code>IComparer&lt;T&gt;</code>, <code>IEqualityComparer&lt;T&gt;</code></td>
+<td>Be an external ordering or equality rule</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> versions = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-t">Version3</span>&gt; { <span class="tk-k">new</span>(<span class="tk-n">1</span>, <span class="tk-n">10</span>, <span class="tk-n">0</span>), <span class="tk-k">new</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>), <span class="tk-k">new</span>(<span class="tk-n">0</span>, <span class="tk-n">9</span>, <span class="tk-n">9</span>) };
+versions.<span class="tk-f">Sort</span>();
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &lt; &quot;</span>, versions));
+
+<span class="tk-k">public</span> <span class="tk-k">record</span> <span class="tk-f">Version3</span>(<span class="tk-k">int</span> <span class="tk-t">Major</span>, <span class="tk-k">int</span> <span class="tk-t">Minor</span>, <span class="tk-k">int</span> <span class="tk-t">Patch</span>) : IComparable&lt;<span class="tk-t">Version3</span>&gt;
+{
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-f">CompareTo</span>(<span class="tk-t">Version3</span>? other)
+    {
+        <span class="tk-k">if</span> (other <span class="tk-k">is</span> <span class="tk-k">null</span>) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+        <span class="tk-k">int</span> c = <span class="tk-t">Major</span>.<span class="tk-f">CompareTo</span>(other.<span class="tk-t">Major</span>);
+        <span class="tk-k">if</span> (c != <span class="tk-n">0</span>) <span class="tk-k">return</span> c;
+        c = <span class="tk-t">Minor</span>.<span class="tk-f">CompareTo</span>(other.<span class="tk-t">Minor</span>);
+        <span class="tk-k">return</span> c != <span class="tk-n">0</span> ? c : <span class="tk-t">Patch</span>.<span class="tk-f">CompareTo</span>(other.<span class="tk-t">Patch</span>);
+    }
+    <span class="tk-k">public</span> <span class="tk-k">override</span> <span class="tk-k">string</span> <span class="tk-f">ToString</span>() =&gt; <span class="tk-s">$&quot;{Major}.{Minor}.{Patch}&quot;</span>;
+}</code></pre></div>
+<h2>Default methods and explicit implementation</h2>
+<p>An interface member can have a <strong>default implementation</strong>, which implementers may keep or replace. It lets you add members to an interface without breaking existing classes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code>ILogger log = <span class="tk-k">new</span> <span class="tk-f">ConsoleLogger</span>();
+log.<span class="tk-f">Info</span>(<span class="tk-s">&quot;started&quot;</span>);
+log.<span class="tk-f">Log</span>(<span class="tk-s">&quot;raw message&quot;</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">interface</span> ILogger
+{
+    <span class="tk-k">void</span> <span class="tk-f">Log</span>(<span class="tk-k">string</span> message);
+    <span class="tk-k">void</span> <span class="tk-f">Info</span>(<span class="tk-k">string</span> message) =&gt; <span class="tk-f">Log</span>(<span class="tk-s">$&quot;[info] {message}&quot;</span>);     <span class="tk-c">// default implementation</span>
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">ConsoleLogger</span> : ILogger
+{
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Log</span>(<span class="tk-k">string</span> message) =&gt; <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(message);
+}</code></pre></div>
+<p>Default members are called through the interface type (<code>ILogger log</code>), not through the class.</p>
+<p>When two interfaces have a member with the same name, or a member should not clutter the class&#39;s public surface, implement it <strong>explicitly</strong>: <code>void IExportable.Export() { ... }</code>. It is then only reachable through the interface.</p>
+<h2>Interfaces or abstract classes?</h2>
+<p>Use an interface to describe a <strong>capability</strong> that unrelated types can share (<code>IComparable</code>, <code>INotifier</code>). Use an abstract base class when types share <strong>code and state</strong> and form a real &quot;is a&quot; family (<code>Shape</code>). Interfaces are the more common choice in modern C#.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/3.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/3.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-03-inheritance-and-polymorphism/"><span class="mono">previous</span><b>3.03 Inheritance and Polymorphism</b></a>
+      <a class="lp-next" href="../3-05-static-members-extension-methods-and-namespaces/"><span class="mono">next</span><b>3.05 Static Members, Extension Methods and Namespaces</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/3-04-interfaces"></script>
+</body>
+</html>

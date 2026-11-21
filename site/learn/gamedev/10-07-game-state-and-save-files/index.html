@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Game State and Save Files · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/10-07-game-state-and-save-files/">
+  <meta name="description" content="Saving a game means deciding what state matters, writing it in a format that will still load after the game is updated, and never leaving a corrupted file…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Game State and Save Files · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Saving a game means deciding what state matters, writing it in a format that will still load after the game is updated, and never leaving a corrupted file…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/10-07-game-state-and-save-files/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Game State and Save Files · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Game State and Save Files · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Saving a game means deciding what state matters, writing it in a format that will still load after the game is updated, and never leaving a corrupted file…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Game Engine Architecture</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Game State and Save Files</h1>
+      <div class="readout lp-readout"><span>lesson <b>10.07</b></span><span>7 of 9 in milestone 10</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Saving a game means deciding what state matters, writing it in a format that will still load after the game is updated, and never leaving a corrupted file behind. This lesson covers what to save and what to rebuild, binary and text formats, <strong>versioning</strong> and migrating old saves, <strong>checksums</strong> that detect damage, and writing files safely.</p>
+      <div class="prose">
+<h2>What to save</h2>
+<p>A running game holds far more state than needs saving. Divide it:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Save</th>
+<th>Rebuild on load</th>
+<th>Do not save</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The player&#39;s position, stats, inventory, quest flags</td>
+<td>Anything derived: collision grids, pathfinding data, cached totals</td>
+<td>Pointers and handles (lesson 6.09): they mean nothing next time</td>
+</tr>
+<tr>
+<td>What has changed in the world: opened chests, killed bosses</td>
+<td>Static level content: it comes from the level file</td>
+<td>Rendering state, GPU resources</td>
+</tr>
+<tr>
+<td>Settings the player chose</td>
+<td></td>
+<td>Temporary effects that do not matter</td>
+</tr>
+</tbody></table>
+</div>
+<p>A useful principle: <strong>save the minimum from which everything else can be rebuilt</strong>. Small saves are fast to write, and less saved state means fewer ways for a save to be inconsistent.</p>
+<p>References between saved objects (a quest that refers to an NPC) are saved as <strong>ids</strong>, and resolved back to objects after loading, never as pointers.</p>
+<h2>Binary or text</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Binary</th>
+<th>Text (JSON, INI, your own)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Size and speed</td>
+<td>Small and fast</td>
+<td>Larger and slower to parse</td>
+</tr>
+<tr>
+<td>Readable by people</td>
+<td>No</td>
+<td>Yes: easy to inspect and debug</td>
+</tr>
+<tr>
+<td>Robust to change</td>
+<td>Needs explicit versioning</td>
+<td>Easier to add fields (unknown keys can be ignored)</td>
+</tr>
+<tr>
+<td>Editable by players</td>
+<td>Hard</td>
+<td>Easy, which may or may not be wanted</td>
+</tr>
+</tbody></table>
+</div>
+<p>Many games use text during development and binary when shipping, or text for settings and binary for saves. Whichever you choose, write fields individually in a defined byte order (lesson 2.06), never by dumping structs from memory: padding, pointers and compiler differences would all leak into the file.</p>
+<h2>A header with a version</h2>
+<p>Every save file should start with a small fixed header:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// Written field by field, little-endian, 16 bytes:</span>
+<span class="tk-c">//   magic     4 bytes   'S','A','V','E'      what kind of file this is</span>
+<span class="tk-c">//   version   4 bytes   format version        how to read the rest</span>
+<span class="tk-c">//   length    4 bytes   bytes after the header</span>
+<span class="tk-c">//   checksum  4 bytes   CRC-32 of those bytes</span></code></pre></div>
+<ul>
+<li>The <strong>magic</strong> number rejects files that are not saves at all.</li>
+<li>The <strong>version</strong> lets the game read old formats after updates.</li>
+<li>The <strong>checksum</strong> detects corruption: truncated writes, disk errors, a file damaged in transfer.</li>
+</ul>
+<h2>Versioning and migration</h2>
+<p>Games change after release, and players expect their saves to keep working. The usual approach: each format version gets a loader, and old versions are <strong>migrated</strong> step by step to the current one:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    V1[&quot;version 1 file&quot;] --&gt;|&quot;migrate 1→2:&lt;br/&gt;add 'gold', default 0&quot;| V2[&quot;version 2 data&quot;]
+    V2 --&gt;|&quot;migrate 2→3:&lt;br/&gt;split 'name' into first/last&quot;| V3[&quot;version 3 data&lt;br/&gt;(current)&quot;]</pre></div>
+<p>Each migration is small and tested once, and a save from any old version passes through all of them. Never reuse a version number for a different layout, and keep test saves from every released version so you can check old saves still load.</p>
+<h2>Checksums</h2>
+<p>A <strong>checksum</strong> is a number computed from all the bytes, stored alongside them. On loading, recompute it; if it differs, the data is damaged. <strong>CRC-32</strong> is the standard choice: it catches accidental corruption (bit flips, truncation, garbage) with very high probability, and it is cheap. The practice task implements it.</p>
+<p>A CRC detects <strong>accidents</strong>, not deliberate tampering: anyone who edits a save can recompute it. Preventing cheating in a single-player game is rarely worth it; in multiplayer, anything that matters must live on the server, not in a file on the player&#39;s machine.</p>
+<h2>Writing safely</h2>
+<p>Lesson 5.04&#39;s technique applies fully: write the whole save to a temporary file, flush it, then atomically replace the old save. Keeping the previous save as a backup (<code>slot1.sav.bak</code>) as well means even a save that was written correctly but contains a game bug can be recovered.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Dumping structs to disk with <code>fwrite(&amp;state, sizeof state, ...)</code>
+Padding, pointers and layout differences make the file fragile and unportable. Write fields one by one.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>No version number</span></div><div class="callout-body"><p>The first update that changes the format breaks every existing save.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Overwriting the save in place</span></div><div class="callout-body"><p>A crash mid-write destroys it. Write a temporary file and replace.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Trusting the file</span></div><div class="callout-body"><p>A save may be damaged or edited. Check the magic, the version, the checksum and every length before using the data.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why are references between saved objects stored as ids rather than pointers?</div><ul><li>Pointers are memory addresses that will be different when the game runs again</li><li>Ids are smaller</li><li>Pointers cannot be written to files</li></ul><details><summary>Show the answer</summary><p><b>Pointers are memory addresses that will be different when the game runs again</b> ASLR and new allocations change every address between runs.</p></details></li><li><div class="q">What is a save file&#39;s version number for?</div><ul><li>Telling the loader which format the rest of the file uses, so old saves can be migrated</li><li>Showing the player which save is newest</li><li>Detecting corruption</li></ul><details><summary>Show the answer</summary><p><b>Telling the loader which format the rest of the file uses, so old saves can be migrated</b> Each format change gets a new version and a migration from the old one.</p></details></li><li><div class="q">What does a CRC-32 checksum detect?</div><ul><li>Accidental damage to the data, such as truncation or flipped bits</li><li>Deliberate editing by the player</li><li>Which version of the game wrote the file</li></ul><details><summary>Show the answer</summary><p><b>Accidental damage to the data, such as truncation or flipped bits</b> Anyone can recompute it after editing, so it is not tamper protection.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/10.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/10.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../10-06-loading-and-managing-resources/"><span class="mono">previous</span><b>10.06 Loading and Managing Resources</b></a>
+      <a class="lp-next" href="../10-08-scripting-and-data-driven-design/"><span class="mono">next</span><b>10.08 Scripting and Data-Driven Design</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/10-07-game-state-and-save-files"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

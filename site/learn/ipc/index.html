@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Processes and Communication course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/">
+  <meta name="description" content="Programs that start, watch and talk to each other on Windows. How separate programs on one Windows machine cooperate: what a process is, starting and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Processes and Communication course · Xenon">
+  <meta property="og:description" content="Programs that start, watch and talk to each other on Windows. How separate programs on one Windows machine cooperate: what a process is, starting and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Processes and Communication course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Processes and Communication course · Xenon">
+  <meta name="twitter:description" content="Programs that start, watch and talk to each other on Windows. How separate programs on one Windows machine cooperate: what a process is, starting and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Processes and Communication</span></div>
+    <h1 class="display">Processes and Communication</h1>
+    <div class="readout lp-readout"><span><b>6</b> milestones</span><span><b>30</b> lessons</span><span><b>28</b> practice tasks</span><span><b>30</b> projects</span></div>
+    <p class="lp-lede">How separate programs on one Windows machine cooperate: what a process is, starting and supervising them, job objects, standard streams, anonymous and named pipes, message framing, serving many clients, overlapped I/O, shared memory with file mappings, ring buffers and seqlocks, named events, mutexes and semaphores, window messages between programs, deadlocks, local sockets, protocol design and serialisation, and securing it all. It ends with single-instance apps, worker processes, out-of-process plugins and a full client and server. It assumes the C++ course and the first milestones of the Win32 API course.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-what-a-process-is/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/ipc">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> Processes</h2>
+      <p class="lp-ms-blurb">What a process is, starting one with the right environment, folder and handles, waiting for it and reading its exit code, job objects, talking through standard streams, and choosing between the ways programs can communicate.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-what-a-process-is/"><span class="mono">1.01</span><span class="t">What a Process Is</span><span class="n">1 task</span></a></li>
+        <li><a href="1-02-starting-processes-well/"><span class="mono">1.02</span><span class="t">Starting Processes Well</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-waiting-exit-codes-and-jobs/"><span class="mono">1.03</span><span class="t">Waiting, Exit Codes and Jobs</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-talking-through-standard-streams/"><span class="mono">1.04</span><span class="t">Talking Through Standard Streams</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-choosing-an-ipc-method/"><span class="mono">1.05</span><span class="t">Choosing an IPC Method</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Pipes</h2>
+      <p class="lp-ms-blurb">Anonymous pipes, named pipes between unrelated programs, framing messages on a byte stream, serving many clients at once, and overlapped I/O with completion ports.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-anonymous-pipes/"><span class="mono">2.01</span><span class="t">Anonymous Pipes</span><span class="n">1 task</span></a></li>
+        <li><a href="2-02-named-pipes/"><span class="mono">2.02</span><span class="t">Named Pipes</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-message-framing/"><span class="mono">2.03</span><span class="t">Message Framing</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-serving-many-clients/"><span class="mono">2.04</span><span class="t">Serving Many Clients</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-overlapped-i-o-and-completion-ports/"><span class="mono">2.05</span><span class="t">Overlapped I/O and Completion Ports</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Shared Memory</h2>
+      <p class="lp-ms-blurb">File mappings that two processes see at once, laying out data that works at any address, lock-free ring buffers, memory-mapped files, and seqlocks for publishing snapshots.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-file-mappings/"><span class="mono">3.01</span><span class="t">File Mappings</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-laying-out-shared-data/"><span class="mono">3.02</span><span class="t">Laying Out Shared Data</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-ring-buffers/"><span class="mono">3.03</span><span class="t">Ring Buffers</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-memory-mapped-files/"><span class="mono">3.04</span><span class="t">Memory-Mapped Files</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-seqlocks-and-snapshots/"><span class="mono">3.05</span><span class="t">Seqlocks and Snapshots</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Synchronisation Across Processes</h2>
+      <p class="lp-ms-blurb">Named events, mutexes and semaphores, waiting on several things at once, abandoned mutexes when a process dies, window messages between programs, and avoiding deadlocks.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-named-kernel-objects/"><span class="mono">4.01</span><span class="t">Named Kernel Objects</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-events-and-waiting/"><span class="mono">4.02</span><span class="t">Events and Waiting</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-mutexes-semaphores-and-abandonment/"><span class="mono">4.03</span><span class="t">Mutexes, Semaphores and Abandonment</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-window-messages-between-programs/"><span class="mono">4.04</span><span class="t">Window Messages Between Programs</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-deadlocks-and-timeouts/"><span class="mono">4.05</span><span class="t">Deadlocks and Timeouts</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Local Sockets and Protocols</h2>
+      <p class="lp-ms-blurb">Sockets on one machine, designing a message protocol, serialising data so both sides agree, requests, responses and events, and securing local communication against other programs.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-sockets-on-one-machine/"><span class="mono">5.01</span><span class="t">Sockets on One Machine</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-designing-a-message-protocol/"><span class="mono">5.02</span><span class="t">Designing a Message Protocol</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-serialising-data/"><span class="mono">5.03</span><span class="t">Serialising Data</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-requests-responses-and-events/"><span class="mono">5.04</span><span class="t">Requests, Responses and Events</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-securing-local-communication/"><span class="mono">5.05</span><span class="t">Securing Local Communication</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Building Real Systems</h2>
+      <p class="lp-ms-blurb">Single-instance applications, supervised worker processes, plugins in their own processes, testing and debugging communication, and a complete client and server.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-a-single-instance-application/"><span class="mono">6.01</span><span class="t">A Single-Instance Application</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-worker-processes/"><span class="mono">6.02</span><span class="t">Worker Processes</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-plugins-in-separate-processes/"><span class="mono">6.03</span><span class="t">Plugins in Separate Processes</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-testing-and-debugging-ipc/"><span class="mono">6.04</span><span class="t">Testing and Debugging IPC</span><span class="n">1 task</span></a></li>
+        <li><a href="6-05-case-studies/"><span class="mono">6.05</span><span class="t">Case Studies</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc"></script>
+</body>
+</html>

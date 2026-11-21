@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Loops · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/3-02-loops/">
+  <meta name="description" content="A loop is a jump backwards. Counting loops often count down to zero with dec and jnz, since dec sets the zero flag for free. A while loop tests at the top…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Loops · Assembly · Xenon">
+  <meta property="og:description" content="A loop is a jump backwards. Counting loops often count down to zero with dec and jnz, since dec sets the zero flag for free. A while loop tests at the top…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/3-02-loops/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Loops · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Loops · Assembly · Xenon">
+  <meta name="twitter:description" content="A loop is a jump backwards. Counting loops often count down to zero with dec and jnz, since dec sets the zero flag for free. A while loop tests at the top…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Control Flow</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Loops</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A loop is a jump backwards. Counting loops often count down to zero with dec and jnz, since dec sets the zero flag for free. A while loop tests at the top and a do-while at the bottom; compilers prefer the bottom test with one check in front. Reading until read_int reports the end of the input makes a loop over all the input.</p>
+      <div class="prose">
+<h2>A jump backwards</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">ebx</span>, <span class="tk-n">1</span>                  <span class="tk-c">; i = 1</span>
+<span class="tk-f">.loop:</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-t">ebx</span>
+        call    print_int
+        call    print_newline
+        inc     <span class="tk-t">ebx</span>                     <span class="tk-c">; i++</span>
+        cmp     <span class="tk-t">ebx</span>, <span class="tk-n">5</span>
+        jle     .loop                   <span class="tk-c">; while i &lt;= 5, go round again</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>The counter lives in <code>rbx</code> because <code>print_int</code> may change <code>rcx</code>, <code>rdx</code>, <code>rsi</code> and <code>rdi</code>.</p>
+<h2>Counting down to zero</h2>
+<p><code>dec</code> sets ZF when it reaches zero, so a loop that counts down needs no <code>cmp</code>:</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/assembly/l/3.02">Try it in Xenon</a></div>
+<p>That is the classic assembly loop. (x86 even has a <code>loop</code> instruction that decrements <code>rcx</code> and jumps, but on modern processors it is slower than <code>dec</code> + <code>jnz</code>, so compilers never use it.)</p>
+<h2>while and do-while</h2>
+<p>A <strong>do-while</strong> tests at the bottom, so the body always runs at least once:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">.body:</span>
+        <span class="tk-c">; ...</span>
+        cmp     ...
+        jcc     .body</code></pre></div>
+<p>A <strong>while</strong> loop must test first, in case it should run zero times. The straightforward version tests at the top and jumps back from the bottom:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">.test:</span>
+        cmp     ...
+        jcc     .end            <span class="tk-c">; the opposite condition: leave the loop</span>
+        <span class="tk-c">; ... body ...</span>
+        jmp     .test
+<span class="tk-f">.end:</span></code></pre></div>
+<p>That is two jumps per round. Compilers turn it into a single test in front plus a do-while, called a <strong>rotated</strong> loop, which takes one jump per round:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        cmp     ...
+        jcc     .end            <span class="tk-c">; skip the loop entirely if it should not run</span>
+<span class="tk-f">.body:</span>
+        <span class="tk-c">; ... body ...</span>
+        cmp     ...
+        jcc     .body           <span class="tk-c">; one jump per round</span>
+<span class="tk-f">.end:</span></code></pre></div>
+<h2>Reading until the end of the input</h2>
+<p><code>read_int</code> returns <code>rdx = 0</code> when there are no more numbers. Testing it after each call makes a loop over the whole input:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">s_count:</span> <span class="tk-k">db</span>     <span class="tk-s">&quot; numbers, total &quot;</span>, <span class="tk-n">0</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        xor     <span class="tk-t">ebx</span>, <span class="tk-t">ebx</span>                <span class="tk-c">; total</span>
+        xor     <span class="tk-t">r12d</span>, <span class="tk-t">r12d</span>              <span class="tk-c">; count</span>
+<span class="tk-f">.next:</span>
+        call    read_int
+        test    <span class="tk-t">rdx</span>, <span class="tk-t">rdx</span>
+        jz      .done                   <span class="tk-c">; no more numbers</span>
+        add     <span class="tk-t">rbx</span>, <span class="tk-t">rax</span>
+        inc     <span class="tk-t">r12</span>
+        jmp     .next
+<span class="tk-f">.done:</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">r12</span>
+        call    print_int
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> s_count]
+        call    print_str
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_int
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>Try it with several numbers on several lines.</p>
+<h2>Loops inside loops</h2>
+<p>Keep each counter in its own register that survives the calls inside (here <code>r12</code> and <code>r13</code>):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">r12d</span>, <span class="tk-n">1</span>                 <span class="tk-c">; row</span>
+<span class="tk-f">.row:</span>
+        mov     <span class="tk-t">r13d</span>, <span class="tk-n">1</span>                 <span class="tk-c">; column</span>
+<span class="tk-f">.col:</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-s">'*'</span>
+        call    print_char
+        inc     <span class="tk-t">r13d</span>
+        cmp     <span class="tk-t">r13d</span>, <span class="tk-t">r12d</span>
+        jle     .col                    <span class="tk-c">; columns 1..row</span>
+        call    print_newline
+        inc     <span class="tk-t">r12d</span>
+        cmp     <span class="tk-t">r12d</span>, <span class="tk-n">4</span>
+        jle     .row
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does dec ecx followed by jnz top work without a cmp?</div><ul><li>dec sets the zero flag when ecx reaches 0</li><li>jnz compares ecx with 0 itself</li><li>dec jumps automatically</li></ul><details><summary>Show the answer</summary><p><b>dec sets the zero flag when ecx reaches 0</b> Arithmetic sets the flags as a side effect.</p></details></li><li><div class="q">Which loop always runs its body at least once?</div><ul><li>One that tests at the bottom (do-while)</li><li>One that tests at the top (while)</li><li>Neither</li></ul><details><summary>Show the answer</summary><p><b>One that tests at the bottom (do-while)</b> A while loop may run zero times.</p></details></li><li><div class="q">Why keep a loop counter in rbx or r12 to r15 when the loop calls print_int?</div><ul><li>The routines may change rcx, rdx, rsi and rdi, but keep rbx and r12 to r15</li><li>Only those registers can count</li><li>It is faster</li></ul><details><summary>Show the answer</summary><p><b>The routines may change rcx, rdx, rsi and rdi, but keep rbx and r12 to r15</b> The calling convention again.</p></details></li><li><div class="q">How does a loop over all the input know when to stop?</div><ul><li>read_int returns rdx = 0 at the end of the input</li><li>read_int returns -1</li><li>The program crashes</li></ul><details><summary>Show the answer</summary><p><b>read_int returns rdx = 0 at the end of the input</b> Test rdx after each call.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-compare-and-jump/"><span class="mono">previous</span><b>3.01 Compare and Jump</b></a>
+      <a class="lp-next" href="../3-03-signed-and-unsigned-conditions/"><span class="mono">next</span><b>3.03 Signed and Unsigned Conditions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/3-02-loops"></script>
+</body>
+</html>

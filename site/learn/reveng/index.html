@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Reverse Engineering course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/">
+  <meta name="description" content="Read compiled programs, find how they work, and build the tools to do it. How to understand a program from its compiled form: the ground rules, the tools,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Reverse Engineering course · Xenon">
+  <meta property="og:description" content="Read compiled programs, find how they work, and build the tools to do it. How to understand a program from its compiled form: the ground rules, the tools,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Reverse Engineering course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reverse Engineering course · Xenon">
+  <meta name="twitter:description" content="Read compiled programs, find how they work, and build the tools to do it. How to understand a program from its compiled form: the ground rules, the tools,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Reverse Engineering</span></div>
+    <h1 class="display">Reverse Engineering</h1>
+    <div class="readout lp-readout"><span><b>6</b> milestones</span><span><b>30</b> lessons</span><span><b>27</b> practice tasks</span><span><b>30</b> projects</span></div>
+    <p class="lp-lede">How to understand a program from its compiled form: the ground rules, the tools, the PE file format, reading x64 disassembly of functions, loops, structs and C++ classes, debuggers from the inside, tracing and finding where data is used, patching and hooking programs you build yourself, and writing your own pattern scanner, memory scanner, disassembler and symbol lookup. It ends with reversing a file format, a protocol and a small virtual machine the course provides. Every target is a program you compiled yourself or one the course gives you. It assumes the C++ course and some x64 assembly (the Assembly course or the Game Development course's milestone 7).</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-what-reverse-engineering-is/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/reveng">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> Ground Rules, Tools and the PE Format</h2>
+      <p class="lp-ms-blurb">What reverse engineering is and when you may do it, the tools of the trade, and the PE format inside every .exe and .dll: headers, sections, imports, exports and relocations.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-what-reverse-engineering-is/"><span class="mono">1.01</span><span class="t">What Reverse Engineering Is</span></a></li>
+        <li><a href="1-02-the-tools-of-the-trade/"><span class="mono">1.02</span><span class="t">The Tools of the Trade</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-inside-a-pe-file/"><span class="mono">1.03</span><span class="t">Inside a PE File</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-imports-exports-and-relocations/"><span class="mono">1.04</span><span class="t">Imports, Exports and Relocations</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-triage-first-impressions-of-a-binary/"><span class="mono">1.05</span><span class="t">Triage - First Impressions of a Binary</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Reading Disassembly</h2>
+      <p class="lp-ms-blurb">x64 for readers, recognising functions and their frames, branches, loops and switch tables, structs and arrays in machine code, and what C++ classes, vtables and RTTI look like compiled.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-x64-for-readers/"><span class="mono">2.01</span><span class="t">x64 for Readers</span><span class="n">1 task</span></a></li>
+        <li><a href="2-02-recognising-functions/"><span class="mono">2.02</span><span class="t">Recognising Functions</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-branches-loops-and-switches/"><span class="mono">2.03</span><span class="t">Branches, Loops and Switches</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-data-in-machine-code/"><span class="mono">2.04</span><span class="t">Data in Machine Code</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-cpp-in-machine-code/"><span class="mono">2.05</span><span class="t">C++ in Machine Code</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Dynamic Analysis</h2>
+      <p class="lp-ms-blurb">How debuggers really work, tracing execution and rebuilding call stacks, finding where a value lives and what changes it, watching a program's behaviour from outside, and comparing runs.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-how-debuggers-work/"><span class="mono">3.01</span><span class="t">How Debuggers Work</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-tracing-execution/"><span class="mono">3.02</span><span class="t">Tracing Execution</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-finding-where-data-lives/"><span class="mono">3.03</span><span class="t">Finding Where Data Lives</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-watching-behaviour-from-outside/"><span class="mono">3.04</span><span class="t">Watching Behaviour from Outside</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-comparing-runs/"><span class="mono">3.05</span><span class="t">Comparing Runs</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Patching Programs You Build</h2>
+      <p class="lp-ms-blurb">Changing instructions in your own compiled programs, encoding jumps and calls, code caves, hooking functions with trampolines, and byte patterns that keep working after the program is rebuilt.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-patching-instructions/"><span class="mono">4.01</span><span class="t">Patching Instructions</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-encoding-jumps-and-calls/"><span class="mono">4.02</span><span class="t">Encoding Jumps and Calls</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-code-caves/"><span class="mono">4.03</span><span class="t">Code Caves</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-hooking-functions-in-your-own-programs/"><span class="mono">4.04</span><span class="t">Hooking Functions in Your Own Programs</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-byte-patterns-that-survive-rebuilds/"><span class="mono">4.05</span><span class="t">Byte Patterns That Survive Rebuilds</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Building Your Own Tools</h2>
+      <p class="lp-ms-blurb">How x64 instructions are encoded, a disassembler of your own, reading a process's memory map with documented Windows APIs, symbols and PDB files, and generating byte signatures.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-how-x64-instructions-are-encoded/"><span class="mono">5.01</span><span class="t">How x64 Instructions Are Encoded</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-writing-a-disassembler/"><span class="mono">5.02</span><span class="t">Writing a Disassembler</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-reading-a-process-s-memory-map/"><span class="mono">5.03</span><span class="t">Reading a Process's Memory Map</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-symbols-and-pdb-files/"><span class="mono">5.04</span><span class="t">Symbols and PDB Files</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-scripting-your-analysis/"><span class="mono">5.05</span><span class="t">Scripting Your Analysis</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Reversing in Practice</h2>
+      <p class="lp-ms-blurb">A method for unknown programs, reversing a file format and a network protocol from samples, writing up what you found, and a capstone: working out a small virtual machine and its program.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-a-method-for-unknown-programs/"><span class="mono">6.01</span><span class="t">A Method for Unknown Programs</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-reversing-a-file-format/"><span class="mono">6.02</span><span class="t">Reversing a File Format</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-reversing-a-network-protocol/"><span class="mono">6.03</span><span class="t">Reversing a Network Protocol</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-writing-it-up/"><span class="mono">6.04</span><span class="t">Writing It Up</span></a></li>
+        <li><a href="6-05-where-to-go-next/"><span class="mono">6.05</span><span class="t">Where to Go Next</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng"></script>
+</body>
+</html>

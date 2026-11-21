@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Looking at Raw Bytes · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/2-05-looking-at-raw-bytes/">
+  <meta name="description" content="Any object's bytes can be read through an unsigned char pointer. Reading them as a different type is a different matter - the strict aliasing rule forbids…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Looking at Raw Bytes · Pointers and Memory · Xenon">
+  <meta property="og:description" content="Any object's bytes can be read through an unsigned char pointer. Reading them as a different type is a different matter - the strict aliasing rule forbids…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/2-05-looking-at-raw-bytes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Looking at Raw Bytes · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Looking at Raw Bytes · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="Any object's bytes can be read through an unsigned char pointer. Reading them as a different type is a different matter - the strict aliasing rule forbids…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Pointer Arithmetic and Arrays</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Looking at Raw Bytes</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Any object&#39;s bytes can be read through an unsigned char pointer. Reading them as a different type is a different matter - the strict aliasing rule forbids most pointer casts, so memcpy and std::bit_cast are the correct tools. Byte order, swapping it, and the casts C++ offers.</p>
+      <div class="prose">
+<h2>The bytes of anything</h2>
+<p>Lesson 1.01 printed an int&#39;s bytes through an <code>unsigned char*</code>. C++ guarantees this works for every object: <code>char</code>, <code>unsigned char</code> and <code>std::byte</code> are allowed to look at the bytes of any type.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdio&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Point</span> { <span class="tk-k">float</span> x, y; };
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Point</span> p{ <span class="tk-n">1.0f</span>, -<span class="tk-n">2.5f</span> };
+    <span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>* b{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>*&gt;(&amp;p) };
+    <span class="tk-k">for</span> (<span class="tk-k">unsigned</span> i{ <span class="tk-n">0</span> }; i &lt; <span class="tk-k">sizeof</span>(p); ++i) std::<span class="tk-f">printf</span>(<span class="tk-s">&quot;%02X &quot;</span>, b[i]);
+    std::<span class="tk-f">printf</span>(<span class="tk-s">&quot;\n&quot;</span>);   <span class="tk-c">// 00 00 80 3F 00 00 20 C0</span>
+}</code></pre></div>
+<p>That is how a hex viewer, a network packet writer, a save file and a hash function all see your data: as bytes.</p>
+<h2>Reading bytes as another type: not with a cast</h2>
+<p>The tempting next step is to read a <code>float</code>&#39;s bits as an integer by casting the pointer:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">float</span> f{ <span class="tk-n">1.0f</span> };
+std::uint32_t bits{ *<span class="tk-k">reinterpret_cast</span>&lt;std::uint32_t*&gt;(&amp;f) };   <span class="tk-c">// undefined behaviour</span></code></pre></div>
+<p>This breaks the <strong>strict aliasing rule</strong>: apart from the char types, you may only read an object through a pointer to its own type (or a signed/unsigned twin of it). The compiler relies on that rule to optimise: it assumes a <code>float*</code> and a <code>std::uint32_t*</code> never point at the same memory, and may reorder or drop reads accordingly. The code above often &quot;works&quot;, and then a release build or a new compiler version quietly gives the wrong answer.</p>
+<p>The correct tools copy the bytes instead of pretending:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;bit&gt;</span>
+<span class="tk-p">#include &lt;cstring&gt;</span>
+
+<span class="tk-k">float</span> f{ <span class="tk-n">1.0f</span> };
+
+std::uint32_t a;
+std::<span class="tk-f">memcpy</span>(&amp;a, &amp;f, <span class="tk-k">sizeof</span>(a));               <span class="tk-c">// works in every C++ version</span>
+
+std::uint32_t b{ std::bit_cast&lt;std::uint32_t&gt;(f) };   <span class="tk-c">// C++20, clearer, sizes checked</span></code></pre></div>
+<p>Both compile to a single register move. No copying happens in the machine code; the <code>memcpy</code> is only how you tell the compiler what you mean.</p>
+<p>The same goes for reading a number out of the middle of a byte buffer, such as a 4-byte length field at offset 6 of a packet. Casting <code>buffer + 6</code> to <code>std::uint32_t*</code> is also a misaligned read on top of the aliasing problem. <code>memcpy</code> from <code>buffer + 6</code> into a <code>std::uint32_t</code> is always correct.</p>
+<h2>The four casts</h2>
+<p>C++ has four named casts, and choosing the right one documents what you are doing:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Cast</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>static_cast&lt;T&gt;(x)</code></td>
+<td>ordinary conversions: <code>int</code> to <code>double</code>, <code>void*</code> back to the <code>T*</code> it came from, base to derived when you know it is safe</td>
+</tr>
+<tr>
+<td><code>reinterpret_cast&lt;T&gt;(x)</code></td>
+<td>reading memory as something else: pointer to <code>unsigned char*</code>, pointer to integer and back</td>
+</tr>
+<tr>
+<td><code>const_cast&lt;T&gt;(x)</code></td>
+<td>removing <code>const</code> (only safe if the object was not really const)</td>
+</tr>
+<tr>
+<td><code>dynamic_cast&lt;T&gt;(x)</code></td>
+<td>checked downcasts between classes with virtual functions</td>
+</tr>
+</tbody></table>
+</div>
+<p>The old C-style cast, <code>(int*)p</code>, tries several of these in turn and so can quietly do something you did not mean. Prefer the named ones; <code>reinterpret_cast</code> in particular is easy to search for in a code review.</p>
+<p>A pointer can be turned into a plain number with <code>reinterpret_cast&lt;std::uintptr_t&gt;(p)</code>, the integer type guaranteed to hold any address. That is how you print an address in your own format or check its alignment: <code>(reinterpret_cast&lt;std::uintptr_t&gt;(p) % alignof(double)) == 0</code>.</p>
+<h2>Byte order, revisited</h2>
+<p>When bytes cross between machines (a file, a network packet) the order matters. Network protocols traditionally use <strong>big-endian</strong> order, most significant byte first, the opposite of x86. Converting is a <strong>byte swap</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::uint32_t <span class="tk-f">swap32</span>(std::uint32_t v)
+{
+    <span class="tk-k">return</span> (v &gt;&gt; <span class="tk-n">24</span>) | ((v &gt;&gt; <span class="tk-n">8</span>) &amp; <span class="tk-n">0x0000FF00</span>) | ((v &lt;&lt; <span class="tk-n">8</span>) &amp; <span class="tk-n">0x00FF0000</span>) | (v &lt;&lt; <span class="tk-n">24</span>);
+}</code></pre></div>
+<p>C++23 has <code>std::byteswap</code>, and Windows has <code>_byteswap_ulong</code>; both become one <code>bswap</code> instruction. The most portable way to read a number in a known byte order is to assemble it from bytes with shifts, as you did in lesson 1.01: that code gives the same answer on any machine.</p>
+<p>To check the machine&#39;s own order: <code>std::endian::native == std::endian::little</code> (C++20), or look at the first byte of the int 1.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-rows-columns-and-strides/"><span class="mono">previous</span><b>2.04 Rows, Columns and Strides</b></a>
+      <a class="lp-next" href="../3-01-structs-in-memory/"><span class="mono">next</span><b>3.01 Structs in Memory</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/2-05-looking-at-raw-bytes"></script>
+</body>
+</html>

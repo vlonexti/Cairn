@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Error Types in Depth · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/8-01-error-types-in-depth/">
+  <meta name="description" content="Designing errors for real programs - an error enum per module, implementing Display and std::error::Error, keeping the cause with source(), From conversions…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Error Types in Depth · Rust · Xenon">
+  <meta property="og:description" content="Designing errors for real programs - an error enum per module, implementing Display and std::error::Error, keeping the cause with source(), From conversions…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/8-01-error-types-in-depth/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Error Types in Depth · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Error Types in Depth · Rust · Xenon">
+  <meta name="twitter:description" content="Designing errors for real programs - an error enum per module, implementing Display and std::error::Error, keeping the cause with source(), From conversions…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Rust in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Error Types in Depth</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.01</b></span><span>1 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Designing errors for real programs - an error enum per module, implementing Display and std::error::Error, keeping the cause with source(), From conversions so ? converts errors for you, Box&lt;dyn Error&gt; for small programs, adding context, and what the thiserror and anyhow crates automate.</p>
+      <div class="prose">
+<h2>Beyond String errors</h2>
+<p>Lesson 3.04 used <code>Result&lt;T, String&gt;</code> and <code>?</code>. Strings are fine in small examples, but a caller cannot easily tell one failure from another by looking at text. Real Rust code gives each module an <strong>error type</strong>: usually an enum with one variant per kind of failure.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fmt;
+
+<span class="tk-p">#[derive(Debug, PartialEq)]</span>
+<span class="tk-k">enum</span> <span class="tk-t">ConfigError</span> {
+    <span class="tk-f">Missing</span>(<span class="tk-t">String</span>),
+    <span class="tk-t">BadNumber</span> { key: <span class="tk-t">String</span>, value: <span class="tk-t">String</span> },
+    <span class="tk-t">OutOfRange</span> { key: <span class="tk-t">String</span>, min: <span class="tk-k">i64</span>, max: <span class="tk-k">i64</span> },
+}
+
+<span class="tk-k">impl</span> fmt::<span class="tk-t">Display</span> <span class="tk-k">for</span> <span class="tk-t">ConfigError</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">fmt</span>(&amp;<span class="tk-k">self</span>, f: &amp;<span class="tk-k">mut</span> fmt::<span class="tk-t">Formatter</span>) -&gt; fmt::<span class="tk-t">Result</span> {
+        <span class="tk-k">match</span> <span class="tk-k">self</span> {
+            <span class="tk-t">ConfigError</span>::<span class="tk-f">Missing</span>(key) =&gt; <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;missing setting {key}&quot;</span>),
+            <span class="tk-t">ConfigError</span>::<span class="tk-t">BadNumber</span> { key, value } =&gt; <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;{key} should be a number, not {value:?}&quot;</span>),
+            <span class="tk-t">ConfigError</span>::<span class="tk-t">OutOfRange</span> { key, min, max } =&gt; <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;{key} must be from {min} to {max}&quot;</span>),
+        }
+    }
+}
+
+<span class="tk-k">impl</span> std::error::<span class="tk-t">Error</span> <span class="tk-k">for</span> <span class="tk-t">ConfigError</span> {}
+
+<span class="tk-k">fn</span> <span class="tk-f">port</span>(settings: &amp;[(&amp;<span class="tk-k">str</span>, &amp;<span class="tk-k">str</span>)]) -&gt; <span class="tk-t">Result</span>&lt;<span class="tk-k">i64</span>, <span class="tk-t">ConfigError</span>&gt; {
+    <span class="tk-k">let</span> (_, text) = settings.<span class="tk-f">iter</span>().<span class="tk-f">find</span>(|(k, _)| *k == <span class="tk-s">&quot;port&quot;</span>).<span class="tk-f">ok_or</span>(<span class="tk-t">ConfigError</span>::<span class="tk-f">Missing</span>(<span class="tk-s">&quot;port&quot;</span>.<span class="tk-f">into</span>()))?;
+    <span class="tk-k">let</span> n: <span class="tk-k">i64</span> = text.<span class="tk-f">parse</span>().<span class="tk-f">map_err</span>(|_| <span class="tk-t">ConfigError</span>::<span class="tk-t">BadNumber</span> { key: <span class="tk-s">&quot;port&quot;</span>.<span class="tk-f">into</span>(), value: text.<span class="tk-f">to_string</span>() })?;
+    <span class="tk-k">if</span> !(<span class="tk-n">1</span>..=<span class="tk-n">65535</span>).<span class="tk-f">contains</span>(&amp;n) {
+        <span class="tk-k">return</span> <span class="tk-f">Err</span>(<span class="tk-t">ConfigError</span>::<span class="tk-t">OutOfRange</span> { key: <span class="tk-s">&quot;port&quot;</span>.<span class="tk-f">into</span>(), min: <span class="tk-n">1</span>, max: <span class="tk-n">65535</span> });
+    }
+    <span class="tk-f">Ok</span>(n)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, <span class="tk-f">port</span>(&amp;[(<span class="tk-s">&quot;port&quot;</span>, <span class="tk-s">&quot;8080&quot;</span>)]));
+    <span class="tk-k">for</span> bad <span class="tk-k">in</span> [<span class="tk-p">vec!</span>[], <span class="tk-p">vec!</span>[(<span class="tk-s">&quot;port&quot;</span>, <span class="tk-s">&quot;eighty&quot;</span>)], <span class="tk-p">vec!</span>[(<span class="tk-s">&quot;port&quot;</span>, <span class="tk-s">&quot;70000&quot;</span>)]] {
+        <span class="tk-k">match</span> <span class="tk-f">port</span>(&amp;bad) {
+            <span class="tk-f">Ok</span>(p) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;port {p}&quot;</span>),
+            <span class="tk-f">Err</span>(e) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;error: {e}&quot;</span>),
+        }
+    }
+}</code></pre></div>
+<p>The caller can <code>match</code> on the variant to react differently (ask again for a bad number, give up for a missing file), and <code>Display</code> gives a message for people. Implementing <code>std::error::Error</code> (which needs <code>Debug</code> and <code>Display</code>) makes the type work with every tool that handles errors generally.</p>
+<h2>Keeping the cause</h2>
+<p>When one error is caused by another (a config error caused by an I/O error), keep the original and return it from <code>source()</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::error::<span class="tk-t">Error</span>;
+<span class="tk-k">use</span> std::fmt;
+<span class="tk-k">use</span> std::num::<span class="tk-t">ParseIntError</span>;
+
+<span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">enum</span> <span class="tk-t">LoadError</span> {
+    <span class="tk-f">Io</span>(std::io::<span class="tk-t">Error</span>),
+    <span class="tk-t">Parse</span> { line: <span class="tk-k">usize</span>, cause: <span class="tk-t">ParseIntError</span> },
+}
+
+<span class="tk-k">impl</span> fmt::<span class="tk-t">Display</span> <span class="tk-k">for</span> <span class="tk-t">LoadError</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">fmt</span>(&amp;<span class="tk-k">self</span>, f: &amp;<span class="tk-k">mut</span> fmt::<span class="tk-t">Formatter</span>) -&gt; fmt::<span class="tk-t">Result</span> {
+        <span class="tk-k">match</span> <span class="tk-k">self</span> {
+            <span class="tk-t">LoadError</span>::<span class="tk-f">Io</span>(_) =&gt; <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;could not read the scores file&quot;</span>),
+            <span class="tk-t">LoadError</span>::<span class="tk-t">Parse</span> { line, .. } =&gt; <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;line {line} is not a number&quot;</span>),
+        }
+    }
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Error</span> <span class="tk-k">for</span> <span class="tk-t">LoadError</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">source</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">Option</span>&lt;&amp;(<span class="tk-k">dyn</span> <span class="tk-t">Error</span> + '<span class="tk-k">static</span>)&gt; {
+        <span class="tk-k">match</span> <span class="tk-k">self</span> {
+            <span class="tk-t">LoadError</span>::<span class="tk-f">Io</span>(e) =&gt; <span class="tk-f">Some</span>(e),
+            <span class="tk-t">LoadError</span>::<span class="tk-t">Parse</span> { cause, .. } =&gt; <span class="tk-f">Some</span>(cause),
+        }
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">parse_scores</span>(text: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">Result</span>&lt;<span class="tk-t">Vec</span>&lt;<span class="tk-k">i32</span>&gt;, <span class="tk-t">LoadError</span>&gt; {
+    text.<span class="tk-f">lines</span>()
+        .<span class="tk-f">enumerate</span>()
+        .<span class="tk-f">map</span>(|(i, l)| l.<span class="tk-f">trim</span>().parse::&lt;<span class="tk-k">i32</span>&gt;().<span class="tk-f">map_err</span>(|cause| <span class="tk-t">LoadError</span>::<span class="tk-t">Parse</span> { line: i + <span class="tk-n">1</span>, cause }))
+        .<span class="tk-f">collect</span>()
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> err = <span class="tk-f">parse_scores</span>(<span class="tk-s">&quot;10\n20\nthirty&quot;</span>).<span class="tk-f">unwrap_err</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{err}&quot;</span>);
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> cause = err.<span class="tk-f">source</span>();
+    <span class="tk-k">while</span> <span class="tk-k">let</span> <span class="tk-f">Some</span>(c) = cause {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;  caused by: {c}&quot;</span>);
+        cause = c.<span class="tk-f">source</span>();
+    }
+    <span class="tk-k">let</span> _ = <span class="tk-t">LoadError</span>::<span class="tk-f">Io</span>(std::io::<span class="tk-t">Error</span>::<span class="tk-f">other</span>(<span class="tk-s">&quot;disk&quot;</span>));
+}</code></pre></div>
+<p>Printing the chain of <code>source()</code>s gives messages like &quot;could not read the scores file: caused by: permission denied&quot;, which are far more useful than either part alone.</p>
+<p><code>collect()</code> into a <code>Result&lt;Vec&lt;_&gt;, _&gt;</code> stops at the first error, as you see above.</p>
+<h2>Letting ? convert errors</h2>
+<p><code>?</code> calls <code>From::from</code> on the error before returning it. Implement <code>From</code> for the errors your function meets, and <code>?</code> converts them automatically:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fmt;
+<span class="tk-k">use</span> std::num::<span class="tk-t">ParseIntError</span>;
+
+<span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">enum</span> <span class="tk-t">AppError</span> {
+    <span class="tk-f">Parse</span>(<span class="tk-t">ParseIntError</span>),
+    <span class="tk-f">Negative</span>(<span class="tk-k">i64</span>),
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">From</span>&lt;<span class="tk-t">ParseIntError</span>&gt; <span class="tk-k">for</span> <span class="tk-t">AppError</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">from</span>(e: <span class="tk-t">ParseIntError</span>) -&gt; <span class="tk-k">Self</span> {
+        <span class="tk-t">AppError</span>::<span class="tk-f">Parse</span>(e)
+    }
+}
+
+<span class="tk-k">impl</span> fmt::<span class="tk-t">Display</span> <span class="tk-k">for</span> <span class="tk-t">AppError</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">fmt</span>(&amp;<span class="tk-k">self</span>, f: &amp;<span class="tk-k">mut</span> fmt::<span class="tk-t">Formatter</span>) -&gt; fmt::<span class="tk-t">Result</span> {
+        <span class="tk-k">match</span> <span class="tk-k">self</span> {
+            <span class="tk-t">AppError</span>::<span class="tk-f">Parse</span>(e) =&gt; <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;not a number ({e})&quot;</span>),
+            <span class="tk-t">AppError</span>::<span class="tk-f">Negative</span>(n) =&gt; <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;{n} is negative&quot;</span>),
+        }
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">double</span>(text: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">Result</span>&lt;<span class="tk-k">i64</span>, <span class="tk-t">AppError</span>&gt; {
+    <span class="tk-k">let</span> n: <span class="tk-k">i64</span> = text.<span class="tk-f">parse</span>()?;                 <span class="tk-c">// ParseIntError becomes AppError here</span>
+    <span class="tk-k">if</span> n &lt; <span class="tk-n">0</span> {
+        <span class="tk-k">return</span> <span class="tk-f">Err</span>(<span class="tk-t">AppError</span>::<span class="tk-f">Negative</span>(n));
+    }
+    <span class="tk-f">Ok</span>(n * <span class="tk-n">2</span>)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">for</span> t <span class="tk-k">in</span> [<span class="tk-s">&quot;21&quot;</span>, <span class="tk-s">&quot;x&quot;</span>, <span class="tk-s">&quot;-3&quot;</span>] {
+        <span class="tk-k">match</span> <span class="tk-f">double</span>(t) {
+            <span class="tk-f">Ok</span>(v) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;{t} -&gt; {v}&quot;</span>),
+            <span class="tk-f">Err</span>(e) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;{t} -&gt; error: {e}&quot;</span>),
+        }
+    }
+}</code></pre></div>
+<h2>Box&lt;dyn Error&gt; for small programs</h2>
+<p>When you only want to report an error and stop, not handle each kind, <code>Box&lt;dyn Error&gt;</code> accepts any error type, and <code>?</code> converts into it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::error::<span class="tk-t">Error</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">run</span>() -&gt; <span class="tk-t">Result</span>&lt;<span class="tk-k">i32</span>, <span class="tk-t">Box</span>&lt;<span class="tk-k">dyn</span> <span class="tk-t">Error</span>&gt;&gt; {
+    <span class="tk-k">let</span> a: <span class="tk-k">i32</span> = <span class="tk-s">&quot;40&quot;</span>.<span class="tk-f">parse</span>()?;
+    <span class="tk-k">let</span> b: <span class="tk-k">i32</span> = <span class="tk-s">&quot;2&quot;</span>.<span class="tk-f">parse</span>()?;
+    <span class="tk-k">if</span> a + b != <span class="tk-n">42</span> {
+        <span class="tk-k">return</span> <span class="tk-f">Err</span>(<span class="tk-s">&quot;the answer is wrong&quot;</span>.<span class="tk-f">into</span>());     <span class="tk-c">// a &amp;str becomes a boxed error too</span>
+    }
+    <span class="tk-f">Ok</span>(a + b)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">match</span> <span class="tk-f">run</span>() {
+        <span class="tk-f">Ok</span>(v) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;{v}&quot;</span>),
+        <span class="tk-f">Err</span>(e) =&gt; <span class="tk-p">eprintln!</span>(<span class="tk-s">&quot;error: {e}&quot;</span>),
+    }
+}</code></pre></div>
+<p><code>main</code> itself can return <code>Result&lt;(), Box&lt;dyn Error&gt;&gt;</code>; an <code>Err</code> then prints its <code>Debug</code> form and exits with code 1.</p>
+<p>Rule of thumb: <strong>libraries</strong> define their own error enums so callers can match on them; <strong>applications</strong> often use <code>Box&lt;dyn Error&gt;</code> (or <code>anyhow</code>) at the top, where errors are only reported.</p>
+<h2>Adding context</h2>
+<p>A bare &quot;No such file or directory&quot; does not say which file. Wrap errors with what you were doing:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">let</span> text = std::fs::<span class="tk-f">read_to_string</span>(&amp;path)
+    .<span class="tk-f">map_err</span>(|e| <span class="tk-p">format!</span>(<span class="tk-s">&quot;reading {}: {e}&quot;</span>, path.<span class="tk-f">display</span>()))?;</code></pre></div>
+<h2>The crates everyone uses</h2>
+<ul>
+<li><strong>thiserror</strong> writes the <code>Display</code>, <code>Error</code> and <code>From</code> implementations from attributes: <code>#[derive(Error, Debug)] enum E { #[error(&quot;missing {0}&quot;)] Missing(String), #[error(transparent)] Io(#[from] io::Error) }</code>.</li>
+<li><strong>anyhow</strong> gives one <code>anyhow::Error</code> type for applications, <code>?</code> from anything, and <code>.context(&quot;reading config&quot;)</code> to add messages.</li>
+</ul>
+<p>They save typing, but they generate exactly the code this lesson writes by hand.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/8.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/8.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-05-type-state-and-phantomdata/"><span class="mono">previous</span><b>7.05 Type-State and PhantomData</b></a>
+      <a class="lp-next" href="../8-02-operators-and-conversions/"><span class="mono">next</span><b>8.02 Operators and Conversions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/8-01-error-types-in-depth"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Static Analysis and Testing · Windows Kernel Driver Development · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/kernel/5-02-static-analysis-and-testing/">
+  <meta name="description" content="Finding driver bugs before they run - SAL annotations, Code Analysis for drivers, CodeQL with Microsoft's driver queries, the Static Driver Verifier idea,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Static Analysis and Testing · Windows Kernel Driver Development · Xenon">
+  <meta property="og:description" content="Finding driver bugs before they run - SAL annotations, Code Analysis for drivers, CodeQL with Microsoft's driver queries, the Static Driver Verifier idea,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/kernel/5-02-static-analysis-and-testing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Static Analysis and Testing · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Static Analysis and Testing · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:description" content="Finding driver bugs before they run - SAL annotations, Code Analysis for drivers, CodeQL with Microsoft's driver queries, the Static Driver Verifier idea,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Kernel Driver Development</a><span>/</span><span>Quality, Security and Shipping</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Static Analysis and Testing</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 4 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Finding driver bugs before they run - SAL annotations, Code Analysis for drivers, CodeQL with Microsoft&#39;s driver queries, the Static Driver Verifier idea, unit-testing driver logic in user mode, and fuzzing IOCTL handlers.</p>
+      <div class="prose">
+<h2>Annotations</h2>
+<p><strong>SAL</strong> (source annotation language) tells the compiler&#39;s analysis what a function expects:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">_IRQL_requires_max_</span>(DISPATCH_LEVEL)
+NTSTATUS <span class="tk-f">XenonPush</span>(_Inout_ <span class="tk-t">Ring</span>* ring, <span class="tk-f">_In_reads_bytes_</span>(length) <span class="tk-k">const</span> <span class="tk-k">void</span>* data, _In_ ULONG length);
+
+<span class="tk-f">_IRQL_requires_</span>(PASSIVE_LEVEL)
+_Must_inspect_result_
+NTSTATUS <span class="tk-f">XenonLoadSettings</span>(_In_ PUNICODE_STRING registryPath, _Out_ <span class="tk-t">Settings</span>* settings);</code></pre></div>
+<p>With annotations, analysis can report: a function called at a higher IRQL than it allows, a buffer read beyond its declared length, an <code>_Out_</code> parameter not set on every success path, a result ignored. The WDK&#39;s headers are annotated throughout, which is why analysis finds so much in driver code.</p>
+<h2>Code Analysis and CodeQL</h2>
+<ul>
+<li><strong>Code Analysis for drivers</strong> (<code>/analyze</code> with the driver rule sets, enabled by default in WDK projects): checks IRQL rules, annotation contracts, pool tagging, missing <code>NT_SUCCESS</code> checks, and common C mistakes on every build. Treat its warnings as errors.</li>
+<li><strong>CodeQL</strong> with Microsoft&#39;s Windows driver query suite: deeper, whole-program queries; required for drivers submitted for Windows certification. Run it from the command line or in CI on every change.</li>
+<li><strong>Static Driver Verifier</strong> (older WDK versions): model-checks the driver against rules for the use of kernel APIs, such as &quot;a spin lock is always released&quot; or &quot;an IRP is completed once on every path&quot;. The ideas live on in CodeQL&#39;s rules.</li>
+</ul>
+<h2>Test the logic in user mode</h2>
+<p>Most of a driver is ordinary logic: parsing requests, validating, ring buffers, state machines. Writing it as plain, kernel-independent C++ with a thin kernel layer around it lets you <strong>unit-test it in user mode</strong>, quickly and with every tool available, which is exactly what every practice in this course has done. The kernel layer (dispatch routines that call the tested functions) stays small enough to review line by line.</p>
+<h2>Fuzzing</h2>
+<p>A <strong>fuzzer</strong> sends huge numbers of generated inputs to a handler and checks that nothing goes wrong. For an IOCTL handler, &quot;wrong&quot; means: a crash or exception, information larger than the output buffer, information not 0 on failure, an IRP not completed exactly once, or memory touched outside the buffers. Two kinds:</p>
+<ul>
+<li><strong>Generation</strong>: build inputs from the protocol&#39;s description with interesting values (0, 1, maximum, one less than the structure size, huge counts) in each field.</li>
+<li><strong>Mutation</strong>: start from valid requests and flip bits, change lengths, splice requests together.</li>
+</ul>
+<p>Run the handler under the fuzzer in user mode first (with the address sanitizer, <code>/fsanitize=address</code>, which catches overruns like special pool), then against the real driver in the VM under Driver Verifier. The practice writes a deterministic fuzzer harness.</p>
+<h2>A test plan for a driver</h2>
+<ol>
+<li>Unit tests for the logic, in user mode, on every build.</li>
+<li>Code Analysis on every build; CodeQL in CI.</li>
+<li>Fuzz every IOCTL in user mode with the sanitizer.</li>
+<li>In the VM with Verifier: load and unload loops, the real workload, the fuzzer against the device, low-resources simulation.</li>
+<li>Multiple processors in the VM, and many threads in the tests.</li>
+</ol>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/kernel/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/kernel/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-driver-verifier/"><span class="mono">previous</span><b>5.01 Driver Verifier</b></a>
+      <a class="lp-next" href="../5-03-secure-driver-design/"><span class="mono">next</span><b>5.03 Secure Driver Design</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/kernel/5-02-static-analysis-and-testing"></script>
+</body>
+</html>

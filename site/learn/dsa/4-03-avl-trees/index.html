@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>AVL Trees · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/4-03-avl-trees/">
+  <meta name="description" content="Keeping a search tree balanced - the AVL balance condition and why it bounds the height by about 1.44 log n, storing heights in the nodes, left and right…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="AVL Trees · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Keeping a search tree balanced - the AVL balance condition and why it bounds the height by about 1.44 log n, storing heights in the nodes, left and right…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/4-03-avl-trees/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="AVL Trees · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AVL Trees · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Keeping a search tree balanced - the AVL balance condition and why it bounds the height by about 1.44 log n, storing heights in the nodes, left and right…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Trees</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">AVL Trees</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.03</b></span><span>3 of 5 in milestone 4</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Keeping a search tree balanced - the AVL balance condition and why it bounds the height by about 1.44 log n, storing heights in the nodes, left and right rotations, the four imbalance cases (left-left, right-right, left-right, right-left), insertion with rebalancing on the way back up, deletion, and how AVL trees compare with red-black trees, treaps and B-trees.</p>
+      <div class="prose">
+<h2>The balance condition</h2>
+<p>An <strong>AVL tree</strong> (Adelson-Velsky and Landis, 1962, the first self-balancing BST) is a binary search tree in which, for <strong>every node</strong>, the heights of the left and right subtrees differ by <strong>at most one</strong>. The difference is the node&#39;s <strong>balance factor</strong>:</p>
+<p>balance(n) = height(n.left) − height(n.right) ∈ { −1, 0, +1 }</p>
+<p>This is enough to keep the tree short. The sparsest AVL tree of height h has a subtree of height h − 1 on one side and h − 2 on the other, so the minimum number of nodes grows like the Fibonacci numbers, exponentially in h. Turned around, an AVL tree with n nodes has height at most about <strong>1.44 log₂ n</strong>. A million keys means at most about 28 levels, guaranteed.</p>
+<h2>Rotations</h2>
+<p>When an insertion or deletion breaks the balance condition, the tree is repaired with <strong>rotations</strong>: local rearrangements of a node and its child that keep the search-tree order but change the heights.</p>
+<p>A <strong>right rotation</strong> at node <code>y</code> lifts its left child <code>x</code> into its place:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph before[&quot;before: rotate right at y&quot;]
+        direction TB
+        y1((y)) --&gt; x1((x)) &amp; C1[&quot;C&quot;]
+        x1 --&gt; A1[&quot;A&quot;] &amp; B1[&quot;B&quot;]
+    end
+    subgraph after[&quot;after&quot;]
+        direction TB
+        x2((x)) --&gt; A2[&quot;A&quot;] &amp; y2((y))
+        y2 --&gt; B2[&quot;B&quot;] &amp; C2[&quot;C&quot;]
+    end
+    before --&gt; after</pre></div>
+<p>The in-order sequence is <code>A x B y C</code> both before and after, so the tree is still a BST. Only three pointers change, so a rotation is O(1). A <strong>left rotation</strong> is the mirror image.</p>
+<h2>The four cases</h2>
+<p>After inserting into the subtree of node <code>z</code>, suppose <code>z</code> becomes unbalanced with balance +2 (its left side is two levels taller). Look at its left child <code>y</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Shape</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>left-left</td>
+<td><code>y</code> is left-heavy (or balanced)</td>
+<td>rotate right at <code>z</code></td>
+</tr>
+<tr>
+<td>left-right</td>
+<td><code>y</code> is right-heavy</td>
+<td>rotate left at <code>y</code>, then right at <code>z</code></td>
+</tr>
+<tr>
+<td>right-right</td>
+<td>mirror: balance −2, right child right-heavy</td>
+<td>rotate left at <code>z</code></td>
+</tr>
+<tr>
+<td>right-left</td>
+<td>mirror: right child left-heavy</td>
+<td>rotate right at the child, then left at <code>z</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The double rotations handle the &quot;zig-zag&quot; shape, where a single rotation would just move the imbalance to the other side.</p>
+<h2>Insertion</h2>
+<p>Insert as in an ordinary BST, then, <strong>on the way back up</strong> the path to the root, update each node&#39;s stored height and rebalance it if needed. Written recursively, the &quot;way back up&quot; is simply the code after the recursive call:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> key;
+    <span class="tk-k">int</span> height = <span class="tk-n">0</span>;
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; left, right;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">height</span>(<span class="tk-k">const</span> std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&amp; n) { <span class="tk-k">return</span> n ? n-&gt;height : -<span class="tk-n">1</span>; }
+<span class="tk-k">void</span> <span class="tk-f">update</span>(<span class="tk-t">Node</span>&amp; n) { n.height = <span class="tk-n">1</span> + std::<span class="tk-f">max</span>(<span class="tk-f">height</span>(n.left), <span class="tk-f">height</span>(n.right)); }
+<span class="tk-k">int</span> <span class="tk-f">balance</span>(<span class="tk-k">const</span> <span class="tk-t">Node</span>&amp; n) { <span class="tk-k">return</span> <span class="tk-f">height</span>(n.left) - <span class="tk-f">height</span>(n.right); }
+
+<span class="tk-k">void</span> <span class="tk-f">rotateRight</span>(std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&amp; link)
+{
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; x = std::<span class="tk-f">move</span>(link-&gt;left);
+    link-&gt;left = std::<span class="tk-f">move</span>(x-&gt;right);
+    <span class="tk-f">update</span>(*link);
+    x-&gt;right = std::<span class="tk-f">move</span>(link);
+    <span class="tk-f">update</span>(*x);
+    link = std::<span class="tk-f">move</span>(x);
+}
+
+<span class="tk-k">void</span> <span class="tk-f">rotateLeft</span>(std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&amp; link)
+{
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; x = std::<span class="tk-f">move</span>(link-&gt;right);
+    link-&gt;right = std::<span class="tk-f">move</span>(x-&gt;left);
+    <span class="tk-f">update</span>(*link);
+    x-&gt;left = std::<span class="tk-f">move</span>(link);
+    <span class="tk-f">update</span>(*x);
+    link = std::<span class="tk-f">move</span>(x);
+}
+
+<span class="tk-k">void</span> <span class="tk-f">rebalance</span>(std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&amp; link)
+{
+    <span class="tk-f">update</span>(*link);
+    <span class="tk-k">if</span> (<span class="tk-f">balance</span>(*link) &gt; <span class="tk-n">1</span>)
+    {
+        <span class="tk-k">if</span> (<span class="tk-f">balance</span>(*link-&gt;left) &lt; <span class="tk-n">0</span>) <span class="tk-f">rotateLeft</span>(link-&gt;left);      <span class="tk-c">// left-right: make it left-left first</span>
+        <span class="tk-f">rotateRight</span>(link);
+    }
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (<span class="tk-f">balance</span>(*link) &lt; -<span class="tk-n">1</span>)
+    {
+        <span class="tk-k">if</span> (<span class="tk-f">balance</span>(*link-&gt;right) &gt; <span class="tk-n">0</span>) <span class="tk-f">rotateRight</span>(link-&gt;right);   <span class="tk-c">// right-left: make it right-right first</span>
+        <span class="tk-f">rotateLeft</span>(link);
+    }
+}
+
+<span class="tk-k">void</span> <span class="tk-f">insert</span>(std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&amp; link, <span class="tk-k">int</span> key)
+{
+    <span class="tk-k">if</span> (!link) { link = std::make_unique&lt;<span class="tk-t">Node</span>&gt;(); link-&gt;key = key; <span class="tk-k">return</span>; }
+    <span class="tk-k">if</span> (key &lt; link-&gt;key) <span class="tk-f">insert</span>(link-&gt;left, key);
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (key &gt; link-&gt;key) <span class="tk-f">insert</span>(link-&gt;right, key);
+    <span class="tk-k">else</span> <span class="tk-k">return</span>;
+    <span class="tk-f">rebalance</span>(link);
+}
+
+<span class="tk-k">void</span> <span class="tk-f">inorder</span>(<span class="tk-k">const</span> <span class="tk-t">Node</span>* n, std::vector&lt;<span class="tk-k">int</span>&gt;&amp; out)
+{
+    <span class="tk-k">if</span> (!n) <span class="tk-k">return</span>;
+    <span class="tk-f">inorder</span>(n-&gt;left.<span class="tk-f">get</span>(), out);
+    out.<span class="tk-f">push_back</span>(n-&gt;key);
+    <span class="tk-f">inorder</span>(n-&gt;right.<span class="tk-f">get</span>(), out);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; root;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> k = <span class="tk-n">1</span>; k &lt;= <span class="tk-n">100000</span>; ++k) <span class="tk-f">insert</span>(root, k);              <span class="tk-c">// sorted order: the worst case for a plain BST</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;height after 100000 sorted inserts: &quot;</span> &lt;&lt; <span class="tk-f">height</span>(root) &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; small;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> k : { <span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">25</span>, <span class="tk-n">28</span>, <span class="tk-n">5</span> }) <span class="tk-f">insert</span>(small, k);
+    std::vector&lt;<span class="tk-k">int</span>&gt; keys;
+    <span class="tk-f">inorder</span>(small.<span class="tk-f">get</span>(), keys);
+    std::cout &lt;&lt; <span class="tk-s">&quot;root &quot;</span> &lt;&lt; small-&gt;key &lt;&lt; <span class="tk-s">&quot;, keys:&quot;</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> k : keys) std::cout &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; k;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>The sorted insertions that made a plain BST of height 1,999 for 2,000 keys in lesson 4.02 now give height 16 for <strong>100,000</strong> keys: a perfect tree of that size has height 16 too.</p>
+<p>Each insertion costs O(log n) to walk down plus O(1) work per level on the way back up: <strong>O(log n)</strong>. At most one (single or double) rotation is actually needed per insertion, because after it the subtree has its old height again.</p>
+<h2>Deletion</h2>
+<p>Deletion works the same way: delete as in a BST (lesson 4.02), then rebalance every node on the path back to the root. Unlike insertion, a deletion may need a rotation at several levels, still O(log n) in total. The same <code>rebalance</code> function handles it; only the deciding test for the child&#39;s balance must allow 0 (a balanced child takes the single rotation).</p>
+<h2>AVL trees and their relatives</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Structure</th>
+<th>Height guarantee</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>AVL tree</td>
+<td>≈ 1.44 log₂ n</td>
+<td>the most strictly balanced, so the fastest lookups; slightly more rotations on updates</td>
+</tr>
+<tr>
+<td>Red-black tree</td>
+<td>≤ 2 log₂ n</td>
+<td>colours nodes red/black with simple rules; few rotations; used by <code>std::map</code>, <code>std::set</code>, Java&#39;s <code>TreeMap</code>, the Linux kernel</td>
+</tr>
+<tr>
+<td>Treap</td>
+<td>≈ log n expected</td>
+<td>each node gets a random priority and the tree is also a heap by priority; very simple code</td>
+</tr>
+<tr>
+<td>Skip list</td>
+<td>≈ log n expected</td>
+<td>layered linked lists rather than a tree; used by Redis and LevelDB</td>
+</tr>
+<tr>
+<td>B-tree</td>
+<td>log_b n</td>
+<td>nodes hold hundreds of keys, so very shallow; used by databases and file systems, where each node is a disk page</td>
+</tr>
+</tbody></table>
+</div>
+<p>All of them give the same thing: an ordered set or map with O(log n) operations in the worst (or expected) case.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which balance factors are allowed in an AVL tree?</div><ul><li>only 0</li><li>-1, 0 and +1</li><li>any value between -2 and +2</li><li>any value, as long as the tree is a BST</li></ul><details><summary>Show the answer</summary><p><b>-1, 0 and +1</b> The two subtrees of every node may differ in height by at most one.</p></details></li><li><div class="q">A node has balance +2 and its left child has balance -1. What fixes it?</div><ul><li>a single right rotation at the node</li><li>a left rotation at the child, then a right rotation at the node</li><li>a single left rotation at the node</li><li>recolouring the node</li></ul><details><summary>Show the answer</summary><p><b>a left rotation at the child, then a right rotation at the node</b> This is the left-right case: the double rotation straightens the zig-zag first.</p></details></li><li><div class="q">Why does a rotation keep the tree a valid binary search tree?</div><ul><li>It keeps the in-order sequence of keys the same</li><li>It sorts the subtrees</li><li>Rotations only move leaves</li><li>It does not; the tree must be checked afterwards</li></ul><details><summary>Show the answer</summary><p><b>It keeps the in-order sequence of keys the same</b> A x B y C reads the same before and after a rotation at y.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>An AVL tree keeps every node&#39;s subtree heights within one of each other, which bounds the height by about 1.44 log₂ n.</li>
+<li>Rotations restructure a node and its child in O(1) while keeping the in-order sequence.</li>
+<li>Four cases (LL, RR, LR, RL) are fixed by one single or double rotation.</li>
+<li>Insert and delete rebalance along the path back to the root: O(log n).</li>
+<li>Red-black trees, treaps, skip lists and B-trees offer the same guarantees with different trade-offs.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/4.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/4.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-02-binary-search-trees/"><span class="mono">previous</span><b>4.02 Binary Search Trees</b></a>
+      <a class="lp-next" href="../4-04-fenwick-and-segment-trees/"><span class="mono">next</span><b>4.04 Fenwick and Segment Trees</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/4-03-avl-trees"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

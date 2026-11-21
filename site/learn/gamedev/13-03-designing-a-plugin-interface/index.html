@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Designing a Plugin Interface · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/13-03-designing-a-plugin-interface/">
+  <meta name="description" content="A plugin is native code built separately from the game, possibly with a different compiler version, that the game loads at run time. The interface between…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Designing a Plugin Interface · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A plugin is native code built separately from the game, possibly with a different compiler version, that the game loads at run time. The interface between…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/13-03-designing-a-plugin-interface/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Designing a Plugin Interface · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Designing a Plugin Interface · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A plugin is native code built separately from the game, possibly with a different compiler version, that the game loads at run time. The interface between…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Modding and Runtime Instrumentation</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Designing a Plugin Interface</h1>
+      <div class="readout lp-readout"><span>lesson <b>13.03</b></span><span>3 of 8 in milestone 13</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A plugin is native code built separately from the game, possibly with a different compiler version, that the game loads at run time. The interface between them must therefore be a stable <strong>C interface</strong>: plain types, function pointers, explicit versions and sizes. This lesson designs Delve&#39;s plugin API in both directions (the <strong>host API</strong> the game offers plugins, and the <strong>plugin API</strong> plugins offer the game) using lessons 4.05, 3.04 and 12.06.</p>
+      <div class="prose">
+<h2>Two directions</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    G[&quot;Delve (host)&quot;] --&gt;|&quot;HostApi: functions plugins may call&lt;br/&gt;log, spawn, give item, subscribe to events&quot;| P[&quot;plugin.dll&quot;]
+    P --&gt;|&quot;PluginApi: functions the game calls&lt;br/&gt;init, update, shutdown&quot;| G</pre></div>
+<ul>
+<li>The <strong>host API</strong> is what the game lets plugins do. It defines the plugin&#39;s powers, so it is designed carefully and kept small.</li>
+<li>The <strong>plugin API</strong> is what every plugin must provide, so the game can initialise it, call it each frame, and shut it down.</li>
+</ul>
+<h2>Rule 1: a C interface, not C++ classes</h2>
+<p>The game and a plugin may be built with different compilers, settings or standard library versions. Lesson 4.05 explained why <code>std::string</code>, <code>std::vector</code> and C++ classes with virtual functions must not cross that boundary. The interface uses only:</p>
+<ul>
+<li>integers, floats, and fixed-size plain structs;</li>
+<li><code>const char*</code> strings in UTF-8, valid only for the duration of the call (copy them if you need them later);</li>
+<li>function pointers;</li>
+<li>opaque handles (<code>typedef struct DelveEntity* DelveEntityHandle;</code>, or plain integer ids, lesson 3.10).</li>
+</ul>
+<h2>Rule 2: tables of function pointers, with a version and a size</h2>
+<p>Both directions are <strong>structs of function pointers</strong>, the hand-made vtables of lesson 3.05&#39;s practice task, each starting with lesson 12.06&#39;s version and size:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// delve_plugin.h: the only header plugins include. C-compatible.</span>
+<span class="tk-p">#pragma</span> once
+<span class="tk-p">#include &lt;stdint.h&gt;</span>
+
+<span class="tk-p">#define</span> DELVE_API_VERSION_MAJOR <span class="tk-n">1</span>
+<span class="tk-p">#define</span> DELVE_API_VERSION_MINOR <span class="tk-n">0</span>
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> <span class="tk-t">DelveHostApi</span>
+{
+    uint32_t size;                 <span class="tk-c">// sizeof(DelveHostApi) as the game was built: fields past it do not exist</span>
+    uint16_t versionMajor, versionMinor;
+
+    <span class="tk-k">void</span> (*log)(<span class="tk-k">const</span> <span class="tk-k">char</span>* message);
+    <span class="tk-k">int</span>  (*spawnMonster)(<span class="tk-k">const</span> <span class="tk-k">char</span>* kind, <span class="tk-k">int</span> x, <span class="tk-k">int</span> y);               <span class="tk-c">// returns an entity id, or -1</span>
+    <span class="tk-k">int</span>  (*giveItem)(<span class="tk-k">const</span> <span class="tk-k">char</span>* itemId, <span class="tk-k">int</span> count);                    <span class="tk-c">// returns how many did not fit</span>
+    <span class="tk-k">int</span>  (*playerHealth)(<span class="tk-k">void</span>);
+    <span class="tk-k">void</span> (*subscribe)(<span class="tk-k">const</span> <span class="tk-k">char</span>* eventName, <span class="tk-k">void</span> (*handler)(<span class="tk-k">const</span> <span class="tk-k">char</span>* eventName, int64_t value, <span class="tk-k">void</span>* user), <span class="tk-k">void</span>* user);
+    <span class="tk-c">// version 1.1 and later add fields here, at the end only</span>
+} <span class="tk-t">DelveHostApi</span>;
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> <span class="tk-t">DelvePluginApi</span>
+{
+    uint32_t size;
+    uint16_t versionMajor, versionMinor;
+    <span class="tk-k">const</span> <span class="tk-k">char</span>* name;
+
+    <span class="tk-k">int</span>  (*init)(<span class="tk-k">const</span> <span class="tk-t">DelveHostApi</span>* host);      <span class="tk-c">// return 0 for success</span>
+    <span class="tk-k">void</span> (*update)(<span class="tk-k">double</span> dt);                   <span class="tk-c">// may be null if the plugin needs no per-frame work</span>
+    <span class="tk-k">void</span> (*shutdown)(<span class="tk-k">void</span>);
+} <span class="tk-t">DelvePluginApi</span>;
+
+<span class="tk-c">// The one function every plugin DLL exports:</span>
+<span class="tk-c">//   extern &quot;C&quot; __declspec(dllexport) int delvePluginEntry(DelvePluginApi* out);</span>
+<span class="tk-c">// The game passes a zeroed struct whose size it sets; the plugin fills it in.</span></code></pre></div>
+<p>Why this shape:</p>
+<ul>
+<li><strong>One exported function</strong> (<code>delvePluginEntry</code>) instead of many keeps <code>GetProcAddress</code> lookups to one and the export table simple (lesson 4.05).</li>
+<li><strong>Function pointers in a struct</strong> let the game add functions later (at the end, lesson 12.06) without breaking old plugins.</li>
+<li><strong><code>size</code> and the version</strong> let each side check what the other supports: a plugin built for API 1.0 runs on a 1.3 game; a plugin needing 1.3 refuses politely on a 1.0 game.</li>
+<li><strong><code>void* user</code></strong> in callbacks lets a plugin get back its own state when the game calls it, since C function pointers carry no data (lesson 3.04).</li>
+</ul>
+<h2>Rule 3: ownership is explicit</h2>
+<p>Every pointer crossing the boundary has a documented owner and lifetime:</p>
+<ul>
+<li>Strings passed <strong>into</strong> a plugin call are valid only during the call.</li>
+<li>The host API table stays valid until <code>shutdown</code> returns.</li>
+<li>Memory a plugin allocates, the plugin frees; memory the game allocates, the game frees (lesson 4.05: different heaps).</li>
+</ul>
+<p>Write these rules in comments in the header: it is the plugin authors&#39; only documentation.</p>
+<h2>Rule 4: the host API decides what plugins can do</h2>
+<p>Every function in <code>DelveHostApi</code> is a capability given to code you did not write. Expose gameplay-level operations (spawn, give, read health, subscribe to events), validated like console commands (lesson 11.07), not raw pointers into the game&#39;s internals. A plugin that can only call <code>spawnMonster(&quot;goblin&quot;, x, y)</code> cannot corrupt the entity storage; one handed a pointer to it can. Native code can still do anything in principle (it runs in your process), but a good API means well-behaved plugins never need to.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>C++ types in the interface</span></div><div class="callout-body"><p><code>std::string</code>, <code>std::vector</code>, exceptions and classes do not cross a DLL boundary safely. Use C types.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>No version or size</span></div><div class="callout-body"><p>The first change to the API breaks every existing plugin silently.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Exposing internal pointers</span></div><div class="callout-body"><p>Give plugins operations, not access to your data structures.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Throwing exceptions across the boundary</span></div><div class="callout-body"><p>C++ exceptions must not escape a plugin into the game (or the reverse). Catch them at the boundary and return error codes.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why is the plugin interface written in C rather than C++ classes?</div><ul><li>The game and plugins may be built with different compilers or settings, and only plain C types and function pointers are reliably compatible</li><li>C is faster</li><li>DLLs cannot contain C++</li></ul><details><summary>Show the answer</summary><p><b>The game and plugins may be built with different compilers or settings, and only plain C types and function pointers are reliably compatible</b> Lesson 4.05&#39;s rules for DLL boundaries.</p></details></li><li><div class="q">Why does every API table start with a size and version?</div><ul><li>So each side can tell which functions the other provides, and add new ones at the end without breaking old plugins</li><li>To make the struct aligned</li><li>Windows requires it</li></ul><details><summary>Show the answer</summary><p><b>So each side can tell which functions the other provides, and add new ones at the end without breaking old plugins</b> Lesson 12.06&#39;s versioning, applied to function tables.</p></details></li><li><div class="q">What is the <code>void* user</code> parameter in the event callback for?</div><ul><li>It lets the plugin pass its own state pointer, which the game hands back when it calls the callback</li><li>It holds the event&#39;s value</li><li>It is reserved for the game</li></ul><details><summary>Show the answer</summary><p><b>It lets the plugin pass its own state pointer, which the game hands back when it calls the callback</b> C function pointers carry no data; this pointer does.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/13.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/13.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../13-02-data-mods-and-scripting/"><span class="mono">previous</span><b>13.02 Data Mods and Scripting</b></a>
+      <a class="lp-next" href="../13-04-plugins-as-dlls/"><span class="mono">next</span><b>13.04 Plugins as DLLs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/13-03-designing-a-plugin-interface"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

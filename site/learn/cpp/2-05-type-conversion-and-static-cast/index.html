@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Type Conversion and static_cast · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/2-05-type-conversion-and-static-cast/">
+  <meta name="description" content="C++ converts between types automatically when it has to. Some conversions lose information . When you want a conversion, say so with static cast&lt;Type (value).">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Type Conversion and static_cast · C++ · Xenon">
+  <meta property="og:description" content="C++ converts between types automatically when it has to. Some conversions lose information . When you want a conversion, say so with static cast&lt;Type (value).">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/2-05-type-conversion-and-static-cast/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Type Conversion and static_cast · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Type Conversion and static_cast · C++ · Xenon">
+  <meta name="twitter:description" content="C++ converts between types automatically when it has to. Some conversions lose information . When you want a conversion, say so with static cast&lt;Type (value).">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Types and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Type Conversion and static_cast</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 9 in milestone 2</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">C++ converts between types automatically when it has to. Some conversions <strong>lose information</strong>. When you want a conversion, say so with <code>static_cast&lt;Type&gt;(value)</code>.</p>
+      <div class="prose">
+<h2>Conversions happen without being asked</h2>
+<p>Whenever a value of one type is used where another is expected, C++ converts it. This is called an <strong>implicit conversion</strong>: the compiler does it without you writing anything.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">double</span> d{ <span class="tk-n">5</span> };     <span class="tk-c">// the int 5 becomes the double 5.0</span>
+<span class="tk-k">int</span> i = <span class="tk-n">3.9</span>;       <span class="tk-c">// the double 3.9 becomes the int 3: the .9 is gone</span></code></pre></div>
+<p>The first is harmless. The second lost information, and nothing warned you.</p>
+<h2>Widening and narrowing</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph SAFE[&quot;Widening: always fits&quot;]
+        direction LR
+        c[&quot;char&quot;] --&gt; s[&quot;short&quot;] --&gt; i[&quot;int&quot;] --&gt; l[&quot;long long&quot;]
+        f[&quot;float&quot;] --&gt; d[&quot;double&quot;]
+    end
+    subgraph RISKY[&quot;Narrowing: may lose information&quot;]
+        direction LR
+        d2[&quot;double 3.9&quot;] --&gt; i2[&quot;int 3&quot;]
+        l2[&quot;long long&lt;br/&gt;5 billion&quot;] --&gt; i3[&quot;int&lt;br/&gt;does not fit&quot;]
+    end</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Direction</th>
+<th>Safe?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Widening</strong></td>
+<td>To a type that can hold every value of the original</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Narrowing</strong></td>
+<td>To a type that cannot</td>
+<td>Only if you know the value fits</td>
+</tr>
+</tbody></table>
+</div>
+<p>This is why the course uses braces. Brace initialization <strong>refuses</strong> to narrow:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> a = <span class="tk-n">3.5</span>;    <span class="tk-c">// compiles; a is 3</span>
+<span class="tk-k">int</span> b{ <span class="tk-n">3.5</span> };   <span class="tk-c">// error: narrowing conversion</span></code></pre></div>
+<h2>Mixed arithmetic</h2>
+<p>When an operator has two different types to work with, the compiler converts one side first so both match. Roughly, the &quot;smaller&quot; type is converted to the &quot;larger&quot; one.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Result type</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int + double</code></td>
+<td><code>double</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>int + long long</code></td>
+<td><code>long long</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>char + char</code></td>
+<td><code>int</code></td>
+<td>types smaller than <code>int</code> are widened to <code>int</code> first</td>
+</tr>
+<tr>
+<td><code>int + unsigned</code></td>
+<td><code>unsigned</code></td>
+<td>the trap from <a href="../2-02-integers/">2.02 Integers</a></td>
+</tr>
+</tbody></table>
+</div>
+<p>The important detail: the conversion happens <strong>one operator at a time</strong>, not for the statement as a whole.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> total{ <span class="tk-n">7</span> };
+    <span class="tk-k">int</span> count{ <span class="tk-n">2</span> };
+    <span class="tk-k">double</span> wrong{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">double</span>&gt;(total / count) };    <span class="tk-c">// 3</span>
+    <span class="tk-k">double</span> right{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">double</span>&gt;(total) / count };    <span class="tk-c">// 3.5</span>
+    std::cout &lt;&lt; wrong &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; right &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    A[&quot;total / count&quot;] --&gt; B[&quot;int / int gives 3&quot;] --&gt; C[&quot;converted afterwards: 3.0&lt;br/&gt;the .5 is already lost&quot;]
+    D[&quot;static_cast&amp;lt;double&amp;gt;(total) / count&quot;] --&gt; E[&quot;double / int&lt;br/&gt;count is widened to double&quot;] --&gt; F[&quot;3.5&quot;]</pre></div>
+<p>In the first line the division is finished, as integer division, before any <code>double</code> is involved.</p>
+<h2>Converting on purpose</h2>
+<p><code>static_cast</code> is how you tell the compiler, and the next reader, &quot;I mean this conversion&quot;.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static_cast</span>&lt;<span class="tk-k">new</span> type&gt;(value)</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">double</span> price{ <span class="tk-n">9.99</span> };
+<span class="tk-k">int</span> whole{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(price) };     <span class="tk-c">// 9</span>
+<span class="tk-k">char</span> letter{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">char</span>&gt;(<span class="tk-n">72</span>) };     <span class="tk-c">// 'H'</span>
+<span class="tk-k">int</span> code{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-s">'H'</span>) };        <span class="tk-c">// 72</span></code></pre></div>
+<p>It also satisfies brace initialization, because you have stated your intent:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> b{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-n">3.5</span>) };    <span class="tk-c">// fine: 3</span></code></pre></div>
+<blockquote><p>[!tip] Why not the shorter <code>(int)price</code>?
+That older form comes from C and still compiles. It will attempt almost any conversion, including dangerous ones, and it is hard to search for. <code>static_cast</code> only performs sensible conversions and stands out in the code.</p>
+</blockquote>
+<h2>Converting is not rounding</h2>
+<p><code>static_cast&lt;int&gt;</code> <strong>cuts off</strong> the decimals. It does not round. For rounding, use <code>&lt;cmath&gt;</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Result</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>static_cast&lt;int&gt;(2.9)</code></td>
+<td><code>2</code></td>
+<td>cut off</td>
+</tr>
+<tr>
+<td><code>std::round(2.5)</code></td>
+<td><code>3.0</code></td>
+<td>to the nearest whole number</td>
+</tr>
+<tr>
+<td><code>std::floor(2.9)</code></td>
+<td><code>2.0</code></td>
+<td>always down</td>
+</tr>
+<tr>
+<td><code>std::ceil(2.1)</code></td>
+<td><code>3.0</code></td>
+<td>always up</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <code>&lt;cmath&gt;</code> functions return a <code>double</code>. To store a rounded value in an <code>int</code>, combine the two:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> rounded{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(std::<span class="tk-f">round</span>(<span class="tk-n">2.7</span>)) };    <span class="tk-c">// 3</span></code></pre></div>
+<h2>Other casts exist</h2>
+<p>C++ has three more named casts for specialised jobs. You will not need them for a long time. The one you will meet is <code>dynamic_cast</code>, in <a href="../8-06-object-slicing-casting-and-composition/">8.06 Object Slicing, Casting and Composition</a>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-bool-and-char/"><span class="mono">previous</span><b>2.04 bool and char</b></a>
+      <a class="lp-next" href="../2-06-const-and-constexpr/"><span class="mono">next</span><b>2.06 const and constexpr</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/2-05-type-conversion-and-static-cast"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

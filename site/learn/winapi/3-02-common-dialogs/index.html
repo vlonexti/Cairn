@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Common Dialogs · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/3-02-common-dialogs/">
+  <meta name="description" content="Windows provides the Open, Save, folder, colour and font dialogs every program needs. This lesson uses the modern IFileOpenDialog and IFileSaveDialog through…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Common Dialogs · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="Windows provides the Open, Save, folder, colour and font dialogs every program needs. This lesson uses the modern IFileOpenDialog and IFileSaveDialog through…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/3-02-common-dialogs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Common Dialogs · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Common Dialogs · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="Windows provides the Open, Save, folder, colour and font dialogs every program needs. This lesson uses the modern IFileOpenDialog and IFileSaveDialog through…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Dialogs and Modern Interfaces</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Common Dialogs</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Windows provides the Open, Save, folder, colour and font dialogs every program needs. This lesson uses the modern IFileOpenDialog and IFileSaveDialog through COM, with file type filters, default extensions and folders, and the older colour and font dialogs.</p>
+      <div class="prose">
+<h2>COM in five minutes</h2>
+<p>The modern file dialogs are <strong>COM</strong> objects. COM is Windows&#39; system for objects shared between components: you create an object by its class id, get an <strong>interface</strong> (a table of virtual functions), call methods that return <code>HRESULT</code>s (lesson 1.01), and <code>Release()</code> the interface when done.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;shobjidl.h&gt;</span>        <span class="tk-c">// IFileOpenDialog</span>
+<span class="tk-p">#include &lt;wrl/client.h&gt;</span>      <span class="tk-c">// Microsoft::WRL::ComPtr: a smart pointer that calls Release</span>
+<span class="tk-k">using</span> <span class="tk-t">Microsoft</span>::WRL::<span class="tk-t">ComPtr</span>;
+
+<span class="tk-c">// once per thread that uses COM, at start-up; CoUninitialize at the end</span>
+<span class="tk-f">CoInitializeEx</span>(<span class="tk-k">nullptr</span>, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);</code></pre></div>
+<p><code>ComPtr</code> is to COM what <code>std::unique_ptr</code> is to <code>new</code>: it releases the object automatically. The UI thread must use the <strong>apartment-threaded</strong> model (STA) for dialogs.</p>
+<h2>Open</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::optional&lt;std::wstring&gt; <span class="tk-f">askOpenFile</span>(HWND owner)
+{
+    <span class="tk-t">ComPtr</span>&lt;IFileOpenDialog&gt; dialog;
+    <span class="tk-k">if</span> (<span class="tk-f">FAILED</span>(<span class="tk-f">CoCreateInstance</span>(CLSID_FileOpenDialog, <span class="tk-k">nullptr</span>, CLSCTX_INPROC_SERVER, <span class="tk-f">IID_PPV_ARGS</span>(&amp;dialog)))) <span class="tk-k">return</span> {};
+
+    <span class="tk-k">const</span> COMDLG_FILTERSPEC types[] = {
+        { <span class="tk-s">L&quot;Text documents&quot;</span>, <span class="tk-s">L&quot;*.txt;*.md&quot;</span> },
+        { <span class="tk-s">L&quot;All files&quot;</span>, <span class="tk-s">L&quot;*.*&quot;</span> },
+    };
+    dialog-&gt;<span class="tk-f">SetFileTypes</span>(<span class="tk-f">ARRAYSIZE</span>(types), types);
+    dialog-&gt;<span class="tk-f">SetFileTypeIndex</span>(<span class="tk-n">1</span>);                         <span class="tk-c">// 1-based</span>
+    dialog-&gt;<span class="tk-f">SetTitle</span>(<span class="tk-s">L&quot;Open a note&quot;</span>);
+
+    <span class="tk-k">if</span> (<span class="tk-f">FAILED</span>(dialog-&gt;<span class="tk-f">Show</span>(owner))) <span class="tk-k">return</span> {};         <span class="tk-c">// also when the user cancels: HRESULT_FROM_WIN32(ERROR_CANCELLED)</span>
+    <span class="tk-t">ComPtr</span>&lt;IShellItem&gt; item;
+    <span class="tk-k">if</span> (<span class="tk-f">FAILED</span>(dialog-&gt;<span class="tk-f">GetResult</span>(&amp;item))) <span class="tk-k">return</span> {};
+    PWSTR path = <span class="tk-k">nullptr</span>;
+    <span class="tk-k">if</span> (<span class="tk-f">FAILED</span>(item-&gt;<span class="tk-f">GetDisplayName</span>(SIGDN_FILESYSPATH, &amp;path))) <span class="tk-k">return</span> {};
+    std::wstring result{ path };
+    <span class="tk-f">CoTaskMemFree</span>(path);                                 <span class="tk-c">// memory allocated by COM is freed with CoTaskMemFree</span>
+    <span class="tk-k">return</span> result;
+}</code></pre></div>
+<p><code>IID_PPV_ARGS(&amp;dialog)</code> passes both the interface&#39;s id and the pointer to fill, so they cannot mismatch. Cancelling is reported as a failed <code>HRESULT</code> with the code <code>ERROR_CANCELLED</code> (1223), which is not an error to show the user.</p>
+<p>Options set with <code>SetOptions(FOS_...)</code>: <code>FOS_ALLOWMULTISELECT</code> (then use <code>GetResults</code>), <code>FOS_PICKFOLDERS</code> (a folder picker), <code>FOS_FILEMUSTEXIST</code>.</p>
+<h2>Save</h2>
+<p><code>IFileSaveDialog</code> works the same way, with a few extras:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>dialog-&gt;<span class="tk-f">SetFileName</span>(<span class="tk-s">L&quot;Untitled.txt&quot;</span>);                 <span class="tk-c">// suggested name</span>
+dialog-&gt;<span class="tk-f">SetDefaultExtension</span>(<span class="tk-s">L&quot;txt&quot;</span>);                  <span class="tk-c">// added if the user types a name without one</span>
+dialog-&gt;<span class="tk-f">SetOptions</span>(options | FOS_OVERWRITEPROMPT);    <span class="tk-c">// &quot;Replace existing file?&quot; (on by default)</span></code></pre></div>
+<p>The default extension follows the selected file type when it changes. The practice computes exactly what file name the user ends up with.</p>
+<h2>The older filter string</h2>
+<p>Older code uses <code>GetOpenFileNameW</code> with an <code>OPENFILENAMEW</code> structure. Its filter is a single string of <strong>pairs separated by null characters, ended by two nulls</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">wchar_t</span>* filter = <span class="tk-s">L&quot;Text documents (*.txt)\0*.txt\0All files (*.*)\0*.*\0&quot;</span>;   <span class="tk-c">// the literal adds the last \0</span></code></pre></div>
+<p>Building that string from a list, getting the embedded nulls right, is a classic bug source; the practice builds it.</p>
+<h2>Colour and font</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static</span> COLORREF custom[<span class="tk-n">16</span>];                         <span class="tk-c">// the dialog's 16 custom colours, kept between calls</span>
+CHOOSECOLORW cc{ <span class="tk-k">sizeof</span>(cc) };
+cc.hwndOwner = owner;
+cc.rgbResult = m_colour;
+cc.lpCustColors = custom;
+cc.<span class="tk-t">Flags</span> = CC_FULLOPEN | CC_RGBINIT;
+<span class="tk-k">if</span> (<span class="tk-f">ChooseColorW</span>(&amp;cc)) m_colour = cc.rgbResult;
+
+LOGFONTW lf = m_logFont;
+CHOOSEFONTW cf{ <span class="tk-k">sizeof</span>(cf) };
+cf.hwndOwner = owner;
+cf.lpLogFont = &amp;lf;
+cf.<span class="tk-t">Flags</span> = CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT;
+<span class="tk-k">if</span> (<span class="tk-f">ChooseFontW</span>(&amp;cf)) { m_logFont = lf; <span class="tk-f">recreateFont</span>(); }</code></pre></div>
+<h2>Remembering the folder</h2>
+<p>Users expect the Open dialog to start in the folder they used last. The new dialogs remember it per program automatically; <code>SetFolder</code> sets it explicitly (from an <code>IShellItem</code> made with <code>SHCreateItemFromParsingName</code>), and <code>SetClientGuid</code> keeps separate memories for different dialogs in one program (&quot;open image&quot; and &quot;open project&quot;).</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-dialog-boxes/"><span class="mono">previous</span><b>3.01 Dialog Boxes</b></a>
+      <a class="lp-next" href="../3-03-layout-and-resizing/"><span class="mono">next</span><b>3.03 Layout and Resizing</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/3-02-common-dialogs"></script>
+</body>
+</html>

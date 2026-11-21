@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Strings on Windows: ANSI, UTF-16 and UTF-8 · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/5-03-strings-on-windows-ansi-utf-16-and-utf-8/">
+  <meta name="description" content="Most Windows API functions that take text exist twice: an A version for 8-bit &quot;ANSI&quot; strings and a W version for UTF-16 &quot;wide&quot; strings. Windows works in…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Strings on Windows: ANSI, UTF-16 and UTF-8 · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Most Windows API functions that take text exist twice: an A version for 8-bit &quot;ANSI&quot; strings and a W version for UTF-16 &quot;wide&quot; strings. Windows works in…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/5-03-strings-on-windows-ansi-utf-16-and-utf-8/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Strings on Windows: ANSI, UTF-16 and UTF-8 · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Strings on Windows: ANSI, UTF-16 and UTF-8 · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Most Windows API functions that take text exist twice: an A version for 8-bit &quot;ANSI&quot; strings and a W version for UTF-16 &quot;wide&quot; strings. Windows works in…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>The Windows API</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Strings on Windows: ANSI, UTF-16 and UTF-8</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 9 in milestone 5</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Most Windows API functions that take text exist twice: an <strong>A</strong> version for 8-bit &quot;ANSI&quot; strings and a <strong>W</strong> version for UTF-16 &quot;wide&quot; strings. Windows works in UTF-16 internally; the rest of the world, and most libraries, use UTF-8. This lesson explains the A/W split, why the course always calls the W functions, and how to convert between UTF-8 and UTF-16 at the edges of your program.</p>
+      <div class="prose">
+<h2>Two versions of everything</h2>
+<p>Look up <code>CreateFile</code> in the documentation and you find <code>CreateFileA</code> and <code>CreateFileW</code>. The same goes for <code>MessageBox</code>, <code>LoadLibrary</code>, <code>GetModuleFileName</code> and hundreds of others.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Strings are</th>
+<th>C++ type</th>
+<th>Literal</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>A</strong> (&quot;ANSI&quot;)</td>
+<td>8-bit, in the system&#39;s current code page</td>
+<td><code>char*</code>, <code>std::string</code></td>
+<td><code>&quot;text&quot;</code></td>
+</tr>
+<tr>
+<td><strong>W</strong> (&quot;wide&quot;)</td>
+<td>UTF-16</td>
+<td><code>wchar_t*</code>, <code>std::wstring</code></td>
+<td><code>L&quot;text&quot;</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The plain name <code>CreateFile</code> is a macro that becomes <code>CreateFileW</code> when the project defines <code>UNICODE</code> (Visual Studio&#39;s default, &quot;Use Unicode Character Set&quot;) and <code>CreateFileA</code> otherwise. The <code>TCHAR</code> type and <code>TEXT(&quot;...&quot;)</code> macro follow the same switch. They exist for code that once had to build both ways; new code does not need them.</p>
+<p><strong>The W versions are the real ones.</strong> Windows has stored and processed text as UTF-16 since Windows NT. An A function converts your string to UTF-16 using the current <strong>code page</strong> (a table, such as Windows-1252 for Western Europe), calls the W function, and converts any results back. Characters that do not exist in that code page are lost, typically turned into <code>?</code>. A player named <code>Zoë</code> or <code>Сергей</code>, or a save folder under a user name with such letters, breaks A-function code on many machines.</p>
+<p>So the rule for this course: <strong>call the W functions explicitly</strong> (<code>CreateFileW</code>, <code>MessageBoxW</code>), with <code>std::wstring</code> or <code>L&quot;...&quot;</code> strings.</p>
+<h2>But the rest of the program uses UTF-8</h2>
+<p>Files, network protocols, JSON, most cross-platform libraries and your own source code use UTF-8 (lesson 2.08). So programs keep text as UTF-8 internally and convert to UTF-16 only when calling Windows. The conversion functions are <code>MultiByteToWideChar</code> and <code>WideCharToMultiByte</code>, using the two-call pattern from lesson 5.02:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+std::wstring <span class="tk-f">widen</span>(<span class="tk-k">const</span> std::string&amp; utf8)
+{
+    <span class="tk-k">if</span> (utf8.<span class="tk-f">empty</span>()) <span class="tk-k">return</span> {};
+    <span class="tk-k">const</span> <span class="tk-k">int</span> needed{ <span class="tk-f">MultiByteToWideChar</span>(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(utf8.<span class="tk-f">size</span>()), <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>) };
+    std::wstring <span class="tk-f">out</span>(<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(needed), L<span class="tk-s">'\0'</span>);
+    <span class="tk-f">MultiByteToWideChar</span>(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(utf8.<span class="tk-f">size</span>()), out.<span class="tk-f">data</span>(), needed);
+    <span class="tk-k">return</span> out;
+}
+
+std::string <span class="tk-f">narrow</span>(<span class="tk-k">const</span> std::wstring&amp; utf16)
+{
+    <span class="tk-k">if</span> (utf16.<span class="tk-f">empty</span>()) <span class="tk-k">return</span> {};
+    <span class="tk-k">const</span> <span class="tk-k">int</span> needed{ <span class="tk-f">WideCharToMultiByte</span>(CP_UTF8, <span class="tk-n">0</span>, utf16.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(utf16.<span class="tk-f">size</span>()), <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>) };
+    std::string <span class="tk-f">out</span>(<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(needed), <span class="tk-s">'\0'</span>);
+    <span class="tk-f">WideCharToMultiByte</span>(CP_UTF8, <span class="tk-n">0</span>, utf16.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(utf16.<span class="tk-f">size</span>()), out.<span class="tk-f">data</span>(), needed, <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>);
+    <span class="tk-k">return</span> out;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> std::string name{ <span class="tk-s">&quot;Zo\xC3\xAB&quot;</span> };          <span class="tk-c">// &quot;Zoë&quot; in UTF-8: 4 bytes</span>
+    <span class="tk-k">const</span> std::wstring wide{ <span class="tk-f">widen</span>(name) };            <span class="tk-c">// 3 UTF-16 units</span>
+    std::cout &lt;&lt; name.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; UTF-8 bytes, &quot;</span> &lt;&lt; wide.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; UTF-16 units\n&quot;</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;round trip ok: &quot;</span> &lt;&lt; (<span class="tk-f">narrow</span>(wide) == name) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>4 UTF-8 bytes, 3 UTF-16 units
+round trip ok: 1</code></pre></div>
+<p>These two small functions are worth keeping in your engine library. With them, the pattern is: UTF-8 everywhere in your code, <code>widen()</code> right before a W call, <code>narrow()</code> on anything Windows gives back.</p>
+<h2>How UTF-8 and UTF-16 encode a character</h2>
+<p>Knowing the encodings lets you recognise text in memory and write conversions yourself, which is this lesson&#39;s practice task.</p>
+<p><strong>UTF-8</strong> uses 1 to 4 bytes per code point. The first byte&#39;s high bits say how many bytes follow:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code points</th>
+<th>Bytes</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>U+0000 to U+007F</td>
+<td>1</td>
+<td><code>0xxxxxxx</code></td>
+</tr>
+<tr>
+<td>U+0080 to U+07FF</td>
+<td>2</td>
+<td><code>110xxxxx 10xxxxxx</code></td>
+</tr>
+<tr>
+<td>U+0800 to U+FFFF</td>
+<td>3</td>
+<td><code>1110xxxx 10xxxxxx 10xxxxxx</code></td>
+</tr>
+<tr>
+<td>U+10000 to U+10FFFF</td>
+<td>4</td>
+<td><code>11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><code>ë</code> is U+00EB, binary <code>000 1110 1011</code>. In the 2-byte pattern that is <code>110 00011</code> <code>10 101011</code> = <code>C3 AB</code>, the two bytes in the example.</p>
+<p><strong>UTF-16</strong> uses one 16-bit unit for code points up to U+FFFF. Anything above (most emoji, some rare scripts) is split into two units called a <strong>surrogate pair</strong>: subtract 0x10000, put the top 10 bits in a unit <code>0xD800 + top</code>, and the bottom 10 bits in <code>0xDC00 + bottom</code>. So even in UTF-16, one character can take two units.</p>
+<h2>Telling Windows to use UTF-8</h2>
+<p>Since Windows 10 version 1903, an application can declare in its <strong>manifest</strong> that its A functions should use UTF-8 as the code page (<code>&lt;activeCodePage&gt;UTF-8&lt;/activeCodePage&gt;</code>). That makes A functions safe for any text. It is a reasonable option for new programs, but calling W functions works on every version and makes the intent obvious, so the course sticks with W.</p>
+<p>The console is a separate matter: to print UTF-8 correctly in a console window, call <code>SetConsoleOutputCP(CP_UTF8)</code> at start-up (lesson 5.09).</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Calling A functions with UTF-8</span></div><div class="callout-body"><p>Without the UTF-8 manifest, A functions interpret bytes in the current code page, garbling everything that is not ASCII.</p>
+</div></div>
+<blockquote><p>[!warning] Casting between <code>char*</code> and <code>wchar_t*</code>
+<code>(LPCWSTR)&quot;file.txt&quot;</code> compiles, and passes bytes that Windows reads as nonsense UTF-16. Convert with <code>widen</code>, or use <code>L&quot;...&quot;</code> literals.</p>
+</blockquote>
+<blockquote><p>[!warning] Counting characters with <code>size()</code>
+UTF-8 bytes and UTF-16 units are not characters. <code>std::wstring{ L&quot;😀&quot; }.size()</code> is 2.</p>
+</blockquote>
+<blockquote><p>[!warning] Mixing <code>std::cout</code> and <code>std::wcout</code>
+Using both on the same stream in one program leads to missing output. Pick one, or convert and use <code>std::cout</code> throughout.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does <code>CreateFileA</code> do with its file name?</div><ul><li>Converts it from the current code page to UTF-16, then calls <code>CreateFileW</code></li><li>Uses it directly; Windows works in 8-bit text</li><li>Converts it to UTF-8</li></ul><details><summary>Show the answer</summary><p><b>Converts it from the current code page to UTF-16, then calls <code>CreateFileW</code></b> Windows works in UTF-16 internally; the A functions are converting wrappers.</p></details></li><li><div class="q">How many bytes does UTF-8 use for the character <code>é</code> (U+00E9)?</div><ul><li>1</li><li>2</li><li>4</li></ul><details><summary>Show the answer</summary><p><b>2</b> U+0080 to U+07FF take two bytes in UTF-8.</p></details></li><li><div class="q">A program keeps all its text as UTF-8. What should it do to open a file whose name the user typed?</div><ul><li>Convert the name to UTF-16 with <code>MultiByteToWideChar</code> and call <code>CreateFileW</code></li><li>Call <code>CreateFileA</code> with the UTF-8 bytes</li><li>Cast the <code>char*</code> to <code>wchar_t*</code></li></ul><details><summary>Show the answer</summary><p><b>Convert the name to UTF-16 with <code>MultiByteToWideChar</code> and call <code>CreateFileW</code></b> Convert at the boundary, then call the W function.</p></details></li><li><div class="q">Why can <code>std::wstring{ L&quot;😀&quot; }.size()</code> be 2?</div><ul><li>The emoji is above U+FFFF, so UTF-16 needs a surrogate pair of two units</li><li>Wide strings always store two units per character</li><li>Because of the terminating zero</li></ul><details><summary>Show the answer</summary><p><b>The emoji is above U+FFFF, so UTF-16 needs a surrogate pair of two units</b> Only code points up to U+FFFF fit in one UTF-16 unit.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-errors-getlasterror-and-reading-the-documentation/"><span class="mono">previous</span><b>5.02 Errors, GetLastError and Reading the Documentation</b></a>
+      <a class="lp-next" href="../5-04-files-and-directories/"><span class="mono">next</span><b>5.04 Files and Directories</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/5-03-strings-on-windows-ansi-utf-16-and-utf-8"></script>
+</body>
+</html>

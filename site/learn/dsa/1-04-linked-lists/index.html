@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Linked Lists · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/1-04-linked-lists/">
+  <meta name="description" content="Nodes connected by pointers - singly linked lists with push front, insertion after a node and reversal, owning nodes with std::unique ptr, doubly linked…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Linked Lists · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Nodes connected by pointers - singly linked lists with push front, insertion after a node and reversal, owning nodes with std::unique ptr, doubly linked…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/1-04-linked-lists/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Linked Lists · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Linked Lists · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Nodes connected by pointers - singly linked lists with push front, insertion after a node and reversal, owning nodes with std::unique ptr, doubly linked…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Complexity and Linear Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Linked Lists</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 5 in milestone 1</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Nodes connected by pointers - singly linked lists with push_front, insertion after a node and reversal, owning nodes with std::unique_ptr, doubly linked lists with a sentinel, the costs compared with a vector, std::list and std::forward_list, and the two-pointer techniques for finding the middle and detecting a cycle.</p>
+      <div class="prose">
+<h2>Nodes and links</h2>
+<p>A <strong>linked list</strong> stores each element in its own <strong>node</strong>, which also holds a pointer to the next node. The list itself only remembers the first node, the <strong>head</strong>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    head([&quot;head&quot;]) --&gt; A[&quot;7 | next&quot;] --&gt; B[&quot;3 | next&quot;] --&gt; C[&quot;9 | next&quot;] --&gt; N([&quot;nullptr&quot;])</pre></div>
+<p>Because nodes are linked rather than adjacent, inserting or removing a node only rewires a couple of pointers: O(1) <strong>once you are at the right place</strong>. The price is that there is no <code>list[i]</code>: reaching the i-th node means following i links, O(i).</p>
+<h2>A singly linked list</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> value;
+    <span class="tk-t">Node</span>* next;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Node</span>* head = <span class="tk-k">nullptr</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : { <span class="tk-n">9</span>, <span class="tk-n">3</span>, <span class="tk-n">7</span> })
+        head = <span class="tk-k">new</span> <span class="tk-t">Node</span>{ x, head };            <span class="tk-c">// push_front: O(1)</span>
+
+    <span class="tk-k">for</span> (<span class="tk-t">Node</span>* n = head; n != <span class="tk-k">nullptr</span>; n = n-&gt;next)
+        std::cout &lt;&lt; n-&gt;value &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-c">// insert 5 after the node holding 3</span>
+    <span class="tk-k">for</span> (<span class="tk-t">Node</span>* n = head; n != <span class="tk-k">nullptr</span>; n = n-&gt;next)
+        <span class="tk-k">if</span> (n-&gt;value == <span class="tk-n">3</span>) { n-&gt;next = <span class="tk-k">new</span> <span class="tk-t">Node</span>{ <span class="tk-n">5</span>, n-&gt;next }; <span class="tk-k">break</span>; }
+
+    <span class="tk-c">// reverse the list in place: O(n), O(1) extra space</span>
+    <span class="tk-t">Node</span>* previous = <span class="tk-k">nullptr</span>;
+    <span class="tk-k">while</span> (head != <span class="tk-k">nullptr</span>)
+    {
+        <span class="tk-t">Node</span>* next = head-&gt;next;
+        head-&gt;next = previous;
+        previous = head;
+        head = next;
+    }
+    head = previous;
+
+    <span class="tk-k">for</span> (<span class="tk-t">Node</span>* n = head; n != <span class="tk-k">nullptr</span>; n = n-&gt;next)
+        std::cout &lt;&lt; n-&gt;value &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-k">while</span> (head != <span class="tk-k">nullptr</span>)                    <span class="tk-c">// free every node</span>
+    {
+        <span class="tk-t">Node</span>* next = head-&gt;next;
+        <span class="tk-k">delete</span> head;
+        head = next;
+    }
+}</code></pre></div>
+<p>Reversal is the classic linked-list exercise: walk the list once, turning each <code>next</code> pointer around. Draw the three pointers (<code>previous</code>, <code>head</code>, <code>next</code>) on paper for a three-node list and the loop becomes obvious.</p>
+<h2>Owning the nodes</h2>
+<p>Raw <code>new</code> and <code>delete</code> make it easy to leak or double-free nodes. In modern C++ each node can <strong>own</strong> the next one through a <code>std::unique_ptr</code>: destroying the head destroys the whole chain.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> value;
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; next;
+};
+
+<span class="tk-k">class</span> <span class="tk-t">IntList</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">push_front</span>(<span class="tk-k">int</span> value) { head_ = std::make_unique&lt;<span class="tk-t">Node</span>&gt;(<span class="tk-t">Node</span>{ value, std::<span class="tk-f">move</span>(head_) }); ++size_; }
+    <span class="tk-k">void</span> <span class="tk-f">pop_front</span>() { <span class="tk-k">if</span> (head_) { head_ = std::<span class="tk-f">move</span>(head_-&gt;next); --size_; } }
+    std::size_t <span class="tk-f">size</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> size_; }
+
+    <span class="tk-k">void</span> <span class="tk-f">print</span>() <span class="tk-k">const</span>
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-t">Node</span>* n = head_.<span class="tk-f">get</span>(); n; n = n-&gt;next.<span class="tk-f">get</span>()) std::cout &lt;&lt; n-&gt;value &lt;&lt; <span class="tk-s">' '</span>;
+        std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+
+    ~<span class="tk-f">IntList</span>() { <span class="tk-k">while</span> (head_) head_ = std::<span class="tk-f">move</span>(head_-&gt;next); }   <span class="tk-c">// iterative, so a long list cannot overflow the stack</span>
+
+<span class="tk-k">private</span>:
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; head_;
+    std::size_t size_ = <span class="tk-n">0</span>;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">IntList</span> list;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt;= <span class="tk-n">5</span>; ++i) list.<span class="tk-f">push_front</span>(i);
+    list.<span class="tk-f">pop_front</span>();
+    list.<span class="tk-f">print</span>();
+    std::cout &lt;&lt; <span class="tk-s">&quot;size &quot;</span> &lt;&lt; list.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>The destructor matters: the default one destroys <code>head_</code>, which destroys its <code>next</code>, which destroys its <code>next</code>... one nested call per node. A list of a million nodes would overflow the call stack. Unlinking one node at a time in a loop avoids that.</p>
+<h2>Doubly linked lists and sentinels</h2>
+<p>A <strong>doubly linked list</strong> gives each node a <code>prev</code> pointer too, so you can walk backwards and remove a node knowing only its address. Implementations often add a <strong>sentinel</strong>: a dummy node that sits before the first and after the last element, making the list circular. Then there are no special cases for an empty list or for the ends: every real node always has a real <code>prev</code> and <code>next</code>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    S([&quot;sentinel&quot;]) &lt;--&gt; A[&quot;7&quot;] &lt;--&gt; B[&quot;3&quot;] &lt;--&gt; C[&quot;9&quot;] &lt;--&gt; S</pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> DNode
+{
+    <span class="tk-k">int</span> value;
+    DNode* prev;
+    DNode* next;
+};
+
+<span class="tk-k">void</span> <span class="tk-f">insertBefore</span>(DNode* pos, <span class="tk-k">int</span> value)
+{
+    DNode* n = <span class="tk-k">new</span> DNode{ value, pos-&gt;prev, pos };
+    pos-&gt;prev-&gt;next = n;
+    pos-&gt;prev = n;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">unlink</span>(DNode* n)
+{
+    n-&gt;prev-&gt;next = n-&gt;next;
+    n-&gt;next-&gt;prev = n-&gt;prev;
+    <span class="tk-k">delete</span> n;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    DNode sentinel{ <span class="tk-n">0</span>, &amp;sentinel, &amp;sentinel };            <span class="tk-c">// empty: points to itself</span>
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span> }) <span class="tk-f">insertBefore</span>(&amp;sentinel, x);   <span class="tk-c">// push_back</span>
+    <span class="tk-f">insertBefore</span>(sentinel.next, <span class="tk-n">0</span>);                       <span class="tk-c">// push_front</span>
+    <span class="tk-f">unlink</span>(sentinel.next-&gt;next-&gt;next);                    <span class="tk-c">// remove the third node (2)</span>
+
+    <span class="tk-k">for</span> (DNode* n = sentinel.next; n != &amp;sentinel; n = n-&gt;next) std::cout &lt;&lt; n-&gt;value &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;| backwards: &quot;</span>;
+    <span class="tk-k">for</span> (DNode* n = sentinel.prev; n != &amp;sentinel; n = n-&gt;prev) std::cout &lt;&lt; n-&gt;value &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-k">while</span> (sentinel.next != &amp;sentinel) <span class="tk-f">unlink</span>(sentinel.next);
+}</code></pre></div>
+<p>Notice that <code>insertBefore</code> and <code>unlink</code> contain no <code>if</code>s at all. That is the point of the sentinel. <code>std::list</code> is built this way.</p>
+<h2>Lists or vectors?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th><code>std::vector</code></th>
+<th>linked list</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>index <code>i</code></td>
+<td>O(1)</td>
+<td>O(i)</td>
+</tr>
+<tr>
+<td>push/pop at the back</td>
+<td>amortised O(1)</td>
+<td>O(1) (doubly linked)</td>
+</tr>
+<tr>
+<td>push/pop at the front</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>insert/erase at a known node</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>find a value</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>memory per element</td>
+<td>the element</td>
+<td>the element + 1 or 2 pointers + allocation overhead</td>
+</tr>
+<tr>
+<td>cache behaviour</td>
+<td>excellent</td>
+<td>poor: every step can miss the cache</td>
+</tr>
+</tbody></table>
+</div>
+<p>On paper the list wins at inserting in the middle. In practice you must first <strong>find</strong> the middle, which is O(n) pointer chasing, and a vector&#39;s O(n) shifting of contiguous memory is so fast that <strong>vectors usually win anyway</strong>. Lists win when you already hold pointers to nodes and splice them around: LRU caches (the milestone 2 project), free lists in allocators, and the ready queues of schedulers.</p>
+<p>The standard library has <code>std::list</code> (doubly linked, with <code>splice</code> to move nodes between lists in O(1)) and <code>std::forward_list</code> (singly linked, the smallest).</p>
+<h2>Two-pointer techniques</h2>
+<p>Several list problems are solved by walking two pointers at different speeds.</p>
+<p><strong>The middle node</strong>: move <code>slow</code> one step and <code>fast</code> two steps; when <code>fast</code> reaches the end, <code>slow</code> is in the middle.</p>
+<p><strong>Cycle detection</strong> (Floyd&#39;s &quot;tortoise and hare&quot;): if a list loops back on itself, a fast pointer eventually laps the slow one and they meet. If there is no cycle, the fast pointer reaches <code>nullptr</code>. O(n) time, O(1) space.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span> { <span class="tk-k">int</span> value; <span class="tk-t">Node</span>* next; };
+
+<span class="tk-t">Node</span>* <span class="tk-f">middle</span>(<span class="tk-t">Node</span>* head)
+{
+    <span class="tk-t">Node</span>* slow = head;
+    <span class="tk-t">Node</span>* fast = head;
+    <span class="tk-k">while</span> (fast &amp;&amp; fast-&gt;next) { slow = slow-&gt;next; fast = fast-&gt;next-&gt;next; }
+    <span class="tk-k">return</span> slow;
+}
+
+<span class="tk-k">bool</span> <span class="tk-f">hasCycle</span>(<span class="tk-t">Node</span>* head)
+{
+    <span class="tk-t">Node</span>* slow = head;
+    <span class="tk-t">Node</span>* fast = head;
+    <span class="tk-k">while</span> (fast &amp;&amp; fast-&gt;next)
+    {
+        slow = slow-&gt;next;
+        fast = fast-&gt;next-&gt;next;
+        <span class="tk-k">if</span> (slow == fast) <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-k">false</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-t">Node</span>&gt; <span class="tk-f">nodes</span>(<span class="tk-n">7</span>);
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">7</span>; ++i) nodes[i] = { i * <span class="tk-n">10</span>, i + <span class="tk-n">1</span> &lt; <span class="tk-n">7</span> ? &amp;nodes[i + <span class="tk-n">1</span>] : <span class="tk-k">nullptr</span> };
+    std::cout &lt;&lt; <span class="tk-s">&quot;middle &quot;</span> &lt;&lt; <span class="tk-f">middle</span>(&amp;nodes[<span class="tk-n">0</span>])-&gt;value &lt;&lt; <span class="tk-s">&quot;, cycle &quot;</span> &lt;&lt; <span class="tk-f">hasCycle</span>(&amp;nodes[<span class="tk-n">0</span>]) &lt;&lt; <span class="tk-s">'\n'</span>;
+    nodes[<span class="tk-n">6</span>].next = &amp;nodes[<span class="tk-n">2</span>];                     <span class="tk-c">// make the tail point back into the list</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;after linking the tail back: cycle &quot;</span> &lt;&lt; <span class="tk-f">hasCycle</span>(&amp;nodes[<span class="tk-n">0</span>]) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does it cost to reach the 500th node of a singly linked list?</div><ul><li>O(1)</li><li>O(log n)</li><li>O(500): follow 500 links from the head</li><li>It is impossible</li></ul><details><summary>Show the answer</summary><p><b>O(500): follow 500 links from the head</b> There is no indexing: every node must be visited on the way.</p></details></li><li><div class="q">What does a sentinel node in a doubly linked list buy you?</div><ul><li>Insertion and removal need no special cases for an empty list or the ends</li><li>O(1) indexing</li><li>Half the memory</li><li>Automatic sorting</li></ul><details><summary>Show the answer</summary><p><b>Insertion and removal need no special cases for an empty list or the ends</b> Every real node always has real neighbours, so the pointer updates are the same everywhere.</p></details></li><li><div class="q">Why can a destructor that relies on unique_ptr chains crash for a very long list?</div><ul><li>unique_ptr cannot be nested</li><li>Each node&#39;s destruction calls the next one&#39;s destructor recursively, which can overflow the stack</li><li>The nodes are destroyed twice</li><li>unique_ptr leaks the last node</li></ul><details><summary>Show the answer</summary><p><b>Each node&#39;s destruction calls the next one&#39;s destructor recursively, which can overflow the stack</b> Unlinking nodes one at a time in a loop keeps the stack depth constant.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>A linked list stores elements in nodes joined by pointers: O(1) to insert or remove at a known node, O(i) to reach position i.</li>
+<li>Own nodes with <code>std::unique_ptr</code> and destroy long lists iteratively.</li>
+<li>Doubly linked lists with a sentinel remove every special case.</li>
+<li>Vectors usually beat lists in practice because of the cache; lists shine when you keep pointers to nodes and splice them.</li>
+<li>Fast and slow pointers find the middle and detect cycles in O(1) space.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-dynamic-arrays/"><span class="mono">previous</span><b>1.03 Dynamic Arrays</b></a>
+      <a class="lp-next" href="../1-05-stacks-queues-and-deques/"><span class="mono">next</span><b>1.05 Stacks, Queues and Deques</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/1-04-linked-lists"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

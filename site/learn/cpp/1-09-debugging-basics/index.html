@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Debugging Basics · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/1-09-debugging-basics/">
+  <meta name="description" content="A bug is a place where what the program does differs from what you expected . Debugging is finding that place. Do it with a method: read the message, look at…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Debugging Basics · C++ · Xenon">
+  <meta property="og:description" content="A bug is a place where what the program does differs from what you expected . Debugging is finding that place. Do it with a method: read the message, look at…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/1-09-debugging-basics/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Debugging Basics · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Debugging Basics · C++ · Xenon">
+  <meta name="twitter:description" content="A bug is a place where what the program does differs from what you expected . Debugging is finding that place. Do it with a method: read the message, look at…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Debugging Basics</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.09</b></span><span>9 of 10 in milestone 1</span><span>5 min</span><span><b>4</b> practice tasks</span></div>
+      <p class="lp-summary">A bug is a place where what the program <strong>does</strong> differs from what you <strong>expected</strong>. Debugging is finding that place. Do it with a method: read the message, look at the values, narrow it down.</p>
+      <div class="prose">
+<h2>Bugs are normal</h2>
+<p>Every programmer writes bugs all day. What separates a beginner from an expert is not how few bugs they write. It is how quickly they find them. That is a skill, and it has a method.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;Something is wrong&quot;] --&gt; B[&quot;Make it happen&lt;br/&gt;again on demand&quot;]
+    B --&gt; C[&quot;Narrow down&lt;br/&gt;where&quot;]
+    C --&gt; D[&quot;Understand&lt;br/&gt;why&quot;]
+    D --&gt; E[&quot;Fix it&quot;]
+    E --&gt; F[&quot;Test again&quot;]
+    F --&gt;|&quot;still wrong&quot;| C</pre></div>
+<p>The step people skip is the fourth. If you change things until it seems to work without knowing why, the bug is usually still there.</p>
+<h2>First, which kind of problem is it?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>What you see</th>
+<th>Kind</th>
+<th>Where to look</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>It will not build</td>
+<td>Compile or linker error</td>
+<td>The <strong>Problems</strong> tab. Start with the first message.</td>
+</tr>
+<tr>
+<td>It builds, then stops with an error</td>
+<td>Crash</td>
+<td>The message in the console, and the last thing printed before it</td>
+</tr>
+<tr>
+<td>It runs and gives the wrong answer</td>
+<td>Logic error</td>
+<td>The values of your variables, step by step</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Reading a compiler message</h2>
+<div class="codeblock diagram plain"><pre><code>main.cpp(8,5): error C2146: missing ';' before identifier 'std'
+   │      │ │                └── what the compiler got stuck on
+   │      │ └── column
+   │      └── line
+   └── file</code></pre></div>
+<p>Go to that line. If it looks fine, look at the line <strong>above</strong> it. A missing <code>;</code> is only noticed when the compiler reaches the next thing.</p>
+<h2>Technique 1: print the values</h2>
+<p>When the answer is wrong, some variable holds a value you did not expect. So look.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> price{ <span class="tk-n">4</span> };
+    <span class="tk-k">int</span> quantity{ <span class="tk-n">3</span> };
+    <span class="tk-k">int</span> total{ price + quantity };
+    std::cerr &lt;&lt; <span class="tk-s">&quot;DEBUG total=&quot;</span> &lt;&lt; total &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;You owe &quot;</span> &lt;&lt; total &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>std::cerr</code> works like <code>std::cout</code>. It is meant for messages to the programmer, not for the program&#39;s real output. The <code>DEBUG</code> label makes these lines easy to spot and delete when you have finished.</p>
+<p>Here the debug line shows <code>total=7</code>. You expected 12, so the mistake is on the line that calculates <code>total</code>.</p>
+<h2>Technique 2: be the computer</h2>
+<p>Go through the program one line at a time and write down what every variable holds. This is called <strong>tracing</strong>, and it is the most reliable debugging tool there is.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> a{ <span class="tk-n">4</span> };
+<span class="tk-k">int</span> b{ <span class="tk-n">5</span> };
+<span class="tk-k">int</span> c{ <span class="tk-n">6</span> };
+<span class="tk-k">int</span> average{ a + b + c / <span class="tk-n">3</span> };</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>After the line</th>
+<th>a</th>
+<th>b</th>
+<th>c</th>
+<th>average</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int a{ 4 };</code></td>
+<td>4</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>int b{ 5 };</code></td>
+<td>4</td>
+<td>5</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>int c{ 6 };</code></td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td></td>
+</tr>
+<tr>
+<td><code>int average{ ... };</code></td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>4 + 5 + (6 / 3) = <strong>11</strong></td>
+</tr>
+</tbody></table>
+</div>
+<p>The trace shows the problem. Division happens before addition, so only <code>c</code> is divided. The fix is brackets: <code>(a + b + c) / 3</code>.</p>
+<div class="callout tip"><div class="callout-title"><span>Do what the code says, not what you meant</span></div><div class="callout-body"><p>The difficult part of tracing is being honest. Your eyes see what you intended to write. Follow each symbol exactly as it is written.</p>
+</div></div>
+<h2>Technique 3: cut the problem in half</h2>
+<p>When you have no idea where the mistake is, print a value in the <strong>middle</strong> of the program.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    S[&quot;Print a value halfway through&quot;] --&gt; Q{&quot;Is it what&lt;br/&gt;you expected?&quot;}
+    Q --&gt;|&quot;yes&quot;| L[&quot;The mistake is in&lt;br/&gt;the second half&quot;]
+    Q --&gt;|&quot;no&quot;| E[&quot;The mistake is in&lt;br/&gt;the first half&quot;]
+    L --&gt; R[&quot;Repeat on that half&quot;]
+    E --&gt; R</pre></div>
+<p>Each check halves the search. Even in a thousand lines you find the spot in about ten checks.</p>
+<h2>Technique 4: explain it out loud</h2>
+<p>Describe your code line by line to someone else, or to an object on your desk. Programmers call this <em>rubber duck debugging</em>. You will often stop mid-sentence because you have just heard yourself say something that is not true.</p>
+<h2>Writing fewer bugs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Habit</th>
+<th>Why it helps</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Run after every few lines</td>
+<td>A new problem must be in the lines you just wrote</td>
+</tr>
+<tr>
+<td>Read every warning</td>
+<td>A warning usually means &quot;this is legal, and probably not what you meant&quot;</td>
+</tr>
+<tr>
+<td>Give every variable a starting value</td>
+<td>Removes a whole family of unpredictable behaviour</td>
+</tr>
+<tr>
+<td>Keep functions small</td>
+<td>A small piece is easy to check on its own</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Later: a debugger</h2>
+<p>Professional tools such as Visual Studio include a <strong>debugger</strong>. It pauses a running program on any line you choose, shows every variable, and lets you move forward one line at a time. It automates the tracing you just did by hand. Once you know how to trace, a debugger takes minutes to learn.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>4 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/1.09">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/1.09">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-08-multiple-files-and-headers/"><span class="mono">previous</span><b>1.08 Multiple Files and Headers</b></a>
+      <a class="lp-next" href="../1-10-compiler-settings-build-configurations-and-undefined-behavio/"><span class="mono">next</span><b>1.10 Compiler Settings, Build Configurations and Undefined Behavior</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/1-09-debugging-basics"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

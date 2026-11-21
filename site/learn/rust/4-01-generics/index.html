@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Generics · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/4-01-generics/">
+  <meta name="description" content="Writing code once for many types - generic functions with type parameters and trait bounds, where clauses, generic structs and enums like Option and Result,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Generics · Rust · Xenon">
+  <meta property="og:description" content="Writing code once for many types - generic functions with type parameters and trait bounds, where clauses, generic structs and enums like Option and Result,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/4-01-generics/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Generics · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Generics · Rust · Xenon">
+  <meta name="twitter:description" content="Writing code once for many types - generic functions with type parameters and trait bounds, where clauses, generic structs and enums like Option and Result,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Generics, Traits and Lifetimes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Generics</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Writing code once for many types - generic functions with type parameters and trait bounds, where clauses, generic structs and enums like Option and Result, impl blocks for generic types and for specific types, const generics for array sizes, and monomorphization, which makes generics cost nothing at run time.</p>
+      <div class="prose">
+<h2>Generic functions</h2>
+<p>A function with a <strong>type parameter</strong> works for many types. Without a <strong>bound</strong>, the body can do almost nothing with a <code>T</code>; bounds say what the type must support:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> largest&lt;T: <span class="tk-t">PartialOrd</span> + <span class="tk-t">Copy</span>&gt;(items: &amp;[T]) -&gt; <span class="tk-t">Option</span>&lt;T&gt; {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> best = *items.<span class="tk-f">first</span>()?;
+    <span class="tk-k">for</span> &amp;item <span class="tk-k">in</span> items {
+        <span class="tk-k">if</span> item &gt; best {
+            best = item;
+        }
+    }
+    <span class="tk-f">Some</span>(best)
+}
+
+<span class="tk-k">fn</span> describe&lt;T: std::fmt::<span class="tk-t">Debug</span>&gt;(label: &amp;<span class="tk-k">str</span>, value: T) -&gt; <span class="tk-t">String</span> {
+    <span class="tk-p">format!</span>(<span class="tk-s">&quot;{label}: {value:?}&quot;</span>)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} {:?} {:?}&quot;</span>, <span class="tk-f">largest</span>(&amp;[<span class="tk-n">3</span>, <span class="tk-n">9</span>, <span class="tk-n">2</span>]), <span class="tk-f">largest</span>(&amp;[<span class="tk-n">1.5</span>, -<span class="tk-n">2.0</span>]), <span class="tk-f">largest</span>(&amp;[<span class="tk-s">'x'</span>, <span class="tk-s">'b'</span>]));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, largest::&lt;<span class="tk-k">i32</span>&gt;(&amp;[]));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">describe</span>(<span class="tk-s">&quot;point&quot;</span>, (<span class="tk-n">3</span>, <span class="tk-n">4</span>)));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">describe</span>(<span class="tk-s">&quot;list&quot;</span>, <span class="tk-p">vec!</span>[<span class="tk-s">&quot;a&quot;</span>, <span class="tk-s">&quot;b&quot;</span>]));
+}</code></pre></div>
+<p><code>T: PartialOrd + Copy</code> means &quot;any type that can be compared with <code>&lt;</code> and copied&quot;. The compiler checks the bounds where the function is defined, so a generic function either works for every allowed type or does not compile at all.</p>
+<h2>where clauses</h2>
+<p>Long bound lists read better in a <code>where</code> clause:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fmt::<span class="tk-t">Display</span>;
+
+<span class="tk-k">fn</span> join_all&lt;T, U&gt;(items: &amp;[T], extra: U) -&gt; <span class="tk-t">String</span>
+<span class="tk-k">where</span>
+    T: <span class="tk-t">Display</span>,
+    U: <span class="tk-t">Display</span> + <span class="tk-t">Clone</span>,
+{
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> out: <span class="tk-t">Vec</span>&lt;<span class="tk-t">String</span>&gt; = items.<span class="tk-f">iter</span>().<span class="tk-f">map</span>(|i| i.<span class="tk-f">to_string</span>()).<span class="tk-f">collect</span>();
+    out.<span class="tk-f">push</span>(extra.<span class="tk-f">to_string</span>());
+    out.<span class="tk-f">join</span>(<span class="tk-s">&quot;, &quot;</span>)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">join_all</span>(&amp;[<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>], <span class="tk-s">&quot;and more&quot;</span>));
+}</code></pre></div>
+<h2>Generic structs and enums</h2>
+<p><code>Vec&lt;T&gt;</code>, <code>Option&lt;T&gt;</code>, <code>Result&lt;T, E&gt;</code> and <code>HashMap&lt;K, V&gt;</code> are generic types from the standard library. Your own types can be too:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[derive(Debug, Clone, PartialEq)]</span>
+<span class="tk-k">struct</span> <span class="tk-t">Pair</span>&lt;T&gt; {
+    first: T,
+    second: T,
+}
+
+<span class="tk-k">impl</span>&lt;T: <span class="tk-t">PartialOrd</span>&gt; <span class="tk-t">Pair</span>&lt;T&gt; {
+    <span class="tk-k">fn</span> <span class="tk-f">larger</span>(&amp;<span class="tk-k">self</span>) -&gt; &amp;T {
+        <span class="tk-k">if</span> <span class="tk-k">self</span>.first &gt;= <span class="tk-k">self</span>.second { &amp;<span class="tk-k">self</span>.first } <span class="tk-k">else</span> { &amp;<span class="tk-k">self</span>.second }
+    }
+}
+
+<span class="tk-k">impl</span>&lt;T&gt; <span class="tk-t">Pair</span>&lt;T&gt; {
+    <span class="tk-k">fn</span> <span class="tk-f">swap</span>(<span class="tk-k">self</span>) -&gt; <span class="tk-t">Pair</span>&lt;T&gt; {
+        <span class="tk-t">Pair</span> { first: <span class="tk-k">self</span>.second, second: <span class="tk-k">self</span>.first }
+    }
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Pair</span>&lt;<span class="tk-k">f64</span>&gt; {                         <span class="tk-c">// only for Pair&lt;f64&gt;</span>
+    <span class="tk-k">fn</span> <span class="tk-f">distance</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> {
+        (<span class="tk-k">self</span>.first - <span class="tk-k">self</span>.second).<span class="tk-f">abs</span>()
+    }
+}
+
+<span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">enum</span> <span class="tk-t">Tree</span>&lt;T&gt; {
+    <span class="tk-f">Leaf</span>(T),
+    <span class="tk-f">Node</span>(<span class="tk-t">Box</span>&lt;<span class="tk-t">Tree</span>&lt;T&gt;&gt;, <span class="tk-t">Box</span>&lt;<span class="tk-t">Tree</span>&lt;T&gt;&gt;),
+}
+
+<span class="tk-k">fn</span> count_leaves&lt;T&gt;(t: &amp;<span class="tk-t">Tree</span>&lt;T&gt;) -&gt; <span class="tk-k">usize</span> {
+    <span class="tk-k">match</span> t {
+        <span class="tk-t">Tree</span>::<span class="tk-f">Leaf</span>(_) =&gt; <span class="tk-n">1</span>,
+        <span class="tk-t">Tree</span>::<span class="tk-f">Node</span>(l, r) =&gt; <span class="tk-f">count_leaves</span>(l) + <span class="tk-f">count_leaves</span>(r),
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> p = <span class="tk-t">Pair</span> { first: <span class="tk-n">3</span>, second: <span class="tk-n">8</span> };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {:?}&quot;</span>, p.<span class="tk-f">larger</span>(), p.<span class="tk-f">clone</span>().<span class="tk-f">swap</span>());
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-t">Pair</span> { first: <span class="tk-n">1.5</span>, second: <span class="tk-n">4.0</span> }.<span class="tk-f">distance</span>());
+    <span class="tk-k">let</span> t = <span class="tk-t">Tree</span>::<span class="tk-f">Node</span>(<span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Tree</span>::<span class="tk-f">Leaf</span>(<span class="tk-s">&quot;a&quot;</span>)), <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Tree</span>::<span class="tk-f">Node</span>(<span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Tree</span>::<span class="tk-f">Leaf</span>(<span class="tk-s">&quot;b&quot;</span>)), <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Tree</span>::<span class="tk-f">Leaf</span>(<span class="tk-s">&quot;c&quot;</span>)))));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">count_leaves</span>(&amp;t));
+}</code></pre></div>
+<p><code>impl&lt;T&gt; Pair&lt;T&gt;</code> applies to every <code>Pair</code>; <code>impl&lt;T: PartialOrd&gt; Pair&lt;T&gt;</code> only when <code>T</code> can be compared; <code>impl Pair&lt;f64&gt;</code> only for one concrete type. <code>Box</code> (lesson 5.04) puts the recursive tree parts on the heap.</p>
+<h2>Const generics</h2>
+<p>Types can also be parameterised by <strong>values</strong>, most often array lengths:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> sum_all&lt;<span class="tk-k">const</span> N: <span class="tk-k">usize</span>&gt;(values: [<span class="tk-k">i32</span>; N]) -&gt; <span class="tk-k">i32</span> {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> total = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> v <span class="tk-k">in</span> values { total += v; }
+    total
+}
+
+<span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">struct</span> <span class="tk-t">Grid</span>&lt;<span class="tk-k">const</span> W: <span class="tk-k">usize</span>, <span class="tk-k">const</span> H: <span class="tk-k">usize</span>&gt; {
+    cells: [[<span class="tk-k">u8</span>; W]; H],
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {}&quot;</span>, <span class="tk-f">sum_all</span>([<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>]), <span class="tk-f">sum_all</span>([<span class="tk-n">10</span>; <span class="tk-n">5</span>]));
+    <span class="tk-k">let</span> g = <span class="tk-t">Grid</span>::&lt;<span class="tk-n">3</span>, <span class="tk-n">2</span>&gt; { cells: [[<span class="tk-n">0</span>; <span class="tk-n">3</span>]; <span class="tk-n">2</span>] };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, g);
+}</code></pre></div>
+<h2>Zero-cost</h2>
+<p>The compiler generates a separate, fully optimised copy of a generic function for each concrete type it is used with (<strong>monomorphization</strong>). <code>largest::&lt;i32&gt;</code> and <code>largest::&lt;f64&gt;</code> are as fast as hand-written versions. The cost is compile time and binary size, not run time.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-modules-crates-and-tests/"><span class="mono">previous</span><b>3.05 Modules, Crates and Tests</b></a>
+      <a class="lp-next" href="../4-02-traits/"><span class="mono">next</span><b>4.02 Traits</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/4-01-generics"></script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The PE File Format · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/9-02-the-pe-file-format/">
+  <meta name="description" content="Every .exe and .dll on Windows is a Portable Executable (PE) file: a set of headers describing the program, followed by its sections of code and data. This…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The PE File Format · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Every .exe and .dll on Windows is a Portable Executable (PE) file: a set of headers describing the program, followed by its sections of code and data. This…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/9-02-the-pe-file-format/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The PE File Format · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The PE File Format · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Every .exe and .dll on Windows is a Portable Executable (PE) file: a set of headers describing the program, followed by its sections of code and data. This…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Reverse Engineering Fundamentals</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The PE File Format</h1>
+      <div class="readout lp-readout"><span>lesson <b>9.02</b></span><span>2 of 10 in milestone 9</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Every <code>.exe</code> and <code>.dll</code> on Windows is a <strong>Portable Executable</strong> (PE) file: a set of headers describing the program, followed by its <strong>sections</strong> of code and data. This lesson walks through the headers in order (the DOS header and <code>MZ</code>, the <code>PE</code> signature, the file header, the optional header and its data directories, and the section table) and reads them from C++.</p>
+      <div class="prose">
+<h2>The overall shape</h2>
+<div class="codeblock diagram plain"><pre><code>┌──────────────────────────┐  offset 0
+│ DOS header (&quot;MZ&quot;)        │  64 bytes; e_lfanew at offset 0x3C says where the PE header is
+├──────────────────────────┤
+│ DOS stub                 │  a tiny DOS program: &quot;This program cannot be run in DOS mode.&quot;
+├──────────────────────────┤  offset e_lfanew
+│ &quot;PE\0\0&quot; signature       │  4 bytes
+│ File header (COFF)       │  20 bytes: machine, number of sections, ...
+│ Optional header          │  240 bytes for 64-bit: entry point, image base, data directories
+├──────────────────────────┤
+│ Section table            │  40 bytes per section: name, RVA, size, file offset, flags
+├──────────────────────────┤
+│ .text                    │  code
+│ .rdata                   │  constants, import and export tables, RTTI
+│ .data                    │  writable globals
+│ .pdata                   │  unwind information (lesson 8.02)
+│ .rsrc                    │  resources: icons, version information
+│ .reloc                   │  relocations (lesson 6.09)
+└──────────────────────────┘</code></pre></div>
+<p>The same layout appears in memory once the loader maps the file: <code>GetModuleHandleW(nullptr)</code> points at the <code>MZ</code> (lesson 5.08), and every RVA in the headers is an offset from there.</p>
+<h2>The DOS header</h2>
+<p>For backward compatibility with 1980s DOS, every PE file starts with a DOS header. Only two fields matter now:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x00</td>
+<td><code>e_magic</code></td>
+<td><code>0x5A4D</code>: the bytes <code>4D 5A</code>, &quot;MZ&quot;</td>
+</tr>
+<tr>
+<td>0x3C</td>
+<td><code>e_lfanew</code></td>
+<td>The file offset of the PE signature (often 0x80 to 0x100)</td>
+</tr>
+</tbody></table>
+</div>
+<h2>The NT headers</h2>
+<p>At <code>e_lfanew</code> come the <strong>NT headers</strong>: the signature, the file header and the optional header.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Where</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Signature</code></td>
+<td>+0</td>
+<td><code>0x00004550</code>: the bytes <code>50 45 00 00</code>, &quot;PE\0\0&quot;</td>
+</tr>
+<tr>
+<td><code>FileHeader.Machine</code></td>
+<td>+4</td>
+<td><code>0x8664</code> for x64, <code>0x14C</code> for 32-bit x86, <code>0xAA64</code> for ARM64</td>
+</tr>
+<tr>
+<td><code>FileHeader.NumberOfSections</code></td>
+<td>+6</td>
+<td>How many entries the section table has</td>
+</tr>
+<tr>
+<td><code>FileHeader.TimeDateStamp</code></td>
+<td>+8</td>
+<td>When it was linked (or a hash, for reproducible builds)</td>
+</tr>
+<tr>
+<td><code>FileHeader.SizeOfOptionalHeader</code></td>
+<td>+20</td>
+<td>Where the section table starts, relative to the optional header</td>
+</tr>
+<tr>
+<td><code>FileHeader.Characteristics</code></td>
+<td>+22</td>
+<td>Flags: executable, DLL, large-address-aware ...</td>
+</tr>
+<tr>
+<td><code>OptionalHeader.Magic</code></td>
+<td>+24</td>
+<td><code>0x20B</code> for 64-bit (PE32+), <code>0x10B</code> for 32-bit</td>
+</tr>
+<tr>
+<td><code>OptionalHeader.AddressOfEntryPoint</code></td>
+<td>+24+16</td>
+<td>RVA where execution starts (the C runtime&#39;s start-up code, which calls <code>main</code>)</td>
+</tr>
+<tr>
+<td><code>OptionalHeader.ImageBase</code></td>
+<td>+24+24</td>
+<td>Preferred load address: <code>0x140000000</code> for exes (lesson 6.09)</td>
+</tr>
+<tr>
+<td><code>OptionalHeader.SizeOfImage</code></td>
+<td></td>
+<td>Size of the whole image in memory</td>
+</tr>
+<tr>
+<td><code>OptionalHeader.DllCharacteristics</code></td>
+<td></td>
+<td>Security flags: ASLR (dynamic base), DEP (NX compatible), CFG ...</td>
+</tr>
+<tr>
+<td><code>OptionalHeader.DataDirectory[16]</code></td>
+<td>the last 128 bytes</td>
+<td>RVA and size of the import table, export table, resources, relocations, debug data ...</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <strong>data directories</strong> are the index of the file: each entry points (by RVA and size) at one important table. The ones you will use most:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Index</th>
+<th>Directory</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Export table (lesson 9.03)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Import table (lesson 9.03)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Resources</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Exception (unwind) data, <code>.pdata</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Base relocations</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Debug directory: the PDB&#39;s name and signature (lesson 8.02)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Import address table (IAT)</td>
+</tr>
+</tbody></table>
+</div>
+<h2>The section table</h2>
+<p>After the optional header, one 40-byte entry per section:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Name</code></td>
+<td>8 bytes, such as <code>.text\0\0\0</code></td>
+</tr>
+<tr>
+<td><code>VirtualSize</code></td>
+<td>Size in memory</td>
+</tr>
+<tr>
+<td><code>VirtualAddress</code></td>
+<td>RVA where the section starts in memory</td>
+</tr>
+<tr>
+<td><code>SizeOfRawData</code></td>
+<td>Size in the file (rounded up to the file alignment, often 512)</td>
+</tr>
+<tr>
+<td><code>PointerToRawData</code></td>
+<td>Offset where the section starts in the file</td>
+</tr>
+<tr>
+<td><code>Characteristics</code></td>
+<td>Flags: code, initialised data, readable, writable, executable</td>
+</tr>
+</tbody></table>
+</div>
+<p>Sections start on 4 KB page boundaries in memory, but only 512-byte boundaries in the file, so an RVA and a file offset differ: converting between them needs the section table (lesson 9.03&#39;s practice task).</p>
+<h2>Reading the headers from C++</h2>
+<p><code>&lt;windows.h&gt;</code> defines all these structures (<code>IMAGE_DOS_HEADER</code>, <code>IMAGE_NT_HEADERS64</code>, <code>IMAGE_SECTION_HEADER</code>), so a loaded module&#39;s headers can be read directly:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>* base{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>*&gt;(<span class="tk-f">GetModuleHandleW</span>(<span class="tk-k">nullptr</span>)) };
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>* dos{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> IMAGE_DOS_HEADER*&gt;(base) };
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>* nt{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> IMAGE_NT_HEADERS64*&gt;(base + dos-&gt;e_lfanew) };
+
+    std::cout &lt;&lt; <span class="tk-s">&quot;MZ found:      &quot;</span> &lt;&lt; (dos-&gt;e_magic == IMAGE_DOS_SIGNATURE) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;PE found:      &quot;</span> &lt;&lt; (nt-&gt;<span class="tk-t">Signature</span> == IMAGE_NT_SIGNATURE) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;x64:           &quot;</span> &lt;&lt; (nt-&gt;<span class="tk-t">FileHeader</span>.<span class="tk-t">Machine</span> == IMAGE_FILE_MACHINE_AMD64) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;64-bit header: &quot;</span> &lt;&lt; (nt-&gt;<span class="tk-t">OptionalHeader</span>.<span class="tk-t">Magic</span> == IMAGE_NT_OPTIONAL_HDR64_MAGIC) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;ASLR enabled:  &quot;</span> &lt;&lt; ((nt-&gt;<span class="tk-t">OptionalHeader</span>.<span class="tk-t">DllCharacteristics</span> &amp; IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) != <span class="tk-n">0</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-k">const</span> IMAGE_SECTION_HEADER* section{ <span class="tk-f">IMAGE_FIRST_SECTION</span>(nt) };
+    <span class="tk-k">bool</span> hasText{ <span class="tk-k">false</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; nt-&gt;<span class="tk-t">FileHeader</span>.<span class="tk-t">NumberOfSections</span>; ++i)
+        <span class="tk-k">if</span> (std::<span class="tk-f">string</span>(<span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(section[i].<span class="tk-t">Name</span>), <span class="tk-n">5</span>) == <span class="tk-s">&quot;.text&quot;</span>) hasText = <span class="tk-k">true</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;has .text:     &quot;</span> &lt;&lt; hasText &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>MZ found:      1
+PE found:      1
+x64:           1
+64-bit header: 1
+ASLR enabled:  1
+has .text:     1</code></pre></div>
+<p><code>dumpbin /headers game.exe</code> prints all of this from the file on disk, and tools like PE-bear and CFF Explorer show it graphically. For an untrusted file, never cast raw file bytes to these structures without checking every offset against the file&#39;s size first: malformed files are a classic attack on parsers. The practice task parses from a byte buffer with those checks.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Mixing RVAs and file offsets</span></div><div class="callout-body"><p>Header fields are RVAs (memory offsets). In a file on disk, convert through the section table before reading.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Assuming a fixed offset for the PE header</span></div><div class="callout-body"><p>Always read <code>e_lfanew</code>.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Trusting the sizes in a file</span></div><div class="callout-body"><p>Check every offset and count against the actual file size before using it.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which two bytes start every PE file?</div><ul><li><code>4D 5A</code> (&quot;MZ&quot;)</li><li><code>50 45</code> (&quot;PE&quot;)</li><li><code>7F 45</code> (&quot;\x7FE&quot;)</li></ul><details><summary>Show the answer</summary><p><b><code>4D 5A</code> (&quot;MZ&quot;)</b> &quot;MZ&quot; is the DOS header&#39;s signature; the PE signature comes later, at e_lfanew.</p></details></li><li><div class="q">What does <code>e_lfanew</code> hold?</div><ul><li>The file offset of the PE signature and NT headers</li><li>The entry point</li><li>The number of sections</li></ul><details><summary>Show the answer</summary><p><b>The file offset of the PE signature and NT headers</b> It is at offset 0x3C of the DOS header.</p></details></li><li><div class="q">What is the value of <code>FileHeader.Machine</code> for a 64-bit x86 program?</div><ul><li><code>0x8664</code></li><li><code>0x14C</code></li><li><code>0x20B</code></li></ul><details><summary>Show the answer</summary><p><b><code>0x8664</code></b> <code>0x20B</code> is the optional header&#39;s magic for PE32+.</p></details></li><li><div class="q">What are the data directories?</div><ul><li>A table of RVAs and sizes pointing at the import table, export table, resources, relocations and other key structures</li><li>The folders the program was built in</li><li>The list of sections</li></ul><details><summary>Show the answer</summary><p><b>A table of RVAs and sizes pointing at the import table, export table, resources, relocations and other key structures</b> They are the index of the file&#39;s important tables.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/9.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/9.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../9-01-what-reverse-engineering-is-and-its-ground-rules/"><span class="mono">previous</span><b>9.01 What Reverse Engineering Is, and Its Ground Rules</b></a>
+      <a class="lp-next" href="../9-03-imports-exports-and-the-loader/"><span class="mono">next</span><b>9.03 Imports, Exports and the Loader</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/9-02-the-pe-file-format"></script>
+</body>
+</html>

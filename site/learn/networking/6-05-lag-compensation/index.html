@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Lag Compensation · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/6-05-lag-compensation/">
+  <meta name="description" content="Making hits fair when every player sees others in the past - the server keeping a short history of positions, rewinding targets to the moment the shooter…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Lag Compensation · Networking · Xenon">
+  <meta property="og:description" content="Making hits fair when every player sees others in the past - the server keeping a short history of positions, rewinding targets to the moment the shooter…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/6-05-lag-compensation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Lag Compensation · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lag Compensation · Networking · Xenon">
+  <meta name="twitter:description" content="Making hits fair when every player sees others in the past - the server keeping a short history of positions, rewinding targets to the moment the shooter…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Multiplayer Games</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Lag Compensation</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making hits fair when every player sees others in the past - the server keeping a short history of positions, rewinding targets to the moment the shooter saw, testing the shot there, limiting the rewind, and the trade-offs it creates for the player being shot.</p>
+      <div class="prose">
+<h2>Aiming at the past</h2>
+<p>Thanks to interpolation (lesson 6.03), a client sees other players where they were about 100 ms ago, plus the time its own input takes to reach the server. A player who aims perfectly at a running enemy on their screen and fires would <strong>miss</strong> if the server tested the shot against where the enemy is <em>now</em>: by the time the shot arrives, the enemy has moved on. Players would have to aim ahead by an amount that changes with their ping. Nobody wants that.</p>
+<h2>Rewinding the world</h2>
+<p><strong>Lag compensation</strong> makes the server test the shot against what the shooter actually saw:</p>
+<ol>
+<li>The server keeps a <strong>history</strong> of every player&#39;s position (and hitbox) for each of the last few hundred milliseconds of ticks.</li>
+<li>The fire input says <strong>which tick the shooter was seeing</strong>: the render time of its interpolation, as a tick number (it can be fractional, between two snapshots).</li>
+<li>The server <strong>rewinds</strong> the other players to that tick, interpolating between the two recorded ticks around it, just as the client did.</li>
+<li>It tests the shot (a ray, the bullet&#39;s path) against those rewound positions, then puts everything back.</li>
+</ol>
+<p>If the shooter&#39;s screen showed a hit, the server agrees. The shooter&#39;s own position comes from the present, since that is known exactly.</p>
+<h2>Limits</h2>
+<p>The client says which tick it saw, so the server must not trust it blindly:</p>
+<ul>
+<li><strong>Clamp the rewind</strong> to a maximum, typically 200 ms to 1 second. A client claiming to see the world 3 seconds ago gets the oldest allowed tick instead, so a laggy or dishonest client cannot rewrite history far back.</li>
+<li>Reject ticks <strong>in the future</strong> (newer than the server&#39;s current tick).</li>
+<li>Check the claimed tick against what the server knows about that client&#39;s latency; a value that jumps around is suspicious.</li>
+</ul>
+<h2>The trade-off</h2>
+<p>Lag compensation favours the <strong>shooter</strong>. The player being shot sometimes feels it is unfair: they reached cover on their screen, then died anyway, because on the shooter&#39;s screen (100 ms behind) they had not yet. This &quot;shot around the corner&quot; effect grows with the shooter&#39;s latency, which is the main reason for capping the rewind. Every shooter game tunes this balance; some reduce compensation for players with very high ping.</p>
+<p>Lag compensation is for <strong>instant</strong> hits (hitscan weapons). Slow projectiles, such as rockets and arrows, are usually simulated on the server from the moment they are fired, sometimes with a small head start to make up for the shooter&#39;s latency.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-prediction-and-reconciliation/"><span class="mono">previous</span><b>6.04 Prediction and Reconciliation</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/6-05-lag-compensation"></script>
+</body>
+</html>

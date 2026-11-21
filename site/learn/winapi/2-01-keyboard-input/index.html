@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Keyboard Input · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/2-01-keyboard-input/">
+  <meta name="description" content="Keys arrive as WM KEYDOWN and WM KEYUP with virtual-key codes, text arrives as WM CHAR after TranslateMessage. This lesson explains the difference, the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Keyboard Input · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="Keys arrive as WM KEYDOWN and WM KEYUP with virtual-key codes, text arrives as WM CHAR after TranslateMessage. This lesson explains the difference, the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/2-01-keyboard-input/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Keyboard Input · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Keyboard Input · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="Keys arrive as WM KEYDOWN and WM KEYUP with virtual-key codes, text arrives as WM CHAR after TranslateMessage. This lesson explains the difference, the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Input, Menus and Controls</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Keyboard Input</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.01</b></span><span>1 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Keys arrive as WM_KEYDOWN and WM_KEYUP with virtual-key codes, text arrives as WM_CHAR after TranslateMessage. This lesson explains the difference, the information packed into lParam, auto-repeat, modifier keys, system keys and keyboard focus.</p>
+      <div class="prose">
+<h2>Keys and characters</h2>
+<p>Pressing Shift+A produces several messages:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Means</th>
+<th>wParam</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WM_KEYDOWN</code></td>
+<td>Shift went down</td>
+<td><code>VK_SHIFT</code></td>
+</tr>
+<tr>
+<td><code>WM_KEYDOWN</code></td>
+<td>A went down</td>
+<td><code>&#39;A&#39;</code> (the virtual key)</td>
+</tr>
+<tr>
+<td><code>WM_CHAR</code></td>
+<td>The character &quot;A&quot; was typed</td>
+<td><code>L&#39;A&#39;</code> (a UTF-16 unit)</td>
+</tr>
+<tr>
+<td><code>WM_KEYUP</code></td>
+<td>A went up</td>
+<td><code>&#39;A&#39;</code></td>
+</tr>
+<tr>
+<td><code>WM_KEYUP</code></td>
+<td>Shift went up</td>
+<td><code>VK_SHIFT</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Key</strong> messages tell you which physical key moved, as a <strong>virtual-key code</strong>: <code>&#39;A&#39;</code> to <code>&#39;Z&#39;</code>, <code>&#39;0&#39;</code> to <code>&#39;9&#39;</code>, <code>VK_LEFT</code>, <code>VK_RETURN</code>, <code>VK_F5</code>, <code>VK_CONTROL</code> and so on. They are for <strong>commands</strong>: arrows to move, Delete to delete, F5 to refresh.</p>
+<p><strong>Character</strong> messages tell you which text the user typed, after the keyboard layout, Shift, Caps Lock and dead keys (é from ´ then e) are applied. They are for <strong>text input</strong>. <code>TranslateMessage</code> in the message loop makes them; leave it out and no <code>WM_CHAR</code> ever arrives. Characters above U+FFFF arrive as two <code>WM_CHAR</code> messages, one per surrogate (lesson 1.02).</p>
+<p>Never build text from <code>WM_KEYDOWN</code>: it knows nothing about layouts, so a French or German user gets the wrong letters.</p>
+<h2>What lParam holds</h2>
+<p>For key messages, <code>lParam</code> packs details of the keystroke:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Bits</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0 - 15</td>
+<td>Repeat count (auto-repeat may combine several)</td>
+</tr>
+<tr>
+<td>16 - 23</td>
+<td>Scan code (the physical key&#39;s hardware code)</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Extended key (right Ctrl, right Alt, arrow keys of the separate block, Insert/Delete ...)</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Context code: Alt was down (for <code>WM_SYSKEYDOWN</code>)</td>
+</tr>
+<tr>
+<td>30</td>
+<td>Previous key state: 1 if the key was <strong>already down</strong> (this is an auto-repeat)</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Transition state: 0 for down, 1 for up</td>
+</tr>
+</tbody></table>
+</div>
+<p>Bit 30 is the useful one: holding a key sends <code>WM_KEYDOWN</code> again and again, and bit 30 tells a first press apart from repeats. A game-style &quot;jump once per press&quot; checks it. The practice decodes all the fields.</p>
+<h2>Modifier keys</h2>
+<p>To know whether Ctrl or Shift is held when a key arrives, ask:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">bool</span> ctrl = <span class="tk-f">GetKeyState</span>(VK_CONTROL) &lt; <span class="tk-n">0</span>;      <span class="tk-c">// high bit set = down</span>
+<span class="tk-k">const</span> <span class="tk-k">bool</span> shift = <span class="tk-f">GetKeyState</span>(VK_SHIFT) &lt; <span class="tk-n">0</span>;</code></pre></div>
+<p><code>GetKeyState</code> gives the state <strong>as of the message being processed</strong>, which is what you want inside a window procedure. <code>GetAsyncKeyState</code> gives the state right now, which may differ if the program is behind; it is for polling, not for handling messages. Left and right versions exist (<code>VK_LSHIFT</code>, <code>VK_RSHIFT</code>) when it matters.</p>
+<h2>System keys</h2>
+<p>Keys pressed with <strong>Alt</strong> held, and F10, arrive as <code>WM_SYSKEYDOWN</code> / <code>WM_SYSKEYUP</code> / <code>WM_SYSCHAR</code> instead. <code>DefWindowProcW</code> uses them for the menu (Alt opens it, Alt+F opens File) and for Alt+F4. If you handle Alt combinations yourself, still pass the messages you do not use to <code>DefWindowProcW</code>, or Alt+F4 stops working.</p>
+<h2>Focus</h2>
+<p>Keyboard messages go to the window with the <strong>keyboard focus</strong>: one window in the system at a time. Clicking a control gives it the focus; <code>SetFocus(hwnd)</code> moves it in code. A window learns it gained or lost focus through <code>WM_SETFOCUS</code> and <code>WM_KILLFOCUS</code>: a text editor creates its caret (<code>CreateCaret</code>, <code>ShowCaret</code>) on the first and destroys it on the second.</p>
+<p>When a top-level window is reactivated, it should give the focus back to the control that had it, which dialogs do automatically (lesson 3.01).</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/2.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/2.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-05-painting-with-gdi/"><span class="mono">previous</span><b>1.05 Painting with GDI</b></a>
+      <a class="lp-next" href="../2-02-mouse-input-and-capture/"><span class="mono">next</span><b>2.02 Mouse Input and Capture</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/2-01-keyboard-input"></script>
+</body>
+</html>

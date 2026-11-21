@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Strings in Memory: C Strings, std::string and Encodings · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/2-08-strings-in-memory-c-strings-std-string-and-encodings/">
+  <meta name="description" content="Text in memory is a run of numbers, one or more per character. A C string is a char array ending in a zero byte. std::string keeps its own length and stores…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Strings in Memory: C Strings, std::string and Encodings · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Text in memory is a run of numbers, one or more per character. A C string is a char array ending in a zero byte. std::string keeps its own length and stores…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/2-08-strings-in-memory-c-strings-std-string-and-encodings/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Strings in Memory: C Strings, std::string and Encodings · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Strings in Memory: C Strings, std::string and Encodings · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Text in memory is a run of numbers, one or more per character. A C string is a char array ending in a zero byte. std::string keeps its own length and stores…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Memory in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Strings in Memory: C Strings, std::string and Encodings</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.08</b></span><span>8 of 11 in milestone 2</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Text in memory is a run of numbers, one or more per character. A <strong>C string</strong> is a <code>char</code> array ending in a zero byte. <code>std::string</code> keeps its own length and stores short text inside the object itself. And which numbers stand for which characters depends on the <strong>encoding</strong>: ASCII, UTF-8, or the UTF-16 that Windows uses internally.</p>
+      <div class="prose">
+<h2>Characters are numbers</h2>
+<p>A <code>char</code> is a one-byte number. When text is printed, each number is looked up in a table to find the character to draw. The original table is <strong>ASCII</strong>, which covers English letters, digits and punctuation in the values 0 to 127:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Character</th>
+<th>Decimal</th>
+<th>Hex</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&#39;0&#39;</code> to <code>&#39;9&#39;</code></td>
+<td>48 to 57</td>
+<td><code>0x30</code> to <code>0x39</code></td>
+</tr>
+<tr>
+<td><code>&#39;A&#39;</code> to <code>&#39;Z&#39;</code></td>
+<td>65 to 90</td>
+<td><code>0x41</code> to <code>0x5A</code></td>
+</tr>
+<tr>
+<td><code>&#39;a&#39;</code> to <code>&#39;z&#39;</code></td>
+<td>97 to 122</td>
+<td><code>0x61</code> to <code>0x7A</code></td>
+</tr>
+<tr>
+<td>space</td>
+<td>32</td>
+<td><code>0x20</code></td>
+</tr>
+<tr>
+<td>newline <code>&#39;\n&#39;</code></td>
+<td>10</td>
+<td><code>0x0A</code></td>
+</tr>
+<tr>
+<td>the terminator <code>&#39;\0&#39;</code></td>
+<td>0</td>
+<td><code>0x00</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A few patterns are worth knowing because they turn up in code all the time: <code>&#39;7&#39; - &#39;0&#39;</code> is 7, which converts a digit character to its value; and upper and lower case letters differ by exactly 32 (<code>0x20</code>), a single bit.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-k">char</span> digit{ <span class="tk-s">'7'</span> };
+    std::cout &lt;&lt; digit - <span class="tk-s">'0'</span> &lt;&lt; <span class="tk-s">'\n'</span>;                    <span class="tk-c">// 55 - 48</span>
+    std::cout &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">char</span>&gt;(<span class="tk-s">'g'</span> - <span class="tk-n">32</span>) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// lower to upper case</span>
+    std::cout &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-s">'A'</span>) &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-s">'a'</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>7
+G
+65 97</code></pre></div>
+<h2>C strings: up to the zero</h2>
+<p>C, and the Windows API, represent text as a <strong>C string</strong>: a pointer to the first character of a <code>char</code> array, with the end marked by a byte holding 0. Nothing records the length; functions like <code>strlen</code> find it by walking along until they reach the zero.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstring&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-k">char</span> name[]{ <span class="tk-s">&quot;Rook&quot;</span> };              <span class="tk-c">// 5 bytes: R o o k \0</span>
+    std::cout &lt;&lt; <span class="tk-k">sizeof</span>(name) &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; std::<span class="tk-f">strlen</span>(name) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">unsigned</span> <span class="tk-k">char</span> c : name) std::cout &lt;&lt; std::hex &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(c) &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>5 4
+52 6f 6f 6b 0 </code></pre></div>
+<p><code>sizeof</code> counts the array, terminator included. <code>strlen</code> counts the characters before it. The difference of one is behind countless bugs:</p>
+<ul>
+<li>Copying a 10-character name into a <code>char[10]</code> leaves no room for the terminator. The next function to read it walks off the end until it happens to find a zero.</li>
+<li>Forgetting the terminator at all, for example after copying bytes with <code>memcpy</code>, has the same effect.</li>
+<li><code>strcpy</code> and <code>strcat</code> write until they hit the source&#39;s terminator, however small the destination. They are a classic source of buffer overruns, which is why MSVC warns about them and offers <code>strcpy_s</code> and friends, which take the destination size.</li>
+</ul>
+<h2>std::string: length, capacity and a small buffer</h2>
+<p><code>std::string</code> fixes these problems by storing the length itself and managing its memory. On 64-bit MSVC a <code>std::string</code> object is 32 bytes in a Release build:</p>
+<div class="codeblock diagram plain"><pre><code>std::string (Release x64, 32 bytes)
+┌──────────────────────────────────────┐
+│ 16 bytes: either the characters      │  short text lives right here
+│           themselves (up to 15), or  │
+│           a pointer to a heap block  │  long text lives on the heap
+├──────────────────────────────────────┤
+│ 8 bytes: size (characters in use)    │
+├──────────────────────────────────────┤
+│ 8 bytes: capacity (room available)   │
+└──────────────────────────────────────┘</code></pre></div>
+<p>(Debug builds add 8 more bytes for iterator checking, so <code>sizeof</code> differs between configurations.)</p>
+<p>The interesting part is the <strong>small string optimisation (SSO)</strong>. Strings of up to 15 characters are stored directly inside the object, with no heap allocation at all. Longer strings get a heap block, and the first 8 of those 16 bytes hold a pointer to it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::string shortName{ <span class="tk-s">&quot;Rook&quot;</span> };
+    std::string longName{ <span class="tk-s">&quot;Rook the Unbreakable of the Northern Wastes&quot;</span> };
+    std::cout &lt;&lt; shortName.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; chars, capacity &quot;</span> &lt;&lt; shortName.<span class="tk-f">capacity</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; longName.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; chars, capacity &quot;</span> &lt;&lt; longName.<span class="tk-f">capacity</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>* object{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(&amp;shortName) };
+    <span class="tk-k">const</span> <span class="tk-k">char</span>* text{ shortName.<span class="tk-f">data</span>() };
+    std::cout &lt;&lt; <span class="tk-s">&quot;short text is inside the object: &quot;</span> &lt;&lt; (text &gt;= object &amp;&amp; text &lt; object + <span class="tk-k">sizeof</span>(shortName)) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>4 chars, capacity 15
+43 chars, capacity 47
+short text is inside the object: 1</code></pre></div>
+<p>For games this matters: short names, tags and keys cost no allocation, and long text does. A <code>std::string</code> still keeps a zero after its characters, so <code>c_str()</code> can hand it straight to C-style functions.</p>
+<p><code>std::string_view</code> is a pointer and a length, 16 bytes, with no ownership. It is ideal for passing text to a function that only reads it, provided the text outlives the view (lesson 2.04).</p>
+<h2>Encodings: beyond ASCII</h2>
+<p>ASCII has no room for <code>é</code>, <code>ß</code>, <code>Ж</code>, <code>日</code> or emoji. Modern text uses <strong>Unicode</strong>, which gives every character a number called a <strong>code point</strong> (<code>é</code> is U+00E9, <code>日</code> is U+65E5). An <strong>encoding</strong> decides how those numbers become bytes.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Encoding</th>
+<th>Unit</th>
+<th>ASCII text</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>UTF-8</strong></td>
+<td>1 to 4 bytes per character</td>
+<td>Identical to ASCII</td>
+<td>Files, the web, most libraries, Linux</td>
+</tr>
+<tr>
+<td><strong>UTF-16</strong></td>
+<td>2 or 4 bytes per character</td>
+<td>Every character takes 2 bytes</td>
+<td>Windows internally, <code>wchar_t</code> on Windows</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::string utf8{ <span class="tk-s">&quot;caf\xC3\xA9&quot;</span> };      <span class="tk-c">// &quot;café&quot; in UTF-8: é is two bytes</span>
+    std::wstring utf16{ <span class="tk-s">L&quot;café&quot;</span> };       <span class="tk-c">// the same text in UTF-16</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;UTF-8 bytes:  &quot;</span> &lt;&lt; utf8.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;UTF-16 units: &quot;</span> &lt;&lt; utf16.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; (&quot;</span> &lt;&lt; utf16.<span class="tk-f">size</span>() * <span class="tk-k">sizeof</span>(<span class="tk-k">wchar_t</span>) &lt;&lt; <span class="tk-s">&quot; bytes)\n&quot;</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;sizeof(wchar_t) = &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">wchar_t</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>UTF-8 bytes:  5
+UTF-16 units: 4 (8 bytes)
+sizeof(wchar_t) = 2</code></pre></div>
+<p>Two consequences for low-level work:</p>
+<ul>
+<li><strong><code>size()</code> is not the number of characters</strong> once text is not plain ASCII. &quot;café&quot; is 4 characters but 5 UTF-8 bytes.</li>
+<li><strong>In memory, UTF-16 text looks spaced out.</strong> <code>L&quot;Rook&quot;</code> is <code>52 00 6F 00 6F 00 6B 00 00 00</code>: every ASCII letter followed by a zero byte. When you search memory for text, search for both forms. Visual Studio&#39;s Memory window can show bytes as ANSI or Unicode text; right-click to switch.</li>
+</ul>
+<p>Chapter 5 deals with the Windows side: most Windows API functions come in an <code>A</code> version taking narrow strings and a <code>W</code> version taking UTF-16, and the course uses the <code>W</code> versions with conversions at the edges.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Forgetting room for the terminator</span></div><div class="callout-body"><p>A C string of <code>n</code> characters needs <code>n + 1</code> bytes.</p>
+</div></div>
+<blockquote><p>[!warning] Using <code>strcpy</code> into a fixed buffer
+Use <code>std::string</code>, or <code>strcpy_s</code> / <code>strncpy_s</code> with the destination size, and make sure the result is terminated.</p>
+</blockquote>
+<blockquote><p>[!warning] Treating <code>size()</code> as a character count
+It counts bytes (or UTF-16 units). For player-facing text, use a Unicode-aware library when the count matters.</p>
+</blockquote>
+<blockquote><p>[!warning] Keeping <code>c_str()</code> after changing the string
+Appending can move the characters to a new heap block, or out of the small buffer. Get the pointer again after any change.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">How many bytes does <code>char word[]{ &quot;Lava&quot; };</code> occupy?</div><ul><li>4</li><li>5</li><li>8</li></ul><details><summary>Show the answer</summary><p><b>5</b> Four characters plus the terminating zero byte.</p></details></li><li><div class="q">On 64-bit MSVC, which of these strings is stored inside the <code>std::string</code> object with no heap allocation?</div><ul><li><code>&quot;Goblin&quot;</code></li><li><code>&quot;The Goblin King of the Eastern Mountains&quot;</code></li><li>Neither: <code>std::string</code> always uses the heap</li></ul><details><summary>Show the answer</summary><p><b><code>&quot;Goblin&quot;</code></b> Up to 15 characters fit in the small buffer.</p></details></li><li><div class="q">In memory you see <code>48 00 50 00 00 00</code>. What is most likely there?</div><ul><li>Two large numbers</li><li>The UTF-16 string <code>&quot;HP&quot;</code></li><li>The UTF-8 string <code>&quot;HP&quot;</code></li></ul><details><summary>Show the answer</summary><p><b>The UTF-16 string <code>&quot;HP&quot;</code></b> <code>0x48</code> is <code>H</code>, <code>0x50</code> is <code>P</code>; the zero byte after each is the high half of a 2-byte UTF-16 unit, and <code>00 00</code> ends it.</p></details></li><li><div class="q">What does <code>&#39;5&#39; - &#39;0&#39;</code> evaluate to?</div><ul><li>5</li><li>53</li><li><code>&#39;5&#39;</code></li></ul><details><summary>Show the answer</summary><p><b>5</b> Digits are consecutive in ASCII, so subtracting <code>&#39;0&#39;</code> gives the digit&#39;s value.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/2.08">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/2.08">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-07-arrays-and-multi-dimensional-data-in-memory/"><span class="mono">previous</span><b>2.07 Arrays and Multi-Dimensional Data in Memory</b></a>
+      <a class="lp-next" href="../2-09-memory-bugs-overruns-dangling-pointers-and-leaks/"><span class="mono">next</span><b>2.09 Memory Bugs: Overruns, Dangling Pointers and Leaks</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/2-08-strings-in-memory-c-strings-std-string-and-encodings"></script>
+</body>
+</html>

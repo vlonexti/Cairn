@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Dependency Injection and Configuration · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/6-03-dependency-injection-and-configuration/">
+  <meta name="description" content="Building applications from small services - constructor injection, the composition root, Microsoft.Extensions.DependencyInjection with singleton, scoped and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dependency Injection and Configuration · C# · Xenon">
+  <meta property="og:description" content="Building applications from small services - constructor injection, the composition root, Microsoft.Extensions.DependencyInjection with singleton, scoped and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/6-03-dependency-injection-and-configuration/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Dependency Injection and Configuration · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dependency Injection and Configuration · C# · Xenon">
+  <meta name="twitter:description" content="Building applications from small services - constructor injection, the composition root, Microsoft.Extensions.DependencyInjection with singleton, scoped and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Building Applications</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Dependency Injection and Configuration</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Building applications from small services - constructor injection, the composition root, Microsoft.Extensions.DependencyInjection with singleton, scoped and transient lifetimes, the generic host, configuration from appsettings.json, environment variables and user secrets bound to options classes, logging with ILogger, and how a container resolves constructors.</p>
+      <div class="prose">
+<h2>Constructor injection</h2>
+<p><strong>Dependency injection</strong> means a class receives the services it needs through its constructor instead of creating them itself:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-c">// Wires everything together in one place: the &quot;composition root&quot;.</span>
+IClock clock = <span class="tk-k">new</span> <span class="tk-f">SystemClock</span>();
+INotifier notifier = <span class="tk-k">new</span> <span class="tk-f">ConsoleNotifier</span>();
+<span class="tk-k">var</span> reminders = <span class="tk-k">new</span> <span class="tk-f">ReminderService</span>(clock, notifier);
+reminders.<span class="tk-f">Check</span>(<span class="tk-k">new</span>[] { (<span class="tk-s">&quot;Pay rent&quot;</span>, <span class="tk-t">DateTime</span>.<span class="tk-t">Today</span>.<span class="tk-f">AddDays</span>(-<span class="tk-n">1</span>)), (<span class="tk-s">&quot;Call Ada&quot;</span>, <span class="tk-t">DateTime</span>.<span class="tk-t">Today</span>.<span class="tk-f">AddDays</span>(<span class="tk-n">3</span>)) });
+
+<span class="tk-k">public</span> <span class="tk-k">interface</span> IClock { <span class="tk-t">DateTime</span> <span class="tk-t">Now</span> { <span class="tk-k">get</span>; } }
+<span class="tk-k">public</span> <span class="tk-k">interface</span> INotifier { <span class="tk-k">void</span> <span class="tk-f">Notify</span>(<span class="tk-k">string</span> message); }
+
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">SystemClock</span> : IClock { <span class="tk-k">public</span> <span class="tk-t">DateTime</span> <span class="tk-t">Now</span> =&gt; <span class="tk-t">DateTime</span>.<span class="tk-t">Now</span>; }
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">ConsoleNotifier</span> : INotifier { <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Notify</span>(<span class="tk-k">string</span> message) =&gt; <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;[notice] {message}&quot;</span>); }
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">ReminderService</span>(IClock clock, INotifier notifier)
+{
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Check</span>(IEnumerable&lt;(<span class="tk-k">string</span> <span class="tk-t">Task</span>, <span class="tk-t">DateTime</span> <span class="tk-t">Due</span>)&gt; items)
+    {
+        <span class="tk-k">foreach</span> (<span class="tk-k">var</span> (task, due) <span class="tk-k">in</span> items)
+            <span class="tk-k">if</span> (due &lt; clock.<span class="tk-t">Now</span>) notifier.<span class="tk-f">Notify</span>(<span class="tk-s">$&quot;{task} is overdue&quot;</span>);
+    }
+}</code></pre></div>
+<p><code>ReminderService</code> does not know whether it prints to a console, sends an email or writes to a test list. Each class has one job, depends on interfaces, and is testable with fakes (lesson 6.02).</p>
+<h2>A container</h2>
+<p>In a big application, building every object by hand gets long. A <strong>DI container</strong> does it: you <strong>register</strong> which implementation goes with each interface, and it <strong>resolves</strong> a class by creating its constructor&#39;s arguments, and theirs, recursively.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">Microsoft</span>.<span class="tk-t">Extensions</span>.<span class="tk-t">DependencyInjection</span>;
+
+<span class="tk-k">var</span> services = <span class="tk-k">new</span> <span class="tk-f">ServiceCollection</span>();
+services.<span class="tk-t">AddSingleton</span>&lt;IClock, <span class="tk-t">SystemClock</span>&gt;();          <span class="tk-c">// one instance for the whole app</span>
+services.<span class="tk-t">AddTransient</span>&lt;INotifier, <span class="tk-t">ConsoleNotifier</span>&gt;();   <span class="tk-c">// a new instance every time</span>
+services.<span class="tk-t">AddScoped</span>&lt;IUnitOfWork, <span class="tk-t">UnitOfWork</span>&gt;();          <span class="tk-c">// one per scope (in a web app: per request)</span>
+services.<span class="tk-t">AddTransient</span>&lt;<span class="tk-t">ReminderService</span>&gt;();
+
+<span class="tk-k">using</span> <span class="tk-k">var</span> provider = services.<span class="tk-f">BuildServiceProvider</span>();
+<span class="tk-k">var</span> reminders = provider.<span class="tk-t">GetRequiredService</span>&lt;<span class="tk-t">ReminderService</span>&gt;();</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Lifetime</th>
+<th>One instance</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Singleton</td>
+<td>For the whole application</td>
+<td>Stateless services, caches, <code>HttpClient</code> factories, configuration</td>
+</tr>
+<tr>
+<td>Scoped</td>
+<td>Per scope (a web request)</td>
+<td>Database contexts, per-request state</td>
+</tr>
+<tr>
+<td>Transient</td>
+<td>Per resolution</td>
+<td>Light services with no shared state</td>
+</tr>
+</tbody></table>
+</div>
+<p>Never inject a scoped or transient service into a singleton: the singleton would keep it forever. Practice 6.03 builds a small container with reflection to show how resolution works.</p>
+<h2>The generic host</h2>
+<p><code>Microsoft.Extensions.Hosting</code> combines DI, configuration and logging, and is how ASP.NET Core, worker services and well-structured console apps start:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">Microsoft</span>.<span class="tk-t">Extensions</span>.<span class="tk-t">DependencyInjection</span>;
+<span class="tk-k">using</span> <span class="tk-t">Microsoft</span>.<span class="tk-t">Extensions</span>.<span class="tk-t">Hosting</span>;
+
+<span class="tk-k">var</span> builder = <span class="tk-t">Host</span>.<span class="tk-f">CreateApplicationBuilder</span>(args);
+builder.<span class="tk-t">Services</span>.<span class="tk-t">Configure</span>&lt;<span class="tk-t">ReminderOptions</span>&gt;(builder.<span class="tk-t">Configuration</span>.<span class="tk-f">GetSection</span>(<span class="tk-s">&quot;Reminders&quot;</span>));
+builder.<span class="tk-t">Services</span>.<span class="tk-t">AddSingleton</span>&lt;IClock, <span class="tk-t">SystemClock</span>&gt;();
+builder.<span class="tk-t">Services</span>.<span class="tk-t">AddSingleton</span>&lt;INotifier, <span class="tk-t">ConsoleNotifier</span>&gt;();
+builder.<span class="tk-t">Services</span>.<span class="tk-t">AddHostedService</span>&lt;<span class="tk-t">ReminderWorker</span>&gt;();       <span class="tk-c">// a background service that runs until stopped</span>
+<span class="tk-k">using</span> IHost host = builder.<span class="tk-f">Build</span>();
+<span class="tk-k">await</span> host.<span class="tk-f">RunAsync</span>();</code></pre></div>
+<h2>Configuration</h2>
+<p>Settings should not be hard-coded. Configuration is read from several <strong>providers</strong>, later ones overriding earlier ones:</p>
+<ol>
+<li><code>appsettings.json</code></li>
+<li><code>appsettings.{Environment}.json</code> (for example <code>appsettings.Development.json</code>)</li>
+<li><strong>user secrets</strong> during development (kept outside the project folder, never committed)</li>
+<li>environment variables (<code>Reminders__CheckEveryMinutes=5</code>: a double underscore separates sections)</li>
+<li>command-line arguments (<code>--Reminders:CheckEveryMinutes 5</code>)</li>
+</ol>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JSON</span></div><pre><code>{
+  &quot;Reminders&quot;: { &quot;CheckEveryMinutes&quot;: 15, &quot;Channel&quot;: &quot;email&quot; },
+  &quot;Logging&quot;: { &quot;LogLevel&quot;: { &quot;Default&quot;: &quot;Information&quot; } }
+}</code></pre></div>
+<p>Bind a section to a class with the <strong>options pattern</strong>, and inject <code>IOptions&lt;T&gt;</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">ReminderOptions</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-t">CheckEveryMinutes</span> { <span class="tk-k">get</span>; <span class="tk-k">set</span>; } = <span class="tk-n">10</span>;
+    <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-t">Channel</span> { <span class="tk-k">get</span>; <span class="tk-k">set</span>; } = <span class="tk-s">&quot;console&quot;</span>;
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">ReminderWorker</span>(IOptions&lt;<span class="tk-t">ReminderOptions</span>&gt; options, ILogger&lt;<span class="tk-t">ReminderWorker</span>&gt; logger) : <span class="tk-t">BackgroundService</span>
+{
+    <span class="tk-k">protected</span> <span class="tk-k">override</span> <span class="tk-k">async</span> <span class="tk-t">Task</span> <span class="tk-f">ExecuteAsync</span>(<span class="tk-t">CancellationToken</span> stoppingToken)
+    {
+        <span class="tk-k">var</span> every = <span class="tk-t">TimeSpan</span>.<span class="tk-f">FromMinutes</span>(options.<span class="tk-t">Value</span>.<span class="tk-t">CheckEveryMinutes</span>);
+        <span class="tk-k">while</span> (!stoppingToken.<span class="tk-t">IsCancellationRequested</span>)
+        {
+            logger.<span class="tk-f">LogInformation</span>(<span class="tk-s">&quot;Checking reminders via {Channel}&quot;</span>, options.<span class="tk-t">Value</span>.<span class="tk-t">Channel</span>);
+            <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">Delay</span>(every, stoppingToken);
+        }
+    }
+}</code></pre></div>
+<p>Secrets (API keys, connection strings with passwords) belong in user secrets during development and in environment variables or a secret store in production, never in <code>appsettings.json</code> in source control.</p>
+<h2>Logging</h2>
+<p><code>ILogger&lt;T&gt;</code> is injected like any service. Use <strong>message templates</strong> with named placeholders rather than interpolated strings: <code>logger.LogWarning(&quot;Order {OrderId} failed after {Attempts} attempts&quot;, id, n)</code>. Structured logging tools then store <code>OrderId</code> and <code>Attempts</code> as searchable fields.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-unit-testing/"><span class="mono">previous</span><b>6.02 Unit Testing</b></a>
+      <a class="lp-next" href="../6-04-desktop-ui-and-mvvm/"><span class="mono">next</span><b>6.04 Desktop UI and MVVM</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/6-03-dependency-injection-and-configuration"></script>
+</body>
+</html>

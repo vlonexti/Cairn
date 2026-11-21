@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Where to Go Next · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/6-05-where-to-go-next/">
+  <meta name="description" content="Places to keep practising legally - crackmes and CTF reversing challenges, open-source programs compiled yourself, the FLARE-On challenge, malware analysis…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Where to Go Next · Reverse Engineering · Xenon">
+  <meta property="og:description" content="Places to keep practising legally - crackmes and CTF reversing challenges, open-source programs compiled yourself, the FLARE-On challenge, malware analysis…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/6-05-where-to-go-next/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Where to Go Next · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Where to Go Next · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="Places to keep practising legally - crackmes and CTF reversing challenges, open-source programs compiled yourself, the FLARE-On challenge, malware analysis…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Reversing in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Where to Go Next</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>5 min</span></div>
+      <p class="lp-summary">Places to keep practising legally - crackmes and CTF reversing challenges, open-source programs compiled yourself, the FLARE-On challenge, malware analysis training in safe labs - the books and courses worth your time, and what reverse engineering work looks like as a job.</p>
+      <div class="prose">
+<h2>Keep practising on targets made for it</h2>
+<p>Reverse engineering is learned by doing, and there is plenty to do legally:</p>
+<ul>
+<li><strong>Your own programs.</strong> Build open-source programs (or your own projects) in Release without the PDB, reverse a function, then compare with the source. It is the best feedback loop there is: you can always check your answer.</li>
+<li><strong>Crackmes.</strong> Small programs written to be reversed, with a password or key to find, sorted by difficulty: crackmes.one has thousands. This milestone&#39;s capstone is one.</li>
+<li><strong>CTF challenges.</strong> Capture the Flag competitions have &quot;reversing&quot; and &quot;pwn&quot; categories; past challenges with write-ups are archived (CTFtime lists events). picoCTF is aimed at beginners.</li>
+<li><strong>FLARE-On.</strong> An annual reversing challenge from Google&#39;s Mandiant FLARE team, with a dozen or so levels of increasing difficulty and published solutions.</li>
+<li><strong>Old games and software with official modding or source releases.</strong> Many classic games had their source released; comparing their binaries with the source is excellent practice.</li>
+</ul>
+<h2>Malware analysis, safely</h2>
+<p>Analysing malware is one of the main professional uses of these skills, and it must be done in an isolated lab: a virtual machine with no shared folders, a snapshot to restore, and no network (or a simulated one such as INetSim). Training material comes with prepared samples. Do not go looking for live malware to practise on, and never run a sample outside the lab.</p>
+<h2>Books and courses</h2>
+<ul>
+<li><em>Practical Malware Analysis</em> (Sikorski and Honig): the classic on static and dynamic analysis of Windows programs.</li>
+<li><em>Practical Reverse Engineering</em> (Dang, Gazet, Bachaalany): x86, x64, ARM and the Windows kernel.</li>
+<li><em>The Ghidra Book</em> (Eagle and Nance): using Ghidra in depth.</li>
+<li><em>Windows Internals</em> (Yosifovich and others): what the operating system does underneath everything in milestones 3 and 5.</li>
+<li>OpenSecurityTraining2&#39;s free courses on x86-64 architecture, assembly and debuggers.</li>
+</ul>
+<h2>The work itself</h2>
+<p>Reverse engineering skills are used in several kinds of job:</p>
+<ul>
+<li><strong>Malware analysis and threat intelligence</strong>: understanding what malicious software does, to detect and remove it.</li>
+<li><strong>Vulnerability research</strong>: finding security bugs in software, for vendors, security firms or bug bounties.</li>
+<li><strong>Compatibility and interoperability</strong>: emulators, file converters, drivers for hardware with poor documentation.</li>
+<li><strong>Game development and modding</strong>: engine programmers reading compiler output, tools programmers working with old assets, modding communities working with official tools.</li>
+<li><strong>Software maintenance</strong>: every company has a program whose source was lost.</li>
+</ul>
+<p>All of them value the same things: careful method, notes with evidence, and judgement about what is appropriate to examine.</p>
+<h2>What this course gave you</h2>
+<p>You can read a PE file, find your way through x64 code compiled from C and C++, drive a debugger and know what it is doing underneath, find where data lives and what changes it, patch and hook your own programs, and you have written your own versions of a PE inspector, a control flow graph, a value scanner, a patch engine and a disassembler. The capstone puts it all to work on a program you have never seen.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-writing-it-up/"><span class="mono">previous</span><b>6.04 Writing It Up</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/6-05-where-to-go-next"></script>
+</body>
+</html>

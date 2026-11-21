@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Managing Dependencies with vcpkg · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/4-06-managing-dependencies-with-vcpkg/">
+  <meta name="description" content="Real projects use other people's libraries: a window and input library, an image loader, a user interface toolkit. vcpkg is Microsoft's package manager for C…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Managing Dependencies with vcpkg · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Real projects use other people's libraries: a window and input library, an image loader, a user interface toolkit. vcpkg is Microsoft's package manager for C…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/4-06-managing-dependencies-with-vcpkg/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Managing Dependencies with vcpkg · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Managing Dependencies with vcpkg · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Real projects use other people's libraries: a window and input library, an image loader, a user interface toolkit. vcpkg is Microsoft's package manager for C…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Visual Studio and the Build Pipeline</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Managing Dependencies with vcpkg</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.06</b></span><span>6 of 10 in milestone 4</span><span>5 min</span></div>
+      <p class="lp-summary">Real projects use other people&#39;s libraries: a window and input library, an image loader, a user interface toolkit. <strong>vcpkg</strong> is Microsoft&#39;s package manager for C and C++: you list the libraries a project needs in a <code>vcpkg.json</code> file, and it downloads, builds and links them with settings that match your project. This lesson sets it up for the course&#39;s later chapters.</p>
+      <div class="prose">
+<h2>The problem vcpkg solves</h2>
+<p>Using a third-party C++ library by hand means: find its source, build it with the right compiler, platform, runtime library and configuration (lesson 4.04&#39;s matching rules), copy its headers somewhere, add include and library paths to your project, and repeat for every library it depends on, and again for every machine that builds your project.</p>
+<p><strong>vcpkg</strong> automates all of that. It knows how to build thousands of libraries, builds each one to match your project&#39;s <strong>triplet</strong> (for example <code>x64-windows</code>: 64-bit, DLL runtime), and plugs the results into MSBuild so your project finds headers and libraries automatically.</p>
+<h2>Getting vcpkg</h2>
+<p>Visual Studio 2022 includes a copy of vcpkg, available in the Developer PowerShell as <code>vcpkg</code>. To check:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>vcpkg --version</code></pre></div>
+<p>If the command is not found, install the <strong>vcpkg package manager</strong> component from the Visual Studio Installer (Individual components tab), or clone it yourself:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>git clone https://github.com/microsoft/vcpkg C:\dev\vcpkg
+C:\dev\vcpkg\bootstrap-vcpkg.bat
+C:\dev\vcpkg\vcpkg integrate install</code></pre></div>
+<p><code>integrate install</code> connects vcpkg to every MSBuild project for your user account.</p>
+<h2>Manifest mode: dependencies in a file</h2>
+<p>The modern way to use vcpkg is <strong>manifest mode</strong>: a <code>vcpkg.json</code> file next to your solution lists what the project needs, so anyone who builds it gets the same libraries.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code><span class="tk-k">cd</span> course
+vcpkg new --application
+vcpkg add port fmt
+vcpkg add port sdl2</code></pre></div>
+<p>That creates and fills <code>vcpkg.json</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JSON</span></div><pre><code>{
+  &quot;dependencies&quot;: [
+    &quot;fmt&quot;,
+    &quot;sdl2&quot;
+  ]
+}</code></pre></div>
+<p>Then, in each project that should use vcpkg: <strong>Properties → vcpkg → Use Vcpkg Manifest: Yes</strong>. The next build reads the manifest, builds the listed libraries (the first time takes a while; later builds reuse the results) and adds their include folders, libraries and DLLs to the project. DLLs are copied next to your <code>.exe</code> automatically.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;fmt/core.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    fmt::<span class="tk-f">print</span>(<span class="tk-s">&quot;{} has {} health\n&quot;</span>, <span class="tk-s">&quot;Rook&quot;</span>, <span class="tk-n">87</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>No include paths, no library paths, no copying: the manifest is the only thing you wrote.</p>
+<h2>Triplets: matching the build</h2>
+<p>A <strong>triplet</strong> names the platform and the linkage vcpkg should build for.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Triplet</th>
+<th>Platform</th>
+<th>Libraries built as</th>
+<th>C runtime</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x64-windows</code></td>
+<td>64-bit</td>
+<td>DLLs</td>
+<td>DLL (<code>/MD</code>)</td>
+</tr>
+<tr>
+<td><code>x64-windows-static</code></td>
+<td>64-bit</td>
+<td>Static <code>.lib</code></td>
+<td>Static (<code>/MT</code>)</td>
+</tr>
+<tr>
+<td><code>x64-windows-static-md</code></td>
+<td>64-bit</td>
+<td>Static <code>.lib</code></td>
+<td>DLL (<code>/MD</code>)</td>
+</tr>
+</tbody></table>
+</div>
+<p>vcpkg picks <code>x64-windows</code> for an x64 project by default and builds Debug and Release versions of every library, linking the right one for each configuration. If your projects use <code>/MT</code> (as the course&#39;s static builds might), set <strong>Properties → vcpkg → Use Static Libraries: Yes</strong> so the libraries match.</p>
+<h2>Pinning versions</h2>
+<p>By default, vcpkg uses whichever versions its own copy currently has. For a project you want to build the same way next year, add a <strong>baseline</strong>, which pins every library to the versions vcpkg had at a particular commit:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>vcpkg x-update-baseline --add-initial-baseline</code></pre></div>
+<p>The manifest gains a <code>&quot;builtin-baseline&quot;</code> line. Commit <code>vcpkg.json</code> to version control; do not commit the <code>vcpkg_installed</code> folder it creates, which is build output.</p>
+<h2>Libraries this course uses later</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Library</th>
+<th>vcpkg port</th>
+<th>Used in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SDL2: windows, input, simple 2D drawing</td>
+<td><code>sdl2</code></td>
+<td>Chapter 11 (the small game)</td>
+</tr>
+<tr>
+<td>Dear ImGui: immediate-mode user interfaces</td>
+<td><code>imgui[sdl2-binding,sdl2-renderer-binding]</code></td>
+<td>Chapter 14 (tool interfaces)</td>
+</tr>
+<tr>
+<td>Catch2 or GoogleTest: unit testing</td>
+<td><code>catch2</code>, <code>gtest</code></td>
+<td>Chapter 17</td>
+</tr>
+<tr>
+<td>fmt: formatting (most of it is now <code>std::format</code>)</td>
+<td><code>fmt</code></td>
+<td>Optional</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Mixing manifest mode and manually copied libraries</span></div><div class="callout-body"><p>Two copies of a library&#39;s headers on the include path, from different versions, cause confusing errors. Let vcpkg own each library.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>A triplet that does not match the runtime library</span></div><div class="callout-body"><p>A static-runtime project with DLL-runtime libraries gives <code>LNK2038</code>. Match them with the vcpkg project settings.</p>
+</div></div>
+<blockquote><p>[!warning] Committing <code>vcpkg_installed</code>
+It is large and machine-specific build output. Add it to <code>.gitignore</code>.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does <code>vcpkg.json</code> describe?</div><ul><li>The libraries a project depends on</li><li>How to build vcpkg itself</li><li>The project&#39;s compiler settings</li></ul><details><summary>Show the answer</summary><p><b>The libraries a project depends on</b> Anyone building the project gets the same dependencies from the manifest.</p></details></li><li><div class="q">What is a vcpkg triplet?</div><ul><li>The target platform and how libraries should be built and linked, such as <code>x64-windows-static</code></li><li>Three versions of the same library</li><li>A group of three packages</li></ul><details><summary>Show the answer</summary><p><b>The target platform and how libraries should be built and linked, such as <code>x64-windows-static</code></b> It ensures the libraries are built to match the project.</p></details></li><li><div class="q">Why add a baseline to the manifest?</div><ul><li>To pin library versions so the project builds the same way later</li><li>To make the build faster</li><li>To enable static linking</li></ul><details><summary>Show the answer</summary><p><b>To pin library versions so the project builds the same way later</b> Without it, versions follow whatever vcpkg copy is installed.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/4.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/4.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-dynamic-libraries-building-and-loading-your-own-dll/"><span class="mono">previous</span><b>4.05 Dynamic Libraries: Building and Loading Your Own DLL</b></a>
+      <a class="lp-next" href="../4-07-the-debugger-breakpoints-stepping-and-the-call-stack/"><span class="mono">next</span><b>4.07 The Debugger: Breakpoints, Stepping and the Call Stack</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/4-06-managing-dependencies-with-vcpkg"></script>
+</body>
+</html>

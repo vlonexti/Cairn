@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Cancelling Work with AbortController · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/8-03-cancelling-work-with-abortcontroller/">
+  <meta name="description" content="Stopping work that is no longer wanted - AbortController and AbortSignal, cancelling fetch, timeouts with AbortSignal.timeout, combining signals with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Cancelling Work with AbortController · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Stopping work that is no longer wanted - AbortController and AbortSignal, cancelling fetch, timeouts with AbortSignal.timeout, combining signals with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/8-03-cancelling-work-with-abortcontroller/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cancelling Work with AbortController · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cancelling Work with AbortController · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Stopping work that is no longer wanted - AbortController and AbortSignal, cancelling fetch, timeouts with AbortSignal.timeout, combining signals with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>JavaScript in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Cancelling Work with AbortController</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.03</b></span><span>3 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Stopping work that is no longer wanted - AbortController and AbortSignal, cancelling fetch, timeouts with AbortSignal.timeout, combining signals with AbortSignal.any, making your own async functions cancellable, cleaning up listeners, and the AbortError convention.</p>
+      <div class="prose">
+<h2>Work nobody is waiting for</h2>
+<p>A user types in a search box: each key starts a search, and only the last result matters. A user leaves a page while it is still loading. A request takes too long. In each case the program should <strong>stop</strong> the work, not just ignore its result: stopping saves the network, the battery and the server.</p>
+<p>JavaScript&#39;s standard way to ask for that is a pair of objects:</p>
+<ul>
+<li>an <code>AbortController</code>, held by the code that may want to cancel;</li>
+<li>its <code>AbortSignal</code> (<code>controller.signal</code>), passed to the work that should stop.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> controller = <span class="tk-k">new</span> <span class="tk-f">AbortController</span>();
+<span class="tk-k">const</span> signal = controller.signal;
+
+signal.<span class="tk-f">addEventListener</span>(<span class="tk-s">&quot;abort&quot;</span>, () =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;abort event, reason:&quot;</span>, signal.reason));
+console.<span class="tk-f">log</span>(signal.aborted);     <span class="tk-c">// false</span>
+controller.<span class="tk-f">abort</span>(<span class="tk-s">&quot;user left&quot;</span>);
+console.<span class="tk-f">log</span>(signal.aborted);     <span class="tk-c">// true</span></code></pre></div>
+<p><code>abort()</code> can only happen once; calling it again does nothing.</p>
+<h2>Cancelling fetch</h2>
+<p><code>fetch</code> accepts a <code>signal</code>. When it is aborted, the request stops and the promise rejects with an error whose <code>name</code> is <code>&quot;AbortError&quot;</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> controller = <span class="tk-k">new</span> <span class="tk-f">AbortController</span>();
+<span class="tk-k">const</span> promise = <span class="tk-f">fetch</span>(<span class="tk-s">&quot;/api/search?q=tea&quot;</span>, { signal: controller.signal });
+controller.<span class="tk-f">abort</span>();
+<span class="tk-k">try</span> {
+  <span class="tk-k">await</span> promise;
+} <span class="tk-k">catch</span> (e) {
+  <span class="tk-k">if</span> (e.name === <span class="tk-s">&quot;AbortError&quot;</span>) console.<span class="tk-f">log</span>(<span class="tk-s">&quot;cancelled, as asked&quot;</span>);
+  <span class="tk-k">else</span> <span class="tk-k">throw</span> e;
+}</code></pre></div>
+<p>Treat <code>AbortError</code> differently from real failures: it is not a problem to report to the user.</p>
+<h2>Timeouts</h2>
+<p><code>AbortSignal.timeout(ms)</code> gives a signal that aborts itself after a time (with a <code>&quot;TimeoutError&quot;</code>), and <code>AbortSignal.any([...])</code> gives a signal that aborts when any of several does:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> userCancel = <span class="tk-k">new</span> <span class="tk-f">AbortController</span>();
+<span class="tk-k">const</span> signal = AbortSignal.<span class="tk-f">any</span>([userCancel.signal, AbortSignal.<span class="tk-f">timeout</span>(<span class="tk-n">5000</span>)]);
+<span class="tk-k">const</span> response = <span class="tk-k">await</span> <span class="tk-f">fetch</span>(<span class="tk-s">&quot;/api/report&quot;</span>, { signal });</code></pre></div>
+<h2>Making your own functions cancellable</h2>
+<p>Any async function can take a signal. The two rules:</p>
+<ol>
+<li>Check <code>signal.aborted</code> (or call <code>signal.throwIfAborted()</code>) before starting and between steps.</li>
+<li>While waiting, listen for the <code>abort</code> event and stop waiting at once.</li>
+</ol>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">sleep</span>(ms, signal) {
+  <span class="tk-k">return</span> <span class="tk-k">new</span> <span class="tk-f">Promise</span>((resolve, reject) =&gt; {
+    <span class="tk-k">if</span> (signal?.aborted) <span class="tk-k">return</span> <span class="tk-f">reject</span>(signal.reason);
+    <span class="tk-k">const</span> timer = <span class="tk-f">setTimeout</span>(() =&gt; {
+      signal?.<span class="tk-f">removeEventListener</span>(<span class="tk-s">&quot;abort&quot;</span>, onAbort);
+      <span class="tk-f">resolve</span>();
+    }, ms);
+    <span class="tk-k">function</span> <span class="tk-f">onAbort</span>() {
+      <span class="tk-f">clearTimeout</span>(timer);
+      <span class="tk-f">reject</span>(signal.reason);
+    }
+    signal?.<span class="tk-f">addEventListener</span>(<span class="tk-s">&quot;abort&quot;</span>, onAbort, { once: <span class="tk-k">true</span> });
+  });
+}
+
+<span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">slowCount</span>(n, signal) {
+  <span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-n">1</span>; i &lt;= n; i++) {
+    signal?.<span class="tk-f">throwIfAborted</span>();
+    <span class="tk-k">await</span> <span class="tk-f">sleep</span>(<span class="tk-n">20</span>, signal);
+    console.<span class="tk-f">log</span>(<span class="tk-s">&quot;step&quot;</span>, i);
+  }
+  <span class="tk-k">return</span> <span class="tk-s">&quot;finished&quot;</span>;
+}
+
+<span class="tk-k">const</span> controller = <span class="tk-k">new</span> <span class="tk-f">AbortController</span>();
+<span class="tk-f">setTimeout</span>(() =&gt; controller.<span class="tk-f">abort</span>(<span class="tk-k">new</span> <span class="tk-f">Error</span>(<span class="tk-s">&quot;stopped by the user&quot;</span>)), <span class="tk-n">50</span>);
+<span class="tk-f">slowCount</span>(<span class="tk-n">10</span>, controller.signal).<span class="tk-f">then</span>(console.log, e =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;ended:&quot;</span>, e.message));</code></pre></div>
+<p>The listener is removed when the timer finishes normally. Forgetting to remove listeners from a long-lived signal is a memory leak.</p>
+<h2>The newest search wins</h2>
+<p>Cancelling the previous request each time a new one starts:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">let</span> current = <span class="tk-k">null</span>;
+<span class="tk-k">const</span> log = [];
+
+<span class="tk-k">function</span> <span class="tk-f">fakeSearch</span>(text, signal) {
+  <span class="tk-k">return</span> <span class="tk-f">sleepValue</span>(text.length * <span class="tk-n">15</span>, <span class="tk-s">`results for ${text}`</span>, signal);
+}
+<span class="tk-k">function</span> <span class="tk-f">sleepValue</span>(ms, value, signal) {
+  <span class="tk-k">return</span> <span class="tk-k">new</span> <span class="tk-f">Promise</span>((resolve, reject) =&gt; {
+    <span class="tk-k">const</span> t = <span class="tk-f">setTimeout</span>(() =&gt; <span class="tk-f">resolve</span>(value), ms);
+    signal.<span class="tk-f">addEventListener</span>(<span class="tk-s">&quot;abort&quot;</span>, () =&gt; { <span class="tk-f">clearTimeout</span>(t); <span class="tk-f">reject</span>(signal.reason); }, { once: <span class="tk-k">true</span> });
+  });
+}
+
+<span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">search</span>(text) {
+  current?.<span class="tk-f">abort</span>();
+  current = <span class="tk-k">new</span> <span class="tk-f">AbortController</span>();
+  <span class="tk-k">try</span> {
+    log.<span class="tk-f">push</span>(<span class="tk-k">await</span> <span class="tk-f">fakeSearch</span>(text, current.signal));
+  } <span class="tk-k">catch</span> (e) {
+    <span class="tk-k">if</span> (e.name !== <span class="tk-s">&quot;AbortError&quot;</span>) <span class="tk-k">throw</span> e;
+    log.<span class="tk-f">push</span>(<span class="tk-s">`cancelled ${text}`</span>);
+  }
+}
+
+Promise.<span class="tk-f">all</span>([<span class="tk-f">search</span>(<span class="tk-s">&quot;t&quot;</span>), <span class="tk-f">search</span>(<span class="tk-s">&quot;te&quot;</span>), <span class="tk-f">search</span>(<span class="tk-s">&quot;tea&quot;</span>)]).<span class="tk-f">then</span>(() =&gt; console.<span class="tk-f">log</span>(log));</code></pre></div>
+<p><code>controller.abort()</code> with no argument gives a <code>DOMException</code> named <code>&quot;AbortError&quot;</code> as the reason, which is why the check works.</p>
+<h2>Not only for async work</h2>
+<p>Event listeners accept a signal too: aborting removes every listener that was added with it, which is a tidy way to clean up a component.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> controller = <span class="tk-k">new</span> <span class="tk-f">AbortController</span>();
+window.<span class="tk-f">addEventListener</span>(<span class="tk-s">&quot;resize&quot;</span>, onResize, { signal: controller.signal });
+document.<span class="tk-f">addEventListener</span>(<span class="tk-s">&quot;keydown&quot;</span>, onKey, { signal: controller.signal });
+<span class="tk-c">// later, when the component goes away:</span>
+controller.<span class="tk-f">abort</span>();     <span class="tk-c">// both listeners removed</span></code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/8.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/8.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-02-async-generators-and-iteration/"><span class="mono">previous</span><b>8.02 Async Generators and Iteration</b></a>
+      <a class="lp-next" href="../8-04-testing-javascript/"><span class="mono">next</span><b>8.04 Testing JavaScript</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/8-03-cancelling-work-with-abortcontroller"></script>
+</body>
+</html>

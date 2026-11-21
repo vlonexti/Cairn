@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Values, Variables and Types · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/1-02-values-variables-and-types/">
+  <meta name="description" content="Lua's eight types and the type function, nil as &quot;no value&quot;, local variables and why every variable should be local, assigning several variables at once, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Values, Variables and Types · Lua · Xenon">
+  <meta property="og:description" content="Lua's eight types and the type function, nil as &quot;no value&quot;, local variables and why every variable should be local, assigning several variables at once, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/1-02-values-variables-and-types/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Values, Variables and Types · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Values, Variables and Types · Lua · Xenon">
+  <meta name="twitter:description" content="Lua's eight types and the type function, nil as &quot;no value&quot;, local variables and why every variable should be local, assigning several variables at once, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Values, Variables and Types</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.02</b></span><span>2 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Lua&#39;s eight types and the type function, nil as &quot;no value&quot;, local variables and why every variable should be local, assigning several variables at once, and swapping two values.</p>
+      <div class="prose">
+<h2>Values have types, variables do not</h2>
+<p>A variable in Lua is a name for a value. The <strong>value</strong> has a type; the variable does not, so the same variable can hold a number now and a string later:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> x = <span class="tk-n">42</span>
+<span class="tk-f">print</span>(x, <span class="tk-f">type</span>(x))
+x = <span class="tk-s">&quot;forty-two&quot;</span>
+<span class="tk-f">print</span>(x, <span class="tk-f">type</span>(x))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>42	number
+forty-two	string</code></pre></div>
+<p><code>type(v)</code> returns the type&#39;s name as a string. Lua has eight types:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Examples</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>nil</code></td>
+<td><code>nil</code></td>
+<td>&quot;no value here&quot;</td>
+</tr>
+<tr>
+<td><code>boolean</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td>yes or no</td>
+</tr>
+<tr>
+<td><code>number</code></td>
+<td><code>42</code>, <code>3.14</code>, <code>-7</code></td>
+<td>integers and decimals</td>
+</tr>
+<tr>
+<td><code>string</code></td>
+<td><code>&quot;text&quot;</code>, <code>&#39;text&#39;</code></td>
+<td>text, and any bytes</td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td><code>{1, 2, 3}</code>, <code>{name = &quot;Ada&quot;}</code></td>
+<td>lists, dictionaries, records, objects: everything else</td>
+</tr>
+<tr>
+<td><code>function</code></td>
+<td><code>print</code>, <code>function() end</code></td>
+<td>code you can call</td>
+</tr>
+<tr>
+<td><code>userdata</code></td>
+<td>an open file</td>
+<td>data owned by C code</td>
+</tr>
+<tr>
+<td><code>thread</code></td>
+<td>a coroutine</td>
+<td>lesson 6.03</td>
+</tr>
+</tbody></table>
+</div>
+<p>The first five come up on every page of this course. Tables get all of milestone 2.</p>
+<h2>nil</h2>
+<p><code>nil</code> means &quot;nothing&quot;. A variable that was never given a value holds <code>nil</code>, and so does a table field that does not exist:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> score
+<span class="tk-f">print</span>(score)
+<span class="tk-f">print</span>(<span class="tk-f">type</span>(<span class="tk-k">nil</span>))
+<span class="tk-f">print</span>(undefined_name)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>nil
+nil
+nil</code></pre></div>
+<p>Reading a name nobody created is not an error in Lua: it is simply <code>nil</code>. That is convenient, and it is also how a typo hides: <code>pirnt</code> would be <code>nil</code>, and the error only appears when you try to <em>call</em> it.</p>
+<h2>local</h2>
+<p>Write <code>local</code> the first time you introduce a variable:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> name = <span class="tk-s">&quot;Ada&quot;</span>
+<span class="tk-k">local</span> year = <span class="tk-n">1843</span>
+<span class="tk-f">print</span>(name .. <span class="tk-s">&quot; wrote the first program in &quot;</span> .. year)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Ada wrote the first program in 1843</code></pre></div>
+<p>Without <code>local</code>, the assignment creates a <strong>global</strong> variable, visible to the whole program, including every other file and library it loads. Globals are slower and invite clashes between unrelated parts of a program. Lesson 3.05 covers scope in full; until then the rule is simple:</p>
+<div class="callout important"><div class="callout-title"><span>Every new variable starts with local</span></div><div class="callout-body"><p><code>local count = 0</code>, never just <code>count = 0</code>. The only things you make global on purpose are functions a task asks for by name.</p>
+</div></div>
+<p>Names are letters, digits and <code>_</code>, not starting with a digit. They are case-sensitive. A few words are reserved:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>and  break  do  else  elseif  end  false  for  function  goto  if  in
+local  nil  not  or  repeat  return  then  true  until  while</code></pre></div>
+<h2>Several at once</h2>
+<p>One assignment can set several variables. The values on the right are all worked out first, then assigned:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> a, b, c = <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>
+<span class="tk-f">print</span>(a, b, c)
+
+<span class="tk-k">local</span> x, y = <span class="tk-n">10</span>      <span class="tk-c">-- y gets nil: there is no second value</span>
+<span class="tk-f">print</span>(x, y)
+
+<span class="tk-k">local</span> p, q = <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> <span class="tk-c">-- the extra 3 is dropped</span>
+<span class="tk-f">print</span>(p, q)
+
+a, b = b, a          <span class="tk-c">-- swap, with no temporary variable</span>
+<span class="tk-f">print</span>(a, b)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1	2	3
+10	nil
+1	2
+2	1</code></pre></div>
+<h2>Booleans</h2>
+<p><code>true</code> and <code>false</code>, the results of comparisons:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> adult = <span class="tk-n">20</span> &gt;= <span class="tk-n">18</span>
+<span class="tk-f">print</span>(adult, <span class="tk-f">type</span>(adult), <span class="tk-k">not</span> adult)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>true	boolean	false</code></pre></div>
+<p>Lesson 1.05 shows how decisions use them, and a rule that surprises people from other languages: in Lua, <code>0</code> and <code>&quot;&quot;</code> count as <strong>true</strong>. Only <code>false</code> and <code>nil</code> are false.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/1.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/1.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-01-what-lua-is-and-running-code/"><span class="mono">previous</span><b>1.01 What Lua Is and Running Code</b></a>
+      <a class="lp-next" href="../1-03-numbers-and-arithmetic/"><span class="mono">next</span><b>1.03 Numbers and Arithmetic</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/1-02-values-variables-and-types"></script>
+</body>
+</html>

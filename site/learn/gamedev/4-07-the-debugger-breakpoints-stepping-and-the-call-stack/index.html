@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Debugger: Breakpoints, Stepping and the Call Stack · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/4-07-the-debugger-breakpoints-stepping-and-the-call-stack/">
+  <meta name="description" content="Lesson 1.08 was a first session. This lesson covers the debugger as a daily tool: every way of controlling execution (run to cursor, step into a specific…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Debugger: Breakpoints, Stepping and the Call Stack · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Lesson 1.08 was a first session. This lesson covers the debugger as a daily tool: every way of controlling execution (run to cursor, step into a specific…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/4-07-the-debugger-breakpoints-stepping-and-the-call-stack/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Debugger: Breakpoints, Stepping and the Call Stack · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Debugger: Breakpoints, Stepping and the Call Stack · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Lesson 1.08 was a first session. This lesson covers the debugger as a daily tool: every way of controlling execution (run to cursor, step into a specific…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Visual Studio and the Build Pipeline</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Debugger: Breakpoints, Stepping and the Call Stack</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.07</b></span><span>7 of 10 in milestone 4</span><span>8 min</span></div>
+      <p class="lp-summary">Lesson 1.08 was a first session. This lesson covers the debugger as a daily tool: every way of controlling execution (run to cursor, step into a specific call, set the next statement), moving around the Call Stack, breaking when an exception is thrown, Just My Code, and attaching to a program that is already running.</p>
+      <div class="prose">
+<h2>How a debugger stops a program</h2>
+<p>It helps to know what a breakpoint is. When you set one on a line, the debugger finds the first machine instruction for that line and overwrites its first byte with <code>0xCC</code>, the <code>int 3</code> instruction. When the CPU reaches it, the processor raises a <strong>breakpoint exception</strong>; Windows sees that a debugger is attached to the process and hands it the event. The debugger then puts the original byte back, shows you the line, and waits.</p>
+<p>Stepping works similarly: the debugger sets temporary breakpoints, or turns on the processor&#39;s <strong>trap flag</strong>, which raises an exception after every single instruction. Chapter 12 uses these same Windows debugging events to build a tiny debugger of your own.</p>
+<h2>Controlling execution</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Key</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Start Debugging / Continue</td>
+<td>F5</td>
+<td>Run until a breakpoint, an exception, or the end</td>
+</tr>
+<tr>
+<td>Step Over</td>
+<td>F10</td>
+<td>Run the current line, including calls, stop at the next line</td>
+</tr>
+<tr>
+<td>Step Into</td>
+<td>F11</td>
+<td>Go into the function the line calls</td>
+</tr>
+<tr>
+<td>Step Out</td>
+<td>Shift+F11</td>
+<td>Run until the current function returns</td>
+</tr>
+<tr>
+<td>Run To Cursor</td>
+<td>Ctrl+F10</td>
+<td>Run until the line the cursor is on, as if it had a one-time breakpoint</td>
+</tr>
+<tr>
+<td>Run to Click</td>
+<td>The green arrow that appears when hovering at the left of a line</td>
+<td>Same, with the mouse</td>
+</tr>
+<tr>
+<td>Step Into Specific</td>
+<td>Right-click → Step Into Specific</td>
+<td>Choose which call to step into when a line makes several, such as <code>update(getPlayer(), clamp(x))</code></td>
+</tr>
+<tr>
+<td>Set Next Statement</td>
+<td>Ctrl+Shift+F10, or drag the yellow arrow</td>
+<td>Make a different line run next, skipping or repeating code</td>
+</tr>
+<tr>
+<td>Break All</td>
+<td>Ctrl+Alt+Break</td>
+<td>Pause the program wherever it is, for example when it seems stuck</td>
+</tr>
+<tr>
+<td>Stop Debugging</td>
+<td>Shift+F5</td>
+<td>End the program</td>
+</tr>
+<tr>
+<td>Restart</td>
+<td>Ctrl+Shift+F5</td>
+<td>End and start again</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Set Next Statement</strong> is powerful and dangerous: it changes where the CPU goes next without running the code in between. It is excellent for re-running a function after changing a variable, and can crash the program if you skip something important such as a constructor. Use it within one function.</p>
+<p><strong>Break All</strong> is the answer to &quot;my game froze&quot;: pause, open the Call Stack, and see what every thread is doing (chapter 8 covers threads).</p>
+<h2>The Call Stack window, as a tool</h2>
+<p><strong>Debug → Windows → Call Stack</strong> (Ctrl+Alt+C) lists the frames from the current function down to the start of the thread (lesson 1.05). Using it well:</p>
+<ul>
+<li><strong>Double-click a frame</strong> to make it current: the editor shows that function&#39;s line, and Locals and Watch show that frame&#39;s variables. This is how you find out <em>why</em> a function was called with a bad argument: go up one frame and look at the caller&#39;s variables.</li>
+<li><strong>Right-click → Show External Code</strong> reveals frames from the standard library and Windows, hidden by default.</li>
+<li><strong>Right-click → Show Parameter Values / Parameter Types</strong> puts the arguments on each line.</li>
+<li><strong>Run To Cursor in an earlier frame</strong> (select it, then Ctrl+F10 on a line) runs until control comes back up to that point.</li>
+</ul>
+<h2>Just My Code</h2>
+<p>By default, Visual Studio&#39;s <strong>Just My Code</strong> setting hides and skips code that is not yours: the standard library, Windows, third-party libraries without debug information. Step Into then does not wander into <code>std::vector</code>&#39;s internals. When you need to see inside them (for example, to watch a <code>std::vector</code> reallocate), turn it off in <strong>Tools → Options → Debugging → General → Enable Just My Code</strong>.</p>
+<h2>Breaking on exceptions</h2>
+<p>By default, the debugger stops only on exceptions nobody catches. That is often too late: by then the stack has unwound past the code that threw. Open <strong>Debug → Windows → Exception Settings</strong> (Ctrl+Alt+E) and tick the categories you want to stop on <strong>when thrown</strong>:</p>
+<ul>
+<li><strong>C++ Exceptions</strong>: stop at any <code>throw</code>, even if it will be caught. Good for &quot;something throws and gets swallowed somewhere&quot;.</li>
+<li><strong>Win32 Exceptions → Access violation (0xC0000005)</strong>: usually already on. Stops at the exact instruction that read or wrote bad memory, with the full stack intact.</li>
+</ul>
+<p>When the debugger stops on an access violation, the message says &quot;reading location 0x...&quot; or &quot;writing location 0x...&quot;. As lesson 3.02 explained, a small address there means a null pointer plus an offset.</p>
+<h2>Attaching to a running program</h2>
+<p>You do not have to start a program from Visual Studio to debug it. <strong>Debug → Attach to Process</strong> (Ctrl+Alt+P) lists running processes; pick yours and press Attach. Breakpoints, Break All and the windows all work, provided the debugger can find the program&#39;s <code>.pdb</code> symbols (lesson 8.02).</p>
+<p>This is how you debug a game that only misbehaves after an hour of play, a program started by another program, or a tool you want to inspect without restarting it. You can attach only to your own processes unless Visual Studio runs as administrator, and Windows refuses debugging of protected system processes entirely.</p>
+<p><strong>Debug → Detach All</strong> lets the program carry on without the debugger.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>A breakpoint that never hits</span></div><div class="callout-body"><p>A hollow red circle means the debugger could not place it: the code is not loaded yet, the build is out of date, or the line has no code (in Release, the compiler may have removed or merged it). Rebuild in Debug.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Set Next Statement across function boundaries</span></div><div class="callout-body"><p>Moving the yellow arrow into a different function leaves the stack in a state the code does not expect. Stay within one function.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Stopping too late on exceptions</span></div><div class="callout-body"><p>Turn on &quot;break when thrown&quot; for C++ exceptions to see where an exception starts, not just where it ends.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does the debugger write into your program&#39;s code to make a breakpoint?</div><ul><li>The byte <code>0xCC</code> (the <code>int 3</code> instruction) over the first byte of the line&#39;s first instruction</li><li>A call to a special debugging function</li><li>Nothing; the CPU checks a list of breakpoints itself</li></ul><details><summary>Show the answer</summary><p><b>The byte <code>0xCC</code> (the <code>int 3</code> instruction) over the first byte of the line&#39;s first instruction</b> The CPU raises an exception when it executes <code>int 3</code>, and Windows passes it to the debugger.</p></details></li><li><div class="q">A line calls three functions. How do you step into only the second?</div><ul><li>Press F11 twice</li><li>Right-click → Step Into Specific, and choose it</li><li>Set a breakpoint and press F10</li></ul><details><summary>Show the answer</summary><p><b>Right-click → Step Into Specific, and choose it</b> Step Into Specific lists every call on the line.</p></details></li><li><div class="q">Your game freezes. What do you do in the debugger first?</div><ul><li>Break All, then look at the Call Stack of each thread</li><li>Restart it</li><li>Add more breakpoints</li></ul><details><summary>Show the answer</summary><p><b>Break All, then look at the Call Stack of each thread</b> Break All pauses the program wherever it is, which shows what it is stuck doing.</p></details></li><li><div class="q">Where do you go to stop as soon as any C++ exception is thrown, even if it is caught later?</div><ul><li>Exception Settings, ticking C++ Exceptions</li><li>The Call Stack window</li><li>The Breakpoints window</li></ul><details><summary>Show the answer</summary><p><b>Exception Settings, ticking C++ Exceptions</b> By default the debugger only stops on unhandled exceptions.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/4.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/4.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-06-managing-dependencies-with-vcpkg/"><span class="mono">previous</span><b>4.06 Managing Dependencies with vcpkg</b></a>
+      <a class="lp-next" href="../4-08-watch-locals-memory-and-registers-windows/"><span class="mono">next</span><b>4.08 Watch, Locals, Memory and Registers Windows</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/4-07-the-debugger-breakpoints-stepping-and-the-call-stack"></script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Rust course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/">
+  <meta name="description" content="Memory safety without a garbage collector. Rust from the first program to safe concurrency: Cargo, types and expressions, ownership, borrowing and slices,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Rust course · Xenon">
+  <meta property="og:description" content="Memory safety without a garbage collector. Rust from the first program to safe concurrency: Cargo, types and expressions, ownership, borrowing and slices,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Rust course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Rust course · Xenon">
+  <meta name="twitter:description" content="Memory safety without a garbage collector. Rust from the first program to safe concurrency: Cargo, types and expressions, ownership, borrowing and slices,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Rust</span></div>
+    <h1 class="display">Rust</h1>
+    <div class="readout lp-readout"><span><b>8</b> milestones</span><span><b>40</b> lessons</span><span><b>50</b> practice tasks</span><span><b>40</b> projects</span></div>
+    <p class="lp-lede">Rust from the first program to safe concurrency: Cargo, types and expressions, ownership, borrowing and slices, structs, enums and pattern matching, vectors, strings and hash maps, error handling with Result, modules and tests, generics and traits, lifetimes and trait objects, closures and iterators, smart pointers, threads, channels and shared state, a complete command-line tool, and finally the advanced language: macros, Deref and Cow, unsafe code and FFI, files and processes, and type-state with PhantomData, then error types, operators and conversions, collections, advanced traits and parsers. Best after a first language; the C++ memory milestones make the ownership rules feel familiar. Practice compiles and runs in your browser.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-rust-and-cargo-your-first-program/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/rust">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> First Steps</h2>
+      <p class="lp-ms-blurb">Cargo and your first program, variables and types, functions and expressions, control flow, and strings and input.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-rust-and-cargo-your-first-program/"><span class="mono">1.01</span><span class="t">Rust and Cargo: Your First Program</span><span class="n">1 task</span></a></li>
+        <li><a href="1-02-variables-mutability-and-types/"><span class="mono">1.02</span><span class="t">Variables, Mutability and Types</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-functions-and-expressions/"><span class="mono">1.03</span><span class="t">Functions and Expressions</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-control-flow/"><span class="mono">1.04</span><span class="t">Control Flow</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-strings-and-input/"><span class="mono">1.05</span><span class="t">Strings and Input</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Ownership and Data</h2>
+      <p class="lp-ms-blurb">Ownership and moves, references and borrowing, slices, structs and methods, enums, Option and match.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-ownership-and-moves/"><span class="mono">2.01</span><span class="t">Ownership and Moves</span><span class="n">1 task</span></a></li>
+        <li><a href="2-02-references-and-borrowing/"><span class="mono">2.02</span><span class="t">References and Borrowing</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-slices/"><span class="mono">2.03</span><span class="t">Slices</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-structs-and-methods/"><span class="mono">2.04</span><span class="t">Structs and Methods</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-enums-option-and-match/"><span class="mono">2.05</span><span class="t">Enums, Option and match</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Collections, Errors and Modules</h2>
+      <p class="lp-ms-blurb">Vectors, UTF-8 strings, hash maps and sets, error handling with Result and ?, and modules, crates and tests.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-vectors/"><span class="mono">3.01</span><span class="t">Vectors</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-strings-in-depth/"><span class="mono">3.02</span><span class="t">Strings in Depth</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-hashmap-and-hashset/"><span class="mono">3.03</span><span class="t">HashMap and HashSet</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-error-handling-with-result/"><span class="mono">3.04</span><span class="t">Error Handling with Result</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-modules-crates-and-tests/"><span class="mono">3.05</span><span class="t">Modules, Crates and Tests</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Generics, Traits and Lifetimes</h2>
+      <p class="lp-ms-blurb">Generic functions and types, traits, the standard traits, lifetimes, and trait objects.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-generics/"><span class="mono">4.01</span><span class="t">Generics</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-traits/"><span class="mono">4.02</span><span class="t">Traits</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-the-standard-traits/"><span class="mono">4.03</span><span class="t">The Standard Traits</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-lifetimes/"><span class="mono">4.04</span><span class="t">Lifetimes</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-trait-objects/"><span class="mono">4.05</span><span class="t">Trait Objects</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Closures, Iterators and Smart Pointers</h2>
+      <p class="lp-ms-blurb">Closures, iterator adapters, implementing Iterator, Box, Rc and RefCell, and pattern matching in depth.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-closures/"><span class="mono">5.01</span><span class="t">Closures</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-iterators-and-adapters/"><span class="mono">5.02</span><span class="t">Iterators and Adapters</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-implementing-iterator/"><span class="mono">5.03</span><span class="t">Implementing Iterator</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-box-rc-and-refcell/"><span class="mono">5.04</span><span class="t">Box, Rc and RefCell</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-pattern-matching-in-depth/"><span class="mono">5.05</span><span class="t">Pattern Matching in Depth</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Concurrency and Projects</h2>
+      <p class="lp-ms-blurb">Threads and channels, shared state with Arc and Mutex, async Rust, testing and tooling, and a complete command-line tool.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-threads-and-message-passing/"><span class="mono">6.01</span><span class="t">Threads and Message Passing</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-shared-state-with-arc-and-mutex/"><span class="mono">6.02</span><span class="t">Shared State with Arc and Mutex</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-async-rust/"><span class="mono">6.03</span><span class="t">Async Rust</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-testing-documentation-and-tooling/"><span class="mono">6.04</span><span class="t">Testing, Documentation and Tooling</span><span class="n">1 task</span></a></li>
+        <li><a href="6-05-project-a-command-line-tool/"><span class="mono">6.05</span><span class="t">Project: A Command-Line Tool</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">07</span> Advanced Rust</h2>
+      <p class="lp-ms-blurb">Macros, Deref, AsRef, Borrow and Cow, unsafe Rust and FFI, files, paths and processes, and type-state with PhantomData.</p>
+      <ol class="lp-lessons">
+        <li><a href="7-01-macros/"><span class="mono">7.01</span><span class="t">Macros</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-02-deref-asref-borrow-and-cow/"><span class="mono">7.02</span><span class="t">Deref, AsRef, Borrow and Cow</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-03-unsafe-rust-and-ffi/"><span class="mono">7.03</span><span class="t">Unsafe Rust and FFI</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-04-files-paths-and-processes/"><span class="mono">7.04</span><span class="t">Files, Paths and Processes</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-05-type-state-and-phantomdata/"><span class="mono">7.05</span><span class="t">Type-State and PhantomData</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">08</span> Rust in Practice</h2>
+      <p class="lp-ms-blurb">Error types with causes, operators and conversions, the rest of the collections, advanced traits with const generics, and writing parsers by hand.</p>
+      <ol class="lp-lessons">
+        <li><a href="8-01-error-types-in-depth/"><span class="mono">8.01</span><span class="t">Error Types in Depth</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-02-operators-and-conversions/"><span class="mono">8.02</span><span class="t">Operators and Conversions</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-03-collections-in-depth/"><span class="mono">8.03</span><span class="t">Collections in Depth</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-04-advanced-traits/"><span class="mono">8.04</span><span class="t">Advanced Traits</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-05-writing-parsers/"><span class="mono">8.05</span><span class="t">Writing Parsers</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust"></script>
+</body>
+</html>

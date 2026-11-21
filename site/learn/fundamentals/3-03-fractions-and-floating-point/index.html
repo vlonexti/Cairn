@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Fractions and Floating Point · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/3-03-fractions-and-floating-point/">
+  <meta name="description" content="Numbers with a fractional part are stored in floating point - like scientific notation, in binary - with a fixed number of significant bits. Many simple…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Fractions and Floating Point · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="Numbers with a fractional part are stored in floating point - like scientific notation, in binary - with a fixed number of significant bits. Many simple…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/3-03-fractions-and-floating-point/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Fractions and Floating Point · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Fractions and Floating Point · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="Numbers with a fractional part are stored in floating point - like scientific notation, in binary - with a fixed number of significant bits. Many simple…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Everything Is Numbers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Fractions and Floating Point</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Numbers with a fractional part are stored in floating point - like scientific notation, in binary - with a fixed number of significant bits. Many simple decimals such as 0.1 have no exact binary form, so 0.1 + 0.2 is not exactly 0.3. Money is safer in whole cents.</p>
+      <div class="prose">
+<h2>Binary fractions</h2>
+<p>Places to the right of a binary point keep halving:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Place</th>
+<th>½</th>
+<th>¼</th>
+<th>⅛</th>
+<th>1/16</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Worth</td>
+<td>0.5</td>
+<td>0.25</td>
+<td>0.125</td>
+<td>0.0625</td>
+</tr>
+</tbody></table>
+</div>
+<p>So <code>0.101</code> in binary is 0.5 + 0.125 = <strong>0.625</strong>, and <code>10.11</code> is 2 + 0.5 + 0.25 = <strong>2.75</strong>.</p>
+<p>Some fractions are easy: 0.5, 0.25, 0.75. But try 0.1 (one tenth). In decimal, 1/3 goes on forever: 0.3333... In binary, <strong>1/10 goes on forever</strong>:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>0.1 (decimal) = 0.000110011001100110011... (binary, repeating forever)</code></pre></div>
+<p>A computer has to stop somewhere, so it stores the nearest value it can. 0.1 inside a computer is really 0.1000000000000000055511151231257827...</p>
+<h2>Floating point: scientific notation in binary</h2>
+<p>Scientists write very large and very small numbers as a few digits and a power of 10: 6.02 × 10²³, or 1.6 × 10⁻¹⁹. Computers do the same in binary. A <strong>floating-point</strong> number has three parts:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Meaning</th>
+<th>64-bit (double)</th>
+<th>32-bit (float)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sign</td>
+<td>positive or negative</td>
+<td>1 bit</td>
+<td>1 bit</td>
+</tr>
+<tr>
+<td>Exponent</td>
+<td>the power of 2: where the point &quot;floats&quot; to</td>
+<td>11 bits</td>
+<td>8 bits</td>
+</tr>
+<tr>
+<td>Fraction (mantissa)</td>
+<td>the significant digits</td>
+<td>52 bits</td>
+<td>23 bits</td>
+</tr>
+</tbody></table>
+</div>
+<p>This is the <strong>IEEE 754</strong> standard (1985), used by every modern computer. A 64-bit &quot;double&quot; keeps about <strong>15 to 17 significant decimal digits</strong>; a 32-bit &quot;float&quot; about <strong>7</strong>. Python&#39;s <code>float</code> is a double.</p>
+<p>The point floats: the same 52 bits of digits can describe 0.000000001234 or 1,234,000,000,000 - big and small numbers, but always with the same number of significant digits.</p>
+<h2>The famous surprise</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-f">print</span>(<span class="tk-n">0.1</span> + <span class="tk-n">0.2</span>)          <span class="tk-c"># 0.30000000000000004</span>
+<span class="tk-f">print</span>(<span class="tk-n">0.1</span> + <span class="tk-n">0.2</span> == <span class="tk-n">0.3</span>)   <span class="tk-c"># False</span></code></pre></div>
+<p>Neither 0.1 nor 0.2 is stored exactly, and their tiny errors add up to a result that is not the stored value of 0.3. This is not a Python bug: C, Java, JavaScript and every language that uses the hardware&#39;s floating point give the same answer.</p>
+<p>Lessons from it:</p>
+<ul>
+<li><strong>Never compare floating-point numbers with <code>==</code>.</strong> Check whether they are close: <code>abs(a - b) &lt; 1e-9</code>.</li>
+<li><strong>Don&#39;t use floats for money.</strong> £0.10 a hundred times should be £10.00 exactly. Store <strong>whole pennies (cents) as integers</strong> instead, or use a decimal type (Python&#39;s <code>decimal</code>, C#&#39;s <code>decimal</code>).</li>
+<li><strong>Large integers lose precision too.</strong> A double holds every integer exactly only up to 2⁵³ (about 9 quadrillion). Above that, it starts skipping numbers.</li>
+</ul>
+<div class="callout info"><div class="callout-title"><span>Special values</span></div><div class="callout-body"><p>Floating point has values that are not ordinary numbers: <code>inf</code> (infinity, from 1.0 / 0.0 in many languages), <code>-inf</code>, and <code>nan</code> (&quot;not a number&quot;, from 0.0 / 0.0). <code>nan</code> is not even equal to itself.</p>
+</div></div>
+<h2>Fixed point</h2>
+<p>Some programs avoid floating point entirely and use <strong>fixed point</strong>: an integer that counts in small units. Money in cents is fixed point (two decimal places). Old games and many small chips with no floating-point hardware store positions in 1/256ths of a pixel. Integers are exact, so fixed point never surprises you; it just has a fixed range and precision.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is 0b0.11 in decimal?</div><ul><li>0.11</li><li>0.75</li><li>0.3</li></ul><details><summary>Show the answer</summary><p><b>0.75</b> 0.5 + 0.25 = 0.75.</p></details></li><li><div class="q">Why is 0.1 + 0.2 not exactly 0.3 in most languages?</div><ul><li>0.1 and 0.2 cannot be stored exactly in binary, and their small errors add up</li><li>The CPU&#39;s adder is broken for decimals</li><li>Python rounds wrongly</li></ul><details><summary>Show the answer</summary><p><b>0.1 and 0.2 cannot be stored exactly in binary, and their small errors add up</b> One tenth repeats forever in binary, so only an approximation is stored.</p></details></li><li><div class="q">What is the safe way to store an amount of money?</div><ul><li>As a 32-bit float</li><li>As a whole number of cents (or a decimal type)</li><li>As text</li></ul><details><summary>Show the answer</summary><p><b>As a whole number of cents (or a decimal type)</b> Integers are exact, so £12.34 as 1234 pence never drifts.</p></details></li><li><div class="q">About how many significant decimal digits does a 64-bit double keep?</div><ul><li>7</li><li>15 to 17</li><li>64</li></ul><details><summary>Show the answer</summary><p><b>15 to 17</b> 52 bits of fraction give about 15 to 17 decimal digits.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-how-text-gets-on-the-screen/"><span class="mono">previous</span><b>3.02 How Text Gets on the Screen</b></a>
+      <a class="lp-next" href="../3-04-colours-images-and-sound/"><span class="mono">next</span><b>3.04 Colours, Images and Sound</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/3-03-fractions-and-floating-point"></script>
+</body>
+</html>

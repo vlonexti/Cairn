@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Hexadecimal · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/2-04-hexadecimal/">
+  <meta name="description" content="Long binary numbers are hard to read, so programmers write them in hexadecimal - base 16, with digits 0 to 9 and A to F. One hex digit is exactly four bits,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hexadecimal · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="Long binary numbers are hard to read, so programmers write them in hexadecimal - base 16, with digits 0 to 9 and A to F. One hex digit is exactly four bits,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/2-04-hexadecimal/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Hexadecimal · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hexadecimal · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="Long binary numbers are hard to read, so programmers write them in hexadecimal - base 16, with digits 0 to 9 and A to F. One hex digit is exactly four bits,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Binary: The Language of the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Hexadecimal</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 6 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Long binary numbers are hard to read, so programmers write them in hexadecimal - base 16, with digits 0 to 9 and A to F. One hex digit is exactly four bits, so converting between binary and hex is just grouping bits in fours. Hex is everywhere - colours, memory addresses, error codes.</p>
+      <div class="prose">
+<h2>Binary is long</h2>
+<p>The number 48,879 in binary is <code>1011111011101111</code>. Sixteen digits, and one wrong 1 or 0 is easy to miss. Decimal is shorter, but it does not line up with the bits: there is no simple way to see from &quot;48879&quot; which bits are on.</p>
+<p><strong>Hexadecimal</strong> (&quot;hex&quot;, base 16) fixes both problems. It needs 16 digits, so after 0 to 9 it uses letters:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Hex digit</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+<th>A</th>
+<th>B</th>
+<th>C</th>
+<th>D</th>
+<th>E</th>
+<th>F</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Decimal</td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+<td>9</td>
+<td>10</td>
+<td>11</td>
+<td>12</td>
+<td>13</td>
+<td>14</td>
+<td>15</td>
+</tr>
+<tr>
+<td>Binary</td>
+<td>0000</td>
+<td>0001</td>
+<td>0010</td>
+<td>0011</td>
+<td>0100</td>
+<td>0101</td>
+<td>0110</td>
+<td>0111</td>
+<td>1000</td>
+<td>1001</td>
+<td>1010</td>
+<td>1011</td>
+<td>1100</td>
+<td>1101</td>
+<td>1110</td>
+<td>1111</td>
+</tr>
+</tbody></table>
+</div>
+<p>16 is 2⁴, so <strong>one hex digit is exactly four bits</strong> - one nibble. That is the whole reason programmers love it.</p>
+<h2>Binary to hex: group in fours</h2>
+<p>Split the bits into groups of four from the right, and replace each group with its hex digit:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1011 1110 1110 1111
+  B    E    E    F       = 0xBEEF</code></pre></div>
+<p>And back again: each hex digit becomes its four bits. <code>0x2A</code> is <code>0010 1010</code>.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/2.04">Try it in Xenon</a></div>
+<p>Look under each group of four bits in the demo: the hex digit is written there. Flip any bit and only its own digit changes.</p>
+<div class="callout tip"><div class="callout-title"><span>How to write hex</span></div><div class="callout-body"><p>Programmers mark hex with <strong><code>0x</code></strong>: <code>0xFF</code>, <code>0x2A</code>, <code>0xBEEF</code>. Case does not matter: <code>0xff</code> is the same number. Assembly sometimes uses a trailing <code>h</code> instead (<code>0FFh</code>), and web colours use <code>#</code> (<code>#FF8800</code>).</p>
+</div></div>
+<h2>Hex to decimal</h2>
+<p>Each place is worth 16 times the one to its right: 1, 16, 256, 4096, ...</p>
+<p><code>0x2A</code> = 2 × 16 + 10 = <strong>42</strong>. <code>0xFF</code> = 15 × 16 + 15 = <strong>255</strong>. <code>0x100</code> = 1 × 256 = <strong>256</strong>.</p>
+<p>The double-and-add trick from 2.02 works too, multiplying by 16 instead: for <code>0x2A</code>, 0 → 2 → 2 × 16 + 10 = 42.</p>
+<h2>Where you will see hex</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Where</th>
+<th>Example</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Colours</td>
+<td><code>#FF8800</code></td>
+<td>red FF (255), green 88 (136), blue 00: orange (lesson 3.04)</td>
+</tr>
+<tr>
+<td>Memory addresses</td>
+<td><code>0x7ffd5e3c</code></td>
+<td>where something is in memory (lesson 4.03)</td>
+</tr>
+<tr>
+<td>Error codes</td>
+<td><code>0xC0000005</code></td>
+<td>Windows&#39; &quot;access violation&quot;: a program touched memory it may not</td>
+</tr>
+<tr>
+<td>Bytes of a file</td>
+<td><code>89 50 4E 47</code></td>
+<td>the first bytes of every PNG image (lesson 3.05)</td>
+</tr>
+<tr>
+<td>Machine code</td>
+<td><code>B8 2A 00 00 00</code></td>
+<td>the x86 instruction <code>mov eax, 42</code> (lesson 4.05)</td>
+</tr>
+<tr>
+<td>Unicode</td>
+<td><code>U+1F600</code></td>
+<td>the 😀 character (lesson 3.01)</td>
+</tr>
+</tbody></table>
+</div>
+<p>A byte is always exactly two hex digits, from <code>00</code> to <code>FF</code>, which is why hex is the standard way to show raw bytes.</p>
+<h2>Octal, briefly</h2>
+<p><strong>Octal</strong> is base 8 (digits 0 to 7); one octal digit is three bits. It was popular on old computers with 12-, 24- or 36-bit words, which divide by three. Today it survives mainly in Unix file permissions (<code>chmod 755</code>) and, as a trap, in C: <code>010</code> in C source is <strong>eight</strong>, because a leading 0 means octal.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is 0x1F in decimal?</div><ul><li>115</li><li>31</li><li>16</li></ul><details><summary>Show the answer</summary><p><b>31</b> 1 × 16 + 15 = 31.</p></details></li><li><div class="q">How many bits does one hex digit stand for?</div><ul><li>2</li><li>4</li><li>8</li></ul><details><summary>Show the answer</summary><p><b>4</b> 16 = 2⁴. That is why hex lines up so neatly with binary.</p></details></li><li><div class="q">What is 0b1100_0011 in hex?</div><ul><li>0xC3</li><li>0x3C</li><li>0xC03</li></ul><details><summary>Show the answer</summary><p><b>0xC3</b> 1100 is C, 0011 is 3.</p></details></li><li><div class="q">How many hex digits does one byte need?</div><ul><li>1</li><li>2</li><li>3</li></ul><details><summary>Show the answer</summary><p><b>2</b> A byte is 8 bits, two groups of four: 00 to FF.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-bits-bytes-and-bigger-units/"><span class="mono">previous</span><b>2.03 Bits, Bytes and Bigger Units</b></a>
+      <a class="lp-next" href="../2-05-binary-arithmetic-and-negative-numbers/"><span class="mono">next</span><b>2.05 Binary Arithmetic and Negative Numbers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/2-04-hexadecimal"></script>
+</body>
+</html>

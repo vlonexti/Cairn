@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Designing an Integration · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/5-01-designing-an-integration/">
+  <meta name="description" content="The decisions to make before writing code that connects two services - which system owns which data, one-way or two-way, triggered by webhooks, schedules or…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Designing an Integration · Working with APIs · Xenon">
+  <meta property="og:description" content="The decisions to make before writing code that connects two services - which system owns which data, one-way or two-way, triggered by webhooks, schedules or…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/5-01-designing-an-integration/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Designing an Integration · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Designing an Integration · Working with APIs · Xenon">
+  <meta name="twitter:description" content="The decisions to make before writing code that connects two services - which system owns which data, one-way or two-way, triggered by webhooks, schedules or…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Joining Services Together</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Designing an Integration</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The decisions to make before writing code that connects two services - which system owns which data, one-way or two-way, triggered by webhooks, schedules or users, how records in one system find their partners in the other, and writing it all down on one page.</p>
+      <div class="prose">
+<h2>Two systems, one picture</h2>
+<p>Most real API work is <strong>integration</strong>: making two services that were not designed for each other work together. An online shop and an accounting package; a form tool and a CRM; an issue tracker and a chat app. The code is rarely the hard part. The hard part is the decisions, and they are best made <strong>before</strong> the first request.</p>
+<p>The running example for this milestone: <strong>paid orders in a shop become invoices in an accounting system</strong>.</p>
+<h2>Who owns what?</h2>
+<p>For every kind of data, decide which system is the <strong>source of truth</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Owner</th>
+<th>The other system</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>orders, customers, prices</td>
+<td>shop</td>
+<td>receives copies</td>
+</tr>
+<tr>
+<td>invoice numbers, payment status in the books</td>
+<td>accounting</td>
+<td>never writes these back into the shop</td>
+</tr>
+</tbody></table>
+</div>
+<p>Copies are never edited by hand in the receiving system, or the next sync overwrites the edit (or worse, sometimes does and sometimes does not). If both systems must edit the same data, you need <strong>conflict rules</strong> (lesson 5.03), and it is worth trying hard to avoid that.</p>
+<h2>Which direction, triggered how?</h2>
+<ul>
+<li><strong>One-way</strong> (shop to accounting) is far simpler than <strong>two-way</strong>. Choose it whenever you can.</li>
+<li><strong>Triggers</strong>: a <strong>webhook</strong> from the shop (fast, lesson 4.01); a <strong>schedule</strong> (every 10 minutes, simple and robust); or a <strong>user action</strong> (&quot;send to accounting&quot; button). Many integrations combine a webhook for speed with a scheduled sync to catch anything missed.</li>
+</ul>
+<h2>Finding partners: the id map</h2>
+<p>The shop&#39;s order <code>1001</code> becomes the accounting system&#39;s invoice <code>INV-2026-0042</code>. The integration must remember that pair, so that a later change to the order <strong>updates</strong> the invoice instead of creating a second one. Two ways:</p>
+<ul>
+<li>Store the other system&#39;s id in a field of the record, if the API allows custom fields or an <strong>external reference</strong> (<code>&quot;external_ref&quot;: &quot;shop-1001&quot;</code>), and look it up there.</li>
+<li>Keep your own <strong>id map</strong>: a small table of <code>(shop id, accounting id)</code> pairs (practice 5.01).</li>
+</ul>
+<p>An external reference in the target system also makes your integration recoverable: if your id map is lost, it can be rebuilt by searching.</p>
+<h2>Write it down</h2>
+<p>Before coding, write one page: the systems and versions; what flows where and who owns it; the triggers; the field mapping (next lesson); what happens on deletes, on errors, and on the first run with existing data; and how someone will know it is working (lesson 5.05). It is the document the next person (often you, months later) needs, and writing it surfaces the questions the business must answer: &quot;should refunds void the invoice or create a credit note?&quot;</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-testing-webhooks/"><span class="mono">previous</span><b>4.05 Testing Webhooks</b></a>
+      <a class="lp-next" href="../5-02-mapping-data-between-apis/"><span class="mono">next</span><b>5.02 Mapping Data Between APIs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/5-01-designing-an-integration"></script>
+</body>
+</html>

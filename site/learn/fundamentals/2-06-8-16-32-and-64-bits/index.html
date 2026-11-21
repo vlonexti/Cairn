@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>8, 16, 32 and 64 Bits · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/2-06-8-16-32-and-64-bits/">
+  <meta name="description" content="The sizes you hear about - 8-bit, 16-bit, 32-bit, 64-bit - are how many bits a number takes. They decide the largest number that fits and, for a processor,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="8, 16, 32 and 64 Bits · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="The sizes you hear about - 8-bit, 16-bit, 32-bit, 64-bit - are how many bits a number takes. They decide the largest number that fits and, for a processor,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/2-06-8-16-32-and-64-bits/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="8, 16, 32 and 64 Bits · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="8, 16, 32 and 64 Bits · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="The sizes you hear about - 8-bit, 16-bit, 32-bit, 64-bit - are how many bits a number takes. They decide the largest number that fits and, for a processor,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Binary: The Language of the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">8, 16, 32 and 64 Bits</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.06</b></span><span>6 of 6 in milestone 2</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The sizes you hear about - 8-bit, 16-bit, 32-bit, 64-bit - are how many bits a number takes. They decide the largest number that fits and, for a processor, how much memory it can address. 32-bit addresses reach 4 GB, which is why computers moved to 64-bit. Byte order (endianness) decides which byte of a number comes first in memory.</p>
+      <div class="prose">
+<h2>The usual sizes</h2>
+<p>Numbers in a program are stored in a fixed number of bits, almost always 8, 16, 32 or 64:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Bits</th>
+<th>Bytes</th>
+<th>Unsigned range</th>
+<th>Signed range</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>8</td>
+<td>1</td>
+<td>0 to 255</td>
+<td>−128 to 127</td>
+<td>a character, a byte of a file, one colour channel</td>
+</tr>
+<tr>
+<td>16</td>
+<td>2</td>
+<td>0 to 65,535</td>
+<td>−32,768 to 32,767</td>
+<td>old games&#39; scores, audio samples (CD quality)</td>
+</tr>
+<tr>
+<td>32</td>
+<td>4</td>
+<td>0 to about 4.29 billion</td>
+<td>about ±2.1 billion</td>
+<td>the usual <code>int</code> in C, C++, Java and C#</td>
+</tr>
+<tr>
+<td>64</td>
+<td>8</td>
+<td>0 to about 18.4 quintillion</td>
+<td>about ±9.2 quintillion</td>
+<td>big counts, file sizes, times, memory addresses</td>
+</tr>
+</tbody></table>
+</div>
+<p>The pattern: <em>n</em> bits hold 2ⁿ values. Unsigned uses all of them for 0 and up: 0 to 2ⁿ − 1. Signed gives half to negatives: −2ⁿ⁻¹ to 2ⁿ⁻¹ − 1.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Formula</th>
+<th>For 16 bits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Unsigned max</td>
+<td>2ⁿ − 1</td>
+<td>65,535</td>
+</tr>
+<tr>
+<td>Signed min</td>
+<td>−2ⁿ⁻¹</td>
+<td>−32,768</td>
+</tr>
+<tr>
+<td>Signed max</td>
+<td>2ⁿ⁻¹ − 1</td>
+<td>32,767</td>
+</tr>
+</tbody></table>
+</div>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/2.06">Try it in Xenon</a></div>
+<p>Press + 1 on 32,767: the signed reading jumps to −32,768.</p>
+<p>In C you choose these sizes yourself (<code>uint8_t</code>, <code>int32_t</code>, <code>int64_t</code>); Python hides them and lets integers grow as big as memory allows, which is why <code>2 ** 100</code> just works in Python but overflows in C.</p>
+<h2>What &quot;a 64-bit processor&quot; means</h2>
+<p>When a <strong>processor</strong> is called 8-, 16-, 32- or 64-bit, it means its <strong>registers</strong> (the few very fast storage slots inside the CPU, lesson 4.04) hold that many bits. That decides two things:</p>
+<ol>
+<li><strong>How big a number it handles in one step.</strong> A 64-bit CPU adds two 64-bit numbers in one instruction; an 8-bit CPU needs several steps for anything above 255.</li>
+<li><strong>How much memory it can point at.</strong> Each byte of memory has a numbered address. With 32-bit addresses there are 2³² = 4,294,967,296 possible addresses: <strong>4 GiB</strong>, and not one byte more.</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Era</th>
+<th>CPU bits</th>
+<th>Example</th>
+<th>Memory it could address</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1970s-80s</td>
+<td>8</td>
+<td>Apple II, Commodore 64, NES</td>
+<td>64 KiB (with 16-bit addresses)</td>
+</tr>
+<tr>
+<td>1980s</td>
+<td>16</td>
+<td>IBM PC&#39;s 8086</td>
+<td>1 MiB (with tricks)</td>
+</tr>
+<tr>
+<td>1990s-2000s</td>
+<td>32</td>
+<td>Windows 95 to XP PCs</td>
+<td>4 GiB</td>
+</tr>
+<tr>
+<td>2000s to now</td>
+<td>64</td>
+<td>every PC and phone today</td>
+<td>2⁶⁴ bytes: 16 billion GiB (in practice, chips use 48 to 57 bits)</td>
+</tr>
+</tbody></table>
+</div>
+<p>The 4 GiB ceiling is why PCs moved to 64-bit around 2005-2010: as RAM got cheaper, 4 GiB was not enough. A 32-bit version of Windows could not use more than about 4 GB of RAM no matter how much was installed.</p>
+<div class="callout info"><div class="callout-title"><span>Game consoles and &quot;bits&quot;</span></div><div class="callout-body"><p>In the 1990s consoles were advertised by bits: the NES was 8-bit, the Super Nintendo and Mega Drive 16-bit, the Nintendo 64 - as the name says - 64-bit. The number was the CPU&#39;s register size, and it became a marketing word for &quot;newer and better&quot;.</p>
+</div></div>
+<h2>The year 2038 problem</h2>
+<p>Many systems store time as the number of seconds since 1 January 1970, in a <strong>signed 32-bit</strong> number. Its largest value, 2,147,483,647 seconds, is reached at <strong>03:14:07 UTC on 19 January 2038</strong>. One second later it overflows to the most negative number, which reads as December 1901. Modern systems use 64-bit times, which last for 292 billion years, but old embedded devices may still fail in 2038.</p>
+<h2>Byte order: which byte comes first?</h2>
+<p>A 32-bit number takes 4 bytes in memory. Which one goes first?</p>
+<p><code>0x12345678</code> is made of the bytes <code>12</code>, <code>34</code>, <code>56</code>, <code>78</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Memory (lowest address first)</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Little-endian</strong></td>
+<td><code>78 56 34 12</code>: lowest byte first</td>
+<td>x86 and x86-64 PCs, ARM in practice (phones, Apple-chip Macs)</td>
+</tr>
+<tr>
+<td><strong>Big-endian</strong></td>
+<td><code>12 34 56 78</code>: highest byte first, as we write it</td>
+<td>network protocols (&quot;network byte order&quot;), some file formats, old Macs</td>
+</tr>
+</tbody></table>
+</div>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/2.06">Try it in Xenon</a></div>
+<p>Switch the order in the demo. The number is the same; only the arrangement of its bytes in memory changes. It matters whenever bytes go between machines or into a file: read a big-endian number as little-endian and you get nonsense. The names come from <em>Gulliver&#39;s Travels</em>, where two nations fought over which end of a boiled egg to crack.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the largest unsigned 16-bit number?</div><ul><li>32,767</li><li>65,535</li><li>65,536</li></ul><details><summary>Show the answer</summary><p><b>65,535</b> 2¹⁶ − 1 = 65,535.</p></details></li><li><div class="q">Why could a 32-bit computer use only about 4 GB of memory?</div><ul><li>32-bit addresses can number only 2³² = about 4.3 billion bytes</li><li>Memory chips were never bigger than 4 GB</li><li>32-bit numbers cannot be added fast enough</li></ul><details><summary>Show the answer</summary><p><b>32-bit addresses can number only 2³² = about 4.3 billion bytes</b> Each byte needs its own address, and 32 bits give 2³² different ones.</p></details></li><li><div class="q">A little-endian computer stores the 16-bit number 0x1234. Which byte comes first in memory?</div><ul><li>0x12</li><li>0x34</li></ul><details><summary>Show the answer</summary><p><b>0x34</b> Little-endian puts the lowest (little) end first.</p></details></li><li><div class="q">What happens to a signed 32-bit seconds counter in January 2038?</div><ul><li>It stops at its maximum</li><li>It overflows and wraps to a large negative number, reading as 1901</li><li>Nothing; 32 bits is enough</li></ul><details><summary>Show the answer</summary><p><b>It overflows and wraps to a large negative number, reading as 1901</b> 2,147,483,647 + 1 wraps to −2,147,483,648, like 127 + 1 in 8 bits.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/2.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/2.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-binary-arithmetic-and-negative-numbers/"><span class="mono">previous</span><b>2.05 Binary Arithmetic and Negative Numbers</b></a>
+      <a class="lp-next" href="../3-01-text-ascii-and-unicode/"><span class="mono">next</span><b>3.01 Text: ASCII and Unicode</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/2-06-8-16-32-and-64-bits"></script>
+</body>
+</html>

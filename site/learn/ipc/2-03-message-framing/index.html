@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Message Framing · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/2-03-message-framing/">
+  <meta name="description" content="Turning a byte stream into messages - length prefixes and why they beat delimiters for binary data, choosing the size and byte order of the length, refusing…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Message Framing · Processes and Communication · Xenon">
+  <meta property="og:description" content="Turning a byte stream into messages - length prefixes and why they beat delimiters for binary data, choosing the size and byte order of the length, refusing…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/2-03-message-framing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Message Framing · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Message Framing · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="Turning a byte stream into messages - length prefixes and why they beat delimiters for binary data, choosing the size and byte order of the length, refusing…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Pipes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Message Framing</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Turning a byte stream into messages - length prefixes and why they beat delimiters for binary data, choosing the size and byte order of the length, refusing absurd lengths, reading exactly N bytes, and recovering when the other side sends nonsense.</p>
+      <div class="prose">
+<h2>Streams have no boundaries</h2>
+<p>A pipe in byte mode, a TCP socket and stdio all deliver a <strong>stream</strong>: bytes in order, with no record of how they were written. If one side writes &quot;hello&quot; and then &quot;world&quot;, the other may read &quot;hellow&quot; and &quot;orld&quot;. A program that exchanges <em>messages</em> must therefore mark where each one ends. That is <strong>framing</strong>.</p>
+<h2>Three ways to frame</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>How</th>
+<th>Good for</th>
+<th>Problem</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>delimiter</strong></td>
+<td>end each message with <code>\n</code> (or <code>\0</code>)</td>
+<td>text, line-based protocols</td>
+<td>the delimiter cannot appear inside a message without escaping</td>
+</tr>
+<tr>
+<td><strong>fixed size</strong></td>
+<td>every message is N bytes</td>
+<td>very simple records</td>
+<td>wastes space; inflexible</td>
+</tr>
+<tr>
+<td><strong>length prefix</strong></td>
+<td>each message starts with its length</td>
+<td>binary data, anything</td>
+<td>the reader must trust the length</td>
+</tr>
+</tbody></table>
+</div>
+<p>Length prefixes are the usual choice for program-to-program protocols. A message is sent as:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>[ length: 4 bytes, little-endian ][ payload: `length` bytes ]
+05 00 00 00 68 65 6C 6C 6F            -&gt; &quot;hello&quot;</code></pre></div>
+<h2>Choosing the length field</h2>
+<ul>
+<li><strong>Size</strong>: 2 bytes allows 64 KB messages, 4 bytes up to 4 GB. 4 bytes is the common default.</li>
+<li><strong>Byte order</strong>: say which, and stick to it. Little-endian matches x86 and ARM; network protocols traditionally use big-endian. It matters only that both sides agree.</li>
+<li><strong>What it counts</strong>: the payload only, or the whole frame including the length? Document it; the bug where one side counts the header and the other does not is a classic.</li>
+</ul>
+<h2>Reading a frame</h2>
+<p>On a stream, a single read may return part of a header, a header and part of a payload, or several frames at once. The robust pattern keeps a buffer (lesson 6.03 of the Reverse Engineering course used it for a protocol):</p>
+<ol>
+<li>Append whatever arrives to the buffer.</li>
+<li>While the buffer holds at least a header: read the length; if the whole frame is there, take it out and handle it; otherwise wait for more.</li>
+</ol>
+<p>When you know how much you need and are happy to block, a &quot;read exactly N bytes&quot; helper is simpler:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">readExactly</span>(HANDLE pipe, <span class="tk-k">void</span>* buffer, DWORD size)
+{
+    <span class="tk-k">auto</span>* at{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">char</span>*&gt;(buffer) };
+    <span class="tk-k">while</span> (size &gt; <span class="tk-n">0</span>)
+    {
+        DWORD got{};
+        <span class="tk-k">if</span> (!<span class="tk-f">ReadFile</span>(pipe, at, size, &amp;got, <span class="tk-k">nullptr</span>) || got == <span class="tk-n">0</span>) <span class="tk-k">return</span> <span class="tk-k">false</span>;   <span class="tk-c">// closed or failed</span>
+        at += got;
+        size -= got;
+    }
+    <span class="tk-k">return</span> <span class="tk-k">true</span>;
+}
+
+std::uint32_t length{};
+<span class="tk-k">if</span> (!<span class="tk-f">readExactly</span>(pipe, &amp;length, <span class="tk-n">4</span>) || length &gt; MAX_MESSAGE) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+std::vector&lt;<span class="tk-k">char</span>&gt; <span class="tk-f">payload</span>(length);
+<span class="tk-k">if</span> (!<span class="tk-f">readExactly</span>(pipe, payload.<span class="tk-f">data</span>(), length)) <span class="tk-k">return</span> <span class="tk-k">false</span>;</code></pre></div>
+<h2>Never trust a length</h2>
+<p>The length comes from the other process, which may be buggy, old, or hostile. A length of <code>0xFFFFFFFF</code> must not make you allocate 4 GB. Always:</p>
+<ul>
+<li>enforce a <strong>maximum</strong> message size that suits your protocol (a few megabytes at most for most uses) and treat anything larger as a protocol error;</li>
+<li>decide what a length of 0 means (an empty message, or an error);</li>
+<li>on any framing error, <strong>close the connection</strong>. After a bad length you no longer know where the next frame starts, so there is nothing safe to continue with.</li>
+</ul>
+<h2>Message mode instead</h2>
+<p>Named pipes in message mode (lesson 2.02) do the framing for you: one write is one message. The reading side still has to handle messages larger than its buffer, by reading again after <code>ERROR_MORE_DATA</code> and joining the pieces. It also still needs a maximum size. And everything breaks the day the protocol moves to a socket, which is why many designs frame by hand even on pipes.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-named-pipes/"><span class="mono">previous</span><b>2.02 Named Pipes</b></a>
+      <a class="lp-next" href="../2-04-serving-many-clients/"><span class="mono">next</span><b>2.04 Serving Many Clients</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/2-03-message-framing"></script>
+</body>
+</html>

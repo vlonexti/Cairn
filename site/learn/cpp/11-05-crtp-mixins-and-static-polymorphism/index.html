@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>CRTP, Mixins and Static Polymorphism · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/11-05-crtp-mixins-and-static-polymorphism/">
+  <meta name="description" content="The Curiously Recurring Template Pattern : class Derived : public Base&lt;Derived . The base knows the derived type at compile time, so it can call derived…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CRTP, Mixins and Static Polymorphism · C++ · Xenon">
+  <meta property="og:description" content="The Curiously Recurring Template Pattern : class Derived : public Base&lt;Derived . The base knows the derived type at compile time, so it can call derived…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/11-05-crtp-mixins-and-static-polymorphism/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="CRTP, Mixins and Static Polymorphism · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CRTP, Mixins and Static Polymorphism · C++ · Xenon">
+  <meta name="twitter:description" content="The Curiously Recurring Template Pattern : class Derived : public Base&lt;Derived . The base knows the derived type at compile time, so it can call derived…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Advanced Templates and Metaprogramming</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">CRTP, Mixins and Static Polymorphism</h1>
+      <div class="readout lp-readout"><span>lesson <b>11.05</b></span><span>5 of 7 in milestone 11</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">The <strong>Curiously Recurring Template Pattern</strong>: <code>class Derived : public Base&lt;Derived&gt;</code>. The base knows the derived type at compile time, so it can call derived functions <strong>without <code>virtual</code></strong>. That is static polymorphism. It suits mixins and interfaces with no run-time overhead. C++23&#39;s <strong>deducing <code>this</code></strong> simplifies it.</p>
+      <div class="prose">
+<h2>The shape of the pattern</h2>
+<p>A class derives from a template and passes <strong>itself</strong> as the argument.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> <span class="tk-t">Derived</span>&gt;
+<span class="tk-k">class</span> <span class="tk-t">Shape</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">double</span> <span class="tk-f">area</span>() <span class="tk-k">const</span>
+    {
+        <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-t">Derived</span>&amp;&gt;(*<span class="tk-k">this</span>).<span class="tk-f">areaImpl</span>();
+    }
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Square</span> : <span class="tk-k">public</span> <span class="tk-t">Shape</span>&lt;<span class="tk-t">Square</span>&gt;
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">double</span> <span class="tk-f">areaImpl</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_side * m_side; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">double</span> m_side{ <span class="tk-n">2.0</span> };
+};
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">void</span> <span class="tk-f">printArea</span>(<span class="tk-k">const</span> <span class="tk-t">Shape</span>&lt;T&gt;&amp; shape)
+{
+    std::cout &lt;&lt; shape.<span class="tk-f">area</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-t">Square</span> square{};
+    <span class="tk-f">printArea</span>(square);    <span class="tk-c">// 4</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    S[&quot;Square&quot;] --&gt;|&quot;derives from&quot;| B[&quot;Shape&amp;lt;Square&amp;gt;&quot;]
+    B --&gt;|&quot;static_cast to Square,&lt;br/&gt;then calls areaImpl:&lt;br/&gt;resolved at COMPILE time&quot;| S</pre></div>
+<p>This is the <strong>Curiously Recurring Template Pattern</strong> (CRTP). Inside <code>Shape&lt;Derived&gt;</code>, the object is known to be a <code>Derived</code>, so the <code>static_cast</code> down to it is valid, and the call to <code>areaImpl</code> is an ordinary direct call that the compiler can inline.</p>
+<p>It is legal for <code>Square</code> to name itself as a template argument before it is complete, because the bodies of <code>Shape&lt;Square&gt;</code>&#39;s member functions are not instantiated until they are used, and by then <code>Square</code> is complete.</p>
+<h2>Dynamic and static polymorphism</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th><code>virtual</code> (dynamic)</th>
+<th>CRTP and templates (static)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The call is resolved</td>
+<td>At run time, through the vtable</td>
+<td>At compile time</td>
+</tr>
+<tr>
+<td>Inlining</td>
+<td>Usually not possible</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Per-object overhead</td>
+<td>A vptr</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Different types in one container</td>
+<td>Yes: <code>std::vector&lt;std::unique_ptr&lt;Shape&gt;&gt;</code></td>
+<td>No: <code>Shape&lt;Square&gt;</code> and <code>Shape&lt;Circle&gt;</code> are unrelated types</td>
+</tr>
+<tr>
+<td>New types without recompiling users</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Code size</td>
+<td>One function body</td>
+<td>One instantiation per type</td>
+</tr>
+</tbody></table>
+</div>
+<p>Use CRTP when the set of types is known at compile time and the call sits on a hot path. Use <code>virtual</code> when types must be chosen or mixed at run time. The mechanics of the virtual side are in <a href="../8-04-how-virtual-works-vtables/">8.04 How Virtual Works — vtables</a>.</p>
+<h2>Mixins</h2>
+<p>The more common use of CRTP is not polymorphism. It is to <strong>inject</strong> functionality into a class. A base class used this way is a <strong>mixin</strong>.</p>
+<h3>An object counter per class</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">class</span> <span class="tk-t">Counted</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">alive</span>() { <span class="tk-k">return</span> s_alive; }
+
+<span class="tk-k">protected</span>:
+    <span class="tk-f">Counted</span>() { ++s_alive; }
+    <span class="tk-f">Counted</span>(<span class="tk-k">const</span> <span class="tk-t">Counted</span>&amp;) { ++s_alive; }
+    ~<span class="tk-f">Counted</span>() { --s_alive; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">static</span> <span class="tk-k">inline</span> <span class="tk-k">int</span> s_alive{ <span class="tk-n">0</span> };
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Enemy</span> : <span class="tk-k">public</span> <span class="tk-t">Counted</span>&lt;<span class="tk-t">Enemy</span>&gt;
+{
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Bullet</span> : <span class="tk-k">public</span> <span class="tk-t">Counted</span>&lt;<span class="tk-t">Bullet</span>&gt;
+{
+};</code></pre></div>
+<p><code>Counted&lt;Enemy&gt;</code> and <code>Counted&lt;Bullet&gt;</code> are different classes, so each has its <strong>own</strong> static counter. A non-template base would give one counter shared by everything. The protected destructor prevents deletion through a <code>Counted&lt;T&gt;*</code>, so no virtual destructor is needed.</p>
+<h3>Generating operators</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> D&gt;
+<span class="tk-k">struct</span> <span class="tk-t">EqualityComparable</span>
+{
+    <span class="tk-k">friend</span> <span class="tk-k">bool</span> <span class="tk-k">operator</span>!=(<span class="tk-k">const</span> D&amp; a, <span class="tk-k">const</span> D&amp; b) { <span class="tk-k">return</span> !(a == b); }
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">Point</span> : <span class="tk-t">EqualityComparable</span>&lt;<span class="tk-t">Point</span>&gt;
+{
+    <span class="tk-k">int</span> x{};
+    <span class="tk-k">int</span> y{};
+    <span class="tk-k">friend</span> <span class="tk-k">bool</span> <span class="tk-k">operator</span>==(<span class="tk-k">const</span> <span class="tk-t">Point</span>&amp; a, <span class="tk-k">const</span> <span class="tk-t">Point</span>&amp; b) { <span class="tk-k">return</span> a.x == b.x &amp;&amp; a.y == b.y; }
+};</code></pre></div>
+<p>The derived class supplies one operation and the mixin derives the rest. C++20&#39;s defaulted comparisons (<a href="../6-07-operator-overloading-basics/">6.07 Operator Overloading Basics</a>) have made this particular example unnecessary, but the technique is everywhere in older libraries.</p>
+<h3>Removing <code>clone</code> boilerplate</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> <span class="tk-t">Base</span>, <span class="tk-k">typename</span> <span class="tk-t">Derived</span>&gt;
+<span class="tk-k">class</span> <span class="tk-t">Cloneable</span> : <span class="tk-k">public</span> <span class="tk-t">Base</span>
+{
+<span class="tk-k">public</span>:
+    std::unique_ptr&lt;<span class="tk-t">Base</span>&gt; <span class="tk-f">clone</span>() <span class="tk-k">const</span> <span class="tk-k">override</span>
+    {
+        <span class="tk-k">return</span> std::make_unique&lt;<span class="tk-t">Derived</span>&gt;(<span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-t">Derived</span>&amp;&gt;(*<span class="tk-k">this</span>));
+    }
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Circle</span> : <span class="tk-k">public</span> <span class="tk-t">Cloneable</span>&lt;<span class="tk-t">Shape</span>, <span class="tk-t">Circle</span>&gt;
+{
+    <span class="tk-c">// clone() is supplied</span>
+};</code></pre></div>
+<p>Here CRTP and virtual functions work together: the hierarchy is dynamic, and the repetitive override is generated statically.</p>
+<h2>Deducing <code>this</code></h2>
+<p>C++23 lets a member function declare its object parameter explicitly, and deduce its type.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Shape</span>
+{
+    <span class="tk-k">double</span> <span class="tk-f">area</span>(<span class="tk-k">this</span> <span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; self) { <span class="tk-k">return</span> self.<span class="tk-f">areaImpl</span>(); }
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">Square</span> : <span class="tk-t">Shape</span>
+{
+    <span class="tk-k">double</span> side{ <span class="tk-n">2.0</span> };
+    <span class="tk-k">double</span> <span class="tk-f">areaImpl</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> side * side; }
+};</code></pre></div>
+<p><code>self</code> is deduced as the <strong>actual</strong> type of the object the function is called on, so no template base and no cast are required. The feature is called an <strong>explicit object parameter</strong>.</p>
+<p>It also removes the duplication between <code>const</code> and non-const overloads (<a href="../6-04-this-const-member-functions-and-chaining/">6.04 this, const Member Functions and Chaining</a>):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Text</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> <span class="tk-t">Self</span>&gt;
+    <span class="tk-k">auto</span>&amp;&amp; <span class="tk-f">at</span>(<span class="tk-k">this</span> <span class="tk-t">Self</span>&amp;&amp; self, std::size_t i)
+    {
+        <span class="tk-k">return</span> std::forward&lt;<span class="tk-t">Self</span>&gt;(self).m_text[i];
+    }
+
+<span class="tk-k">private</span>:
+    std::string m_text{};
+};</code></pre></div>
+<p>One function serves const objects, non-const objects and temporaries, with the right return type for each.</p>
+<h2>Pitfalls</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pitfall</th>
+<th>Consequence</th>
+<th>Defence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Naming the wrong type: <code>class Circle : public Shape&lt;Square&gt;</code></td>
+<td>Compiles; the <code>static_cast</code> is undefined behaviour</td>
+<td>Make the base constructor private and declare <code>friend Derived;</code> so only the named class can construct it</td>
+</tr>
+<tr>
+<td>The derived class omits <code>areaImpl</code></td>
+<td>A confusing error, or endless recursion if base and derived use the same name</td>
+<td>Use distinct names, or constrain with a concept</td>
+</tr>
+<tr>
+<td>Expecting a common base type</td>
+<td><code>Shape&lt;A&gt;</code> and <code>Shape&lt;B&gt;</code> share nothing</td>
+<td>Add a non-template base if run-time polymorphism is also needed</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/11.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/11.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../11-04-compile-time-programming-constexpr-consteval-constinit/"><span class="mono">previous</span><b>11.04 Compile-Time Programming — constexpr, consteval, constinit</b></a>
+      <a class="lp-next" href="../11-06-type-erasure/"><span class="mono">next</span><b>11.06 Type Erasure</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/11-05-crtp-mixins-and-static-polymorphism"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

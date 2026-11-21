@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Retries with Backoff · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/3-03-retries-with-backoff/">
+  <meta name="description" content="Recovering from the failures that go away by themselves - which errors and statuses are worth retrying, why only idempotent requests are safe to repeat,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Retries with Backoff · Working with APIs · Xenon">
+  <meta property="og:description" content="Recovering from the failures that go away by themselves - which errors and statuses are worth retrying, why only idempotent requests are safe to repeat,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/3-03-retries-with-backoff/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Retries with Backoff · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Retries with Backoff · Working with APIs · Xenon">
+  <meta name="twitter:description" content="Recovering from the failures that go away by themselves - which errors and statuses are worth retrying, why only idempotent requests are safe to repeat,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Paging, Rate Limits and Retries</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Retries with Backoff</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Recovering from the failures that go away by themselves - which errors and statuses are worth retrying, why only idempotent requests are safe to repeat, exponential backoff with a cap, full jitter, honouring Retry-After, and limiting attempts and total time.</p>
+      <div class="prose">
+<h2>Transient failures</h2>
+<p>Networks drop connections, servers restart, load balancers time out, and rate limits fill up. These <strong>transient</strong> failures often succeed a moment later, so robust clients retry. But retrying the wrong thing, or retrying too eagerly, makes problems worse.</p>
+<h2>What to retry</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Outcome</th>
+<th>Retry?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>connection refused or reset, DNS failure, timeout</td>
+<td>yes (the request may not have arrived)</td>
+</tr>
+<tr>
+<td>408 Request Timeout, 429 Too Many Requests</td>
+<td>yes, after waiting</td>
+</tr>
+<tr>
+<td>500, 502, 503, 504</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>501 Not Implemented</td>
+<td>no (it will never be implemented by retrying)</td>
+</tr>
+<tr>
+<td>any other 4xx</td>
+<td>no: the request is wrong</td>
+</tr>
+<tr>
+<td>2xx, 3xx</td>
+<td>no: done</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Only if it is safe to repeat</h2>
+<p>A retry may happen after the first attempt <strong>did</strong> reach the server and <strong>did</strong> take effect: the response was lost, not the request. So only repeat requests that are <strong>idempotent</strong>, meaning doing them twice has the same effect as once:</p>
+<ul>
+<li><code>GET</code>, <code>HEAD</code>, <code>OPTIONS</code>: read only.</li>
+<li><code>PUT</code>: replaces with the same content.</li>
+<li><code>DELETE</code>: the second delete finds nothing to delete.</li>
+<li><strong><code>POST</code> and <code>PATCH</code> are not idempotent</strong> in general: a repeated &quot;create order&quot; creates two orders. Retry them only with an <strong>idempotency key</strong> (lesson 3.04).</li>
+</ul>
+<h2>Backoff and jitter</h2>
+<p>Retrying immediately hits a struggling server when it is weakest. Wait longer after each failure, <strong>exponential backoff</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>attempt 1 fails: wait up to 0.5 s
+attempt 2 fails: wait up to 1 s
+attempt 3 fails: wait up to 2 s     ... base × 2^(n-1), capped (for example at 8 s)</code></pre></div>
+<p>If a thousand clients failed at the same moment and all wait exactly 0.5 s, 1 s, 2 s, they all come back at the same moments, in synchronised waves. <strong>Jitter</strong> spreads them out. The simplest and very effective form, <strong>full jitter</strong>, waits a random time between 0 and the backoff value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>delay = rng.<span class="tk-f">uniform</span>(<span class="tk-n">0</span>, <span class="tk-f">min</span>(cap, base * <span class="tk-n">2</span> ** (attempt - <span class="tk-n">1</span>)))</code></pre></div>
+<p>When the response carries <strong><code>Retry-After</code></strong>, it overrides the computed delay: the server knows best.</p>
+<h2>Knowing when to stop</h2>
+<p>Always limit retries, by number of <strong>attempts</strong> (3 to 5 is common) and ideally by a total <strong>deadline</strong> (&quot;this whole operation may take at most 30 s&quot;). After the last attempt, report the last error with how many attempts were made. Endless retrying hides outages and burns your rate limit.</p>
+<p>Pass the clock, the sleep function and the random number generator <strong>into</strong> your retry code: production passes <code>time.monotonic</code>, <code>time.sleep</code> and <code>random.Random()</code>, tests pass fakes, and a test of &quot;retries four times with these delays&quot; runs in a millisecond. Practice 3.03 is built that way.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-rate-limits/"><span class="mono">previous</span><b>3.02 Rate Limits</b></a>
+      <a class="lp-next" href="../3-04-idempotency-keys-and-timeouts/"><span class="mono">next</span><b>3.04 Idempotency Keys and Timeouts</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/3-03-retries-with-backoff"></script>
+</body>
+</html>

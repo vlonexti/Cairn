@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Setting Up ImGui with Win32 and DirectX 11 · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/1-02-setting-up-imgui-with-win32-and-directx-11/">
+  <meta name="description" content="Dear ImGui is a handful of source files you add to your project, plus a platform back end (input and windows) and a renderer back end (drawing). This lesson…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Setting Up ImGui with Win32 and DirectX 11 · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Dear ImGui is a handful of source files you add to your project, plus a platform back end (input and windows) and a renderer back end (drawing). This lesson…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/1-02-setting-up-imgui-with-win32-and-directx-11/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Setting Up ImGui with Win32 and DirectX 11 · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Setting Up ImGui with Win32 and DirectX 11 · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Dear ImGui is a handful of source files you add to your project, plus a platform back end (input and windows) and a renderer back end (drawing). This lesson…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Immediate-Mode Foundations</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Setting Up ImGui with Win32 and DirectX 11</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.02</b></span><span>2 of 6 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Dear ImGui is a handful of source files you add to your project, plus a <strong>platform back end</strong> (input and windows) and a <strong>renderer back end</strong> (drawing). This lesson builds the standard Win32 + DirectX 11 program step by step, the same set-up as ImGui&#39;s own example.</p>
+      <div class="prose">
+<h2>What you download</h2>
+<p>Get Dear ImGui from its GitHub repository (<code>ocornut/imgui</code>). Use a release tag; for docking and multiple viewports (lesson 4.04), use the <strong>docking</strong> branch, which most tools do. You need:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Files</th>
+<th>What they are</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>imgui.cpp</code>, <code>imgui_draw.cpp</code>, <code>imgui_tables.cpp</code>, <code>imgui_widgets.cpp</code>, <code>imgui_demo.cpp</code></td>
+<td>The library itself</td>
+</tr>
+<tr>
+<td><code>imgui.h</code>, <code>imconfig.h</code>, <code>imgui_internal.h</code>, <code>imstb_*.h</code></td>
+<td>Its headers</td>
+</tr>
+<tr>
+<td><code>backends/imgui_impl_win32.cpp/.h</code></td>
+<td>Platform back end: Win32 window messages to ImGui input</td>
+</tr>
+<tr>
+<td><code>backends/imgui_impl_dx11.cpp/.h</code></td>
+<td>Renderer back end: ImGui&#39;s triangles to Direct3D 11</td>
+</tr>
+</tbody></table>
+</div>
+<p>ImGui has no build system of its own on purpose: add these <code>.cpp</code> files to your Visual Studio project like your own. Then link <code>d3d11.lib</code> and <code>d3dcompiler.lib</code> (and <code>dxgi.lib</code>).</p>
+<h2>The shape of the program</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include</span> <span class="tk-s">&quot;imgui.h&quot;</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;imgui_impl_win32.h&quot;</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;imgui_impl_dx11.h&quot;</span>
+<span class="tk-p">#include &lt;d3d11.h&gt;</span>
+
+<span class="tk-c">// Forward-declared in imgui_impl_win32.h behind an #if: declare it yourself.</span>
+<span class="tk-k">extern</span> IMGUI_IMPL_API LRESULT <span class="tk-f">ImGui_ImplWin32_WndProcHandler</span>(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+LRESULT CALLBACK <span class="tk-f">WndProc</span>(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    <span class="tk-k">if</span> (<span class="tk-f">ImGui_ImplWin32_WndProcHandler</span>(hwnd, msg, wParam, lParam)) <span class="tk-k">return</span> <span class="tk-k">true</span>;   <span class="tk-c">// ImGui sees input first</span>
+    <span class="tk-k">switch</span> (msg)
+    {
+    <span class="tk-k">case</span> WM_SIZE:    <span class="tk-c">/* resize the swap chain buffers (see ImGui's example) */</span> <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    <span class="tk-k">case</span> WM_DESTROY: <span class="tk-f">PostQuitMessage</span>(<span class="tk-n">0</span>); <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-f">DefWindowProcW</span>(hwnd, msg, wParam, lParam);
+}
+
+<span class="tk-k">int</span> WINAPI <span class="tk-f">wWinMain</span>(HINSTANCE instance, HINSTANCE, PWSTR, <span class="tk-k">int</span>)
+{
+    <span class="tk-c">// 1. A window and a Direct3D 11 device and swap chain (ordinary Win32 and D3D11 code).</span>
+    HWND hwnd = <span class="tk-f">createWindow</span>(instance, <span class="tk-t">WndProc</span>);
+    <span class="tk-f">createDeviceAndSwapChain</span>(hwnd);              <span class="tk-c">// fills g_device, g_context, g_swapChain, g_renderTarget</span>
+
+    <span class="tk-c">// 2. ImGui itself.</span>
+    <span class="tk-f">IMGUI_CHECKVERSION</span>();
+    <span class="tk-t">ImGui</span>::<span class="tk-f">CreateContext</span>();
+    <span class="tk-t">ImGuiIO</span>&amp; io = <span class="tk-t">ImGui</span>::<span class="tk-f">GetIO</span>();
+    io.<span class="tk-t">ConfigFlags</span> |= <span class="tk-t">ImGuiConfigFlags_NavEnableKeyboard</span>;   <span class="tk-c">// arrow keys and Tab move between widgets</span>
+    <span class="tk-t">ImGui</span>::<span class="tk-f">StyleColorsDark</span>();
+
+    <span class="tk-c">// 3. The two back ends.</span>
+    <span class="tk-f">ImGui_ImplWin32_Init</span>(hwnd);
+    <span class="tk-f">ImGui_ImplDX11_Init</span>(g_device, g_context);
+
+    <span class="tk-c">// 4. The loop (lesson 1.03).</span>
+    <span class="tk-k">bool</span> running = <span class="tk-k">true</span>;
+    <span class="tk-k">while</span> (running)
+    {
+        MSG msg;
+        <span class="tk-k">while</span> (<span class="tk-f">PeekMessageW</span>(&amp;msg, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, PM_REMOVE))
+        {
+            <span class="tk-f">TranslateMessage</span>(&amp;msg);
+            <span class="tk-f">DispatchMessageW</span>(&amp;msg);
+            <span class="tk-k">if</span> (msg.message == WM_QUIT) running = <span class="tk-k">false</span>;
+        }
+        <span class="tk-k">if</span> (!running) <span class="tk-k">break</span>;
+
+        <span class="tk-f">ImGui_ImplDX11_NewFrame</span>();
+        <span class="tk-f">ImGui_ImplWin32_NewFrame</span>();
+        <span class="tk-t">ImGui</span>::<span class="tk-f">NewFrame</span>();
+
+        <span class="tk-t">ImGui</span>::<span class="tk-f">ShowDemoWindow</span>();                 <span class="tk-c">// every widget ImGui has, to explore (lesson 1.06)</span>
+
+        <span class="tk-t">ImGui</span>::<span class="tk-f">Render</span>();
+        <span class="tk-k">const</span> <span class="tk-k">float</span> clear[<span class="tk-n">4</span>] = { <span class="tk-n">0.1f</span>, <span class="tk-n">0.1f</span>, <span class="tk-n">0.12f</span>, <span class="tk-n">1.0f</span> };
+        g_context-&gt;<span class="tk-f">OMSetRenderTargets</span>(<span class="tk-n">1</span>, &amp;g_renderTarget, <span class="tk-k">nullptr</span>);
+        g_context-&gt;<span class="tk-f">ClearRenderTargetView</span>(g_renderTarget, clear);
+        <span class="tk-f">ImGui_ImplDX11_RenderDrawData</span>(<span class="tk-t">ImGui</span>::<span class="tk-f">GetDrawData</span>());
+        g_swapChain-&gt;<span class="tk-f">Present</span>(<span class="tk-n">1</span>, <span class="tk-n">0</span>);              <span class="tk-c">// 1 = wait for vertical sync</span>
+    }
+
+    <span class="tk-c">// 5. Shut down in reverse order.</span>
+    <span class="tk-f">ImGui_ImplDX11_Shutdown</span>();
+    <span class="tk-f">ImGui_ImplWin32_Shutdown</span>();
+    <span class="tk-t">ImGui</span>::<span class="tk-f">DestroyContext</span>();
+    <span class="tk-f">destroyDeviceAndWindow</span>();
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The parts that are not ImGui (creating the window, the device, the swap chain, resizing) are copied almost word for word from <code>examples/example_win32_directx11/main.cpp</code> in the ImGui repository. Start from that file; it is the reference everyone uses.</p>
+<h2>What each piece does</h2>
+<ul>
+<li><strong><code>ImGui_ImplWin32_WndProcHandler</code></strong> turns Windows messages (mouse moves, clicks, keys, characters, focus) into ImGui input. It must run first in your window procedure.</li>
+<li><strong><code>ImGui::CreateContext</code></strong> makes the one object that holds all of ImGui&#39;s state. Most programs have exactly one.</li>
+<li><strong><code>ImGui_ImplWin32_Init</code></strong> and <strong><code>ImGui_ImplDX11_Init</code></strong> connect the context to the window and to the device. The DirectX back end creates its own shaders, a font texture and buffers.</li>
+<li>In the loop, the two back ends&#39; <code>NewFrame</code> calls feed ImGui the window size, time and input, then <strong><code>ImGui::NewFrame</code></strong> starts recording widgets.</li>
+<li><strong><code>ImGui::Render</code></strong> finishes the frame and produces <strong>draw data</strong>: lists of triangles, textures and clipping rectangles. The renderer back end draws them over your scene.</li>
+</ul>
+<h2>In a game that already has a renderer</h2>
+<p>In a real game, step 1 already exists. You add steps 2 and 3 after your device is created, call the three <code>NewFrame</code> functions at the start of your frame, and call <code>ImGui::Render</code> plus <code>ImGui_ImplDX11_RenderDrawData</code> <strong>after</strong> your scene is drawn, so ImGui appears on top. Lesson 2.05 deals with sharing the mouse and keyboard between ImGui and the game.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Not forwarding window messages</span></div><div class="callout-body"><p>Without <code>ImGui_ImplWin32_WndProcHandler</code> first in the window procedure, windows draw but nothing reacts to the mouse.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Forgetting the extern declaration</span></div><div class="callout-body"><p><code>imgui_impl_win32.h</code> hides <code>ImGui_ImplWin32_WndProcHandler</code> behind an <code>#if 0</code>. Declare it yourself, as above.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Mismatched versions of imgui.h and the back ends</span></div><div class="callout-body"><p>Back ends must come from the same version of ImGui. <code>IMGUI_CHECKVERSION()</code> catches a header and a <code>.cpp</code> from different versions.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does the renderer back end do?</div><ul><li>Draws ImGui&#39;s triangles and textures with your graphics API</li><li>Reads the mouse and keyboard</li><li>Decides where widgets go</li></ul><details><summary>Show the answer</summary><p><b>Draws ImGui&#39;s triangles and textures with your graphics API</b> The platform back end handles input; the renderer back end draws.</p></details></li><li><div class="q">Where must ImGui_ImplWin32_WndProcHandler be called?</div><ul><li>At the start of your window procedure, so ImGui sees input first</li><li>Once, after creating the window</li><li>After ImGui::Render</li></ul><details><summary>Show the answer</summary><p><b>At the start of your window procedure, so ImGui sees input first</b> It turns every window message into ImGui input.</p></details></li><li><div class="q">When should a game draw ImGui?</div><ul><li>After its own scene, so the interface appears on top</li><li>Before clearing the screen</li><li>In a separate window only</li></ul><details><summary>Show the answer</summary><p><b>After its own scene, so the interface appears on top</b> ImGui&#39;s draw data is rendered over the finished frame.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/1.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/1.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-01-immediate-mode-versus-retained-mode/"><span class="mono">previous</span><b>1.01 Immediate Mode versus Retained Mode</b></a>
+      <a class="lp-next" href="../1-03-the-frame-and-the-draw-data/"><span class="mono">next</span><b>1.03 The Frame and the Draw Data</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/1-02-setting-up-imgui-with-win32-and-directx-11"></script>
+</body>
+</html>

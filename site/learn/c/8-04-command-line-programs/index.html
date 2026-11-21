@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Command-Line Programs · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/8-04-command-line-programs/">
+  <meta name="description" content="Writing C tools that behave well in a terminal - reading options from argv by hand, flags with values, the conventions of -h, -- and combined short flags,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Command-Line Programs · C · Xenon">
+  <meta property="og:description" content="Writing C tools that behave well in a terminal - reading options from argv by hand, flags with values, the conventions of -h, -- and combined short flags,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/8-04-command-line-programs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Command-Line Programs · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Command-Line Programs · C · Xenon">
+  <meta name="twitter:description" content="Writing C tools that behave well in a terminal - reading options from argv by hand, flags with values, the conventions of -h, -- and combined short flags,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Command-Line Programs</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.04</b></span><span>4 of 6 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Writing C tools that behave well in a terminal - reading options from argv by hand, flags with values, the conventions of -h, -- and combined short flags, getopt where it exists, standard input, output and error, exit codes with EXIT_SUCCESS and EXIT_FAILURE, reading lines of any length, and working in pipelines.</p>
+      <div class="prose">
+<h2>What a good command-line tool does</h2>
+<p>Unix-style tools are small programs that fit together. They follow conventions so people (and scripts) can use them without reading the source:</p>
+<ul>
+<li>options start with <code>-</code> (short, <code>-n 5</code>) or <code>--</code> (long, <code>--lines=5</code>); <code>-h</code> or <code>--help</code> prints how to use it;</li>
+<li>input comes from files named on the command line, or standard input when there are none;</li>
+<li>results go to <strong>standard output</strong>, messages and errors to <strong>standard error</strong>;</li>
+<li>the <strong>exit code</strong> is 0 for success and something else for failure.</li>
+</ul>
+<h2>Reading options by hand</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+<span class="tk-p">#include &lt;string.h&gt;</span>
+
+<span class="tk-k">struct</span> options {
+    <span class="tk-k">int</span> lines;
+    <span class="tk-k">int</span> number;
+    <span class="tk-k">const</span> <span class="tk-k">char</span> *file;
+};
+
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">parse_args</span>(<span class="tk-k">int</span> argc, <span class="tk-k">char</span> **argv, <span class="tk-k">struct</span> options *o)
+{
+    o-&gt;lines = <span class="tk-n">10</span>;
+    o-&gt;number = <span class="tk-n">0</span>;
+    o-&gt;file = <span class="tk-k">NULL</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt; argc; i++) {
+        <span class="tk-k">const</span> <span class="tk-k">char</span> *a = argv[i];
+        <span class="tk-k">if</span> (<span class="tk-f">strcmp</span>(a, <span class="tk-s">&quot;-n&quot;</span>) == <span class="tk-n">0</span> || <span class="tk-f">strcmp</span>(a, <span class="tk-s">&quot;--lines&quot;</span>) == <span class="tk-n">0</span>) {
+            <span class="tk-k">if</span> (i + <span class="tk-n">1</span> &gt;= argc) { <span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;%s needs a number\n&quot;</span>, a); <span class="tk-k">return</span> -<span class="tk-n">1</span>; }
+            <span class="tk-k">char</span> *end;
+            <span class="tk-k">long</span> v = <span class="tk-f">strtol</span>(argv[++i], &amp;end, <span class="tk-n">10</span>);
+            <span class="tk-k">if</span> (*end != <span class="tk-s">'\0'</span> || v &lt; <span class="tk-n">0</span>) { <span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;bad number: %s\n&quot;</span>, argv[i]); <span class="tk-k">return</span> -<span class="tk-n">1</span>; }
+            o-&gt;lines = (<span class="tk-k">int</span>)v;
+        } <span class="tk-k">else</span> <span class="tk-k">if</span> (<span class="tk-f">strncmp</span>(a, <span class="tk-s">&quot;--lines=&quot;</span>, <span class="tk-n">8</span>) == <span class="tk-n">0</span>) {
+            o-&gt;lines = <span class="tk-f">atoi</span>(a + <span class="tk-n">8</span>);
+        } <span class="tk-k">else</span> <span class="tk-k">if</span> (<span class="tk-f">strcmp</span>(a, <span class="tk-s">&quot;-N&quot;</span>) == <span class="tk-n">0</span>) {
+            o-&gt;number = <span class="tk-n">1</span>;
+        } <span class="tk-k">else</span> <span class="tk-k">if</span> (<span class="tk-f">strcmp</span>(a, <span class="tk-s">&quot;--&quot;</span>) == <span class="tk-n">0</span>) {
+            <span class="tk-k">if</span> (i + <span class="tk-n">1</span> &lt; argc) o-&gt;file = argv[i + <span class="tk-n">1</span>];
+            <span class="tk-k">break</span>;
+        } <span class="tk-k">else</span> <span class="tk-k">if</span> (a[<span class="tk-n">0</span>] == <span class="tk-s">'-'</span> &amp;&amp; a[<span class="tk-n">1</span>] != <span class="tk-s">'\0'</span>) {
+            <span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;unknown option %s\n&quot;</span>, a);
+            <span class="tk-k">return</span> -<span class="tk-n">1</span>;
+        } <span class="tk-k">else</span> {
+            o-&gt;file = a;
+        }
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">char</span> *demo[] = {<span class="tk-s">&quot;head&quot;</span>, <span class="tk-s">&quot;-n&quot;</span>, <span class="tk-s">&quot;3&quot;</span>, <span class="tk-s">&quot;-N&quot;</span>, <span class="tk-s">&quot;notes.txt&quot;</span>};
+    <span class="tk-k">struct</span> options o;
+    <span class="tk-k">if</span> (<span class="tk-f">parse_args</span>(<span class="tk-n">5</span>, demo, &amp;o) != <span class="tk-n">0</span>) <span class="tk-k">return</span> EXIT_FAILURE;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;lines %d, number %d, file %s\n&quot;</span>, o.lines, o.number, o.file ? o.file : <span class="tk-s">&quot;(stdin)&quot;</span>);
+    <span class="tk-k">return</span> EXIT_SUCCESS;
+}</code></pre></div>
+<p><code>--</code> means &quot;everything after this is a file name, even if it starts with <code>-</code>&quot;. A lone <code>-</code> is often a name for standard input.</p>
+<h2>getopt</h2>
+<p>POSIX systems (Linux, macOS) have <code>getopt</code> in <code>&lt;unistd.h&gt;</code>, which handles short options, combined flags like <code>-Nv</code>, and values like <code>-n5</code> or <code>-n 5</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;unistd.h&gt;</span>
+
+<span class="tk-k">int</span> c;
+<span class="tk-k">while</span> ((c = <span class="tk-f">getopt</span>(argc, argv, <span class="tk-s">&quot;n:Nh&quot;</span>)) != -<span class="tk-n">1</span>) {   <span class="tk-c">/* n takes a value (the colon) */</span>
+    <span class="tk-k">switch</span> (c) {
+    <span class="tk-k">case</span> <span class="tk-s">'n'</span>: lines = <span class="tk-f">atoi</span>(optarg); <span class="tk-k">break</span>;
+    <span class="tk-k">case</span> <span class="tk-s">'N'</span>: number = <span class="tk-n">1</span>; <span class="tk-k">break</span>;
+    <span class="tk-k">case</span> <span class="tk-s">'h'</span>: <span class="tk-f">usage</span>(stdout); <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    <span class="tk-k">default</span>:  <span class="tk-f">usage</span>(stderr); <span class="tk-k">return</span> <span class="tk-n">2</span>;               <span class="tk-c">/* getopt already printed the problem */</span>
+    }
+}
+<span class="tk-c">/* argv[optind] .. argv[argc - 1] are the remaining file names */</span></code></pre></div>
+<p>It is not part of standard C, so Windows programs parse by hand or bring their own.</p>
+<h2>Three streams</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;results go to standard output\n&quot;</span>);
+    <span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;warnings go to standard error\n&quot;</span>);
+    <span class="tk-k">return</span> EXIT_SUCCESS;
+}</code></pre></div>
+<p>With <code>tool &gt; out.txt</code>, only standard output goes into the file, and errors still appear on screen. Never print error messages to <code>stdout</code>: they would end up mixed into data another program reads.</p>
+<h2>Reading lines of any length</h2>
+<p><code>fgets</code> with a fixed buffer splits a long line into pieces. To read whole lines of any length, grow a buffer (lesson 8.01&#39;s idea):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+<span class="tk-p">#include &lt;string.h&gt;</span>
+
+<span class="tk-c">/* Reads one line without its '\n'. Returns a new string the caller frees, or NULL at the end of the input. */</span>
+<span class="tk-k">static</span> <span class="tk-k">char</span> *<span class="tk-f">read_line</span>(FILE *f)
+{
+    size_t cap = <span class="tk-n">32</span>, len = <span class="tk-n">0</span>;
+    <span class="tk-k">char</span> *buf = <span class="tk-f">malloc</span>(cap);
+    <span class="tk-k">if</span> (!buf) <span class="tk-k">return</span> <span class="tk-k">NULL</span>;
+    <span class="tk-k">int</span> c;
+    <span class="tk-k">while</span> ((c = <span class="tk-f">fgetc</span>(f)) != EOF &amp;&amp; c != <span class="tk-s">'\n'</span>) {
+        <span class="tk-k">if</span> (len + <span class="tk-n">1</span> &gt;= cap) {
+            <span class="tk-k">char</span> *p = <span class="tk-f">realloc</span>(buf, cap *= <span class="tk-n">2</span>);
+            <span class="tk-k">if</span> (!p) { <span class="tk-f">free</span>(buf); <span class="tk-k">return</span> <span class="tk-k">NULL</span>; }
+            buf = p;
+        }
+        buf[len++] = (<span class="tk-k">char</span>)c;
+    }
+    <span class="tk-k">if</span> (c == EOF &amp;&amp; len == <span class="tk-n">0</span>) { <span class="tk-f">free</span>(buf); <span class="tk-k">return</span> <span class="tk-k">NULL</span>; }
+    <span class="tk-k">if</span> (len &gt; <span class="tk-n">0</span> &amp;&amp; buf[len - <span class="tk-n">1</span>] == <span class="tk-s">'\r'</span>) len--;       <span class="tk-c">/* Windows line endings */</span>
+    buf[len] = <span class="tk-s">'\0'</span>;
+    <span class="tk-k">return</span> buf;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    FILE *f = <span class="tk-f">tmpfile</span>();
+    <span class="tk-k">if</span> (!f) <span class="tk-k">return</span> EXIT_FAILURE;
+    <span class="tk-f">fputs</span>(<span class="tk-s">&quot;short\na much longer line that would not fit in a small fixed buffer at all\r\nlast&quot;</span>, f);
+    <span class="tk-f">rewind</span>(f);
+    <span class="tk-k">char</span> *line;
+    <span class="tk-k">int</span> n = <span class="tk-n">0</span>;
+    <span class="tk-k">while</span> ((line = <span class="tk-f">read_line</span>(f)) != <span class="tk-k">NULL</span>) {
+        <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d: %zu characters\n&quot;</span>, ++n, <span class="tk-f">strlen</span>(line));
+        <span class="tk-f">free</span>(line);
+    }
+    <span class="tk-f">fclose</span>(f);
+    <span class="tk-k">return</span> EXIT_SUCCESS;
+}</code></pre></div>
+<p>POSIX has <code>getline(&amp;buf, &amp;cap, f)</code>, which does the same.</p>
+<h2>Exit codes</h2>
+<p><code>return</code> from <code>main</code> (or <code>exit(code)</code>) sets the exit code. <code>EXIT_SUCCESS</code> (0) and <code>EXIT_FAILURE</code> (1) are the portable values. Many tools use 2 for &quot;you called me wrongly&quot; and 1 for &quot;something failed while working&quot;. Scripts depend on them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>$ mytool data.txt &amp;&amp; echo ok || echo failed</code></pre></div>
+<h2>Being a good pipeline citizen</h2>
+<ul>
+<li>Read standard input when no file is given, so <code>cat data.txt | mytool</code> and <code>mytool &lt; data.txt</code> work.</li>
+<li>Write nothing but results to standard output.</li>
+<li>Process input as a stream (line by line) instead of loading everything, so huge inputs work.</li>
+<li>Check the result of writing too: <code>if (ferror(stdout))</code> after printing reports a full disk or a closed pipe.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/8.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/8.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-03-time-and-dates/"><span class="mono">previous</span><b>8.03 Time and Dates</b></a>
+      <a class="lp-next" href="../8-05-safe-integer-arithmetic/"><span class="mono">next</span><b>8.05 Safe Integer Arithmetic</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/8-04-command-line-programs"></script>
+</body>
+</html>

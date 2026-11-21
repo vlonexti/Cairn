@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Fuzzing · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/17-03-fuzzing/">
+  <meta name="description" content="Fuzzing feeds a program huge numbers of automatically generated, mostly broken inputs and watches for crashes, hangs and sanitizer reports. Coverage-guided…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Fuzzing · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Fuzzing feeds a program huge numbers of automatically generated, mostly broken inputs and watches for crashes, hangs and sanitizer reports. Coverage-guided…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/17-03-fuzzing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Fuzzing · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Fuzzing · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Fuzzing feeds a program huge numbers of automatically generated, mostly broken inputs and watches for crashes, hangs and sanitizer reports. Coverage-guided…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Testing, Security and Reliability</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Fuzzing</h1>
+      <div class="readout lp-readout"><span>lesson <b>17.03</b></span><span>3 of 8 in milestone 17</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary"><strong>Fuzzing</strong> feeds a program huge numbers of automatically generated, mostly broken inputs and watches for crashes, hangs and sanitizer reports. Coverage-guided fuzzers such as <strong>libFuzzer</strong> learn which inputs reach new code and mutate those further, finding bugs no human would think to test. This lesson writes fuzz targets for Delve&#39;s parsers, runs them with MSVC&#39;s fuzzer support and AddressSanitizer, and minimises the crashing inputs.</p>
+      <div class="prose">
+<h2>The idea</h2>
+<p>Tests check the cases you thought of. Bugs live in the cases you did not: a level file with a 2-billion-character line, a save whose length field says 0xFFFFFFFF, a message cut off mid-header. A <strong>fuzzer</strong> generates such inputs automatically, millions per hour:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    C[&quot;Corpus&lt;br/&gt;example inputs&quot;] --&gt; M[&quot;Mutate&lt;br/&gt;flip bits, insert, delete,&lt;br/&gt;splice, repeat&quot;]
+    M --&gt; T[&quot;Run the fuzz target&lt;br/&gt;with ASan and UBSan&quot;]
+    T --&gt;|&quot;crash or sanitizer report&quot;| R[&quot;Save the input as a reproducer&quot;]
+    T --&gt;|&quot;reached new code (coverage)&quot;| C
+    T --&gt;|&quot;nothing new&quot;| M</pre></div>
+<p><strong>Coverage guidance</strong> is what makes modern fuzzers effective: the compiler instruments the program to record which code each input reaches, and inputs that reach something new are kept and mutated further. The fuzzer gradually learns the format&#39;s structure (the magic number, the version field, valid section headers) without being told.</p>
+<h2>Writing a fuzz target</h2>
+<p>A fuzz target is one function that takes a block of bytes and passes them to the code under test:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// fuzz_level.cpp: fuzz Delve's level parser (lesson 11.02's practice task)</span>
+<span class="tk-p">#include &lt;cstddef&gt;</span>
+<span class="tk-p">#include &lt;cstdint&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;level.h&quot;</span>
+
+<span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> <span class="tk-k">int</span> <span class="tk-f">LLVMFuzzerTestOneInput</span>(<span class="tk-k">const</span> uint8_t* data, size_t size)
+{
+    <span class="tk-k">const</span> std::string <span class="tk-f">text</span>(<span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(data), size);
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> level{ <span class="tk-f">parseLevel</span>(text) };            <span class="tk-c">// must never crash, hang or trip a sanitizer</span>
+    <span class="tk-k">if</span> (level)
+    {
+        <span class="tk-c">// Check invariants the parser promises: the result is self-consistent.</span>
+        <span class="tk-k">if</span> (level-&gt;tiles.<span class="tk-f">size</span>() != <span class="tk-k">static_cast</span>&lt;size_t&gt;(level-&gt;width * level-&gt;height)) <span class="tk-f">__debugbreak</span>();
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Good fuzz targets:</p>
+<ul>
+<li><strong>target one parser or decoder</strong> of untrusted data: level files, saves (lessons 10.07, 11.06), INI settings (10.08), telemetry snapshots (12.04), IOCTL request structures (16.05), PE headers (9.02);</li>
+<li>are <strong>deterministic</strong> and <strong>fast</strong> (thousands of runs per second);</li>
+<li>check <strong>invariants</strong> as well as crashes: a successful parse should produce a consistent result;</li>
+<li>do not touch the file system, network or global state.</li>
+</ul>
+<h2>Running it with MSVC</h2>
+<p>Visual Studio 2022 supports libFuzzer directly:</p>
+<ol>
+<li>A new console project <code>fuzz_level</code> containing the target and the parser&#39;s source.</li>
+<li><strong>C/C++ → Command Line</strong>: <code>/fsanitize=fuzzer /fsanitize=address</code> (ASan makes memory bugs crash immediately instead of silently).</li>
+<li>A <code>corpus</code> folder with a few valid level files as starting points.</li>
+<li>Run: <code>fuzz_level.exe corpus -max_total_time=600</code></li>
+</ol>
+<p>The fuzzer prints progress (<code>cov:</code> grows as it discovers code). On a crash it stops, prints the sanitizer report, and writes the input to a file such as <code>crash-3f2a...</code>. Running <code>fuzz_level.exe crash-3f2a...</code> reproduces it under the debugger.</p>
+<h2>Minimising</h2>
+<p>Fuzzer-found inputs are often large and noisy. <strong>Minimisation</strong> shrinks one to the smallest input that still fails, which usually makes the bug obvious. libFuzzer does it with <code>-minimize_crash=1</code>; the underlying idea is simple enough to write yourself, and the practice task does: repeatedly try removing parts of the input, keeping any removal after which it still fails.</p>
+<h2>Fuzzing a driver&#39;s interface</h2>
+<p>Lesson 16.10&#39;s test plan included fuzzing the driver from user mode: a program in the lab VM that opens the device and sends random control codes, lengths and buffer contents in a loop, with Driver Verifier on. Any bug check is a finding; the last request is logged before sending, so it can be reproduced. That is exactly how many real driver vulnerabilities are found, which is why driver authors should do it first.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Fuzzing without sanitizers</span></div><div class="callout-body"><p>Most memory bugs do not crash on their own. Combine fuzzing with ASan.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Slow targets</span></div><div class="callout-body"><p>A target doing file I/O or logging runs a hundred times slower and finds far less.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Fixing the crash but not adding the input to the tests</span></div><div class="callout-body"><p>Every fuzzer finding becomes a regression test (lesson 17.01).</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What makes a coverage-guided fuzzer better than random inputs?</div><ul><li>It keeps inputs that reach new code and mutates them further, gradually learning the input format</li><li>It uses a list of known bugs</li><li>It runs faster</li></ul><details><summary>Show the answer</summary><p><b>It keeps inputs that reach new code and mutates them further, gradually learning the input format</b> New coverage guides the search.</p></details></li><li><div class="q">Why run a fuzz target with AddressSanitizer?</div><ul><li>So memory errors that would not crash on their own are detected immediately</li><li>To make it faster</li><li>Fuzzers require it to compile</li></ul><details><summary>Show the answer</summary><p><b>So memory errors that would not crash on their own are detected immediately</b> Silent overruns become clear failures.</p></details></li><li><div class="q">What does minimising a crashing input achieve?</div><ul><li>The smallest input that still fails, which usually makes the cause obvious</li><li>A faster fuzzer</li><li>A fix for the bug</li></ul><details><summary>Show the answer</summary><p><b>The smallest input that still fails, which usually makes the cause obvious</b> Then add it as a regression test.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/17.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/17.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../17-02-sanitizers-and-static-analysis/"><span class="mono">previous</span><b>17.02 Sanitizers and Static Analysis</b></a>
+      <a class="lp-next" href="../17-04-secure-coding-buffers-integers-and-trust/"><span class="mono">next</span><b>17.04 Secure Coding: Buffers, Integers and Trust</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/17-03-fuzzing"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Driver Lifecycle · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/16-03-the-driver-lifecycle/">
+  <meta name="description" content="A driver sets things up in DriverEntry (devices, links, memory, timers) and must tear every one of them down in its unload routine, in reverse order, leaving…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Driver Lifecycle · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A driver sets things up in DriverEntry (devices, links, memory, timers) and must tear every one of them down in its unload routine, in reverse order, leaving…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/16-03-the-driver-lifecycle/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Driver Lifecycle · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Driver Lifecycle · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A driver sets things up in DriverEntry (devices, links, memory, timers) and must tear every one of them down in its unload routine, in reverse order, leaving…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Educational Driver Development</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Driver Lifecycle</h1>
+      <div class="readout lp-readout"><span>lesson <b>16.03</b></span><span>3 of 10 in milestone 16</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A driver sets things up in <code>DriverEntry</code> (devices, links, memory, timers) and must tear every one of them down in its unload routine, in reverse order, leaving nothing behind. If set-up fails halfway, it must undo exactly the steps that succeeded. This lesson builds that discipline: the load and unload sequence, the service registry key, cleanup on partial failure, and why anything left behind after unload crashes the machine.</p>
+      <div class="prose">
+<h2>Load to unload</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant U as sc / Service Control Manager
+    participant IO as I/O manager
+    participant D as XenonEcho.sys
+    U-&gt;&gt;IO: start service (registry key says: kernel driver, this file)
+    IO-&gt;&gt;IO: map the .sys, check its signature, resolve imports
+    IO-&gt;&gt;D: DriverEntry(driver, registryPath)
+    D-&gt;&gt;D: create device, link, allocate state, start timers ...
+    D--&gt;&gt;IO: STATUS_SUCCESS
+    Note over D: the driver serves requests (lessons 16.05 to 16.07)
+    U-&gt;&gt;IO: stop service
+    IO-&gt;&gt;D: DriverUnload(driver)
+    D-&gt;&gt;D: stop timers, delete link, delete device, free memory (reverse order)
+    IO-&gt;&gt;IO: unmap the .sys</pre></div>
+<p>The service&#39;s registry key (<code>HKLM\SYSTEM\CurrentControlSet\Services\XenonEcho</code>) records the type (kernel driver), the file, and the <strong>start type</strong>: on demand (<code>sc start</code>), at boot, or at system start. The lab always uses on-demand, so a broken driver never loads automatically.</p>
+<h2>The unload rule</h2>
+<p>After <code>DriverUnload</code> returns, the driver&#39;s code and global data are <strong>unmapped</strong>. Anything that still refers to them becomes a pointer into nothing:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Left behind</th>
+<th>What happens later</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A timer or DPC still queued</td>
+<td>It fires and jumps into unmapped code: bug check <code>0xCE</code> (DRIVER_UNLOADED_WITHOUT_CANCELLING_PENDING_OPERATIONS)</td>
+</tr>
+<tr>
+<td>A device object</td>
+<td>Requests can still be routed to a driver that is gone</td>
+</tr>
+<tr>
+<td>A symbolic link</td>
+<td>Programs can open a name pointing at a deleted device</td>
+</tr>
+<tr>
+<td>Pool memory</td>
+<td>Leaked until reboot (lesson 15.04); Driver Verifier reports it</td>
+</tr>
+<tr>
+<td>A registered callback</td>
+<td>The kernel calls it later: bug check</td>
+</tr>
+<tr>
+<td>An IRP still pending</td>
+<td>Completing it later touches freed state</td>
+</tr>
+</tbody></table>
+</div>
+<p>So unload undoes <strong>everything</strong>, in <strong>reverse</strong> order of creation, waiting where necessary (for example, <code>KeCancelTimer</code> and flushing queued DPCs with <code>KeFlushQueuedDpcs</code>) until nothing can call into the driver any more. It is lesson 2.04&#39;s RAII and destructor-order rule, enforced by the hardware.</p>
+<h2>Partial failure in DriverEntry</h2>
+<p><code>DriverEntry</code> does several steps that can each fail. If step 3 fails, steps 1 and 2 must be undone <strong>before</strong> returning the failure, because the unload routine will not be called. The clear way to write it is to record what succeeded and undo it in reverse:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> NTSTATUS <span class="tk-f">DriverEntry</span>(PDRIVER_OBJECT driver, PUNICODE_STRING)
+{
+    NTSTATUS status{ STATUS_SUCCESS };
+    PDEVICE_OBJECT device{ <span class="tk-k">nullptr</span> };
+    <span class="tk-k">bool</span> linkCreated{ <span class="tk-k">false</span> };
+
+    <span class="tk-k">do</span>
+    {
+        status = <span class="tk-f">IoCreateDevice</span>(driver, <span class="tk-k">sizeof</span>(<span class="tk-t">EchoState</span>), &amp;kDeviceName, FILE_DEVICE_UNKNOWN,
+                                FILE_DEVICE_SECURE_OPEN, FALSE, &amp;device);
+        <span class="tk-k">if</span> (!<span class="tk-f">NT_SUCCESS</span>(status)) <span class="tk-k">break</span>;
+
+        status = <span class="tk-f">IoCreateSymbolicLink</span>(&amp;kLinkName, &amp;kDeviceName);
+        <span class="tk-k">if</span> (!<span class="tk-f">NT_SUCCESS</span>(status)) <span class="tk-k">break</span>;
+        linkCreated = <span class="tk-k">true</span>;
+
+        <span class="tk-c">// ... more steps, each followed by a check and a &quot;created&quot; flag ...</span>
+    } <span class="tk-k">while</span> (<span class="tk-k">false</span>);
+
+    <span class="tk-k">if</span> (!<span class="tk-f">NT_SUCCESS</span>(status))                 <span class="tk-c">// undo, in reverse, only what succeeded</span>
+    {
+        <span class="tk-k">if</span> (linkCreated) <span class="tk-f">IoDeleteSymbolicLink</span>(&amp;kLinkName);
+        <span class="tk-k">if</span> (device) <span class="tk-f">IoDeleteDevice</span>(device);
+        <span class="tk-k">return</span> status;
+    }
+
+    driver-&gt;<span class="tk-t">DriverUnload</span> = <span class="tk-t">EchoUnload</span>;
+    <span class="tk-k">return</span> STATUS_SUCCESS;
+}</code></pre></div>
+<p>The practice task simulates this: given which steps succeed, produce the cleanup calls in the right order.</p>
+<h2>Reference counting and in-flight work</h2>
+<p>Unload can arrive while requests are still being processed on other processors. The I/O manager will not unload a driver while it still has device objects with open handles (the device&#39;s reference count, lesson 15.03), so a program holding the device open keeps the driver loaded, and <code>sc stop</code> fails until it closes. Work the driver started itself (timers, work items, threads) is the driver&#39;s responsibility to stop and wait for in unload.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Unload that forgets one thing</span></div><div class="callout-body"><p>Every resource created in <code>DriverEntry</code> needs a matching release in unload. Write them as pairs.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Cleanup in the wrong order</span></div><div class="callout-body"><p>Reverse order of creation: links before devices, timers stopped before freeing what they use.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Partial failure that leaks</span></div><div class="callout-body"><p>Undo exactly the steps that succeeded before returning a failure from <code>DriverEntry</code>.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What happens to a timer the driver forgot to cancel when it unloads?</div><ul><li>It fires later and jumps into the unloaded driver&#39;s code, causing a bug check</li><li>Windows cancels it automatically</li><li>Nothing; timers do not outlive drivers</li></ul><details><summary>Show the answer</summary><p><b>It fires later and jumps into the unloaded driver&#39;s code, causing a bug check</b> Bug check <code>0xCE</code> is exactly this.</p></details></li><li><div class="q">In which order does unload release resources?</div><ul><li>The reverse of the order <code>DriverEntry</code> created them</li><li>The same order</li><li>Any order</li></ul><details><summary>Show the answer</summary><p><b>The reverse of the order <code>DriverEntry</code> created them</b> Later resources may depend on earlier ones.</p></details></li><li><div class="q"><code>DriverEntry</code> created a device, then failed to create the link. What must it do?</div><ul><li>Delete the device and return the failure status</li><li>Return the failure; unload will clean up</li><li>Ignore it and return success</li></ul><details><summary>Show the answer</summary><p><b>Delete the device and return the failure status</b> The unload routine is not called when <code>DriverEntry</code> fails.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/16.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/16.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../16-02-a-driver-that-says-hello/"><span class="mono">previous</span><b>16.02 A Driver That Says Hello</b></a>
+      <a class="lp-next" href="../16-04-device-objects-and-symbolic-links/"><span class="mono">next</span><b>16.04 Device Objects and Symbolic Links</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/16-03-the-driver-lifecycle"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

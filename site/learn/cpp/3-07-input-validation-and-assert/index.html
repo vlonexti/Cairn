@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Input Validation and assert · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/3-07-input-validation-and-assert/">
+  <meta name="description" content="People type things you did not expect. When std::cin number receives letters it enters a fail state : you must clear() it and discard the bad input. Use…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Input Validation and assert · C++ · Xenon">
+  <meta property="og:description" content="People type things you did not expect. When std::cin number receives letters it enters a fail state : you must clear() it and discard the bad input. Use…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/3-07-input-validation-and-assert/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Input Validation and assert · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Input Validation and assert · C++ · Xenon">
+  <meta name="twitter:description" content="People type things you did not expect. When std::cin number receives letters it enters a fail state : you must clear() it and discard the bad input. Use…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Control Flow and Scope</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Input Validation and assert</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.07</b></span><span>7 of 8 in milestone 3</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">People type things you did not expect. When <code>std::cin &gt;&gt; number</code> receives letters it enters a <strong>fail state</strong>: you must <code>clear()</code> it and discard the bad input. Use <code>assert</code> to catch mistakes in <em>your own</em> code while developing.</p>
+      <div class="prose">
+<h2>Two kinds of things go wrong</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Example</th>
+<th>Whose fault</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bad <strong>input</strong></td>
+<td>The user types <code>abc</code> for their age</td>
+<td>Nobody&#39;s. It will happen.</td>
+<td>Detect it and ask again. Never crash.</td>
+</tr>
+<tr>
+<td>A <strong>bug</strong></td>
+<td>Your function is called with a count of 0</td>
+<td>The programmer&#39;s</td>
+<td>Stop loudly so it gets fixed</td>
+</tr>
+</tbody></table>
+</div>
+<p>A robust program treats these differently. This lesson covers both.</p>
+<h2>What <code>std::cin</code> does with bad input</h2>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> int age{};
+ std::cin &gt;&gt; age;          the user types:  abc  then Enter
+
+ waiting input:  [a][b][c][\n]
+                  ▲
+                  cannot make a number from 'a'
+
+ 1. age is set to 0
+ 2. std::cin enters a FAIL STATE: every later &gt;&gt; is silently skipped
+ 3. &quot;abc&quot; is STILL waiting to be read</code></pre></div>
+<p>Point 2 is the dangerous one. After a single bad entry, every later read in the program does nothing, and a loop that asks again will spin for ever.</p>
+<h2>The repair: clear, then discard</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    R[&quot;std::cin &gt;&gt; x&quot;] --&gt; Q{&quot;did it fail?&quot;}
+    Q -- yes --&gt; C[&quot;std::cin.clear()&lt;br/&gt;leave the fail state&quot;] --&gt; I[&quot;discard the rest of the line&quot;] --&gt; P[&quot;say what was wrong&quot;] --&gt; R
+    Q -- no --&gt; I2[&quot;discard the rest of the line&lt;br/&gt;(drops extras such as 5abc)&quot;] --&gt; E{&quot;within range?&quot;}
+    E -- no --&gt; P
+    E -- yes --&gt; OK[&quot;valid value&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Code</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Detect</td>
+<td><code>if (!std::cin)</code></td>
+<td>A stream used as a condition is <code>false</code> when it has failed</td>
+</tr>
+<tr>
+<td>Reset</td>
+<td><code>std::cin.clear();</code></td>
+<td>Leaves the fail state so reading works again</td>
+</tr>
+<tr>
+<td>Discard</td>
+<td><code>std::cin.ignore(...)</code></td>
+<td>Throws away the bad characters still waiting</td>
+</tr>
+</tbody></table>
+</div>
+<h2>A reusable <code>getInt</code></h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdlib&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;limits&gt;</span>
+<span class="tk-p">#include &lt;string_view&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">ignoreLine</span>()
+{
+    std::cin.<span class="tk-f">ignore</span>(std::numeric_limits&lt;std::streamsize&gt;::<span class="tk-f">max</span>(), <span class="tk-s">'\n'</span>);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">getInt</span>(std::string_view prompt, <span class="tk-k">int</span> min, <span class="tk-k">int</span> max)
+{
+    <span class="tk-k">while</span> (<span class="tk-k">true</span>)
+    {
+        std::cout &lt;&lt; prompt;
+        <span class="tk-k">int</span> x{};
+        std::cin &gt;&gt; x;
+
+        <span class="tk-k">if</span> (!std::cin)
+        {
+            <span class="tk-k">if</span> (std::cin.<span class="tk-f">eof</span>())
+            {
+                std::<span class="tk-f">exit</span>(<span class="tk-n">0</span>);    <span class="tk-c">// the input was closed: nothing more can arrive</span>
+            }
+            std::cin.<span class="tk-f">clear</span>();
+            <span class="tk-f">ignoreLine</span>();
+            std::cout &lt;&lt; <span class="tk-s">&quot;That is not a number. Try again.\n&quot;</span>;
+            <span class="tk-k">continue</span>;
+        }
+
+        <span class="tk-f">ignoreLine</span>();
+
+        <span class="tk-k">if</span> (x &lt; min || x &gt; max)
+        {
+            std::cout &lt;&lt; <span class="tk-s">&quot;It must be between &quot;</span> &lt;&lt; min &lt;&lt; <span class="tk-s">&quot; and &quot;</span> &lt;&lt; max &lt;&lt; <span class="tk-s">&quot;.\n&quot;</span>;
+            <span class="tk-k">continue</span>;
+        }
+        <span class="tk-k">return</span> x;
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> age{ <span class="tk-f">getInt</span>(<span class="tk-s">&quot;Enter your age (0-120): &quot;</span>, <span class="tk-n">0</span>, <span class="tk-n">120</span>) };
+    std::cout &lt;&lt; <span class="tk-s">&quot;You are &quot;</span> &lt;&lt; age &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Enter your age (0-120): abc
+That is not a number. Try again.
+Enter your age (0-120): 500
+It must be between 0 and 120.
+Enter your age (0-120): 25
+You are 25</code></pre></div>
+<p><code>ignoreLine</code> reads as &quot;skip characters, however many there are, up to and including the next new line&quot;. The long expression is simply the largest count the function accepts.</p>
+<p>Notice the shape: <code>while (true)</code> with <code>continue</code> for every rejection and a single <code>return</code> for success. It is the standard pattern for &quot;keep asking until the answer is acceptable&quot;.</p>
+<div class="callout tip"><div class="callout-title"><span>Keep this function</span></div><div class="callout-body"><p>Put <code>getInt</code> and <code>ignoreLine</code> in a header of your own. Almost every interactive program you write from here on needs them.</p>
+</div></div>
+<h2><code>assert</code>: catching your own mistakes</h2>
+<p>An <strong>assertion</strong> states something that must be true at that point if the program is correct. If it is false, the program stops at once and reports the file and line.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cassert&gt;</span>
+
+<span class="tk-k">double</span> <span class="tk-f">average</span>(<span class="tk-k">int</span> total, <span class="tk-k">int</span> count)
+{
+    <span class="tk-f">assert</span>(count &gt; <span class="tk-n">0</span> &amp;&amp; <span class="tk-s">&quot;count must be positive&quot;</span>);
+    <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;<span class="tk-k">double</span>&gt;(total) / count;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Assertion failed: count &gt; 0 &amp;&amp; &quot;count must be positive&quot;, file main.cpp, line 5</code></pre></div>
+<p>The <code>&amp;&amp; &quot;text&quot;</code> is a trick for attaching a message: a string literal counts as true, so it does not change the test, and it appears in the report.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Checked when</td>
+<td>While the program runs, in <strong>Debug</strong> builds</td>
+</tr>
+<tr>
+<td>In Release builds</td>
+<td>Removed entirely: no check, no cost</td>
+</tr>
+<tr>
+<td>Use it for</td>
+<td>Conditions that can only be false if the code has a bug</td>
+</tr>
+</tbody></table>
+</div>
+<blockquote><p>[!danger] Never validate input with <code>assert</code>
+Assertions vanish in Release builds, so the check would disappear from the finished program. And bad input is not a bug: it deserves a polite message, not a crash.</p>
+</blockquote>
+<h3><code>static_assert</code>: checked by the compiler</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static_assert</span>(<span class="tk-k">sizeof</span>(<span class="tk-k">int</span>) &gt;= <span class="tk-n">4</span>, <span class="tk-s">&quot;this program needs an int of at least 32 bits&quot;</span>);</code></pre></div>
+<p>The condition must be something the compiler can work out. If it is false, the program does not build. There is no cost at run time at all.</p>
+<h2>Choosing the right tool</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Tool</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The user typed something unusable</td>
+<td>Validate and ask again</td>
+</tr>
+<tr>
+<td>Something outside your control failed (a missing file)</td>
+<td>Report and recover, later with exceptions: <a href="../9-05-exceptions/">9.05 Exceptions</a></td>
+</tr>
+<tr>
+<td>&quot;This cannot happen&quot; in your own logic</td>
+<td><code>assert</code></td>
+</tr>
+<tr>
+<td>An assumption about types or the platform</td>
+<td><code>static_assert</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/3.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/3.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-06-global-variables-static-and-linkage/"><span class="mono">previous</span><b>3.06 Global Variables, static and Linkage</b></a>
+      <a class="lp-next" href="../3-08-halts-goto-and-testing-your-code/"><span class="mono">next</span><b>3.08 Halts, goto, and Testing Your Code</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/3-07-input-validation-and-assert"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

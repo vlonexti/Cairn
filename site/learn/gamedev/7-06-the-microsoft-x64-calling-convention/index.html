@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Microsoft x64 Calling Convention · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/7-06-the-microsoft-x64-calling-convention/">
+  <meta name="description" content="A calling convention is the agreement between a caller and the function it calls: where arguments go, where the result comes back, which registers survive…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Microsoft x64 Calling Convention · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A calling convention is the agreement between a caller and the function it calls: where arguments go, where the result comes back, which registers survive…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/7-06-the-microsoft-x64-calling-convention/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Microsoft x64 Calling Convention · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Microsoft x64 Calling Convention · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A calling convention is the agreement between a caller and the function it calls: where arguments go, where the result comes back, which registers survive…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>x64 Assembly Language</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Microsoft x64 Calling Convention</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.06</b></span><span>6 of 11 in milestone 7</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A <strong>calling convention</strong> is the agreement between a caller and the function it calls: where arguments go, where the result comes back, which registers survive the call and who cleans up the stack. On 64-bit Windows there is one convention for everything. Knowing it lets you read any function&#39;s arguments in the debugger, follow calls in disassembly, and write assembly that C++ can call.</p>
+      <div class="prose">
+<h2>Why a convention is needed</h2>
+<p>The compiler that builds a caller and the compiler that built the function might be different programs, years apart: your game calling <code>CreateFileW</code> in <code>kernel32.dll</code>, a plugin calling the engine, C++ calling assembly. They only work together if both follow the same rules. On x64 Windows those rules are the <strong>Microsoft x64 calling convention</strong>, and every compiler targeting Windows follows it.</p>
+<h2>Arguments</h2>
+<p>The first four arguments go in registers, the rest on the stack:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Integer or pointer</th>
+<th>Floating point</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1st</td>
+<td><code>rcx</code></td>
+<td><code>xmm0</code></td>
+</tr>
+<tr>
+<td>2nd</td>
+<td><code>rdx</code></td>
+<td><code>xmm1</code></td>
+</tr>
+<tr>
+<td>3rd</td>
+<td><code>r8</code></td>
+<td><code>xmm2</code></td>
+</tr>
+<tr>
+<td>4th</td>
+<td><code>r9</code></td>
+<td><code>xmm3</code></td>
+</tr>
+<tr>
+<td>5th and later</td>
+<td>On the stack, at <code>[rsp+28h]</code>, <code>[rsp+30h]</code>, ... at the moment of the call</td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<p>The position decides the register, not the type: in <code>f(int a, float b, int c)</code>, <code>a</code> is in <code>rcx</code>, <code>b</code> in <code>xmm1</code> (second position), and <code>c</code> in <code>r8</code>.</p>
+<ul>
+<li>A member function&#39;s hidden <code>this</code> is the first argument: it is in <code>rcx</code>, and the visible arguments shift along by one.</li>
+<li>Structs of 1, 2, 4 or 8 bytes are passed in a register as if they were an integer. Any other size is copied by the caller to memory, and a <strong>pointer</strong> to the copy is passed.</li>
+</ul>
+<h2>Return values</h2>
+<ul>
+<li>Integers, pointers, and structs of 1, 2, 4 or 8 bytes come back in <code>rax</code>.</li>
+<li><code>float</code> and <code>double</code> come back in <code>xmm0</code>.</li>
+<li>Larger structs: the caller passes a hidden pointer (in <code>rcx</code>, moving the other arguments along) to space it has reserved, the function fills it in, and returns that pointer in <code>rax</code>.</li>
+</ul>
+<h2>Shadow space</h2>
+<p>The caller always reserves 32 bytes of <strong>shadow space</strong> (home space) on the stack just above the return address, even if the function takes fewer than four arguments (lesson 2.01). The function may store its register arguments there. Debug builds do exactly that, which is why the debugger can show a function&#39;s arguments even after the registers have been reused.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> at the moment the function starts:
+ [rsp+28h]   5th argument (if any)
+ [rsp+20h]   shadow space for r9
+ [rsp+18h]   shadow space for r8
+ [rsp+10h]   shadow space for rdx
+ [rsp+8]     shadow space for rcx
+ [rsp]       return address</code></pre></div>
+<h2>Volatile and non-volatile registers</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Volatile: the function may destroy them</th>
+<th>Non-volatile: the function must preserve them</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rax</code>, <code>rcx</code>, <code>rdx</code>, <code>r8</code>, <code>r9</code>, <code>r10</code>, <code>r11</code></td>
+<td><code>rbx</code>, <code>rbp</code>, <code>rdi</code>, <code>rsi</code>, <code>r12</code>, <code>r13</code>, <code>r14</code>, <code>r15</code>, <code>rsp</code></td>
+</tr>
+<tr>
+<td><code>xmm0</code> to <code>xmm5</code></td>
+<td><code>xmm6</code> to <code>xmm15</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A caller that needs a volatile register&#39;s value after a call must save it somewhere first. A function that wants to use a non-volatile register must save and restore it (lesson 7.05&#39;s <code>push rbx</code> / <code>pop rbx</code>).</p>
+<h2>Reading a call in disassembly</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">float</span> <span class="tk-f">applyDamage</span>(<span class="tk-t">Player</span>&amp; p, <span class="tk-k">int</span> amount, <span class="tk-k">float</span> armour, <span class="tk-k">bool</span> critical);
+...
+<span class="tk-f">applyDamage</span>(hero, <span class="tk-n">40</span>, <span class="tk-n">0.25f</span>, <span class="tk-k">true</span>);</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>mov   <span class="tk-t">r9b</span>, <span class="tk-n">1</span>                          <span class="tk-c">; 4th: critical = true (in r9)</span>
+movss <span class="tk-t">xmm2</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [__real@3e800000] <span class="tk-c">; 3rd: armour = 0.25f (3rd position: xmm2)</span>
+mov   <span class="tk-t">edx</span>, <span class="tk-n">40</span>                         <span class="tk-c">; 2nd: amount (rdx)</span>
+lea   <span class="tk-t">rcx</span>, [hero]                     <span class="tk-c">; 1st: &amp;hero (a reference is a pointer, in rcx)</span>
+call  applyDamage
+movss <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [result], <span class="tk-t">xmm0</span>        <span class="tk-c">; the float result comes back in xmm0</span></code></pre></div>
+<p>Arguments are often loaded in an order unrelated to the C++ order; what matters is which register each ends up in. <code>0x3e800000</code> is the bit pattern of 0.25 (lesson 2.11).</p>
+<h2>Variadic functions</h2>
+<p>For <code>printf</code> and other functions with <code>...</code>, floating-point values among the first four arguments are passed in <strong>both</strong> the integer register and the <code>xmm</code> register for their position, because the callee cannot know which one to look at.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Mapping the 2nd argument to <code>xmm0</code> because it is the first float
+Registers follow the argument&#39;s position. The 2nd argument, float or not, uses the 2nd slot: <code>rdx</code> or <code>xmm1</code>.</p>
+</blockquote>
+<blockquote><p>[!warning] Forgetting <code>this</code>
+In a member function, <code>rcx</code> is <code>this</code> and the first visible argument is in <code>rdx</code>.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Calling a function with less than 32 bytes reserved</span></div><div class="callout-body"><p>Hand-written assembly must reserve shadow space before every call, even to functions with no arguments.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Where is the third argument of <code>void f(int a, int b, int c, int d, int e)</code>?</div><ul><li><code>r8</code></li><li><code>rdx</code></li><li>On the stack</li></ul><details><summary>Show the answer</summary><p><b><code>r8</code></b> rcx, rdx, r8, r9 for the first four; the fifth goes on the stack.</p></details></li><li><div class="q">Where is <code>y</code> in <code>void g(int x, double y)</code>?</div><ul><li><code>xmm1</code>, because it is the second argument</li><li><code>xmm0</code>, because it is the first floating-point argument</li><li><code>rdx</code></li></ul><details><summary>Show the answer</summary><p><b><code>xmm1</code>, because it is the second argument</b> The position decides the register.</p></details></li><li><div class="q">In <code>player.heal(25)</code>, which register holds 25?</div><ul><li><code>rdx</code>, because <code>this</code> takes <code>rcx</code></li><li><code>rcx</code></li><li><code>r8</code></li></ul><details><summary>Show the answer</summary><p><b><code>rdx</code>, because <code>this</code> takes <code>rcx</code></b> The hidden <code>this</code> is the first argument.</p></details></li><li><div class="q">A function changes <code>rbx</code> and <code>r10</code>. Which must it restore before returning?</div><ul><li>Only <code>rbx</code></li><li>Only <code>r10</code></li><li>Both</li></ul><details><summary>Show the answer</summary><p><b>Only <code>rbx</code></b> <code>rbx</code> is non-volatile; <code>r10</code> is volatile and may be destroyed.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/7.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/7.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-05-the-stack-push-pop-call-and-ret/"><span class="mono">previous</span><b>7.05 The Stack, push, pop, call and ret</b></a>
+      <a class="lp-next" href="../7-07-reading-compiler-output-if-loops-and-switch/"><span class="mono">next</span><b>7.07 Reading Compiler Output: if, Loops and switch</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/7-06-the-microsoft-x64-calling-convention"></script>
+</body>
+</html>

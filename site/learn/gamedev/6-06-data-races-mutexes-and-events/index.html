@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Data Races, Mutexes and Events · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/6-06-data-races-mutexes-and-events/">
+  <meta name="description" content="When two threads use the same memory and at least one writes, without coordination, the result is a data race : undefined behaviour that shows up as lost…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Data Races, Mutexes and Events · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="When two threads use the same memory and at least one writes, without coordination, the result is a data race : undefined behaviour that shows up as lost…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/6-06-data-races-mutexes-and-events/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Data Races, Mutexes and Events · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Data Races, Mutexes and Events · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="When two threads use the same memory and at least one writes, without coordination, the result is a data race : undefined behaviour that shows up as lost…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Processes, Threads and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Data Races, Mutexes and Events</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.06</b></span><span>6 of 9 in milestone 6</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">When two threads use the same memory and at least one writes, without coordination, the result is a <strong>data race</strong>: undefined behaviour that shows up as lost updates, torn values and bugs that vanish under the debugger. This lesson shows a race, then the tools that prevent them: <strong>mutexes</strong>, <strong>atomics</strong>, <strong>condition variables</strong> and Windows <strong>events</strong>, and the classic trap of <strong>deadlock</strong>.</p>
+      <div class="prose">
+<h2>A race you can see</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;thread&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> score{ <span class="tk-n">0</span> };
+    <span class="tk-k">auto</span> addPoints = [&amp;score] { <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; <span class="tk-n">1'000'000</span>; ++i) ++score; };
+    std::thread a{ addPoints };
+    std::thread b{ addPoints };
+    a.<span class="tk-f">join</span>();
+    b.<span class="tk-f">join</span>();
+    std::cout &lt;&lt; score &lt;&lt; <span class="tk-s">'\n'</span>;     <span class="tk-c">// should be 2,000,000</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output (yours will differ)</span></div><pre><code>1318772</code></pre></div>
+<p>Each run prints a different number, almost never 2,000,000. <code>++score</code> looks like one step but is three: <strong>read</strong> <code>score</code> into a register, <strong>add</strong> one, <strong>write</strong> it back. If both threads read 41, both write 42, and one point is lost:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant A as Thread A
+    participant M as score (memory)
+    participant B as Thread B
+    A-&gt;&gt;M: read 41
+    B-&gt;&gt;M: read 41
+    A-&gt;&gt;A: 41 + 1
+    B-&gt;&gt;B: 41 + 1
+    A-&gt;&gt;M: write 42
+    B-&gt;&gt;M: write 42 (A's point is lost)</pre></div>
+<p>The C++ rules go further than &quot;points get lost&quot;: <strong>any</strong> unsynchronised access by two threads where one writes is undefined behaviour, so the optimiser may also keep <code>score</code> in a register for the whole loop. The symptoms are not limited to wrong totals.</p>
+<h2>Atomics: indivisible operations</h2>
+<p>For a single counter or flag, <code>std::atomic</code> makes each operation indivisible. The processor provides special instructions (<code>lock xadd</code>, <code>lock cmpxchg</code>) that do read-modify-write as one step:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;atomic&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;thread&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::atomic&lt;<span class="tk-k">int</span>&gt; score{ <span class="tk-n">0</span> };
+    <span class="tk-k">auto</span> addPoints = [&amp;score] { <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; <span class="tk-n">1'000'000</span>; ++i) ++score; };
+    std::thread a{ addPoints };
+    std::thread b{ addPoints };
+    a.<span class="tk-f">join</span>();
+    b.<span class="tk-f">join</span>();
+    std::cout &lt;&lt; score &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>2000000</code></pre></div>
+<p>Atomics are right for counters, flags (&quot;stop now&quot;) and simple statistics. They do not help when several values must change together, such as moving an item from one list to another.</p>
+<h2>Mutexes: one thread at a time</h2>
+<p>A <strong>mutex</strong> (mutual exclusion) guards a section of code: a thread that calls <code>lock</code> on a mutex another thread holds waits until it is released. Always lock with an RAII guard (lesson 2.04), so the mutex is released on every path:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;mutex&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;thread&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">EventLog</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">add</span>(std::string line)
+    {
+        std::lock_guard lock{ m_mutex };          <span class="tk-c">// locked here...</span>
+        m_lines.<span class="tk-f">push_back</span>(std::<span class="tk-f">move</span>(line));
+    }                                             <span class="tk-c">// ...released here</span>
+    std::size_t <span class="tk-f">size</span>()
+    {
+        std::lock_guard lock{ m_mutex };
+        <span class="tk-k">return</span> m_lines.<span class="tk-f">size</span>();
+    }
+<span class="tk-k">private</span>:
+    std::mutex m_mutex;
+    std::vector&lt;std::string&gt; m_lines;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">EventLog</span> log;
+    std::vector&lt;std::thread&gt; threads;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> t{ <span class="tk-n">0</span> }; t &lt; <span class="tk-n">4</span>; ++t)
+        threads.<span class="tk-f">emplace_back</span>([&amp;log, t] { <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; <span class="tk-n">1000</span>; ++i) log.<span class="tk-f">add</span>(<span class="tk-s">&quot;thread &quot;</span> + std::<span class="tk-f">to_string</span>(t)); });
+    <span class="tk-k">for</span> (<span class="tk-k">auto</span>&amp; th : threads) th.<span class="tk-f">join</span>();
+    std::cout &lt;&lt; log.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; lines\n&quot;</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>4000 lines</code></pre></div>
+<p>Without the mutex, two <code>push_back</code>s at once can both decide to grow the vector, and the program corrupts its heap. The rule: <strong>every access to shared mutable data, reads included, happens while holding the same mutex.</strong> Keep the locked section short: do slow work (formatting, file writes) outside it.</p>
+<h2>Waiting for something to happen</h2>
+<p>Threads often need to wait until another thread has done something: a job is available, loading has finished. Spinning in a loop checking a flag wastes a whole core. Proper waiting puts the thread to sleep until it is woken:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::condition_variable</code></td>
+<td>Wait until a condition on data guarded by a mutex becomes true (a queue is not empty)</td>
+</tr>
+<tr>
+<td><code>std::latch</code>, <code>std::barrier</code> (C++20)</td>
+<td>Wait until N threads have reached a point</td>
+</tr>
+<tr>
+<td><code>std::future</code> / <code>std::promise</code></td>
+<td>Wait for one result from another thread</td>
+</tr>
+<tr>
+<td>Windows <strong>event</strong> (<code>CreateEventW</code>)</td>
+<td>A kernel object that is signalled or not; threads wait on it with <code>WaitForSingleObject</code>; works across processes too</td>
+</tr>
+</tbody></table>
+</div>
+<p>A Windows event is like a flag that threads can sleep on. A <strong>manual-reset</strong> event stays signalled until reset (good for &quot;loading finished&quot;: everyone may proceed); an <strong>auto-reset</strong> event wakes one waiter and resets itself (good for &quot;one job available&quot;).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE loaded{ <span class="tk-f">CreateEventW</span>(<span class="tk-k">nullptr</span>, TRUE, FALSE, <span class="tk-k">nullptr</span>) };   <span class="tk-c">// manual-reset, starts unsignalled</span>
+<span class="tk-c">// loader thread, when done:   SetEvent(loaded);</span>
+<span class="tk-c">// main thread:                WaitForSingleObject(loaded, INFINITE);   // sleeps until then</span></code></pre></div>
+<p>The practice task builds the most common combination: a thread-safe queue that consumers can wait on.</p>
+<h2>Deadlock</h2>
+<p>Two threads, two mutexes. Thread 1 locks A then waits for B. Thread 2 locks B then waits for A. Both wait forever: a <strong>deadlock</strong>. The game freezes with 0% CPU.</p>
+<p>Prevent it by:</p>
+<ul>
+<li><strong>always taking locks in the same order</strong> everywhere in the program;</li>
+<li>locking several mutexes at once with <code>std::scoped_lock lock{ a, b };</code>, which avoids deadlock internally;</li>
+<li>never calling unknown code (callbacks, virtual functions) while holding a lock.</li>
+</ul>
+<p>When a game freezes, <strong>Break All</strong> in the debugger and look at each thread&#39;s call stack in the Threads window: two threads each waiting in a lock function, each holding what the other wants, is the signature of a deadlock (chapter 8).</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Reading shared data without the lock &quot;because it&#39;s only a read&quot;</span></div><div class="callout-body"><p>A read concurrent with a write is still a data race.</p>
+</div></div>
+<blockquote><p>[!warning] Using <code>volatile</code> for thread communication
+In C++, <code>volatile</code> does not make anything atomic or ordered. Use <code>std::atomic</code>.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Holding a lock while doing slow work</span></div><div class="callout-body"><p>Every other thread that needs it waits. Copy what you need, unlock, then work.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Waiting with a busy loop</span></div><div class="callout-body"><p>Use a condition variable, an event, or a future, so the waiting thread sleeps.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why can two threads doing <code>++score</code> lose updates?</div><ul><li><code>++score</code> is a read, an add and a write; both threads can read the same old value</li><li>Integers cannot be shared between threads</li><li>The scheduler skips some increments</li></ul><details><summary>Show the answer</summary><p><b><code>++score</code> is a read, an add and a write; both threads can read the same old value</b> Without synchronisation, the steps of the two threads interleave.</p></details></li><li><div class="q">When is <code>std::atomic</code> enough on its own?</div><ul><li>For a single value updated by indivisible operations, such as a counter or a flag</li><li>Whenever several values must change together</li><li>Never; a mutex is always needed</li></ul><details><summary>Show the answer</summary><p><b>For a single value updated by indivisible operations, such as a counter or a flag</b> Changes involving several values need a mutex around all of them.</p></details></li><li><div class="q">Thread 1 holds mutex A and waits for B; thread 2 holds B and waits for A. What is this?</div><ul><li>A deadlock</li><li>A data race</li><li>A context switch</li></ul><details><summary>Show the answer</summary><p><b>A deadlock</b> Taking locks in a consistent order, or with <code>std::scoped_lock</code>, prevents it.</p></details></li><li><div class="q">What is the difference between a manual-reset and an auto-reset event?</div><ul><li>A manual-reset event stays signalled until reset, releasing every waiter; an auto-reset event releases one waiter and resets itself</li><li>Manual-reset events are faster</li><li>Auto-reset events work only within one process</li></ul><details><summary>Show the answer</summary><p><b>A manual-reset event stays signalled until reset, releasing every waiter; an auto-reset event releases one waiter and resets itself</b> Choose by whether one or all waiting threads should proceed.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/6.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/6.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-05-threads-and-the-scheduler/"><span class="mono">previous</span><b>6.05 Threads and the Scheduler</b></a>
+      <a class="lp-next" href="../6-07-listing-processes-and-modules/"><span class="mono">next</span><b>6.07 Listing Processes and Modules</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/6-06-data-races-mutexes-and-events"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

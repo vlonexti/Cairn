@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Serving Many Connections · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/2-04-serving-many-connections/">
+  <meta name="description" content="Moving beyond one client at a time - thread per connection and its limits, non-blocking sockets and WSAEWOULDBLOCK, an event loop built on select or WSAPoll,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Serving Many Connections · Networking · Xenon">
+  <meta property="og:description" content="Moving beyond one client at a time - thread per connection and its limits, non-blocking sockets and WSAEWOULDBLOCK, an event loop built on select or WSAPoll,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/2-04-serving-many-connections/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Serving Many Connections · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Serving Many Connections · Networking · Xenon">
+  <meta name="twitter:description" content="Moving beyond one client at a time - thread per connection and its limits, non-blocking sockets and WSAEWOULDBLOCK, an event loop built on select or WSAPoll,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Sockets</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Serving Many Connections</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Moving beyond one client at a time - thread per connection and its limits, non-blocking sockets and WSAEWOULDBLOCK, an event loop built on select or WSAPoll, per-connection buffers for reading and writing, and when to reach for I/O completion ports.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>Lesson 2.02&#39;s server serves one client at a time: while it waits in <code>recv</code> for client A, client B is stuck in the accept queue. There are two classic ways out.</p>
+<h2>Thread per connection</h2>
+<p>Accept, then hand each client socket to a new thread running blocking code. Simple, and fine for dozens of clients. With thousands, the threads&#39; memory (each has a stack) and context switching dominate, and shared state needs locks everywhere.</p>
+<h2>Non-blocking sockets and an event loop</h2>
+<p>A socket can be put in <strong>non-blocking</strong> mode:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>u_long nonBlocking{ <span class="tk-n">1</span> };
+<span class="tk-f">ioctlsocket</span>(s, FIONBIO, &amp;nonBlocking);</code></pre></div>
+<p>Then <code>recv</code>, <code>send</code>, <code>accept</code> and <code>connect</code> never wait. If they cannot do anything right now, they fail with <strong><code>WSAEWOULDBLOCK</code></strong>, which is not an error, just &quot;nothing yet&quot;. On its own that turns waiting into busy polling; combined with a call that <strong>waits until any socket is ready</strong>, it gives an efficient single-threaded server: an <strong>event loop</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::vector&lt;WSAPOLLFD&gt; fds;                          <span class="tk-c">// the listener, then one entry per client</span>
+<span class="tk-k">for</span> (;;)
+{
+    <span class="tk-f">WSAPoll</span>(fds.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;ULONG&gt;(fds.<span class="tk-f">size</span>()), <span class="tk-n">1000</span>);   <span class="tk-c">// wait up to 1 s for anything</span>
+    <span class="tk-k">for</span> (WSAPOLLFD&amp; f : fds)
+    {
+        <span class="tk-k">if</span> (f.revents &amp; POLLRDNORM) { <span class="tk-c">/* readable: accept (listener) or recv (client) */</span> }
+        <span class="tk-k">if</span> (f.revents &amp; POLLWRNORM) { <span class="tk-c">/* writable: send queued data */</span> }
+        <span class="tk-k">if</span> (f.revents &amp; (POLLERR | POLLHUP)) { <span class="tk-c">/* close it */</span> }
+    }
+}</code></pre></div>
+<p><code>select</code> is the older, more widespread form of the same idea (on Windows it handles 64 sockets per call unless you raise <code>FD_SETSIZE</code>); <code>WSAPoll</code> is the Windows version of Unix&#39;s <code>poll</code>.</p>
+<h2>Per-connection state</h2>
+<p>In an event loop no function can wait for &quot;the rest of the message&quot;, so each connection keeps its own state:</p>
+<ul>
+<li>an <strong>input buffer</strong>: bytes received so far; after each <code>recv</code>, take out every complete message and handle it, leaving any partial one;</li>
+<li>an <strong>output queue</strong>: bytes waiting to be sent. Never call <code>send</code> in a loop until everything goes: when it returns <code>WSAEWOULDBLOCK</code> or sends only part, keep the rest and ask to be told when the socket is <strong>writable</strong> (<code>POLLWRNORM</code>), then send more.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>recv -&gt; append to input -&gt; extract messages -&gt; handle -&gt; append replies to output
+writable -&gt; send as much of output as the socket takes -&gt; keep the rest</code></pre></div>
+<p>The output queue also needs a <strong>limit</strong>: a client that never reads would otherwise make the server buffer replies for ever. When a queue grows too large, stop reading from that client, or disconnect it.</p>
+<h2>Fairness</h2>
+<p>One busy client must not starve the others. Read a bounded amount per client per loop iteration, handle a bounded number of messages, then move on. The same applies to expensive work: an event loop must never do anything slow (a disk read, a heavy computation) inline, or every client waits. Push slow work to worker threads and post the result back to the loop.</p>
+<h2>Scaling further</h2>
+<p>For thousands of busy connections on Windows, <strong>I/O completion ports</strong> (the IPC course, lesson 2.05) are the high-performance model: overlapped <code>WSARecv</code>/<code>WSASend</code> on every socket, completions collected by a few worker threads. Libraries such as Asio (C++), libuv (behind Node.js) and the Windows thread pool hide most of the detail.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-byte-order-and-packet-layouts/"><span class="mono">previous</span><b>2.03 Byte Order and Packet Layouts</b></a>
+      <a class="lp-next" href="../2-05-udp-sockets/"><span class="mono">next</span><b>2.05 UDP Sockets</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/2-04-serving-many-connections"></script>
+</body>
+</html>

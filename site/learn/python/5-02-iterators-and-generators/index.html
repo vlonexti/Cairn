@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Iterators and Generators · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/5-02-iterators-and-generators/">
+  <meta name="description" content="How for loops really work - iterables and iterators, iter and next, writing generator functions with yield, lazy pipelines that process data of any size,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Iterators and Generators · Python · Xenon">
+  <meta property="og:description" content="How for loops really work - iterables and iterators, iter and next, writing generator functions with yield, lazy pipelines that process data of any size,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/5-02-iterators-and-generators/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Iterators and Generators · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Iterators and Generators · Python · Xenon">
+  <meta name="twitter:description" content="How for loops really work - iterables and iterators, iter and next, writing generator functions with yield, lazy pipelines that process data of any size,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Pythonic Code</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Iterators and Generators</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How for loops really work - iterables and iterators, iter and next, writing generator functions with yield, lazy pipelines that process data of any size, infinite sequences, and yield from.</p>
+      <div class="prose">
+<h2>The iteration protocol</h2>
+<p>A <code>for</code> loop works with any <strong>iterable</strong>: lists, strings, dictionaries, files, ranges. Behind the scenes it asks the iterable for an <strong>iterator</strong> with <code>iter()</code> and calls <code>next()</code> on it until it raises <code>StopIteration</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>it = <span class="tk-f">iter</span>([<span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>])
+<span class="tk-f">print</span>(<span class="tk-f">next</span>(it), <span class="tk-f">next</span>(it), <span class="tk-f">next</span>(it))
+<span class="tk-c"># next(it) now would raise StopIteration: the loop's signal to stop</span></code></pre></div>
+<p>An iterator is used up once it has been walked through; a list can be iterated again and again because each <code>for</code> gets a fresh iterator.</p>
+<h2>Generator functions</h2>
+<p>A function containing <code>yield</code> is a <strong>generator function</strong>. Calling it does not run the body; it returns a generator, and each <code>next()</code> runs the body up to the next <code>yield</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">countdown</span>(n):
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;starting&quot;</span>)
+    <span class="tk-k">while</span> n &gt; <span class="tk-n">0</span>:
+        <span class="tk-k">yield</span> n
+        n -= <span class="tk-n">1</span>
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;done&quot;</span>)
+
+<span class="tk-k">for</span> value <span class="tk-k">in</span> <span class="tk-f">countdown</span>(<span class="tk-n">3</span>):
+    <span class="tk-f">print</span>(value)</code></pre></div>
+<p>The function&#39;s local variables survive between <code>yield</code>s, so generators are an easy way to write iterators without a class.</p>
+<h2>Lazy pipelines</h2>
+<p>Generators produce values <strong>on demand</strong>. That lets you process data far larger than memory, one item at a time, by chaining small steps:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">read_numbers</span>(lines):
+    <span class="tk-k">for</span> line <span class="tk-k">in</span> lines:
+        line = line.<span class="tk-f">strip</span>()
+        <span class="tk-k">if</span> line:
+            <span class="tk-k">yield</span> <span class="tk-f">int</span>(line)
+
+<span class="tk-k">def</span> <span class="tk-f">only_even</span>(numbers):
+    <span class="tk-k">for</span> n <span class="tk-k">in</span> numbers:
+        <span class="tk-k">if</span> n % <span class="tk-n">2</span> == <span class="tk-n">0</span>:
+            <span class="tk-k">yield</span> n
+
+lines = [<span class="tk-s">&quot;4&quot;</span>, <span class="tk-s">&quot;&quot;</span>, <span class="tk-s">&quot;7&quot;</span>, <span class="tk-s">&quot;10&quot;</span>, <span class="tk-s">&quot;3&quot;</span>]          <span class="tk-c"># could be a file with millions of lines</span>
+<span class="tk-f">print</span>(<span class="tk-f">sum</span>(<span class="tk-f">only_even</span>(<span class="tk-f">read_numbers</span>(lines))))   <span class="tk-c"># 14</span></code></pre></div>
+<p>No intermediate list is ever built: each number flows through the whole pipeline before the next is read.</p>
+<h2>Infinite sequences</h2>
+<p>A generator can go on forever; the consumer decides when to stop:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> itertools
+
+<span class="tk-k">def</span> <span class="tk-f">fibonacci</span>():
+    a, b = <span class="tk-n">0</span>, <span class="tk-n">1</span>
+    <span class="tk-k">while</span> <span class="tk-k">True</span>:
+        <span class="tk-k">yield</span> a
+        a, b = b, a + b
+
+<span class="tk-f">print</span>(<span class="tk-f">list</span>(itertools.<span class="tk-f">islice</span>(<span class="tk-f">fibonacci</span>(), <span class="tk-n">10</span>)))</code></pre></div>
+<p><code>itertools.islice</code> takes the first n items; <code>next(gen)</code> takes one.</p>
+<h2>yield from</h2>
+<p><code>yield from other</code> yields every item of another iterable, which makes recursive generators short:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">flatten</span>(items):
+    <span class="tk-k">for</span> item <span class="tk-k">in</span> items:
+        <span class="tk-k">if</span> <span class="tk-f">isinstance</span>(item, list):
+            <span class="tk-k">yield</span> <span class="tk-k">from</span> <span class="tk-f">flatten</span>(item)
+        <span class="tk-k">else</span>:
+            <span class="tk-k">yield</span> item
+
+<span class="tk-f">print</span>(<span class="tk-f">list</span>(<span class="tk-f">flatten</span>([<span class="tk-n">1</span>, [<span class="tk-n">2</span>, [<span class="tk-n">3</span>, <span class="tk-n">4</span>]], <span class="tk-n">5</span>])))</code></pre></div>
+<h2>Iterators in the standard library</h2>
+<p>Many built-ins return lazy iterators rather than lists: <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>map</code>, <code>filter</code>, <code>reversed</code>, dictionary views, and file objects. Wrap one in <code>list(...)</code> when you really need all the items at once, for example to index them or loop over them twice.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-comprehensions/"><span class="mono">previous</span><b>5.01 Comprehensions</b></a>
+      <a class="lp-next" href="../5-03-sorting-key-functions-and-lambdas/"><span class="mono">next</span><b>5.03 Sorting, Key Functions and Lambdas</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/5-02-iterators-and-generators"></script>
+</body>
+</html>

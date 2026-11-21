@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Driver That Says Hello · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/16-02-a-driver-that-says-hello/">
+  <meta name="description" content="The smallest useful driver has two functions: DriverEntry , called when it loads, and an unload routine, called when it is removed. This lesson writes them,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Driver That Says Hello · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The smallest useful driver has two functions: DriverEntry , called when it loads, and an unload routine, called when it is removed. This lesson writes them,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/16-02-a-driver-that-says-hello/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Driver That Says Hello · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Driver That Says Hello · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The smallest useful driver has two functions: DriverEntry , called when it loads, and an unload routine, called when it is removed. This lesson writes them,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Educational Driver Development</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Driver That Says Hello</h1>
+      <div class="readout lp-readout"><span>lesson <b>16.02</b></span><span>2 of 10 in milestone 16</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The smallest useful driver has two functions: <strong>DriverEntry</strong>, called when it loads, and an <strong>unload</strong> routine, called when it is removed. This lesson writes them, prints to the kernel debugger, loads the driver in the lab VM as a service, watches its messages in WinDbg, and unloads it, the complete cycle every later lesson builds on.</p>
+      <div class="prose">
+<h2>The code</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// driver.cpp</span>
+<span class="tk-p">#include &lt;ntddk.h&gt;</span>
+
+<span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> DRIVER_INITIALIZE <span class="tk-t">DriverEntry</span>;     <span class="tk-c">// declarations with the WDK's annotation types</span>
+DRIVER_UNLOAD <span class="tk-t">EchoUnload</span>;
+
+<span class="tk-k">void</span> <span class="tk-f">EchoUnload</span>(PDRIVER_OBJECT driver)
+{
+    <span class="tk-f">UNREFERENCED_PARAMETER</span>(driver);
+    <span class="tk-f">KdPrint</span>((<span class="tk-s">&quot;XenonEcho: unloading\n&quot;</span>));
+}
+
+<span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> NTSTATUS <span class="tk-f">DriverEntry</span>(PDRIVER_OBJECT driver, PUNICODE_STRING registryPath)
+{
+    <span class="tk-f">UNREFERENCED_PARAMETER</span>(registryPath);
+    driver-&gt;<span class="tk-t">DriverUnload</span> = <span class="tk-t">EchoUnload</span>;        <span class="tk-c">// without this, the driver can never be unloaded</span>
+    <span class="tk-f">KdPrint</span>((<span class="tk-s">&quot;XenonEcho: hello from the kernel, IRQL %u\n&quot;</span>, <span class="tk-f">KeGetCurrentIrql</span>()));
+    <span class="tk-k">return</span> STATUS_SUCCESS;
+}</code></pre></div>
+<p>Line by line:</p>
+<ul>
+<li><strong><code>DriverEntry</code></strong> is the driver&#39;s <code>main</code>. The I/O manager calls it once, at PASSIVE_LEVEL (lesson 15.06), with the <strong>driver object</strong> (lesson 15.05) and the path of the driver&#39;s registry key. It must be <code>extern &quot;C&quot;</code> so its name is not mangled (lesson 4.02).</li>
+<li>It returns an <strong>NTSTATUS</strong> (lesson 15.02). Returning a failure code makes the I/O manager unload the driver at once, without calling its unload routine, so a failing <code>DriverEntry</code> must clean up anything it already did (lesson 16.03).</li>
+<li><strong><code>DriverUnload</code></strong> must be set for the driver to be stoppable. It undoes everything <code>DriverEntry</code> set up.</li>
+<li><strong><code>KdPrint</code></strong> sends text to an attached kernel debugger. It compiles to nothing in Release builds. (<code>DbgPrintEx</code> is the always-present version with component ids and levels.)</li>
+<li><code>UNREFERENCED_PARAMETER</code> silences warning C4100 for unused parameters, which matters because warnings are errors.</li>
+</ul>
+<h2>Loading it in the VM</h2>
+<p>Copy <code>XenonEcho.sys</code> (and its test certificate, lesson 16.09) to the lab VM, for example to <code>C:\Drivers\</code>. A software-only driver like this one can be loaded as a <strong>kernel service</strong> with the built-in <code>sc</code> tool, from an <strong>administrator</strong> prompt in the VM:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>sc create XenonEcho type= kernel binPath= C:\Drivers\XenonEcho.sys
+sc start XenonEcho
+sc stop XenonEcho
+sc delete XenonEcho</code></pre></div>
+<p>(The space after each <code>=</code> is required by <code>sc</code>.) <code>sc create</code> writes the service&#39;s registry key under <code>HKLM\SYSTEM\CurrentControlSet\Services\XenonEcho</code>; <code>sc start</code> asks the kernel to load the driver and call <code>DriverEntry</code>; <code>sc stop</code> calls the unload routine and unloads it.</p>
+<p>Hardware drivers are installed differently, through an <strong>INF</strong> file that plug and play uses to match them with devices; software drivers like this one do not need one.</p>
+<h2>Seeing the output</h2>
+<p>With WinDbg connected to the VM&#39;s kernel (lesson 15.08), enable debug output once per session and start the driver:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>kd&gt; ed nt!Kd_DEFAULT_Mask 0xF
+kd&gt; g</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>XenonEcho: hello from the kernel, IRQL 0
+XenonEcho: unloading</code></pre></div>
+<p>Without a debugger attached, Sysinternals <strong>DebugView</strong> run as administrator in the VM (with &quot;Capture Kernel&quot; enabled) shows the same messages.</p>
+<p>To stop in your code, set a breakpoint before starting the driver:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>kd&gt; bu XenonEcho!DriverEntry
+kd&gt; g</code></pre></div>
+<p><code>bu</code> sets an <strong>unresolved</strong> breakpoint that is placed when the module loads. When <code>sc start</code> runs, the whole VM freezes at <code>DriverEntry</code>, and you can step through it with <code>p</code> and inspect <code>driver</code> with <code>dt nt!_DRIVER_OBJECT poi(driver)</code> (lesson 8.05).</p>
+<h2>When it goes wrong</h2>
+<ul>
+<li><code>sc start</code> fails with error 577 (<code>ERROR_INVALID_IMAGE_HASH</code>): the driver is not signed in a way the VM accepts. Check test signing is on and the driver is test-signed (lesson 16.09).</li>
+<li>Error 2: the path in <code>binPath</code> is wrong.</li>
+<li>A bug check: the VM stops, WinDbg breaks in with the bug check, and <code>!analyze -v</code> names your driver (lesson 15.07). Revert to your snapshot if the VM cannot boot.</li>
+</ul>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Forgetting to set <code>DriverUnload</code>
+The driver can then never be stopped without a reboot.</p>
+</blockquote>
+<blockquote><p>[!warning] Missing <code>extern &quot;C&quot;</code> on <code>DriverEntry</code>
+The linker cannot find the entry point.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Loading on the host</span></div><div class="callout-body"><p>Only in the lab VM.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">When is <code>DriverEntry</code> called, and at which IRQL?</div><ul><li>Once, when the driver is loaded, at PASSIVE_LEVEL</li><li>Every time a program opens the driver</li><li>At DISPATCH_LEVEL</li></ul><details><summary>Show the answer</summary><p><b>Once, when the driver is loaded, at PASSIVE_LEVEL</b> It is the driver&#39;s equivalent of <code>main</code>.</p></details></li><li><div class="q">What happens if <code>DriverEntry</code> returns a failure status?</div><ul><li>The driver is unloaded immediately without its unload routine being called, so it must clean up first</li><li>Windows bug-checks</li><li>The driver keeps running</li></ul><details><summary>Show the answer</summary><p><b>The driver is unloaded immediately without its unload routine being called, so it must clean up first</b> Lesson 16.03 handles partial set-up.</p></details></li><li><div class="q">Where does <code>KdPrint</code> output go?</div><ul><li>To an attached kernel debugger (or DebugView capturing kernel output)</li><li>To a console window</li><li>To a log file automatically</li></ul><details><summary>Show the answer</summary><p><b>To an attached kernel debugger (or DebugView capturing kernel output)</b> It compiles away in Release builds.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/16.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/16.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../16-01-installing-the-windows-driver-kit/"><span class="mono">previous</span><b>16.01 Installing the Windows Driver Kit</b></a>
+      <a class="lp-next" href="../16-03-the-driver-lifecycle/"><span class="mono">next</span><b>16.03 The Driver Lifecycle</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/16-02-a-driver-that-says-hello"></script>
+</body>
+</html>

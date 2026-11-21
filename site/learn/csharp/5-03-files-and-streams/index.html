@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Files and Streams · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/5-03-files-and-streams/">
+  <meta name="description" content="Reading and writing files with File's one-line helpers and their async versions, paths with Path, directories, StreamReader and StreamWriter for large files…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Files and Streams · C# · Xenon">
+  <meta property="og:description" content="Reading and writing files with File's one-line helpers and their async versions, paths with Path, directories, StreamReader and StreamWriter for large files…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/5-03-files-and-streams/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Files and Streams · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Files and Streams · C# · Xenon">
+  <meta name="twitter:description" content="Reading and writing files with File's one-line helpers and their async versions, paths with Path, directories, StreamReader and StreamWriter for large files…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Async, Files and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Files and Streams</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Reading and writing files with File&#39;s one-line helpers and their async versions, paths with Path, directories, StreamReader and StreamWriter for large files line by line, encodings, the Stream abstraction, handling IOException, and reading CSV safely.</p>
+      <div class="prose">
+<h2>The quick way</h2>
+<p>For small files, the <code>File</code> class does everything in one call:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">File</span>.<span class="tk-f">WriteAllText</span>(<span class="tk-s">&quot;hello.txt&quot;</span>, <span class="tk-s">&quot;Hello\nfrom C#\n&quot;</span>);
+<span class="tk-t">File</span>.<span class="tk-f">AppendAllText</span>(<span class="tk-s">&quot;hello.txt&quot;</span>, <span class="tk-s">&quot;one more line\n&quot;</span>);
+<span class="tk-k">string</span> text = <span class="tk-t">File</span>.<span class="tk-f">ReadAllText</span>(<span class="tk-s">&quot;hello.txt&quot;</span>);
+<span class="tk-k">string</span>[] lines = <span class="tk-t">File</span>.<span class="tk-f">ReadAllLines</span>(<span class="tk-s">&quot;hello.txt&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{text.Length} characters, {lines.Length} lines, last: {lines[^1]}&quot;</span>);
+
+<span class="tk-t">File</span>.<span class="tk-f">WriteAllLines</span>(<span class="tk-s">&quot;numbers.txt&quot;</span>, <span class="tk-t">Enumerable</span>.<span class="tk-f">Range</span>(<span class="tk-n">1</span>, <span class="tk-n">5</span>).<span class="tk-f">Select</span>(n =&gt; n.<span class="tk-f">ToString</span>()));
+<span class="tk-k">int</span> sum = <span class="tk-t">File</span>.<span class="tk-f">ReadLines</span>(<span class="tk-s">&quot;numbers.txt&quot;</span>).<span class="tk-f">Sum</span>(<span class="tk-k">int</span>.<span class="tk-t">Parse</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(sum);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">File</span>.<span class="tk-f">Exists</span>(<span class="tk-s">&quot;numbers.txt&quot;</span>) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-t">File</span>.<span class="tk-f">Exists</span>(<span class="tk-s">&quot;missing.txt&quot;</span>));</code></pre></div>
+<p><code>ReadAllLines</code> loads the whole file into an array; <code>ReadLines</code> reads it <strong>lazily</strong>, one line at a time, which works for files larger than memory. Each has an <code>...Async</code> version (<code>ReadAllTextAsync</code>, <code>WriteAllLinesAsync</code>) for use with <code>await</code>.</p>
+<h2>Paths</h2>
+<p>Never glue paths together with <code>+</code> and <code>&quot;\\&quot;</code>: the separator differs between Windows and Linux. <code>Path</code> handles it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">string</span> folder = <span class="tk-t">Path</span>.<span class="tk-f">Combine</span>(<span class="tk-s">&quot;data&quot;</span>, <span class="tk-s">&quot;2026&quot;</span>, <span class="tk-s">&quot;march&quot;</span>);
+<span class="tk-k">string</span> file = <span class="tk-t">Path</span>.<span class="tk-f">Combine</span>(folder, <span class="tk-s">&quot;report.csv&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(file);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{Path.GetFileName(file)} {Path.GetExtension(file)} {Path.GetFileNameWithoutExtension(file)}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">Path</span>.<span class="tk-f">ChangeExtension</span>(file, <span class="tk-s">&quot;.json&quot;</span>));
+
+<span class="tk-t">Directory</span>.<span class="tk-f">CreateDirectory</span>(folder);                 <span class="tk-c">// creates every missing level, fine if it exists</span>
+<span class="tk-t">File</span>.<span class="tk-f">WriteAllText</span>(file, <span class="tk-s">&quot;id,total\n1,9.50\n&quot;</span>);
+<span class="tk-k">foreach</span> (<span class="tk-k">string</span> f <span class="tk-k">in</span> <span class="tk-t">Directory</span>.<span class="tk-f">EnumerateFiles</span>(<span class="tk-s">&quot;data&quot;</span>, <span class="tk-s">&quot;*.csv&quot;</span>, <span class="tk-t">SearchOption</span>.<span class="tk-t">AllDirectories</span>))
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;found {f.Replace('\\', '/')}&quot;</span>);</code></pre></div>
+<p>Relative paths are relative to the <strong>current directory</strong>, which is not always the folder of your program. For files that ship with your app, use <code>AppContext.BaseDirectory</code>; for user data, <code>Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)</code>.</p>
+<h2>Streams</h2>
+<p>All file, network and memory I/O in .NET goes through <strong>streams</strong>: a sequence of bytes you read from or write to. <code>StreamReader</code> and <code>StreamWriter</code> add text on top, with an <strong>encoding</strong> (UTF-8 by default):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> (<span class="tk-k">var</span> writer = <span class="tk-k">new</span> <span class="tk-f">StreamWriter</span>(<span class="tk-s">&quot;log.txt&quot;</span>))
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt;= <span class="tk-n">3</span>; i++) writer.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;entry {i}&quot;</span>);
+}   <span class="tk-c">// disposing flushes and closes the file</span>
+
+<span class="tk-k">using</span> <span class="tk-k">var</span> reader = <span class="tk-k">new</span> <span class="tk-f">StreamReader</span>(<span class="tk-s">&quot;log.txt&quot;</span>);
+<span class="tk-k">string</span>? line;
+<span class="tk-k">int</span> count = <span class="tk-n">0</span>;
+<span class="tk-k">while</span> ((line = reader.<span class="tk-f">ReadLine</span>()) != <span class="tk-k">null</span>)
+{
+    count++;
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{count}: {line}&quot;</span>);
+}</code></pre></div>
+<p>Always wrap streams in <code>using</code> (lesson 4.04): a writer that is not disposed may never write its last data to disk.</p>
+<p>Other streams work the same way: <code>FileStream</code> for raw bytes, <code>MemoryStream</code> for bytes in memory, <code>GZipStream</code> to compress, the response stream of an HTTP request. Code written against <code>Stream</code> or <code>TextReader</code> works with all of them, which makes it easy to test with a <code>StringReader</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">CountWords</span>(<span class="tk-k">new</span> <span class="tk-f">StringReader</span>(<span class="tk-s">&quot;one two\nthree&quot;</span>)));
+
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">CountWords</span>(<span class="tk-t">TextReader</span> reader)
+{
+    <span class="tk-k">int</span> words = <span class="tk-n">0</span>;
+    <span class="tk-k">string</span>? line;
+    <span class="tk-k">while</span> ((line = reader.<span class="tk-f">ReadLine</span>()) != <span class="tk-k">null</span>) words += line.<span class="tk-f">Split</span>(<span class="tk-s">' '</span>, <span class="tk-t">StringSplitOptions</span>.<span class="tk-t">RemoveEmptyEntries</span>).<span class="tk-t">Length</span>;
+    <span class="tk-k">return</span> words;
+}</code></pre></div>
+<h2>When things go wrong</h2>
+<p>File operations fail for reasons outside your program: the file is missing, locked by another program, the disk is full, permission is denied. Catch the specific exceptions where you can do something useful:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">try</span>
+{
+    <span class="tk-k">string</span> config = <span class="tk-t">File</span>.<span class="tk-f">ReadAllText</span>(<span class="tk-s">&quot;settings.ini&quot;</span>);
+}
+<span class="tk-k">catch</span> (<span class="tk-t">FileNotFoundException</span>)
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;no settings file: using defaults&quot;</span>);
+}
+<span class="tk-k">catch</span> (<span class="tk-t">UnauthorizedAccessException</span>)
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;not allowed to read the settings&quot;</span>);
+}
+<span class="tk-k">catch</span> (IOException e)
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;could not read settings: {e.Message}&quot;</span>);
+}</code></pre></div>
+<p>Checking <code>File.Exists</code> first does not remove the need for <code>try</code>: the file can disappear between the check and the read.</p>
+<h2>CSV</h2>
+<p>Comma-separated files look simple, but fields can contain commas inside quotes: <code>&quot;Smith, Ada&quot;,36</code>. Splitting on <code>,</code> breaks those. For real data use a library such as CsvHelper; for simple, known files, a small parser that understands quotes is enough (practice 5.03 builds one).</p>
+<p>When writing numbers and dates to files, use <code>CultureInfo.InvariantCulture</code>, so that <code>9.50</code> does not become <code>9,50</code> on a computer set to another language.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-parallel-work-and-cancellation/"><span class="mono">previous</span><b>5.02 Parallel Work and Cancellation</b></a>
+      <a class="lp-next" href="../5-04-json-with-system-text-json/"><span class="mono">next</span><b>5.04 JSON with System.Text.Json</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/5-03-files-and-streams"></script>
+</body>
+</html>

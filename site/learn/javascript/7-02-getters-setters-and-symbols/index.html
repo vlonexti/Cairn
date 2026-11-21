@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Getters, Setters and Symbols · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/7-02-getters-setters-and-symbols/">
+  <meta name="description" content="Controlling properties - get and set on objects and classes, property descriptors with Object.defineProperty, freezing and sealing, Symbols as hidden keys,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Getters, Setters and Symbols · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Controlling properties - get and set on objects and classes, property descriptors with Object.defineProperty, freezing and sealing, Symbols as hidden keys,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/7-02-getters-setters-and-symbols/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Getters, Setters and Symbols · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Getters, Setters and Symbols · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Controlling properties - get and set on objects and classes, property descriptors with Object.defineProperty, freezing and sealing, Symbols as hidden keys,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Advanced JavaScript and TypeScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Getters, Setters and Symbols</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.02</b></span><span>2 of 6 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Controlling properties - get and set on objects and classes, property descriptors with Object.defineProperty, freezing and sealing, Symbols as hidden keys, and the well-known symbols (Symbol.iterator, Symbol.toPrimitive, Symbol.toStringTag) that hook into the language.</p>
+      <div class="prose">
+<h2>Getters and setters</h2>
+<p>A <strong>getter</strong> is a function that runs when a property is read; a <strong>setter</strong> runs when it is assigned. From outside they look like plain properties:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">class</span> Temperature {
+  #celsius = <span class="tk-n">0</span>;
+
+  <span class="tk-k">get</span> <span class="tk-f">celsius</span>() { <span class="tk-k">return</span> <span class="tk-k">this</span>.#celsius; }
+  <span class="tk-k">set</span> <span class="tk-f">celsius</span>(value) {
+    <span class="tk-k">if</span> (value &lt; -<span class="tk-n">273.15</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">RangeError</span>(<span class="tk-s">&quot;below absolute zero&quot;</span>);
+    <span class="tk-k">this</span>.#celsius = value;
+  }
+  <span class="tk-k">get</span> <span class="tk-f">fahrenheit</span>() { <span class="tk-k">return</span> <span class="tk-k">this</span>.#celsius * <span class="tk-n">9</span> / <span class="tk-n">5</span> + <span class="tk-n">32</span>; }   <span class="tk-c">// read-only: no setter</span>
+}
+
+<span class="tk-k">const</span> t = <span class="tk-k">new</span> <span class="tk-f">Temperature</span>();
+t.celsius = <span class="tk-n">25</span>;
+console.<span class="tk-f">log</span>(t.fahrenheit);   <span class="tk-c">// 77</span></code></pre></div>
+<p>They work in object literals too: <code>{ get total() { return this.a + this.b; } }</code>. Assigning to a getter-only property is silently ignored outside strict mode and an error inside it (and modules and classes are always strict).</p>
+<h2>Property descriptors</h2>
+<p>Every property has hidden settings. <code>Object.getOwnPropertyDescriptor</code> shows them and <code>Object.defineProperty</code> sets them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> config = {};
+Object.<span class="tk-f">defineProperty</span>(config, <span class="tk-s">&quot;version&quot;</span>, {
+  value: <span class="tk-s">&quot;1.0&quot;</span>,
+  writable: <span class="tk-k">false</span>,      <span class="tk-c">// cannot be changed</span>
+  enumerable: <span class="tk-k">false</span>,    <span class="tk-c">// hidden from Object.keys and for...in</span>
+  configurable: <span class="tk-k">false</span>,  <span class="tk-c">// cannot be deleted or redefined</span>
+});
+console.<span class="tk-f">log</span>(config.version, Object.<span class="tk-f">keys</span>(config));          <span class="tk-c">// 1.0 []</span>
+console.<span class="tk-f">log</span>(Object.<span class="tk-f">getOwnPropertyDescriptor</span>(config, <span class="tk-s">&quot;version&quot;</span>));</code></pre></div>
+<p>Properties made the ordinary way are writable, enumerable and configurable.</p>
+<h2>Freezing and sealing</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th>New properties</th>
+<th>Delete</th>
+<th>Change values</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Object.preventExtensions(o)</code></td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Object.seal(o)</code></td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>Object.freeze(o)</code></td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-s">&quot;use strict&quot;</span>;
+<span class="tk-k">const</span> settings = Object.<span class="tk-f">freeze</span>({ theme: <span class="tk-s">&quot;dark&quot;</span>, sizes: [<span class="tk-n">1</span>, <span class="tk-n">2</span>] });
+<span class="tk-k">try</span> {
+  settings.theme = <span class="tk-s">&quot;light&quot;</span>;
+} <span class="tk-k">catch</span> (e) {
+  console.<span class="tk-f">log</span>(e.constructor.name);    <span class="tk-c">// TypeError</span>
+}
+settings.sizes.<span class="tk-f">push</span>(<span class="tk-n">3</span>);              <span class="tk-c">// freezing is shallow: nested objects can still change</span>
+console.<span class="tk-f">log</span>(settings.sizes);</code></pre></div>
+<h2>Symbols</h2>
+<p>A <strong>Symbol</strong> is a unique value that can be used as a property key. Two symbols with the same description are still different, so a symbol key never clashes with anyone else&#39;s property:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> id = <span class="tk-f">Symbol</span>(<span class="tk-s">&quot;id&quot;</span>);
+<span class="tk-k">const</span> user = { name: <span class="tk-s">&quot;Ada&quot;</span>, [id]: <span class="tk-n">42</span> };
+console.<span class="tk-f">log</span>(user[id], Object.<span class="tk-f">keys</span>(user), JSON.<span class="tk-f">stringify</span>(user));   <span class="tk-c">// 42 [ 'name' ] {&quot;name&quot;:&quot;Ada&quot;}</span>
+console.<span class="tk-f">log</span>(<span class="tk-f">Symbol</span>(<span class="tk-s">&quot;id&quot;</span>) === id);                                 <span class="tk-c">// false</span></code></pre></div>
+<p>Symbol keys are skipped by <code>Object.keys</code>, <code>for...in</code> and <code>JSON.stringify</code>, which makes them good for attaching data to objects you do not own. <code>Symbol.for(&quot;name&quot;)</code> returns the <em>same</em> symbol everywhere for that name, when you do want sharing.</p>
+<h2>Well-known symbols</h2>
+<p>The language looks up some symbols on your objects to decide how to treat them. You met <code>Symbol.iterator</code> in lesson 3.04. Two more:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">class</span> Money {
+  <span class="tk-f">constructor</span>(cents) { <span class="tk-k">this</span>.cents = cents; }
+
+  <span class="tk-c">// How the object turns into a primitive: hint is &quot;number&quot;, &quot;string&quot; or &quot;default&quot;.</span>
+  [Symbol.toPrimitive](hint) {
+    <span class="tk-k">return</span> hint === <span class="tk-s">&quot;number&quot;</span> ? <span class="tk-k">this</span>.cents / <span class="tk-n">100</span> : <span class="tk-s">`$${(this.cents / 100).toFixed(2)}`</span>;
+  }
+
+  <span class="tk-k">get</span> [Symbol.toStringTag]() { <span class="tk-k">return</span> <span class="tk-s">&quot;Money&quot;</span>; }
+}
+
+<span class="tk-k">const</span> price = <span class="tk-k">new</span> <span class="tk-f">Money</span>(<span class="tk-n">1250</span>);
+console.<span class="tk-f">log</span>(<span class="tk-s">`${price}`</span>, +price * <span class="tk-n">2</span>, Object.prototype.toString.<span class="tk-f">call</span>(price));
+<span class="tk-c">// $12.50 25 [object Money]</span></code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/7.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/7.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-01-regular-expressions/"><span class="mono">previous</span><b>7.01 Regular Expressions</b></a>
+      <a class="lp-next" href="../7-03-proxy-reflect-and-weak-references/"><span class="mono">next</span><b>7.03 Proxy, Reflect and Weak References</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/7-02-getters-setters-and-symbols"></script>
+</body>
+</html>

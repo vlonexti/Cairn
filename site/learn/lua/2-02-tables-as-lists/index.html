@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Tables as Lists · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/2-02-tables-as-lists/">
+  <meta name="description" content="The table as Lua's only data structure, lists that start at index 1, the length operator, adding and removing with table.insert and table.remove, ipairs, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tables as Lists · Lua · Xenon">
+  <meta property="og:description" content="The table as Lua's only data structure, lists that start at index 1, the length operator, adding and removing with table.insert and table.remove, ipairs, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/2-02-tables-as-lists/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Tables as Lists · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tables as Lists · Lua · Xenon">
+  <meta name="twitter:description" content="The table as Lua's only data structure, lists that start at index 1, the length operator, adding and removing with table.insert and table.remove, ipairs, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Loops and Tables</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Tables as Lists</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The table as Lua&#39;s only data structure, lists that start at index 1, the length operator, adding and removing with table.insert and table.remove, ipairs, and why holes in a list break #.</p>
+      <div class="prose">
+<h2>One structure for everything</h2>
+<p>Lua has exactly one way to group values: the <strong>table</strong>. A table maps keys to values. Used with the keys 1, 2, 3 and so on, it is a list (an array); with other keys it is a dictionary, a record or an object. This lesson is about lists.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> fruits = { <span class="tk-s">&quot;apple&quot;</span>, <span class="tk-s">&quot;banana&quot;</span>, <span class="tk-s">&quot;cherry&quot;</span> }
+<span class="tk-f">print</span>(fruits[<span class="tk-n">1</span>], fruits[<span class="tk-n">3</span>], #fruits)
+<span class="tk-f">print</span>(fruits[<span class="tk-n">4</span>])</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>apple	cherry	3
+nil</code></pre></div>
+<div class="callout important"><div class="callout-title"><span>Lists start at 1</span></div><div class="callout-body"><p>The first item is <code>fruits[1]</code>, the last is <code>fruits[#fruits]</code>. <code>fruits[0]</code> is nil. Every library function counts from 1 too.</p>
+</div></div>
+<p><code>#t</code> is the list&#39;s length. Reading past the end is not an error, it is <code>nil</code>.</p>
+<h2>Changing a list</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> t = { <span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span> }
+t[<span class="tk-n">2</span>] = <span class="tk-n">25</span>                     <span class="tk-c">-- replace</span>
+t[#t + <span class="tk-n">1</span>] = <span class="tk-n">40</span>                <span class="tk-c">-- add at the end</span>
+table.<span class="tk-f">insert</span>(t, <span class="tk-n">50</span>)           <span class="tk-c">-- add at the end</span>
+table.<span class="tk-f">insert</span>(t, <span class="tk-n">1</span>, <span class="tk-n">5</span>)         <span class="tk-c">-- insert at position 1, the rest move up</span>
+<span class="tk-f">print</span>(table.<span class="tk-f">concat</span>(t, <span class="tk-s">&quot;, &quot;</span>))
+
+<span class="tk-k">local</span> last = table.<span class="tk-f">remove</span>(t)        <span class="tk-c">-- remove the last, and return it</span>
+<span class="tk-k">local</span> first = table.<span class="tk-f">remove</span>(t, <span class="tk-n">1</span>)    <span class="tk-c">-- remove position 1, the rest move down</span>
+<span class="tk-f">print</span>(first, last, table.<span class="tk-f">concat</span>(t, <span class="tk-s">&quot;, &quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>5, 10, 25, 30, 40, 50
+5	50	10, 25, 30, 40</code></pre></div>
+<p><code>table.concat(t, sep)</code> joins a list of strings or numbers into one string. It is the quickest way to print a list; <code>print(t)</code> only shows something like <code>table: 0x55d0c8a3e2a0</code>.</p>
+<h2>Looping over a list</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> scores = { <span class="tk-n">72</span>, <span class="tk-n">95</span>, <span class="tk-n">64</span> }
+
+<span class="tk-k">for</span> i = <span class="tk-n">1</span>, #scores <span class="tk-k">do</span>
+    <span class="tk-f">print</span>(i, scores[i])
+<span class="tk-k">end</span>
+
+<span class="tk-k">for</span> i, score <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(scores) <span class="tk-k">do</span>
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;score &quot;</span> .. i .. <span class="tk-s">&quot; is &quot;</span> .. score)
+<span class="tk-k">end</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1	72
+2	95
+3	64
+score 1 is 72
+score 2 is 95
+score 3 is 64</code></pre></div>
+<p><code>ipairs(t)</code> gives each position and its value, in order, from 1 until the first <code>nil</code>. Use <code>_</code> for a value you do not need: <code>for _, score in ipairs(scores)</code>.</p>
+<p>Do not insert into or remove from a list while looping over it forwards; positions move under you. Loop backwards (<code>for i = #t, 1, -1</code>) when removing.</p>
+<h2>Building a list</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> squares = {}
+<span class="tk-k">for</span> n = <span class="tk-n">1</span>, <span class="tk-n">6</span> <span class="tk-k">do</span>
+    squares[#squares + <span class="tk-n">1</span>] = n * n
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(table.<span class="tk-f">concat</span>(squares, <span class="tk-s">&quot; &quot;</span>))
+
+<span class="tk-k">local</span> evens = {}
+<span class="tk-k">for</span> _, n <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(squares) <span class="tk-k">do</span>
+    <span class="tk-k">if</span> n % <span class="tk-n">2</span> == <span class="tk-n">0</span> <span class="tk-k">then</span> table.<span class="tk-f">insert</span>(evens, n) <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(#evens, table.<span class="tk-f">concat</span>(evens, <span class="tk-s">&quot; &quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1 4 9 16 25 36
+3	4 16 36</code></pre></div>
+<h2>Holes</h2>
+<p>A list must not have <strong>holes</strong>: <code>nil</code> in the middle. Setting an item to <code>nil</code> does not remove it from a list; it makes a hole, and then <code>#</code> may give either end of the hole, and <code>ipairs</code> stops at it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> t = { <span class="tk-s">&quot;a&quot;</span>, <span class="tk-s">&quot;b&quot;</span>, <span class="tk-s">&quot;c&quot;</span>, <span class="tk-s">&quot;d&quot;</span> }
+t[<span class="tk-n">2</span>] = <span class="tk-k">nil</span>
+<span class="tk-k">for</span> i, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(t) <span class="tk-k">do</span> <span class="tk-f">print</span>(i, v) <span class="tk-k">end</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1	a</code></pre></div>
+<p>To remove an item, use <code>table.remove</code>. To mark one as missing, store <code>false</code> or a special value, not <code>nil</code>.</p>
+<h2>Tables are values you share</h2>
+<p>A variable holds a <strong>reference</strong> to a table, not a copy. Two variables can name the same table:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> a = { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> }
+<span class="tk-k">local</span> b = a
+b[<span class="tk-n">1</span>] = <span class="tk-n">99</span>
+<span class="tk-f">print</span>(a[<span class="tk-n">1</span>], a == b)
+<span class="tk-f">print</span>({ <span class="tk-n">1</span>, <span class="tk-n">2</span> } == { <span class="tk-n">1</span>, <span class="tk-n">2</span> })</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>99	true
+false</code></pre></div>
+<p><code>==</code> on tables asks &quot;the same table?&quot;, not &quot;the same contents?&quot;. Lesson 2.05 shows how to copy and compare by content.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-loops/"><span class="mono">previous</span><b>2.01 Loops</b></a>
+      <a class="lp-next" href="../2-03-tables-as-dictionaries/"><span class="mono">next</span><b>2.03 Tables as Dictionaries</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/2-02-tables-as-lists"></script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Colours, Images and Sound · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/3-04-colours-images-and-sound/">
+  <meta name="description" content="A colour is three numbers - red, green and blue light, usually 0 to 255 each. An image is a grid of those colours, and compression makes it smaller. Sound is…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Colours, Images and Sound · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="A colour is three numbers - red, green and blue light, usually 0 to 255 each. An image is a grid of those colours, and compression makes it smaller. Sound is…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/3-04-colours-images-and-sound/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Colours, Images and Sound · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Colours, Images and Sound · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="A colour is three numbers - red, green and blue light, usually 0 to 255 each. An image is a grid of those colours, and compression makes it smaller. Sound is…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Everything Is Numbers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Colours, Images and Sound</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.04</b></span><span>4 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A colour is three numbers - red, green and blue light, usually 0 to 255 each. An image is a grid of those colours, and compression makes it smaller. Sound is the air pressure measured tens of thousands of times a second, each measurement a number.</p>
+      <div class="prose">
+<h2>Colour: three numbers</h2>
+<p>A screen makes every colour by mixing three lights: <strong>red, green and blue</strong> (RGB). Each is a number, usually from <strong>0 to 255</strong> (one byte):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Colour</th>
+<th>Red</th>
+<th>Green</th>
+<th>Blue</th>
+<th>Hex</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Black</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td><code>#000000</code></td>
+</tr>
+<tr>
+<td>White</td>
+<td>255</td>
+<td>255</td>
+<td>255</td>
+<td><code>#FFFFFF</code></td>
+</tr>
+<tr>
+<td>Red</td>
+<td>255</td>
+<td>0</td>
+<td>0</td>
+<td><code>#FF0000</code></td>
+</tr>
+<tr>
+<td>Yellow (red + green light)</td>
+<td>255</td>
+<td>255</td>
+<td>0</td>
+<td><code>#FFFF00</code></td>
+</tr>
+<tr>
+<td>Orange</td>
+<td>255</td>
+<td>136</td>
+<td>0</td>
+<td><code>#FF8800</code></td>
+</tr>
+<tr>
+<td>Mid grey</td>
+<td>128</td>
+<td>128</td>
+<td>128</td>
+<td><code>#808080</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Three bytes per colour is <strong>24 bits</strong>: 256 × 256 × 256 = <strong>16,777,216</strong> colours. The hex form you see in web pages and design tools is just the three bytes in a row: <code>#FF8800</code> is FF (255) red, 88 (136) green, 00 blue.</p>
+<p>Light mixes differently from paint: red and green <strong>light</strong> make yellow, and all three at full make white. Often there is a fourth byte, <strong>alpha</strong>, for how see-through a pixel is: RGBA, 32 bits per pixel.</p>
+<h2>Images: a grid of colours</h2>
+<p>An image is a grid of pixels, each one colour. Size is easy to work out:</p>
+<blockquote><p>1920 × 1080 pixels × 3 bytes = <strong>6,220,800 bytes</strong>, about 6 MB, for one uncompressed full-HD picture.</p>
+</blockquote>
+<p>A phone photo of 12 million pixels would be 36 MB that way, yet the file is about 3 MB. That is <strong>compression</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>How</th>
+<th>Examples</th>
+<th>Good for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Lossless</strong></td>
+<td>Finds repetition and stores it more briefly (&quot;200 white pixels&quot; instead of 200 copies). Decompresses to exactly the original</td>
+<td>PNG, GIF, ZIP</td>
+<td>Screenshots, diagrams, text, anything with sharp edges</td>
+</tr>
+<tr>
+<td><strong>Lossy</strong></td>
+<td>Throws away detail the eye barely notices</td>
+<td>JPEG, WebP, and video: H.264, AV1</td>
+<td>Photos and video, where files become 10 to 100 times smaller</td>
+</tr>
+</tbody></table>
+</div>
+<p>A video is a series of images, typically 24 to 60 per second, compressed by also storing mostly what <strong>changes</strong> between frames.</p>
+<h2>Sound: measuring the air</h2>
+<p>Sound is the air pressure wobbling back and forth. A microphone turns it into a changing voltage, and the computer <strong>samples</strong> it: measures it many times a second and stores each measurement as a number.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;Air pressure wave&quot;] --&gt; M[&quot;Microphone&lt;br/&gt;voltage&quot;] --&gt; C[&quot;Converter samples it&lt;br/&gt;44,100 times a second&quot;] --&gt; N[&quot;Numbers:&lt;br/&gt;0, 2034, 3871, 5102, ...&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>CD audio</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sample rate</td>
+<td>44,100 per second</td>
+<td>Must be over twice the highest pitch people hear (about 20,000 Hz)</td>
+</tr>
+<tr>
+<td>Bits per sample</td>
+<td>16</td>
+<td>Each measurement is a number from −32,768 to 32,767</td>
+</tr>
+<tr>
+<td>Channels</td>
+<td>2</td>
+<td>Left and right</td>
+</tr>
+</tbody></table>
+</div>
+<p>One second of CD audio: 44,100 × 2 bytes × 2 channels = <strong>176,400 bytes</strong>. A 3-minute song is about 32 MB uncompressed, and about 3 MB as MP3 or AAC, which are lossy formats that drop sounds people cannot hear well.</p>
+<p>To play sound, the computer sends the numbers back to a converter that turns them into a voltage, which moves a speaker, which moves the air.</p>
+<h2>Everything is numbers</h2>
+<p>Text (3.01), fractions (3.03), colours, pictures, sound: each is turned into numbers by an agreed rule, and the numbers into bits. Whatever a computer seems to work with, underneath it is working with numbers, and the program is what remembers what they mean.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What colour is #00FF00?</div><ul><li>Red</li><li>Bright green</li><li>Blue</li></ul><details><summary>Show the answer</summary><p><b>Bright green</b> Red 00, green FF (255), blue 00.</p></details></li><li><div class="q">How many bytes does an uncompressed 100 × 100 RGB image take?</div><ul><li>100</li><li>10,000</li><li>30,000</li></ul><details><summary>Show the answer</summary><p><b>30,000</b> 100 × 100 pixels × 3 bytes.</p></details></li><li><div class="q">What is the difference between lossless and lossy compression?</div><ul><li>Lossless gives back exactly the original; lossy throws away detail people barely notice, to save more space</li><li>Lossy files are always bigger</li><li>Only lossless works on photos</li></ul><details><summary>Show the answer</summary><p><b>Lossless gives back exactly the original; lossy throws away detail people barely notice, to save more space</b> PNG is lossless; JPEG is lossy.</p></details></li><li><div class="q">Why is CD audio sampled 44,100 times a second?</div><ul><li>That is how fast CD players spin</li><li>The sampling rate must be more than twice the highest pitch people can hear</li><li>It is the largest 16-bit number</li></ul><details><summary>Show the answer</summary><p><b>The sampling rate must be more than twice the highest pitch people can hear</b> People hear up to about 20,000 Hz, so the rate needs to be over 40,000.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/3.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/3.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-03-fractions-and-floating-point/"><span class="mono">previous</span><b>3.03 Fractions and Floating Point</b></a>
+      <a class="lp-next" href="../3-05-files-and-file-formats/"><span class="mono">next</span><b>3.05 Files and File Formats</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/3-04-colours-images-and-sound"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

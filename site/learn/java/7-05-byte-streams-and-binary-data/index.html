@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Byte Streams and Binary Data · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/7-05-byte-streams-and-binary-data/">
+  <meta name="description" content="Reading and writing bytes - InputStream and OutputStream, byte arrays and ByteArrayOutputStream, buffering, DataOutputStream and DataInputStream for numbers…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Byte Streams and Binary Data · Java · Xenon">
+  <meta property="og:description" content="Reading and writing bytes - InputStream and OutputStream, byte arrays and ByteArrayOutputStream, buffering, DataOutputStream and DataInputStream for numbers…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/7-05-byte-streams-and-binary-data/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Byte Streams and Binary Data · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Byte Streams and Binary Data · Java · Xenon">
+  <meta name="twitter:description" content="Reading and writing bytes - InputStream and OutputStream, byte arrays and ByteArrayOutputStream, buffering, DataOutputStream and DataInputStream for numbers…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Advanced Java</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Byte Streams and Binary Data</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.05</b></span><span>5 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Reading and writing bytes - InputStream and OutputStream, byte arrays and ByteArrayOutputStream, buffering, DataOutputStream and DataInputStream for numbers in a fixed format, ByteBuffer and byte order, designing a small binary file format, checksums, and decorating streams.</p>
+      <div class="prose">
+<h2>Text is bytes too</h2>
+<p>Lesson 4.05 read and wrote <strong>text</strong> with <code>Files</code> and readers and writers, which turn characters into bytes using an encoding (UTF-8). Underneath, every file, network connection and compressed archive is a sequence of <strong>bytes</strong>. Java reads and writes them with two abstract classes:</p>
+<ul>
+<li><code>InputStream</code>: <code>read()</code> returns the next byte (0–255) or <code>-1</code> at the end; <code>read(byte[])</code> fills an array and returns how many bytes it got.</li>
+<li><code>OutputStream</code>: <code>write(int)</code> writes one byte; <code>write(byte[])</code> writes many.</li>
+</ul>
+<p>Always close them, which <code>try</code> with resources does for you.</p>
+<h2>Bytes in memory</h2>
+<p><code>ByteArrayOutputStream</code> collects written bytes in memory and <code>ByteArrayInputStream</code> reads from an array: perfect for building data and for tests.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.io.*;
+<span class="tk-k">import</span> java.nio.charset.<span class="tk-t">StandardCharsets</span>;
+<span class="tk-k">import</span> java.util.<span class="tk-t">Arrays</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) <span class="tk-k">throws</span> IOException {
+        <span class="tk-k">var</span> out = <span class="tk-k">new</span> <span class="tk-f">ByteArrayOutputStream</span>();
+        out.<span class="tk-f">write</span>(<span class="tk-n">72</span>);
+        out.<span class="tk-f">write</span>(<span class="tk-s">&quot;ello&quot;</span>.<span class="tk-f">getBytes</span>(<span class="tk-t">StandardCharsets</span>.UTF_8));
+        <span class="tk-k">byte</span>[] bytes = out.<span class="tk-f">toByteArray</span>();
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Arrays</span>.<span class="tk-f">toString</span>(bytes));                 <span class="tk-c">// [72, 101, 108, 108, 111]</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-k">new</span> <span class="tk-f">String</span>(bytes, <span class="tk-t">StandardCharsets</span>.UTF_8));
+
+        <span class="tk-k">try</span> (<span class="tk-k">var</span> in = <span class="tk-k">new</span> <span class="tk-f">ByteArrayInputStream</span>(bytes)) {
+            <span class="tk-k">int</span> b;
+            <span class="tk-k">while</span> ((b = in.<span class="tk-f">read</span>()) != -<span class="tk-n">1</span>) <span class="tk-t">System</span>.out.<span class="tk-f">print</span>(<span class="tk-t">Integer</span>.<span class="tk-f">toHexString</span>(b) + <span class="tk-s">&quot; &quot;</span>);
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>();
+    }
+}</code></pre></div>
+<p>A Java <code>byte</code> is signed (−128 to 127). <code>b &amp; 0xFF</code> gives its unsigned value (0 to 255).</p>
+<h2>Streams wrap streams</h2>
+<p>Streams are designed to be <strong>stacked</strong>: each wrapper adds one ability to the stream inside it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">try</span> (<span class="tk-k">var</span> out = <span class="tk-k">new</span> <span class="tk-f">DataOutputStream</span>(            <span class="tk-c">// numbers in a fixed binary format</span>
+               <span class="tk-k">new</span> <span class="tk-f">BufferedOutputStream</span>(        <span class="tk-c">// fewer, larger writes to the disk</span>
+               <span class="tk-k">new</span> <span class="tk-f">FileOutputStream</span>(<span class="tk-s">&quot;scores.bin&quot;</span>)))) {
+    out.<span class="tk-f">writeInt</span>(<span class="tk-n">3</span>);
+}</code></pre></div>
+<p><code>BufferedInputStream</code> and <code>BufferedOutputStream</code> make many small reads and writes fast. <code>GZIPOutputStream</code> compresses, <code>CipherOutputStream</code> encrypts, and <code>CheckedOutputStream</code> keeps a checksum, all by wrapping another stream.</p>
+<h2>Numbers as bytes</h2>
+<p><code>DataOutputStream</code> writes <code>int</code>, <code>long</code>, <code>double</code> and so on in a fixed big-endian format, and <code>DataInputStream</code> reads them back in the same order:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.io.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) <span class="tk-k">throws</span> IOException {
+        <span class="tk-k">var</span> buffer = <span class="tk-k">new</span> <span class="tk-f">ByteArrayOutputStream</span>();
+        <span class="tk-k">try</span> (<span class="tk-k">var</span> out = <span class="tk-k">new</span> <span class="tk-f">DataOutputStream</span>(buffer)) {
+            out.<span class="tk-f">writeInt</span>(<span class="tk-n">2</span>);                    <span class="tk-c">// how many records follow</span>
+            out.<span class="tk-f">writeUTF</span>(<span class="tk-s">&quot;Ada&quot;</span>);                <span class="tk-c">// a length-prefixed string</span>
+            out.<span class="tk-f">writeDouble</span>(<span class="tk-n">98.5</span>);
+            out.<span class="tk-f">writeUTF</span>(<span class="tk-s">&quot;Linus&quot;</span>);
+            out.<span class="tk-f">writeDouble</span>(<span class="tk-n">87.25</span>);
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(buffer.<span class="tk-f">size</span>() + <span class="tk-s">&quot; bytes&quot;</span>);
+
+        <span class="tk-k">try</span> (<span class="tk-k">var</span> in = <span class="tk-k">new</span> <span class="tk-f">DataInputStream</span>(<span class="tk-k">new</span> <span class="tk-f">ByteArrayInputStream</span>(buffer.<span class="tk-f">toByteArray</span>()))) {
+            <span class="tk-k">int</span> count = in.<span class="tk-f">readInt</span>();
+            <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; count; i++) <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(in.<span class="tk-f">readUTF</span>() + <span class="tk-s">&quot; &quot;</span> + in.<span class="tk-f">readDouble</span>());
+        }
+    }
+}</code></pre></div>
+<p>Reading must follow exactly the order of writing; there are no labels in the data. Reading past the end throws <code>EOFException</code>.</p>
+<h2>ByteBuffer and byte order</h2>
+<p>Many file formats are <strong>little-endian</strong> (the low byte first), which <code>DataOutputStream</code> cannot do. <code>ByteBuffer</code> can, and also reads and writes at any position:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.nio.<span class="tk-t">ByteBuffer</span>;
+<span class="tk-k">import</span> java.nio.<span class="tk-t">ByteOrder</span>;
+<span class="tk-k">import</span> java.util.<span class="tk-t">HexFormat</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">ByteBuffer</span> big = <span class="tk-t">ByteBuffer</span>.<span class="tk-f">allocate</span>(<span class="tk-n">4</span>).<span class="tk-f">putInt</span>(<span class="tk-n">0x12345678</span>);
+        <span class="tk-t">ByteBuffer</span> little = <span class="tk-t">ByteBuffer</span>.<span class="tk-f">allocate</span>(<span class="tk-n">4</span>).<span class="tk-f">order</span>(<span class="tk-t">ByteOrder</span>.LITTLE_ENDIAN).<span class="tk-f">putInt</span>(<span class="tk-n">0x12345678</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">HexFormat</span>.<span class="tk-f">of</span>().<span class="tk-f">formatHex</span>(big.<span class="tk-f">array</span>()));      <span class="tk-c">// 12345678</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">HexFormat</span>.<span class="tk-f">of</span>().<span class="tk-f">formatHex</span>(little.<span class="tk-f">array</span>()));   <span class="tk-c">// 78563412</span>
+
+        <span class="tk-t">ByteBuffer</span> read = <span class="tk-t">ByteBuffer</span>.<span class="tk-f">wrap</span>(little.<span class="tk-f">array</span>()).<span class="tk-f">order</span>(<span class="tk-t">ByteOrder</span>.LITTLE_ENDIAN);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Integer</span>.<span class="tk-f">toHexString</span>(read.<span class="tk-f">getInt</span>()));         <span class="tk-c">// 12345678</span>
+    }
+}</code></pre></div>
+<h2>Designing a small format</h2>
+<p>A robust binary file usually has:</p>
+<ol>
+<li>a <strong>magic number</strong> at the start (a few fixed bytes) so you can tell the file is yours;</li>
+<li>a <strong>version</strong> so newer programs can still read older files;</li>
+<li>lengths before variable-sized data (strings, lists);</li>
+<li>a <strong>checksum</strong> at the end to detect damage.</li>
+</ol>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.zip.CRC32;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        CRC32 crc = <span class="tk-k">new</span> <span class="tk-f">CRC32</span>();
+        crc.<span class="tk-f">update</span>(<span class="tk-s">&quot;hello&quot;</span>.<span class="tk-f">getBytes</span>());
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Long</span>.<span class="tk-f">toHexString</span>(crc.<span class="tk-f">getValue</span>()));     <span class="tk-c">// 3610a686</span>
+    }
+}</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/7.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/7.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-04-dates-and-times-with-java-time/"><span class="mono">previous</span><b>7.04 Dates and Times with java.time</b></a>
+      <a class="lp-next" href="../8-01-regular-expressions/"><span class="mono">next</span><b>8.01 Regular Expressions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/7-05-byte-streams-and-binary-data"></script>
+</body>
+</html>

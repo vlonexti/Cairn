@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>SAL Annotations and Buffer Sizes · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/3-02-sal-annotations-and-buffer-sizes/">
+  <meta name="description" content="The source annotation language in Windows headers - In , Out , Inout , opt , Out writes and friends - what each promises about a parameter, characters versus…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SAL Annotations and Buffer Sizes · Reading Documentation · Xenon">
+  <meta property="og:description" content="The source annotation language in Windows headers - In , Out , Inout , opt , Out writes and friends - what each promises about a parameter, characters versus…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/3-02-sal-annotations-and-buffer-sizes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SAL Annotations and Buffer Sizes · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SAL Annotations and Buffer Sizes · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="The source annotation language in Windows headers - In , Out , Inout , opt , Out writes and friends - what each promises about a parameter, characters versus…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>Windows Documentation</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">SAL Annotations and Buffer Sizes</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 4 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The source annotation language in Windows headers - <em>In</em>, <em>Out</em>, <em>Inout</em>, <em>opt</em>, <em>Out_writes</em> and friends - what each promises about a parameter, characters versus bytes, and the three patterns Windows uses for buffers whose size you do not know in advance.</p>
+      <div class="prose">
+<h2>Annotations in the headers</h2>
+<p>Open a Windows header and the declarations look like this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>DWORD <span class="tk-f">GetEnvironmentVariableW</span>(
+    _In_opt_ LPCWSTR lpName,
+    <span class="tk-f">_Out_writes_to_opt_</span>(nSize, <span class="tk-k">return</span> + <span class="tk-n">1</span>) LPWSTR lpBuffer,
+    _In_ DWORD nSize);</code></pre></div>
+<p>The <code>_In_</code>, <code>_Out_writes_...</code> markers are <strong>SAL</strong>, the Source Annotation Language. They compile to nothing, but they document the contract precisely, and the compiler&#39;s code analysis (<code>/analyze</code>) checks calls against them. The documentation&#39;s <code>[in]</code>, <code>[out]</code> and <code>optional</code> come from the same information.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Annotation</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>_In_</code></td>
+<td>read only; must not be null</td>
+</tr>
+<tr>
+<td><code>_In_opt_</code></td>
+<td>read only; may be null</td>
+</tr>
+<tr>
+<td><code>_Out_</code></td>
+<td>the function writes it; must not be null</td>
+</tr>
+<tr>
+<td><code>_Inout_</code></td>
+<td>read and then written</td>
+</tr>
+<tr>
+<td><code>_In_reads_(n)</code></td>
+<td>reads <code>n</code> elements</td>
+</tr>
+<tr>
+<td><code>_In_reads_bytes_(n)</code></td>
+<td>reads <code>n</code> <strong>bytes</strong></td>
+</tr>
+<tr>
+<td><code>_Out_writes_(n)</code></td>
+<td>writes up to <code>n</code> elements (the buffer must hold <code>n</code>)</td>
+</tr>
+<tr>
+<td><code>_Out_writes_to_(n, count)</code></td>
+<td>buffer holds <code>n</code>, the function writes <code>count</code></td>
+</tr>
+<tr>
+<td><code>_Outptr_</code></td>
+<td>receives a pointer the function allocates or returns</td>
+</tr>
+<tr>
+<td><code>_Ret_maybenull_</code></td>
+<td>the return value may be null</td>
+</tr>
+<tr>
+<td><code>_Success_(expr)</code></td>
+<td>the out parameters are valid only when <code>expr</code> is true</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>_Out_writes_to_opt_(nSize, return + 1)</code> above reads: the buffer may be null; it holds <code>nSize</code> characters; on success the function writes &quot;return value + 1&quot; characters (the string plus its null).</p>
+<h2>Characters or bytes</h2>
+<p>Windows counts in two units, and the names and annotations tell you which:</p>
+<ul>
+<li><code>cch...</code>, <code>nSize</code> &quot;in characters&quot;, <code>_Out_writes_(n)</code> on a <code>WCHAR*</code>: count <strong><code>wchar_t</code>s</strong>.</li>
+<li><code>cb...</code>, &quot;in bytes&quot;, <code>_Out_writes_bytes_(n)</code>: count <strong>bytes</strong>. A wide string of 10 characters plus its null is 22 bytes.</li>
+</ul>
+<p>Mixing them is one of the most common Windows bugs, either an overrun (bytes passed where characters were expected) or a truncation (the other way round).</p>
+<h2>Three patterns for unknown sizes</h2>
+<p>Often you cannot know how big the result will be. Windows functions use one of three patterns, and the Return value section tells you which:</p>
+<p><strong>1. Ask for the size first.</strong> Call with a null buffer (or too small a one); the function returns the size needed, then you allocate and call again. <code>GetEnvironmentVariableW</code>: if the buffer is too small, it returns the size required <strong>including</strong> the null; on success it returns the length <strong>excluding</strong> the null. Those two different meanings of the return value are how you tell the cases apart.</p>
+<p><strong>2. Grow until it fits.</strong> Some functions never tell you the size; they truncate. <code>GetModuleFileNameW</code> (lesson 3.01) returns <code>nSize</code> when truncated, so you double the buffer and try again.</p>
+<p><strong>3. Size in, size out.</strong> A pointer parameter holds the buffer size going in and receives the size needed or used coming out, often with the error <code>ERROR_MORE_DATA</code> (234) when the buffer was too small. The registry function <code>RegQueryValueExW</code> works this way with <code>lpcbData</code>, in bytes. Passing a null data pointer with a valid size pointer asks only for the size.</p>
+<p>In all three, the value can <strong>change between the calls</strong>: an environment variable or a registry value may be rewritten by another thread or process. Robust code loops: query, allocate, fetch, and if it is still too small, go round again.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-a-win32-reference-page/"><span class="mono">previous</span><b>3.01 A Win32 Reference Page</b></a>
+      <a class="lp-next" href="../3-03-getlasterror-hresult-and-ntstatus/"><span class="mono">next</span><b>3.03 GetLastError, HRESULT and NTSTATUS</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/3-02-sal-annotations-and-buffer-sizes"></script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Pointers · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/4-04-pointers/">
+  <meta name="description" content="A pointer is a variable that stores a memory address . &amp;x gives the address of x. ptr follows the address to the value. Unlike a reference, a pointer can be…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pointers · C++ · Xenon">
+  <meta property="og:description" content="A pointer is a variable that stores a memory address . &amp;x gives the address of x. ptr follows the address to the value. Unlike a reference, a pointer can be…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/4-04-pointers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pointers · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pointers · C++ · Xenon">
+  <meta name="twitter:description" content="A pointer is a variable that stores a memory address . &amp;x gives the address of x. ptr follows the address to the value. Unlike a reference, a pointer can be…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Functions and Compound Types</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Pointers</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 7 in milestone 4</span><span>5 min</span><span><b>4</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>pointer</strong> is a variable that stores a <strong>memory address</strong>. <code>&amp;x</code> gives the address of <code>x</code>. <code>*ptr</code> follows the address to the value. Unlike a reference, a pointer can be <code>nullptr</code> and can be aimed at something else.</p>
+      <div class="prose">
+<h2>A variable that holds an address</h2>
+<p>Every variable lives at an address in memory (<a href="../2-01-memory-bits-and-fundamental-types/">2.01 Memory, Bits and Fundamental Types</a>). A pointer stores one of those addresses.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> x{ <span class="tk-n">42</span> };
+<span class="tk-k">int</span>* ptr{ &amp;x };    <span class="tk-c">// ptr holds the address of x</span></code></pre></div>
+<div class="codeblock diagram plain"><pre><code>       ptr                          x
+  ┌────────────┐             ┌────────────┐
+  │   0x7ff0 ──┼───────────▶ │     42     │
+  └────────────┘             └────────────┘
+  lives at 0x7ff8            lives at 0x7ff0</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+<th>Value here</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x</code></td>
+<td>The value of <code>x</code></td>
+<td><code>42</code></td>
+</tr>
+<tr>
+<td><code>&amp;x</code></td>
+<td>The address of <code>x</code></td>
+<td><code>0x7ff0</code></td>
+</tr>
+<tr>
+<td><code>ptr</code></td>
+<td>The address stored in <code>ptr</code></td>
+<td><code>0x7ff0</code></td>
+</tr>
+<tr>
+<td><code>*ptr</code></td>
+<td>The value at that address</td>
+<td><code>42</code></td>
+</tr>
+<tr>
+<td><code>&amp;ptr</code></td>
+<td>The address of the pointer itself</td>
+<td><code>0x7ff8</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Following a pointer to the thing it points at is called <strong>dereferencing</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>*ptr = <span class="tk-n">100</span>;                <span class="tk-c">// change x through the pointer</span>
+std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 100</span></code></pre></div>
+<blockquote><p>[!info] <code>*</code> and <code>&amp;</code> each have two meanings</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>In a declaration</th>
+<th>In an expression</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>*</code></td>
+<td><code>int* p</code>: <code>p</code> is a pointer to <code>int</code></td>
+<td><code>*p</code>: dereference <code>p</code></td>
+</tr>
+<tr>
+<td><code>&amp;</code></td>
+<td><code>int&amp; r</code>: <code>r</code> is a reference to <code>int</code></td>
+<td><code>&amp;x</code>: the address of <code>x</code></td>
+</tr>
+</tbody></table>
+</div>
+</blockquote>
+<h2>Aiming a pointer somewhere else</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> a{ <span class="tk-n">1</span> };
+    <span class="tk-k">int</span> b{ <span class="tk-n">2</span> };
+    <span class="tk-k">int</span>* p{ &amp;a };
+    std::cout &lt;&lt; *p &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 1</span>
+    p = &amp;b;                     <span class="tk-c">// p now points at b</span>
+    std::cout &lt;&lt; *p &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 2</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Assigning to <code>p</code> changes <strong>where it points</strong>. Assigning to <code>*p</code> changes <strong>the thing it points at</strong>. Keep those two apart and pointers stop being confusing.</p>
+<h2><code>nullptr</code>: pointing at nothing</h2>
+<p>A pointer can deliberately point at nothing. That value is <code>nullptr</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span>* p{ <span class="tk-k">nullptr</span> };
+
+<span class="tk-k">if</span> (p != <span class="tk-k">nullptr</span>)
+{
+    std::cout &lt;&lt; *p &lt;&lt; <span class="tk-s">'\n'</span>;
+}
+<span class="tk-k">else</span>
+{
+    std::cout &lt;&lt; <span class="tk-s">&quot;no value\n&quot;</span>;
+}</code></pre></div>
+<p>A pointer converts to <code>false</code> when it is null, so <code>if (p)</code> means the same as <code>if (p != nullptr)</code>.</p>
+<div class="callout danger"><div class="callout-title"><span>Dereferencing a null pointer is undefined behaviour</span></div><div class="callout-body"><p>In practice the program usually crashes with an <em>access violation</em>. Whenever a pointer might be null, test it before you dereference it.</p>
+</div></div>
+<h2>Passing an address to a function</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">reset</span>(<span class="tk-k">int</span>* p)
+{
+    <span class="tk-k">if</span> (p)
+    {
+        *p = <span class="tk-n">0</span>;
+    }
+}
+
+<span class="tk-k">int</span> score{ <span class="tk-n">99</span> };
+<span class="tk-f">reset</span>(&amp;score);     <span class="tk-c">// the &amp; at the call shows that score may be changed</span>
+<span class="tk-f">reset</span>(<span class="tk-k">nullptr</span>);    <span class="tk-c">// allowed: &quot;there is nothing to reset&quot;</span></code></pre></div>
+<p>A pointer parameter can express &quot;there might be no object&quot;. A reference parameter cannot.</p>
+<h2>Pointers and <code>const</code></h2>
+<p><code>const</code> can apply to the thing pointed at, to the pointer itself, or to both. Read the declaration from right to left.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Declaration</th>
+<th>Read as</th>
+<th>Change the value through it?</th>
+<th>Aim it elsewhere?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>const int* p</code></td>
+<td>pointer to const int</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>int* const p</code></td>
+<td>const pointer to int</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>const int* const p</code></td>
+<td>const pointer to const int</td>
+<td>No</td>
+<td>No</td>
+</tr>
+</tbody></table>
+</div>
+<p>The first is by far the most common. It means &quot;I will look, but not touch&quot;, exactly like a const reference.</p>
+<h2>Pointers to structs: <code>-&gt;</code></h2>
+<p>To reach a member through a pointer, use <code>-&gt;</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Point</span>
+{
+    <span class="tk-k">int</span> x{};
+    <span class="tk-k">int</span> y{};
+};
+
+<span class="tk-t">Point</span> pt{ <span class="tk-n">3</span>, <span class="tk-n">4</span> };
+<span class="tk-t">Point</span>* pp{ &amp;pt };
+
+std::cout &lt;&lt; (*pp).x &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 3: dereference, then take the member</span>
+std::cout &lt;&lt; pp-&gt;x &lt;&lt; <span class="tk-s">'\n'</span>;      <span class="tk-c">// 3: the same thing, written the usual way</span></code></pre></div>
+<h2>Pointer or reference?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Reference <code>T&amp;</code></th>
+<th>Pointer <code>T*</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Can be null</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Can be aimed elsewhere</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Must be initialized</td>
+<td>Yes</td>
+<td>No, but always do it</td>
+</tr>
+<tr>
+<td>Used like</td>
+<td>The variable itself</td>
+<td><code>*p</code> and <code>p-&gt;</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    Q{&quot;Might there be no object,&lt;br/&gt;or must it change target?&quot;} -- no --&gt; R[&quot;Use a reference&quot;]
+    Q -- yes --&gt; P[&quot;Use a pointer&quot;]</pre></div>
+<p>Use a reference unless you need one of the two things only a pointer can do. Pointers become essential with dynamic memory: <a href="../7-02-new-and-delete-dynamic-memory/">7.02 new and delete — Dynamic Memory</a>.</p>
+<h2>Dangling pointers</h2>
+<p>Like a reference, a pointer can outlive its target.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span>* p{};
+{
+    <span class="tk-k">int</span> temp{ <span class="tk-n">5</span> };
+    p = &amp;temp;
+}             <span class="tk-c">// temp is destroyed here</span>
+*p = <span class="tk-n">1</span>;       <span class="tk-c">// undefined behaviour: p is dangling</span></code></pre></div>
+<p>Nothing sets <code>p</code> to null for you. It still holds the old address, and that memory may now be used for something else.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>4 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-references/"><span class="mono">previous</span><b>4.03 References</b></a>
+      <a class="lp-next" href="../4-05-enums/"><span class="mono">next</span><b>4.05 Enums</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/4-04-pointers"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

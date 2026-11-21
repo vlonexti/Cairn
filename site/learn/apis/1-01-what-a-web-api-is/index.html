@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>What a Web API Is · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/1-01-what-a-web-api-is/">
+  <meta name="description" content="Programs talking to programs - what an API is, how web APIs use HTTP, resources and endpoints in the REST style, the other styles you will meet (GraphQL,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What a Web API Is · Working with APIs · Xenon">
+  <meta property="og:description" content="Programs talking to programs - what an API is, how web APIs use HTTP, resources and endpoints in the REST style, the other styles you will meet (GraphQL,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/1-01-what-a-web-api-is/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="What a Web API Is · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What a Web API Is · Working with APIs · Xenon">
+  <meta name="twitter:description" content="Programs talking to programs - what an API is, how web APIs use HTTP, resources and endpoints in the REST style, the other styles you will meet (GraphQL,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>HTTP and JSON</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">What a Web API Is</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Programs talking to programs - what an API is, how web APIs use HTTP, resources and endpoints in the REST style, the other styles you will meet (GraphQL, RPC, WebSockets), and what calling one from Python looks like with urllib and requests.</p>
+      <div class="prose">
+<h2>Programs as users</h2>
+<p>An <strong>API</strong> (application programming interface) is a way for one program to use another. You have used many already: the Python standard library is an API, and so is the Windows API. A <strong>web API</strong> is one you reach over the network, with HTTP: weather services, payment providers, chat platforms, your own server. The program offering it is the <strong>server</strong>; yours is the <strong>client</strong>.</p>
+<p>What makes web APIs special is that the two sides share nothing but messages. They may be written in different languages, run on different continents, and be upgraded at different times. Everything you need to know must be in the request you send, the response you get, and the <strong>documentation</strong>.</p>
+<h2>Resources and endpoints</h2>
+<p>Most web APIs follow the <strong>REST</strong> style: the server exposes <strong>resources</strong> (users, orders, messages) at <strong>URLs</strong>, and you act on them with HTTP <strong>methods</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET</code></td>
+<td>read</td>
+<td><code>GET /books/42</code> gives book 42</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td>create (or run an action)</td>
+<td><code>POST /books</code> with a new book in the body</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td>replace</td>
+<td><code>PUT /books/42</code> with the whole new book</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td>change some fields</td>
+<td><code>PATCH /books/42</code> with <code>{&quot;title&quot;: &quot;...&quot;}</code></td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>remove</td>
+<td><code>DELETE /books/42</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A method and a path pattern together are an <strong>endpoint</strong>: <code>GET /books/{id}</code>. The documentation lists the endpoints, what each accepts and what it returns. The data travels as <strong>JSON</strong> almost everywhere (lesson 1.03).</p>
+<h2>Other styles</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Style</th>
+<th>Idea</th>
+<th>You will notice</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>REST</strong></td>
+<td>resources at URLs, HTTP methods</td>
+<td>many endpoints, simple requests</td>
+</tr>
+<tr>
+<td><strong>GraphQL</strong></td>
+<td>one endpoint; the client sends a query naming exactly the fields it wants</td>
+<td>always <code>POST /graphql</code>, errors inside a 200 response</td>
+</tr>
+<tr>
+<td><strong>RPC</strong> (JSON-RPC, gRPC)</td>
+<td>call named procedures</td>
+<td><code>POST /rpc</code> with <code>{&quot;method&quot;: &quot;getBook&quot;, &quot;params&quot;: ...}</code>; gRPC uses binary messages</td>
+</tr>
+<tr>
+<td><strong>WebSockets, server-sent events</strong></td>
+<td>a connection that stays open for live updates</td>
+<td>messages arrive without a request</td>
+</tr>
+<tr>
+<td><strong>Webhooks</strong></td>
+<td>the server calls <em>you</em> when something happens</td>
+<td>milestone 4</td>
+</tr>
+</tbody></table>
+</div>
+<p>The ideas in this course (requests, errors, authentication, paging, retries) apply to all of them.</p>
+<h2>A first call</h2>
+<p>From Python, the standard library can make requests with <code>urllib.request</code>; most people install the friendlier <strong>requests</strong> package (<code>pip install requests</code>). The same call both ways:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> json
+<span class="tk-k">import</span> urllib.request
+
+<span class="tk-k">with</span> urllib.request.<span class="tk-f">urlopen</span>(<span class="tk-s">&quot;https://api.example.com/books/42&quot;</span>, timeout=<span class="tk-n">10</span>) <span class="tk-k">as</span> response:
+    book = json.<span class="tk-f">load</span>(response)
+<span class="tk-f">print</span>(book[<span class="tk-s">&quot;title&quot;</span>])</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> requests
+
+response = requests.<span class="tk-f">get</span>(<span class="tk-s">&quot;https://api.example.com/books/42&quot;</span>, timeout=<span class="tk-n">10</span>)
+response.<span class="tk-f">raise_for_status</span>()          <span class="tk-c"># an exception for 4xx and 5xx statuses</span>
+book = response.<span class="tk-f">json</span>()
+<span class="tk-f">print</span>(book[<span class="tk-s">&quot;title&quot;</span>])</code></pre></div>
+<p>The practice in this course cannot reach the internet, so it uses small <strong>fake</strong> servers that behave like real ones, including all the ways real ones fail. That is also how professional code is tested: a client that takes its <strong>transport</strong> (the thing that actually sends requests) as a parameter can be tested without a network, and pointed at the real service in production.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-requests-and-responses/"><span class="mono">next</span><b>1.02 Requests and Responses</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/1-01-what-a-web-api-is"></script>
+</body>
+</html>

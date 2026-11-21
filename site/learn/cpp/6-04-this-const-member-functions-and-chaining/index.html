@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>this, const Member Functions and Chaining · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/6-04-this-const-member-functions-and-chaining/">
+  <meta name="description" content="Inside a member function, this points at the object the function was called on. Mark every function that does not modify the object const: only those can be…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="this, const Member Functions and Chaining · C++ · Xenon">
+  <meta property="og:description" content="Inside a member function, this points at the object the function was called on. Mark every function that does not modify the object const: only those can be…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/6-04-this-const-member-functions-and-chaining/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="this, const Member Functions and Chaining · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="this, const Member Functions and Chaining · C++ · Xenon">
+  <meta name="twitter:description" content="Inside a member function, this points at the object the function was called on. Mark every function that does not modify the object const: only those can be…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Classes and Objects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">this, const Member Functions and Chaining</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 9 in milestone 6</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">Inside a member function, <code>this</code> points at the object the function was called on. Mark every function that does not modify the object <code>const</code>: only those can be called on <code>const</code> objects. Return <code>*this</code> by reference to allow <strong>chaining</strong>.</p>
+      <div class="prose">
+<h2>The hidden <code>this</code> pointer</h2>
+<p>There is one copy of each member function, shared by every object of the class. So how does <code>add</code> know whose <code>m_count</code> to change?</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Counter</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">add</span>(<span class="tk-k">int</span> n) { m_count += n; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_count{};
+};
+
+<span class="tk-t">Counter</span> a{};
+<span class="tk-t">Counter</span> b{};
+a.<span class="tk-f">add</span>(<span class="tk-n">5</span>);</code></pre></div>
+<p>The compiler passes the object&#39;s address as a hidden argument. Conceptually it rewrites the code to:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">add</span>(<span class="tk-t">Counter</span>* <span class="tk-k">const</span> <span class="tk-k">this</span>, <span class="tk-k">int</span> n) { <span class="tk-k">this</span>-&gt;m_count += n; }
+
+<span class="tk-f">add</span>(&amp;a, <span class="tk-n">5</span>);</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;a.add(5)&quot;] --&gt;|&quot;this is &amp;a&quot;| F[&quot;add&lt;br/&gt;this-&gt;m_count += 5&quot;]
+    B[&quot;b.add(5)&quot;] --&gt;|&quot;this is &amp;b&quot;| F</pre></div>
+<p>Inside any member function, <code>this</code> is a pointer to the object it was called on. Writing <code>m_count</code> is shorthand for <code>this-&gt;m_count</code>. You rarely need to write <code>this</code> yourself. The main exception follows.</p>
+<h2>Method chaining</h2>
+<p>A member function that returns a reference to its own object lets the next call follow immediately.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">Calc</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-t">Calc</span>&amp; <span class="tk-f">add</span>(<span class="tk-k">int</span> n)
+    {
+        m_value += n;
+        <span class="tk-k">return</span> *<span class="tk-k">this</span>;
+    }
+
+    <span class="tk-t">Calc</span>&amp; <span class="tk-f">multiply</span>(<span class="tk-k">int</span> n)
+    {
+        m_value *= n;
+        <span class="tk-k">return</span> *<span class="tk-k">this</span>;
+    }
+
+    <span class="tk-k">int</span> <span class="tk-f">value</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_value; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_value{};
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Calc</span> c{};
+    std::cout &lt;&lt; c.<span class="tk-f">add</span>(<span class="tk-n">5</span>).<span class="tk-f">multiply</span>(<span class="tk-n">3</span>).<span class="tk-f">add</span>(<span class="tk-n">1</span>).<span class="tk-f">value</span>() &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 16</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>*this</code> is the object itself. Returning it <strong>by reference</strong> means each call in the chain works on the same object. Returning by value would hand each call a copy.</p>
+<p><code>std::cout &lt;&lt; a &lt;&lt; b</code> works on the same principle: each <code>&lt;&lt;</code> returns the stream.</p>
+<h2><code>const</code> member functions</h2>
+<p>A <code>const</code> after the parameter list is a promise: this function does not modify the object.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Circle</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">double</span> <span class="tk-f">area</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> <span class="tk-n">3.14159</span> * m_radius * m_radius; }
+    <span class="tk-k">void</span> <span class="tk-f">setRadius</span>(<span class="tk-k">double</span> radius) { m_radius = radius; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">double</span> m_radius{ <span class="tk-n">1.0</span> };
+};
+
+<span class="tk-k">const</span> <span class="tk-t">Circle</span> unit{};
+unit.<span class="tk-f">area</span>();          <span class="tk-c">// fine: area is a const member function</span>
+unit.<span class="tk-f">setRadius</span>(<span class="tk-n">2</span>);    <span class="tk-c">// error: setRadius is not</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Declared as</th>
+<th>Callable on a non-const object</th>
+<th>Callable on a const object or through <code>const&amp;</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>void f()</code></td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>void f() const</code></td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+</div>
+<p>Inside a <code>const</code> member function, <code>this</code> is a pointer to <code>const</code>, so the compiler rejects any attempt to change a member.</p>
+<blockquote><p>[!tip] Mark every member function that does not change the object <code>const</code>
+Objects are passed by <code>const&amp;</code> most of the time (<a href="../4-03-references/">4.03 References</a>). A function that is not marked <code>const</code> cannot be called through such a reference, even if it changes nothing. Getting this right throughout a codebase is called <strong>const correctness</strong>.</p>
+</blockquote>
+<h3>Overloading on <code>const</code></h3>
+<p>A class can offer two versions of a function, one for const objects and one for the rest.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Text</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">char</span>&amp; <span class="tk-f">at</span>(std::size_t i) { <span class="tk-k">return</span> m_text[i]; }                <span class="tk-c">// modifiable</span>
+    <span class="tk-k">const</span> <span class="tk-k">char</span>&amp; <span class="tk-f">at</span>(std::size_t i) <span class="tk-k">const</span> { <span class="tk-k">return</span> m_text[i]; }    <span class="tk-c">// read-only</span>
+
+<span class="tk-k">private</span>:
+    std::string m_text{};
+};</code></pre></div>
+<p>The compiler picks by whether the object is const. This is how <code>v[i]</code> on a vector gives a modifiable element or a read-only one.</p>
+<h3><code>mutable</code></h3>
+<p>A member marked <code>mutable</code> may be changed even inside a <code>const</code> function.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Cache</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">int</span> <span class="tk-f">lookup</span>() <span class="tk-k">const</span>
+    {
+        ++m_hits;
+        <span class="tk-k">return</span> <span class="tk-n">42</span>;
+    }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">mutable</span> <span class="tk-k">int</span> m_hits{};
+};</code></pre></div>
+<p>It is for data that is not part of the object&#39;s visible state: usage counters, cached results, locks. Use it rarely.</p>
+<h2>Returning references to members</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> std::string&amp; <span class="tk-f">name</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_name; }    <span class="tk-c">// cheap and read-only</span>
+std::string&amp; <span class="tk-f">name</span>() { <span class="tk-k">return</span> m_name; }                <span class="tk-c">// hands out write access</span></code></pre></div>
+<p>The first is the standard getter for anything expensive to copy. The second lets callers change the member directly, which bypasses whatever rule the class was protecting.</p>
+<div class="callout danger"><div class="callout-title"><span>Do not keep a reference into a temporary object</span></div><div class="callout-body">
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; n{ <span class="tk-f">makePlayer</span>().<span class="tk-f">name</span>() };    <span class="tk-c">// the Player is destroyed at the end of this line</span></code></pre></div>
+<p><code>n</code> now refers to a member of an object that no longer exists.</p>
+</div></div>
+<h2>Ref-qualifiers</h2>
+<p>You can go one step further and provide different behaviour for named objects and for temporaries.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> std::string&amp; <span class="tk-f">name</span>() <span class="tk-k">const</span>&amp; { <span class="tk-k">return</span> m_name; }        <span class="tk-c">// called on a named object</span>
+std::string <span class="tk-f">name</span>() &amp;&amp; { <span class="tk-k">return</span> std::<span class="tk-f">move</span>(m_name); }        <span class="tk-c">// called on a temporary</span></code></pre></div>
+<p>The <code>&amp;</code> and <code>&amp;&amp;</code> after the parameter list are <strong>ref-qualifiers</strong>. With this pair, the dangerous line above becomes safe, because a temporary hands back its string by value. <code>std::move</code> is explained in <a href="../7-05-move-semantics/">7.05 Move Semantics</a>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-destructors-and-object-lifetime/"><span class="mono">previous</span><b>6.03 Destructors and Object Lifetime</b></a>
+      <a class="lp-next" href="../6-05-static-members-and-friends/"><span class="mono">next</span><b>6.05 Static Members and Friends</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/6-04-this-const-member-functions-and-chaining"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Single-Instance Application · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/6-01-a-single-instance-application/">
+  <meta name="description" content="Making a second launch hand its work to the copy already running - a named mutex to detect the first instance, forwarding the command line through a pipe or…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Single-Instance Application · Processes and Communication · Xenon">
+  <meta property="og:description" content="Making a second launch hand its work to the copy already running - a named mutex to detect the first instance, forwarding the command line through a pipe or…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/6-01-a-single-instance-application/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Single-Instance Application · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Single-Instance Application · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="Making a second launch hand its work to the copy already running - a named mutex to detect the first instance, forwarding the command line through a pipe or…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Building Real Systems</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Single-Instance Application</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making a second launch hand its work to the copy already running - a named mutex to detect the first instance, forwarding the command line through a pipe or WM_COPYDATA, resolving relative paths with the sender&#39;s folder, bringing the window to the front, and the races when two copies start at once.</p>
+      <div class="prose">
+<h2>One copy, many launches</h2>
+<p>Double-click a document while your editor is open, and the user expects the document to open <strong>in the running editor</strong>, not in a second copy. The pattern is common enough to have a name: a <strong>single-instance application</strong>. It combines three pieces from this course: a named kernel object to detect the first instance, an IPC channel to hand over the command line, and window activation.</p>
+<h2>Detecting the first instance</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> std::wstring name{ <span class="tk-s">LR&quot;(Local\Xenon.Editor.)&quot;</span> + <span class="tk-f">currentUserSid</span>() };   <span class="tk-c">// per user</span>
+HANDLE instance{ <span class="tk-f">CreateMutexW</span>(<span class="tk-k">nullptr</span>, FALSE, name.<span class="tk-f">c_str</span>()) };
+<span class="tk-k">const</span> <span class="tk-k">bool</span> primary{ <span class="tk-f">GetLastError</span>() != ERROR_ALREADY_EXISTS };
+<span class="tk-c">// keep `instance` open for the whole life of the primary: its existence is the signal</span></code></pre></div>
+<p>The first process creates the mutex and becomes the <strong>primary</strong>; every later one sees <code>ERROR_ALREADY_EXISTS</code> and becomes a <strong>secondary</strong>. The mutex is never locked; only its existence matters, and because Windows closes it when the primary exits (even by crashing), a stale &quot;running&quot; signal cannot survive.</p>
+<p>Choose the scope with the name: <code>Local\</code> plus the user&#39;s identity gives one instance per user per session, which is usually right. A global name would make two users on one machine fight over one instance.</p>
+<h2>Forwarding the command line</h2>
+<p>The secondary must hand its arguments to the primary and exit. Either channel works:</p>
+<ul>
+<li><strong>WM_COPYDATA</strong> to the primary&#39;s window (lesson 4.04): simple, if the primary has a window and runs at the same integrity level.</li>
+<li>A <strong>named pipe</strong> the primary listens on (milestone 2): works for background processes too, and lets the primary reply (&quot;opened&quot;, or an error).</li>
+</ul>
+<p>What to send is not just the arguments. Relative paths (<code>notes.md</code>, <code>..\docs\a.md</code>) mean something only relative to the <strong>secondary&#39;s</strong> current folder, which the primary does not share. Send the secondary&#39;s <strong>current directory</strong> along with the arguments, and let the primary resolve paths against it (or resolve them before sending).</p>
+<h2>Bringing the window forward</h2>
+<p>Windows restricts which process may steal the foreground, so that background programs cannot pop up over what the user is doing. The secondary was just launched by the user, so it <strong>may</strong> set the foreground, and it can pass that right on:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">AllowSetForegroundWindow</span>(primaryPid);    <span class="tk-c">// in the secondary, before forwarding</span>
+<span class="tk-c">// the primary, on receiving the request:</span>
+<span class="tk-k">if</span> (<span class="tk-f">IsIconic</span>(window)) <span class="tk-f">ShowWindow</span>(window, SW_RESTORE);
+<span class="tk-f">SetForegroundWindow</span>(window);</code></pre></div>
+<p>Without that, the primary&#39;s window just flashes in the taskbar.</p>
+<h2>The races</h2>
+<ul>
+<li><strong>Two launches at once.</strong> Both call <code>CreateMutexW</code> at nearly the same moment; the kernel guarantees exactly one creates it. But the secondary may try to forward before the primary has created its pipe or window. The secondary must <strong>retry for a short while</strong> (a second or two) before giving up.</li>
+<li><strong>The primary is shutting down.</strong> The secondary forwards to a primary that is about to exit, and the request is lost. Have the primary close the mutex <strong>first</strong> when shutting down, so new launches become primaries themselves, and accept that a request arriving during shutdown may need a retry.</li>
+<li><strong>The primary is hung.</strong> Forwarding with a timeout (<code>SendMessageTimeoutW</code>, or a pipe with a timeout) lets the secondary tell the user, or start anyway as a second instance, rather than hanging too.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-securing-local-communication/"><span class="mono">previous</span><b>5.05 Securing Local Communication</b></a>
+      <a class="lp-next" href="../6-02-worker-processes/"><span class="mono">next</span><b>6.02 Worker Processes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/6-01-a-single-instance-application"></script>
+</body>
+</html>

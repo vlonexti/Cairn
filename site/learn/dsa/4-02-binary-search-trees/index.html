@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Binary Search Trees · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/4-02-binary-search-trees/">
+  <meta name="description" content="Ordered binary trees - the search-tree property, search and insert in O(height), deleting a node with zero, one or two children, minimum, maximum, floor and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Binary Search Trees · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Ordered binary trees - the search-tree property, search and insert in O(height), deleting a node with zero, one or two children, minimum, maximum, floor and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/4-02-binary-search-trees/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Binary Search Trees · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Binary Search Trees · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Ordered binary trees - the search-tree property, search and insert in O(height), deleting a node with zero, one or two children, minimum, maximum, floor and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Trees</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Binary Search Trees</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 5 in milestone 4</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Ordered binary trees - the search-tree property, search and insert in O(height), deleting a node with zero, one or two children, minimum, maximum, floor and ceiling, successors, range queries and counting, augmenting nodes with subtree sizes for rank and select, why insertion order can make the tree degenerate, and how std::set and std::map relate.</p>
+      <div class="prose">
+<h2>The search-tree property</h2>
+<p>A <strong>binary search tree</strong> (BST) is a binary tree in which, for every node, all values in its <strong>left</strong> subtree are smaller and all values in its <strong>right</strong> subtree are larger. That single rule lets you find any value by walking down one path, like binary search:</p>
+<ul>
+<li>equal: found,</li>
+<li>smaller: go left,</li>
+<li>larger: go right,</li>
+<li>fell off the tree: not there.</li>
+</ul>
+<p>Each step goes one level down, so search takes <strong>O(h)</strong>, where h is the height of the tree. Insertion walks the same path and attaches a new leaf where the search fell off.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> key;
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; left, right;
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Bst</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">bool</span> <span class="tk-f">insert</span>(<span class="tk-k">int</span> key)
+    {
+        std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;* link = &amp;root_;
+        <span class="tk-k">while</span> (*link)
+        {
+            <span class="tk-k">if</span> (key == (*link)-&gt;key) <span class="tk-k">return</span> <span class="tk-k">false</span>;           <span class="tk-c">// no duplicates</span>
+            link = key &lt; (*link)-&gt;key ? &amp;(*link)-&gt;left : &amp;(*link)-&gt;right;
+        }
+        *link = std::make_unique&lt;<span class="tk-t">Node</span>&gt;(<span class="tk-t">Node</span>{ key, <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span> });
+        <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+
+    <span class="tk-k">bool</span> <span class="tk-f">contains</span>(<span class="tk-k">int</span> key) <span class="tk-k">const</span>
+    {
+        <span class="tk-k">const</span> <span class="tk-t">Node</span>* n = root_.<span class="tk-f">get</span>();
+        <span class="tk-k">while</span> (n &amp;&amp; n-&gt;key != key) n = key &lt; n-&gt;key ? n-&gt;left.<span class="tk-f">get</span>() : n-&gt;right.<span class="tk-f">get</span>();
+        <span class="tk-k">return</span> n != <span class="tk-k">nullptr</span>;
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">inorder</span>(<span class="tk-k">const</span> <span class="tk-t">Node</span>* n, std::vector&lt;<span class="tk-k">int</span>&gt;&amp; out) <span class="tk-k">const</span>
+    {
+        <span class="tk-k">if</span> (!n) <span class="tk-k">return</span>;
+        <span class="tk-f">inorder</span>(n-&gt;left.<span class="tk-f">get</span>(), out);
+        out.<span class="tk-f">push_back</span>(n-&gt;key);
+        <span class="tk-f">inorder</span>(n-&gt;right.<span class="tk-f">get</span>(), out);
+    }
+    std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">sorted</span>() <span class="tk-k">const</span> { std::vector&lt;<span class="tk-k">int</span>&gt; out; <span class="tk-f">inorder</span>(root_.<span class="tk-f">get</span>(), out); <span class="tk-k">return</span> out; }
+
+<span class="tk-k">private</span>:
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; root_;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Bst</span> t;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> k : { <span class="tk-n">8</span>, <span class="tk-n">3</span>, <span class="tk-n">10</span>, <span class="tk-n">1</span>, <span class="tk-n">6</span>, <span class="tk-n">14</span>, <span class="tk-n">4</span>, <span class="tk-n">7</span>, <span class="tk-n">13</span> }) t.<span class="tk-f">insert</span>(k);
+    std::cout &lt;&lt; <span class="tk-s">&quot;contains 6? &quot;</span> &lt;&lt; t.<span class="tk-f">contains</span>(<span class="tk-n">6</span>) &lt;&lt; <span class="tk-s">&quot;, contains 5? &quot;</span> &lt;&lt; t.<span class="tk-f">contains</span>(<span class="tk-n">5</span>) &lt;&lt; <span class="tk-s">&quot;\nin order: &quot;</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> k : t.<span class="tk-f">sorted</span>()) std::cout &lt;&lt; k &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>The pointer-to-link trick (<code>std::unique_ptr&lt;Node&gt;* link</code>) from practice 1.04 means insertion has no special case for an empty tree: <code>link</code> starts at the root pointer itself.</p>
+<p>An <strong>in-order traversal of a BST visits the keys in sorted order</strong>. So a BST can do everything a sorted array can, and also insert and delete without shifting everything.</p>
+<h2>Deleting</h2>
+<p>Deletion has three cases, depending on how many children the node has:</p>
+<ol>
+<li><strong>No children</strong>: just remove it.</li>
+<li><strong>One child</strong>: replace the node with its child.</li>
+<li><strong>Two children</strong>: find its <strong>successor</strong>, the smallest key in its right subtree (go right once, then left as far as possible). Copy the successor&#39;s key into the node, then delete the successor from the right subtree; the successor has no left child, so that is case 1 or 2.</li>
+</ol>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">erase</span>(std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&amp; link, <span class="tk-k">int</span> key)
+{
+    <span class="tk-k">if</span> (!link) <span class="tk-k">return</span>;
+    <span class="tk-k">if</span> (key &lt; link-&gt;key) <span class="tk-f">erase</span>(link-&gt;left, key);
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (key &gt; link-&gt;key) <span class="tk-f">erase</span>(link-&gt;right, key);
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (!link-&gt;left) link = std::<span class="tk-f">move</span>(link-&gt;right);        <span class="tk-c">// cases 1 and 2</span>
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (!link-&gt;right) link = std::<span class="tk-f">move</span>(link-&gt;left);
+    <span class="tk-k">else</span>                                                         <span class="tk-c">// case 3</span>
+    {
+        <span class="tk-t">Node</span>* successor = link-&gt;right.<span class="tk-f">get</span>();
+        <span class="tk-k">while</span> (successor-&gt;left) successor = successor-&gt;left.<span class="tk-f">get</span>();
+        link-&gt;key = successor-&gt;key;
+        <span class="tk-f">erase</span>(link-&gt;right, successor-&gt;key);
+    }
+}</code></pre></div>
+<p>Note <code>link = std::move(link-&gt;right)</code>: moving a child into the very pointer that owns its parent. <code>unique_ptr</code>&#39;s move assignment releases the right child first, then deletes the old parent, so it is safe.</p>
+<h2>Order queries</h2>
+<p>Because a BST is ordered, it answers questions a hash table cannot, each in O(h):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Query</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>minimum / maximum</td>
+<td>go left (right) until you cannot</td>
+</tr>
+<tr>
+<td><strong>floor(x)</strong>: largest key ≤ x</td>
+<td>walk down; whenever a key ≤ x, remember it and go right; otherwise go left</td>
+</tr>
+<tr>
+<td><strong>ceiling(x)</strong>: smallest key ≥ x</td>
+<td>the mirror image</td>
+</tr>
+<tr>
+<td>successor of x</td>
+<td>the ceiling of x + 1, or: right once then all the way left</td>
+</tr>
+<tr>
+<td>all keys in [lo, hi]</td>
+<td>in-order traversal that skips subtrees entirely outside the range</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;optional&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> key;
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; left, right;
+};
+
+<span class="tk-k">void</span> <span class="tk-f">insert</span>(std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&amp; link, <span class="tk-k">int</span> key)
+{
+    <span class="tk-k">if</span> (!link) link = std::make_unique&lt;<span class="tk-t">Node</span>&gt;(<span class="tk-t">Node</span>{ key, <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span> });
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (key &lt; link-&gt;key) <span class="tk-f">insert</span>(link-&gt;left, key);
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (key &gt; link-&gt;key) <span class="tk-f">insert</span>(link-&gt;right, key);
+}
+
+std::optional&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">floorKey</span>(<span class="tk-k">const</span> <span class="tk-t">Node</span>* n, <span class="tk-k">int</span> x)
+{
+    std::optional&lt;<span class="tk-k">int</span>&gt; best;
+    <span class="tk-k">while</span> (n)
+    {
+        <span class="tk-k">if</span> (n-&gt;key == x) <span class="tk-k">return</span> x;
+        <span class="tk-k">if</span> (n-&gt;key &lt; x) { best = n-&gt;key; n = n-&gt;right.<span class="tk-f">get</span>(); }    <span class="tk-c">// a candidate; a closer one may be to the right</span>
+        <span class="tk-k">else</span> n = n-&gt;left.<span class="tk-f">get</span>();
+    }
+    <span class="tk-k">return</span> best;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">range</span>(<span class="tk-k">const</span> <span class="tk-t">Node</span>* n, <span class="tk-k">int</span> lo, <span class="tk-k">int</span> hi)
+{
+    <span class="tk-k">if</span> (!n) <span class="tk-k">return</span>;
+    <span class="tk-k">if</span> (lo &lt; n-&gt;key) <span class="tk-f">range</span>(n-&gt;left.<span class="tk-f">get</span>(), lo, hi);                <span class="tk-c">// the left side can only help if lo &lt; key</span>
+    <span class="tk-k">if</span> (lo &lt;= n-&gt;key &amp;&amp; n-&gt;key &lt;= hi) std::cout &lt;&lt; n-&gt;key &lt;&lt; <span class="tk-s">' '</span>;
+    <span class="tk-k">if</span> (n-&gt;key &lt; hi) <span class="tk-f">range</span>(n-&gt;right.<span class="tk-f">get</span>(), lo, hi);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::unique_ptr&lt;<span class="tk-t">Node</span>&gt; root;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> k : { <span class="tk-n">50</span>, <span class="tk-n">30</span>, <span class="tk-n">70</span>, <span class="tk-n">20</span>, <span class="tk-n">40</span>, <span class="tk-n">60</span>, <span class="tk-n">80</span>, <span class="tk-n">35</span>, <span class="tk-n">45</span> }) <span class="tk-f">insert</span>(root, k);
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : { <span class="tk-n">44</span>, <span class="tk-n">50</span>, <span class="tk-n">19</span>, <span class="tk-n">100</span> })
+    {
+        <span class="tk-k">auto</span> f = <span class="tk-f">floorKey</span>(root.<span class="tk-f">get</span>(), x);
+        std::cout &lt;&lt; <span class="tk-s">&quot;floor(&quot;</span> &lt;&lt; x &lt;&lt; <span class="tk-s">&quot;) = &quot;</span> &lt;&lt; (f ? std::<span class="tk-f">to_string</span>(*f) : <span class="tk-s">&quot;none&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+    std::cout &lt;&lt; <span class="tk-s">&quot;keys in [33, 65]: &quot;</span>;
+    <span class="tk-f">range</span>(root.<span class="tk-f">get</span>(), <span class="tk-n">33</span>, <span class="tk-n">65</span>);
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>The range query costs O(h + k), where k is the number of keys reported: it only descends into subtrees that can contain keys in the range.</p>
+<h2>Rank and select: augmenting the tree</h2>
+<p>Store in every node the <strong>size</strong> of its subtree, and keep it up to date on insert and delete (each changes the sizes along one path). Then two more questions become O(h):</p>
+<ul>
+<li><strong>rank(x)</strong>: how many keys are smaller than x? Walk down; whenever you go right past a node, add the size of its left subtree plus one.</li>
+<li><strong>select(k)</strong>: the k-th smallest key. At each node, compare k with the left subtree&#39;s size: go left, stop here, or go right with k reduced by the left size + 1.</li>
+</ul>
+<p>This is called <strong>augmenting</strong> a data structure: adding a little information to each node so it can answer new questions. The milestone project uses it.</p>
+<h2>The catch: the shape depends on the insertion order</h2>
+<p>The height h decides everything, and it depends on the order of insertions. Keys inserted in random order give an expected height of about 3 log₂ n, which is fine. But inserting keys <strong>in sorted order</strong> makes every new key the right child of the previous one: the tree degenerates into a linked list of height n − 1, and every operation becomes O(n).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;random&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> key;
+    <span class="tk-t">Node</span>* left = <span class="tk-k">nullptr</span>;
+    <span class="tk-t">Node</span>* right = <span class="tk-k">nullptr</span>;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (<span class="tk-k">bool</span> shuffled : { <span class="tk-k">false</span>, <span class="tk-k">true</span> })
+    {
+        std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">keys</span>(<span class="tk-n">2000</span>);
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">2000</span>; ++i) keys[i] = i;
+        <span class="tk-k">if</span> (shuffled) std::<span class="tk-f">shuffle</span>(keys.<span class="tk-f">begin</span>(), keys.<span class="tk-f">end</span>(), std::<span class="tk-f">mt19937</span>(<span class="tk-n">5</span>));
+
+        std::vector&lt;std::unique_ptr&lt;<span class="tk-t">Node</span>&gt;&gt; pool;                 <span class="tk-c">// owns the nodes, so no deep recursion when freeing</span>
+        <span class="tk-t">Node</span>* root = <span class="tk-k">nullptr</span>;
+        <span class="tk-k">int</span> height = -<span class="tk-n">1</span>;
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> k : keys)
+        {
+            pool.<span class="tk-f">push_back</span>(std::make_unique&lt;<span class="tk-t">Node</span>&gt;(<span class="tk-t">Node</span>{ k }));
+            <span class="tk-t">Node</span>** link = &amp;root;
+            <span class="tk-k">int</span> depth = <span class="tk-n">0</span>;
+            <span class="tk-k">while</span> (*link) { link = k &lt; (*link)-&gt;key ? &amp;(*link)-&gt;left : &amp;(*link)-&gt;right; ++depth; }
+            *link = pool.<span class="tk-f">back</span>().<span class="tk-f">get</span>();
+            height = std::<span class="tk-f">max</span>(height, depth);
+        }
+        std::cout &lt;&lt; (shuffled ? <span class="tk-s">&quot;random order: &quot;</span> : <span class="tk-s">&quot;sorted order: &quot;</span>) &lt;&lt; <span class="tk-s">&quot;height &quot;</span> &lt;&lt; height &lt;&lt; <span class="tk-s">&quot; for 2000 keys\n&quot;</span>;
+    }
+}</code></pre></div>
+<p>The fix is to <strong>rebalance</strong> the tree as it changes, keeping its height O(log n) no matter what. Lesson 4.03 does that with AVL trees. <code>std::set</code> and <code>std::map</code> are <strong>red-black trees</strong>, another self-balancing BST, so all their operations are guaranteed O(log n).</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">In a BST, where is the smallest key?</div><ul><li>At the end of the path that always goes left from the root</li><li>At the root</li><li>At the leftmost leaf of the bottom level</li><li>In the right subtree</li></ul><details><summary>Show the answer</summary><p><b>At the end of the path that always goes left from the root</b> Every left step goes to smaller keys; the node with no left child is the minimum.</p></details></li><li><div class="q">Deleting a node with two children replaces its key with...</div><ul><li>its parent&#39;s key</li><li>its left child&#39;s key</li><li>its in-order successor: the smallest key in its right subtree</li><li>the root&#39;s key</li></ul><details><summary>Show the answer</summary><p><b>its in-order successor: the smallest key in its right subtree</b> The successor fits between the left and right subtrees, and has at most one child itself.</p></details></li><li><div class="q">Keys 1, 2, 3, ..., 1000 are inserted into a plain BST in that order. What is its height?</div><ul><li>about 10</li><li>about 20</li><li>999</li><li>500</li></ul><details><summary>Show the answer</summary><p><b>999</b> Each key becomes the right child of the previous one: a linked list.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>A BST keeps smaller keys to the left and larger to the right; search, insert and delete take O(h).</li>
+<li>Deleting a node with two children swaps in its in-order successor.</li>
+<li>BSTs answer ordered queries: min, max, floor, ceiling, successor and ranges.</li>
+<li>Storing subtree sizes adds rank and select in O(h).</li>
+<li>An unbalanced BST can have height n; self-balancing trees (AVL, red-black as in <code>std::map</code>) guarantee O(log n).</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-binary-trees-and-traversals/"><span class="mono">previous</span><b>4.01 Binary Trees and Traversals</b></a>
+      <a class="lp-next" href="../4-03-avl-trees/"><span class="mono">next</span><b>4.03 AVL Trees</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/4-02-binary-search-trees"></script>
+</body>
+</html>

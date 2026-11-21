@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Interpolation · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/6-03-interpolation/">
+  <meta name="description" content="Making other players move smoothly from snapshots that arrive 20 to 60 times a second with jitter and loss - rendering a little in the past, blending between…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Interpolation · Networking · Xenon">
+  <meta property="og:description" content="Making other players move smoothly from snapshots that arrive 20 to 60 times a second with jitter and loss - rendering a little in the past, blending between…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/6-03-interpolation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Interpolation · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Interpolation · Networking · Xenon">
+  <meta name="twitter:description" content="Making other players move smoothly from snapshots that arrive 20 to 60 times a second with jitter and loss - rendering a little in the past, blending between…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Multiplayer Games</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Interpolation</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making other players move smoothly from snapshots that arrive 20 to 60 times a second with jitter and loss - rendering a little in the past, blending between the two snapshots around the render time, the size of the delay, and limited extrapolation.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>Snapshots arrive 20 to 60 times a second, unevenly (jitter), and some are lost. If a client simply placed every other player at the position from the latest snapshot, they would jump from point to point, stutter when a snapshot arrived late, and freeze when one was lost.</p>
+<h2>Render in the past</h2>
+<p>The standard answer is <strong>entity interpolation</strong>: show other entities slightly in the past, at <code>renderTime = now - delay</code>, and blend between the two snapshots on either side of that time.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>snapshots:   t=100      t=150      t=200      t=250
+                              ^ renderTime = 175
+position = snapshot150 + (snapshot200 - snapshot150) · (175 - 150) / (200 - 150)</code></pre></div>
+<p>Because the render time is behind the newest snapshot, the client usually already holds the snapshot <em>after</em> it, so it can always blend smoothly. The delay is chosen to cover the gap between snapshots plus some jitter, typically <strong>two snapshot intervals</strong>: about 100 ms at 20 snapshots a second (Counter-Strike&#39;s long-standing default), less at higher rates. If one snapshot is lost, the client blends across the wider gap and nobody notices.</p>
+<p>The cost is that other players are seen where they were about 100 ms ago, plus half the round trip. That is why the next two lessons exist: prediction for your own player, lag compensation for hitting others.</p>
+<h2>Times and buffers</h2>
+<ul>
+<li>Use the <strong>server&#39;s tick numbers</strong> (or times derived from them), not the time each snapshot happened to arrive: arrival times include jitter, which is exactly what interpolation is meant to hide.</li>
+<li>Keep a short buffer of recent snapshots per entity, sorted by time, and drop ones older than the render time needs.</li>
+<li>Ignore a snapshot older than the newest one held: it arrived out of order and adds nothing.</li>
+<li>Clients keep their idea of &quot;now in server ticks&quot; by tracking the latest snapshot tick and advancing it with their own clock, nudging it gently when snapshots arrive earlier or later than expected.</li>
+</ul>
+<h2>When snapshots stop</h2>
+<p>If the render time passes the newest snapshot (several are lost in a row), there is nothing to blend towards. Options:</p>
+<ul>
+<li><strong>Hold</strong> the last position: safe, but the entity freezes.</li>
+<li><strong>Extrapolate</strong> from the last two snapshots&#39; velocity for a short time (dead reckoning), then hold. A little extrapolation hides a short gap; a lot shows players running into walls and snapping back when the truth arrives. Limit it to about one snapshot interval.</li>
+</ul>
+<p>Interpolate other values the same way: angles (taking the short way round), animation times. Discrete values (alive or dead, which weapon) simply switch when the render time passes their snapshot.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-snapshots-and-delta-compression/"><span class="mono">previous</span><b>6.02 Snapshots and Delta Compression</b></a>
+      <a class="lp-next" href="../6-04-prediction-and-reconciliation/"><span class="mono">next</span><b>6.04 Prediction and Reconciliation</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/6-03-interpolation"></script>
+</body>
+</html>

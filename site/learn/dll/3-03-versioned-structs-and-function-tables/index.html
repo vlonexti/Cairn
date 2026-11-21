@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Versioned Structs and Function Tables · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/3-03-versioned-structs-and-function-tables/">
+  <meta name="description" content="Sometimes callers need to see a struct, such as an options block. Windows' trick is to start every such struct with its own size , so the library can tell…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Versioned Structs and Function Tables · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="Sometimes callers need to see a struct, such as an options block. Windows' trick is to start every such struct with its own size , so the library can tell…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/3-03-versioned-structs-and-function-tables/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Versioned Structs and Function Tables · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Versioned Structs and Function Tables · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="Sometimes callers need to see a struct, such as an options block. Windows' trick is to start every such struct with its own size , so the library can tell…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Stable Interfaces</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Versioned Structs and Function Tables</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 6 in milestone 3</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Sometimes callers need to see a struct, such as an options block. Windows&#39; trick is to start every such struct with its own <strong>size</strong>, so the library can tell which version the caller was built with. The same idea, applied to a struct full of function pointers, gives a <strong>function table</strong> that can grow across versions.</p>
+      <div class="prose">
+<h2>The problem with visible structs</h2>
+<p>A creation function with many options is clumsy with a long parameter list. A struct is nicer:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">typedef</span> <span class="tk-k">struct</span> xenon_world_options
+{
+    int32_t width;
+    int32_t height;
+    int32_t gravity;
+} xenon_world_options;
+
+XENON_API int32_t <span class="tk-f">xenon_world_create_ex</span>(<span class="tk-k">const</span> xenon_world_options* options, xenon_world** out);</code></pre></div>
+<p>Then version 2 needs a <code>seed</code>. Add it to the struct, and a program compiled against version 1 passes a 12-byte struct where version 2 reads 16. The <code>seed</code> comes from whatever memory follows: garbage.</p>
+<h2>Size first</h2>
+<p>The Win32 API&#39;s answer, used by hundreds of its structs (<code>cbSize</code> in <code>WNDCLASSEXW</code>, <code>dwSize</code> in many others): the <strong>first member is the size of the struct, filled in by the caller</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">typedef</span> <span class="tk-k">struct</span> xenon_world_options
+{
+    uint32_t size;      <span class="tk-c">// the caller sets this to sizeof(xenon_world_options)</span>
+    int32_t  width;     <span class="tk-c">// version 1</span>
+    int32_t  height;    <span class="tk-c">// version 1</span>
+    int32_t  gravity;   <span class="tk-c">// version 1</span>
+    uint32_t seed;      <span class="tk-c">// version 2: added at the END</span>
+} xenon_world_options;</code></pre></div>
+<p>The caller always writes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>xenon_world_options options{};
+options.size = <span class="tk-k">sizeof</span>(options);
+options.width = <span class="tk-n">64</span>;</code></pre></div>
+<p>A program compiled against version 1 sets <code>size</code> to 16; one compiled against version 2 sets 20. The library reads only the fields that fit:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>int32_t <span class="tk-f">xenon_world_create_ex</span>(<span class="tk-k">const</span> xenon_world_options* options, xenon_world** out)
+{
+    <span class="tk-k">if</span> (!options || options-&gt;size &lt; <span class="tk-f">offsetof</span>(xenon_world_options, seed)) <span class="tk-k">return</span> <span class="tk-f">fail</span>(XENON_INVALID_ARGUMENT, <span class="tk-s">&quot;options too small&quot;</span>);
+    <span class="tk-t">WorldSettings</span> s;
+    s.width   = options-&gt;width;
+    s.height  = options-&gt;height;
+    s.gravity = options-&gt;gravity;
+    <span class="tk-c">// a field is present if the struct reaches past its end</span>
+    s.seed = options-&gt;size &gt;= <span class="tk-f">offsetof</span>(xenon_world_options, seed) + <span class="tk-k">sizeof</span>(options-&gt;seed) ? options-&gt;seed : <span class="tk-n">12345u</span>;
+    ...
+}</code></pre></div>
+<p><code>offsetof(T, member)</code> is the byte position of a member, from <code>&lt;stddef.h&gt;</code>. A member is present when <code>size &gt;= offsetof(T, member) + sizeof(member)</code>.</p>
+<p>The rules that make this work:</p>
+<ul>
+<li>New members only ever go <strong>at the end</strong>.</li>
+<li>Never remove, reorder or resize a member.</li>
+<li>Every new member has a <strong>sensible default</strong> for callers who did not send it.</li>
+<li>A size <strong>bigger</strong> than the library knows (a newer program with an older DLL) is fine: read what you know, ignore the rest. Or reject it if you cannot honour fields you do not understand; decide and document.</li>
+</ul>
+<h2>Function tables</h2>
+<p>The same trick works for a whole interface. Instead of exporting thirty functions, export <strong>one</strong> that returns a table of function pointers:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">typedef</span> <span class="tk-k">struct</span> xenon_api
+{
+    uint32_t size;                                              <span class="tk-c">// of this table</span>
+    uint32_t version;                                           <span class="tk-c">// e.g. 2</span>
+    <span class="tk-f">int32_t</span> (*world_create)(xenon_world** out);
+    <span class="tk-k">void</span>    (*world_destroy)(xenon_world* world);
+    <span class="tk-f">int32_t</span> (*world_add_stone)(xenon_world*, int32_t, int32_t, int32_t);
+    <span class="tk-c">// version 2:</span>
+    <span class="tk-f">int32_t</span> (*world_save)(<span class="tk-k">const</span> xenon_world*, <span class="tk-k">const</span> <span class="tk-k">char</span>* path);
+} xenon_api;
+
+XENON_API <span class="tk-k">const</span> xenon_api* <span class="tk-f">xenon_get_api</span>(uint32_t wantedVersion);</code></pre></div>
+<p>A program asks for the version it was built for. The library returns its table if it is at least that new, or <code>NULL</code> if it is too old. The program checks <code>size</code> before touching later members. This is how Vulkan, OpenXR and many game engines expose their APIs, and it suits plugins (milestone 5): one <code>GetProcAddress</code> gets everything.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Forgetting to set size</span></div><div class="callout-body"><p>A zero size makes the library reject or misread the struct. Many APIs return an error for that; yours should too.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Inserting a new member in the middle</span></div><div class="callout-body"><p>Every member after it moves, so old programs&#39; values land in the wrong fields. Always append.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does a versioned struct start with its size?</div><ul><li>So the library can tell which members the caller&#39;s version of the struct contains</li><li>To align it in memory</li><li>Because C requires it</li></ul><details><summary>Show the answer</summary><p><b>So the library can tell which members the caller&#39;s version of the struct contains</b> Old callers send smaller sizes; the library only reads what is there.</p></details></li><li><div class="q">A struct member <code>seed</code> sits at offset 16 and is 4 bytes. The caller&#39;s size is 16. Is seed present?</div><ul><li>No; it would need a size of at least 20</li><li>Yes</li><li>Only if seed is nonzero</li></ul><details><summary>Show the answer</summary><p><b>No; it would need a size of at least 20</b> Present means size &gt;= offset + sizeof(member).</p></details></li><li><div class="q">What does a function table export instead of many functions?</div><ul><li>One function returning a versioned struct of function pointers</li><li>One DLL per function</li><li>A .def file</li></ul><details><summary>Show the answer</summary><p><b>One function returning a versioned struct of function pointers</b> The table can grow like any versioned struct.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-error-reporting-across-a-c-api/"><span class="mono">previous</span><b>3.02 Error Reporting Across a C API</b></a>
+      <a class="lp-next" href="../3-04-com-style-interfaces-with-vtables/"><span class="mono">next</span><b>3.04 COM-Style Interfaces with vtables</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/3-03-versioned-structs-and-function-tables"></script>
+</body>
+</html>

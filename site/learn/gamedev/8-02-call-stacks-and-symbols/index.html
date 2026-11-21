@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Call Stacks and Symbols · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/8-02-call-stacks-and-symbols/">
+  <meta name="description" content="A call stack turns a crash address into a story: which function, called from where, with what. Making that work needs symbols : the .pdb files that map…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Call Stacks and Symbols · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A call stack turns a crash address into a story: which function, called from where, with what. Making that work needs symbols : the .pdb files that map…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/8-02-call-stacks-and-symbols/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Call Stacks and Symbols · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Call Stacks and Symbols · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A call stack turns a crash address into a story: which function, called from where, with what. Making that work needs symbols : the .pdb files that map…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Debugging and Diagnostics</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Call Stacks and Symbols</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.02</b></span><span>2 of 8 in milestone 8</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A call stack turns a crash address into a story: which function, called from where, with what. Making that work needs <strong>symbols</strong>: the <code>.pdb</code> files that map machine code back to names and source lines. This lesson covers what is in a PDB, how debuggers find the right one, Microsoft&#39;s <strong>symbol server</strong> for Windows&#39; own DLLs, how stacks are walked without frame pointers, and how to capture a stack trace from inside your own program.</p>
+      <div class="prose">
+<h2>What symbols are</h2>
+<p>The compiler and linker throw names away: in the <code>.exe</code>, a function is just bytes at an RVA. The <strong>program database</strong> (<code>.pdb</code>) file written alongside it keeps everything a debugger needs to get the names back:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>In the PDB</th>
+<th>Lets the debugger</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Function names and their RVA ranges</td>
+<td>Name the function containing any address</td>
+</tr>
+<tr>
+<td>Line number tables</td>
+<td>Map each instruction to a source file and line</td>
+</tr>
+<tr>
+<td>Types and struct layouts</td>
+<td>Show <code>player.health</code> instead of raw bytes</td>
+</tr>
+<tr>
+<td>Local variables and where they live</td>
+<td>Fill the Locals window</td>
+</tr>
+<tr>
+<td>Frame data</td>
+<td>Help walk the stack</td>
+</tr>
+</tbody></table>
+</div>
+<p>A PDB matches <strong>exactly one build</strong>. The exe records a unique signature (a GUID and an age) and the PDB&#39;s file name in its debug directory; the debugger only loads a PDB whose signature matches. Rebuild even without changing anything, and the old PDB no longer fits. That is why you <strong>keep the PDB of every build you ship</strong>: without it, a crash report from that build can only show raw addresses.</p>
+<h2>How the debugger finds symbols</h2>
+<p>For each loaded module, the debugger searches, in order:</p>
+<ol>
+<li>The path recorded in the exe (where the PDB was written at build time).</li>
+<li>The folder the module was loaded from.</li>
+<li>The <strong>symbol path</strong>: folders and symbol servers you configure (<strong>Tools → Options → Debugging → Symbols</strong>).</li>
+</ol>
+<p>Visual Studio&#39;s <strong>Modules</strong> window shows, for every DLL and exe, whether symbols loaded and from where. &quot;Cannot find or open the PDB file&quot; there explains a call stack full of <code>game.exe!00007ff6a1235f10()</code> instead of names.</p>
+<h2>The Microsoft symbol server</h2>
+<p>Windows&#39; own DLLs have public symbols too: Microsoft publishes them on a <strong>symbol server</strong>, a web service that hands out the PDB matching each DLL&#39;s signature. Turn it on in Visual Studio (tick <strong>Microsoft Symbol Servers</strong>) or set the environment variable used by WinDbg and other tools:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>_NT_SYMBOL_PATH=srv*C:\Symbols*https://msdl.microsoft.com/download/symbols</code></pre></div>
+<p><code>srv*</code> means &quot;use a symbol server&quot;, <code>C:\Symbols</code> is a local cache, and the URL is Microsoft&#39;s server. With it, call stacks through Windows code show names like <code>ntdll.dll!RtlUserThreadStart</code> and <code>kernel32.dll!BaseThreadInitThunk</code> instead of raw addresses, which is often exactly where the interesting part of a crash is. Studios run their own symbol servers for their builds, so any crash from any shipped version can be symbolised.</p>
+<h2>Walking the stack without frame pointers</h2>
+<p>Lesson 7.05 said x64 Windows code usually does not keep a frame pointer in <code>rbp</code>. So how does a debugger find each caller? Every function&#39;s prologue is described in <strong>unwind information</strong> in the exe&#39;s <code>.pdata</code> and <code>.xdata</code> sections: &quot;this function pushed rbx and rdi, then subtracted 40 from rsp&quot;. Given the current <code>rip</code> and <code>rsp</code>, the debugger finds the function containing <code>rip</code>, applies its unwind description in reverse to recover the caller&#39;s <code>rsp</code> and the return address, and repeats. Windows uses the same data to unwind the stack when an exception is thrown.</p>
+<p>This is also why corrupt stacks look so strange: if the return address on the stack has been overwritten (lesson 7.05), the unwinder follows garbage, and the call stack ends abruptly or shows nonsense.</p>
+<h2>Capturing a stack in your own program</h2>
+<p>A crash reporter or an assert (next lesson) wants the call stack as text. C++23&#39;s <code>std::stacktrace</code> does it portably:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;stacktrace&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">deepInside</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> trace{ std::stacktrace::<span class="tk-f">current</span>() };
+    std::cout &lt;&lt; <span class="tk-s">&quot;captured &quot;</span> &lt;&lt; (trace.<span class="tk-f">size</span>() &gt;= <span class="tk-n">2</span> ? <span class="tk-s">&quot;a stack with several frames&quot;</span> : <span class="tk-s">&quot;almost nothing&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-c">// std::cout &lt;&lt; trace;   // prints each frame: function, file and line, when symbols are available</span>
+}
+
+<span class="tk-k">void</span> <span class="tk-f">middle</span>() { <span class="tk-f">deepInside</span>(); }
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-f">middle</span>();
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>captured a stack with several frames</code></pre></div>
+<p>Printing the whole trace (the commented line) gives function names and source lines when the PDB is next to the exe. On Windows the lower-level tools are <code>CaptureStackBackTrace</code> (just the return addresses) and the DbgHelp library (<code>SymFromAddr</code>, <code>SymGetLineFromAddr64</code>) to turn them into names. Without symbols, store the addresses as module + RVA (lesson 6.09) and symbolise them later on a machine that has the PDB.</p>
+<h2>Reading a call stack</h2>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>game.exe!Inventory::totalWeight() Line 42
+game.exe!Hud::drawWeight(const Player &amp; player) Line 118
+game.exe!Hud::draw(const World &amp; world) Line 87
+game.exe!Game::render() Line 210
+game.exe!wWinMain(...) Line 35
+kernel32.dll!BaseThreadInitThunk()
+ntdll.dll!RtlUserThreadStart()</code></pre></div>
+<p>Read from the top: the crash is in <code>totalWeight</code> at line 42; it was called by <code>drawWeight</code>, which was called by <code>draw</code>, and so on down to the thread&#39;s start in Windows. Double-click any frame to see its variables (lesson 4.07). The bug is often not in the top frame, but in a caller that passed it something bad.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Not keeping the PDBs of shipped builds</span></div><div class="callout-body"><p>A crash report from players is then just numbers. Archive every released build&#39;s PDB, or run a symbol server.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>A PDB from a different build</span></div><div class="callout-body"><p>It will not load, even if the code looks the same. Rebuild and keep exe and PDB together.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Shipping PDBs to players</span></div><div class="callout-body"><p>Private PDBs contain your full source structure. Ship none, or stripped public ones (<code>/PDBSTRIPPED</code>), and keep the full ones yourself.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does a call stack show <code>game.exe!00007ff6a1235f10()</code> instead of a function name?</div><ul><li>The debugger could not load a matching PDB for game.exe</li><li>The function has no name</li><li>The program was built in Release</li></ul><details><summary>Show the answer</summary><p><b>The debugger could not load a matching PDB for game.exe</b> Without symbols, only addresses are known. Check the Modules window.</p></details></li><li><div class="q">How does the debugger know a PDB belongs to a particular exe?</div><ul><li>The exe records a signature (GUID and age) that the PDB must match exactly</li><li>By the file name only</li><li>By the date</li></ul><details><summary>Show the answer</summary><p><b>The exe records a signature (GUID and age) that the PDB must match exactly</b> Each build gets a new signature, so only that build&#39;s PDB fits.</p></details></li><li><div class="q">How can a debugger walk an x64 stack when functions do not use a frame pointer?</div><ul><li>Using the unwind information in <code>.pdata</code>/<code>.xdata</code> that describes each function&#39;s prologue</li><li>It guesses from the stack contents</li><li>It cannot</li></ul><details><summary>Show the answer</summary><p><b>Using the unwind information in <code>.pdata</code>/<code>.xdata</code> that describes each function&#39;s prologue</b> The same data drives exception unwinding.</p></details></li><li><div class="q">What does <code>srv*C:\Symbols*https://msdl.microsoft.com/download/symbols</code> in a symbol path do?</div><ul><li>Downloads matching symbols for Windows DLLs from Microsoft&#39;s server and caches them in C:\Symbols</li><li>Uploads your symbols to Microsoft</li><li>Disables symbols</li></ul><details><summary>Show the answer</summary><p><b>Downloads matching symbols for Windows DLLs from Microsoft&#39;s server and caches them in C:\Symbols</b> Public symbols turn Windows frames into names.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/8.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/8.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-01-thinking-like-a-debugger/"><span class="mono">previous</span><b>8.01 Thinking Like a Debugger</b></a>
+      <a class="lp-next" href="../8-03-asserts-and-logging-that-help/"><span class="mono">next</span><b>8.03 Asserts and Logging That Help</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/8-02-call-stacks-and-symbols"></script>
+</body>
+</html>

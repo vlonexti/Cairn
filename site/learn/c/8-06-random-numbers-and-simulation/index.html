@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Random Numbers and Simulation · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/8-06-random-numbers-and-simulation/">
+  <meta name="description" content="Making and using random numbers in C - rand and srand and their limits, the modulo bias in rand() % n and how to avoid it, writing a small fast generator…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Random Numbers and Simulation · C · Xenon">
+  <meta property="og:description" content="Making and using random numbers in C - rand and srand and their limits, the modulo bias in rand() % n and how to avoid it, writing a small fast generator…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/8-06-random-numbers-and-simulation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Random Numbers and Simulation · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Random Numbers and Simulation · C · Xenon">
+  <meta name="twitter:description" content="Making and using random numbers in C - rand and srand and their limits, the modulo bias in rand() % n and how to avoid it, writing a small fast generator…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Random Numbers and Simulation</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.06</b></span><span>6 of 6 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Making and using random numbers in C - rand and srand and their limits, the modulo bias in rand() % n and how to avoid it, writing a small fast generator such as xorshift or a PCG-style one, seeding for repeatable tests, shuffling fairly with Fisher-Yates, random doubles, and a Monte Carlo simulation.</p>
+      <div class="prose">
+<h2>rand and srand</h2>
+<p>The standard library&#39;s generator:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">srand</span>(<span class="tk-n">42</span>);                         <span class="tk-c">/* the seed: same seed, same sequence */</span>
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">5</span>; i++) <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d &quot;</span>, <span class="tk-f">rand</span>() % <span class="tk-n">6</span> + <span class="tk-n">1</span>);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;\nRAND_MAX = %d\n&quot;</span>, RAND_MAX &gt; <span class="tk-n">32766</span> ? RAND_MAX : <span class="tk-n">32767</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<ul>
+<li><code>rand()</code> returns a number from 0 to <code>RAND_MAX</code>, which may be as small as 32767 (it is on Windows).</li>
+<li><code>srand(seed)</code> starts the sequence. The same seed always gives the same numbers, which is useful for tests and replays; <code>srand((unsigned)time(NULL))</code> gives a different run each second.</li>
+<li>The quality and the algorithm differ between systems, so the same seed gives different numbers on Linux and Windows.</li>
+</ul>
+<p>Never use <code>rand</code> for anything secret (passwords, tokens, keys): it is predictable. Use the operating system&#39;s generator (<code>getrandom</code>, <code>BCryptGenRandom</code>) for that.</p>
+<h2>The modulo bias</h2>
+<p><code>rand() % 6</code> is not quite fair. If <code>RAND_MAX + 1</code> is not a multiple of 6, some results come up slightly more often. With <code>RAND_MAX = 32767</code>, the values 0 and 1 appear 5462 times out of 32768 and the others 5461. For dice that hardly matters; for large ranges it matters a lot (<code>rand() % 30000</code> makes small numbers twice as likely).</p>
+<p>The cure is <strong>rejection</strong>: throw away the few values at the top that would make the last &quot;round&quot; incomplete:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-c">/* A fair number from 0 to n - 1, for 1 &lt;= n &lt;= RAND_MAX + 1. */</span>
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">random_below</span>(<span class="tk-k">int</span> n)
+{
+    <span class="tk-k">int</span> limit = RAND_MAX - (RAND_MAX % n + <span class="tk-n">1</span>) % n;   <span class="tk-c">/* the largest r that keeps whole rounds */</span>
+    <span class="tk-k">int</span> r;
+    <span class="tk-k">do</span> {
+        r = <span class="tk-f">rand</span>();
+    } <span class="tk-k">while</span> (r &gt; limit);
+    <span class="tk-k">return</span> r % n;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">srand</span>(<span class="tk-n">1</span>);
+    <span class="tk-k">int</span> counts[<span class="tk-n">3</span>] = {<span class="tk-n">0</span>};
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">30000</span>; i++) counts[<span class="tk-f">random_below</span>(<span class="tk-n">3</span>)]++;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d %d %d\n&quot;</span>, counts[<span class="tk-n">0</span>] &gt; <span class="tk-n">9500</span>, counts[<span class="tk-n">1</span>] &gt; <span class="tk-n">9500</span>, counts[<span class="tk-n">2</span>] &gt; <span class="tk-n">9500</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<h2>A generator of your own</h2>
+<p>For simulations and games, a small generator with known behaviour on every system is often better. <strong>xorshift</strong> is a few lines:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;inttypes.h&gt;</span>
+<span class="tk-p">#include &lt;stdint.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> { uint64_t s; } <span class="tk-t">Rng</span>;
+
+<span class="tk-k">static</span> uint64_t <span class="tk-f">rng_next</span>(<span class="tk-t">Rng</span> *r)
+{
+    uint64_t x = r-&gt;s;        <span class="tk-c">/* must never be 0 */</span>
+    x ^= x &lt;&lt; <span class="tk-n">13</span>;
+    x ^= x &gt;&gt; <span class="tk-n">7</span>;
+    x ^= x &lt;&lt; <span class="tk-n">17</span>;
+    <span class="tk-k">return</span> r-&gt;s = x;
+}
+
+<span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">rng_double</span>(<span class="tk-t">Rng</span> *r)              <span class="tk-c">/* 0 &lt;= result &lt; 1 */</span>
+{
+    <span class="tk-k">return</span> (<span class="tk-k">double</span>)(<span class="tk-f">rng_next</span>(r) &gt;&gt; <span class="tk-n">11</span>) * (<span class="tk-n">1.0</span> / <span class="tk-n">9007199254740992.0</span>);   <span class="tk-c">/* 53 random bits / 2^53 */</span>
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-t">Rng</span> r = {<span class="tk-n">88172645463325252ULL</span>};
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">3</span>; i++) <span class="tk-f">printf</span>(<span class="tk-s">&quot;%&quot;</span> PRIu64 <span class="tk-s">&quot;\n&quot;</span>, <span class="tk-f">rng_next</span>(&amp;r) % <span class="tk-n">100</span>);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%.3f\n&quot;</span>, <span class="tk-f">rng_double</span>(&amp;r));
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Keeping the state in a struct (not a global) lets different parts of a program have their own streams, and makes the code thread-safe. The same seed gives the same numbers on every computer, so a game can replay a level exactly.</p>
+<h2>Shuffling fairly: Fisher-Yates</h2>
+<p>To shuffle an array so every order is equally likely, go from the end, swapping each element with a random one at or before it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdint.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> { uint64_t s; } <span class="tk-t">Rng</span>;
+<span class="tk-k">static</span> uint64_t <span class="tk-f">rng_next</span>(<span class="tk-t">Rng</span> *r) { uint64_t x = r-&gt;s; x ^= x &lt;&lt; <span class="tk-n">13</span>; x ^= x &gt;&gt; <span class="tk-n">7</span>; x ^= x &lt;&lt; <span class="tk-n">17</span>; <span class="tk-k">return</span> r-&gt;s = x; }
+
+<span class="tk-k">static</span> uint64_t <span class="tk-f">rng_below</span>(<span class="tk-t">Rng</span> *r, uint64_t n)     <span class="tk-c">/* fair, by rejection */</span>
+{
+    uint64_t limit = UINT64_MAX - UINT64_MAX % n;
+    uint64_t x;
+    <span class="tk-k">do</span> x = <span class="tk-f">rng_next</span>(r); <span class="tk-k">while</span> (x &gt;= limit);
+    <span class="tk-k">return</span> x % n;
+}
+
+<span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">shuffle</span>(<span class="tk-k">int</span> *a, size_t n, <span class="tk-t">Rng</span> *r)
+{
+    <span class="tk-k">for</span> (size_t i = n; i &gt; <span class="tk-n">1</span>; i--) {
+        size_t j = (size_t)<span class="tk-f">rng_below</span>(r, i);   <span class="tk-c">/* 0 .. i - 1 */</span>
+        <span class="tk-k">int</span> t = a[i - <span class="tk-n">1</span>];
+        a[i - <span class="tk-n">1</span>] = a[j];
+        a[j] = t;
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-t">Rng</span> r = {<span class="tk-n">12345</span>};
+    <span class="tk-k">int</span> deck[<span class="tk-n">10</span>] = {<span class="tk-n">0</span>, <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>, <span class="tk-n">6</span>, <span class="tk-n">7</span>, <span class="tk-n">8</span>, <span class="tk-n">9</span>};
+    <span class="tk-f">shuffle</span>(deck, <span class="tk-n">10</span>, &amp;r);
+    <span class="tk-k">int</span> sum = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">10</span>; i++) sum += deck[i];
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;still all ten cards: %s\n&quot;</span>, sum == <span class="tk-n">45</span> ? <span class="tk-s">&quot;yes&quot;</span> : <span class="tk-s">&quot;no&quot;</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The common mistake is to swap each element with <strong>any</strong> position (<code>rng_below(r, n)</code> every time): that gives some orders more often than others.</p>
+<h2>Monte Carlo: answers from randomness</h2>
+<p>Some quantities are easiest to estimate by trying many random cases. The share of random points in a square that land inside the quarter circle is π/4:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdint.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> { uint64_t s; } <span class="tk-t">Rng</span>;
+<span class="tk-k">static</span> uint64_t <span class="tk-f">rng_next</span>(<span class="tk-t">Rng</span> *r) { uint64_t x = r-&gt;s; x ^= x &lt;&lt; <span class="tk-n">13</span>; x ^= x &gt;&gt; <span class="tk-n">7</span>; x ^= x &lt;&lt; <span class="tk-n">17</span>; <span class="tk-k">return</span> r-&gt;s = x; }
+<span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">rng_double</span>(<span class="tk-t">Rng</span> *r) { <span class="tk-k">return</span> (<span class="tk-k">double</span>)(<span class="tk-f">rng_next</span>(r) &gt;&gt; <span class="tk-n">11</span>) * (<span class="tk-n">1.0</span> / <span class="tk-n">9007199254740992.0</span>); }
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-t">Rng</span> r = {<span class="tk-n">2026</span>};
+    <span class="tk-k">long</span> inside = <span class="tk-n">0</span>, n = <span class="tk-n">2000000</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">long</span> i = <span class="tk-n">0</span>; i &lt; n; i++) {
+        <span class="tk-k">double</span> x = <span class="tk-f">rng_double</span>(&amp;r), y = <span class="tk-f">rng_double</span>(&amp;r);
+        <span class="tk-k">if</span> (x * x + y * y &lt; <span class="tk-n">1.0</span>) inside++;
+    }
+    <span class="tk-k">double</span> pi = <span class="tk-n">4.0</span> * inside / n;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;pi is about %.2f\n&quot;</span>, pi);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The error shrinks with the square root of the number of samples: 100 times more samples give about 10 times more accuracy. Simulations of games, queues and physics use the same idea.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/8.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/8.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-05-safe-integer-arithmetic/"><span class="mono">previous</span><b>8.05 Safe Integer Arithmetic</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/8-06-random-numbers-and-simulation"></script>
+</body>
+</html>

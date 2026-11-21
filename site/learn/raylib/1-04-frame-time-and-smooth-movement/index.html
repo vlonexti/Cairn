@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Frame Time and Smooth Movement · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/1-04-frame-time-and-smooth-movement/">
+  <meta name="description" content="Moving &quot;4 pixels a frame&quot; runs twice as fast on a 120 Hz screen. This lesson moves things in units per second using the frame time, adds velocity and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Frame Time and Smooth Movement · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="Moving &quot;4 pixels a frame&quot; runs twice as fast on a 120 Hz screen. This lesson moves things in units per second using the frame time, adds velocity and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/1-04-frame-time-and-smooth-movement/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Frame Time and Smooth Movement · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Frame Time and Smooth Movement · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="Moving &quot;4 pixels a frame&quot; runs twice as fast on a 120 Hz screen. This lesson moves things in units per second using the frame time, adds velocity and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>The Game Loop</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Frame Time and Smooth Movement</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Moving &quot;4 pixels a frame&quot; runs twice as fast on a 120 Hz screen. This lesson moves things in units per second using the frame time, adds velocity and acceleration, normalises diagonal movement, and keeps big frame-time spikes from breaking the game.</p>
+      <div class="prose">
+<h2>Pixels per frame is a trap</h2>
+<p>In lesson 1.02 the square moved 4 pixels a frame. With <code>SetTargetFPS(60)</code> that is 240 pixels a second, but on a slow computer at 30 frames a second it is 120, and with the frame rate unlocked on a fast one it could be 1000. The game&#39;s speed depends on the computer.</p>
+<p>The fix is to measure time. <code>GetFrameTime()</code> returns the seconds the last frame took (about 0.0167 at 60 FPS), often called <strong>dt</strong> (delta time). Movement becomes <strong>units per second × dt</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">float</span> speed = <span class="tk-n">240.0f</span>;                 <span class="tk-c">// pixels per second</span>
+<span class="tk-k">const</span> <span class="tk-k">float</span> dt = <span class="tk-f">GetFrameTime</span>();
+<span class="tk-k">if</span> (<span class="tk-f">IsKeyDown</span>(KEY_RIGHT)) x += speed * dt;</code></pre></div>
+<p>Now the square moves 240 pixels a second at any frame rate: smaller steps when frames are short, bigger when they are long.</p>
+<h2>Velocity and acceleration</h2>
+<p>Real movement has <strong>velocity</strong> (how fast, in pixels per second) and <strong>acceleration</strong> (how fast the velocity changes):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Body</span> { <span class="tk-t">Vector2</span> pos; <span class="tk-t">Vector2</span> vel; };
+
+<span class="tk-k">void</span> <span class="tk-f">step</span>(<span class="tk-t">Body</span>&amp; b, <span class="tk-t">Vector2</span> accel, <span class="tk-k">float</span> dt)
+{
+    b.vel.x += accel.x * dt;    b.vel.y += accel.y * dt;
+    b.pos.x += b.vel.x * dt;    b.pos.y += b.vel.y * dt;
+}</code></pre></div>
+<p>This is <strong>semi-implicit Euler</strong> integration: change the velocity first, then move with the new velocity. It is simple and stable enough for almost every game. A car that speeds up while you hold a key, a ship that drifts, and a falling ball all come from these two lines.</p>
+<p><strong>Friction</strong> or <strong>drag</strong> slows things down. A simple version multiplies the velocity by a factor each second: <code>vel *= pow(0.1f, dt)</code> keeps 10 % of the speed per second regardless of the frame rate. Multiplying by a fixed <code>0.9f</code> every frame would again depend on the frame rate.</p>
+<h2>Diagonals are too fast</h2>
+<p>Holding right and down adds speed on both axes: the length of <code>(1, 1)</code> is 1.41, so diagonal movement is 41 % faster. <strong>Normalise</strong> the input direction to length 1 before scaling it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Vector2</span> dir{ <span class="tk-n">0</span>, <span class="tk-n">0</span> };
+<span class="tk-k">if</span> (<span class="tk-f">IsKeyDown</span>(KEY_D)) dir.x += <span class="tk-n">1</span>;
+<span class="tk-k">if</span> (<span class="tk-f">IsKeyDown</span>(KEY_A)) dir.x -= <span class="tk-n">1</span>;
+<span class="tk-k">if</span> (<span class="tk-f">IsKeyDown</span>(KEY_S)) dir.y += <span class="tk-n">1</span>;
+<span class="tk-k">if</span> (<span class="tk-f">IsKeyDown</span>(KEY_W)) dir.y -= <span class="tk-n">1</span>;
+<span class="tk-k">const</span> <span class="tk-k">float</span> len = std::<span class="tk-f">sqrt</span>(dir.x * dir.x + dir.y * dir.y);
+<span class="tk-k">if</span> (len &gt; <span class="tk-n">0</span>) { dir.x /= len; dir.y /= len; }
+pos.x += dir.x * speed * dt;  pos.y += dir.y * speed * dt;</code></pre></div>
+<p>raylib&#39;s <code>raymath.h</code> has <code>Vector2Normalize</code>, <code>Vector2Scale</code>, <code>Vector2Add</code> and many more for exactly this.</p>
+<h2>Spikes</h2>
+<p>When you drag the window or the program pauses in the debugger, the next frame time can be a whole second. Objects then jump through walls. <strong>Clamp</strong> dt to a sensible maximum, such as 1/20 s: the game slows down briefly instead of breaking.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">float</span> dt = std::<span class="tk-f">min</span>(<span class="tk-f">GetFrameTime</span>(), <span class="tk-n">0.05f</span>);</code></pre></div>
+<p>Milestone 3 goes further with <strong>fixed time steps</strong>, which make physics behave the same at every frame rate.</p>
+<h2>Timers</h2>
+<p>Many game rules are timers: a power-up lasting 5 seconds, a shot every 0.25 s. Keep a float that counts down by dt:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>cooldown -= dt;
+<span class="tk-k">if</span> (<span class="tk-f">IsKeyDown</span>(KEY_SPACE) &amp;&amp; cooldown &lt;= <span class="tk-n">0</span>) { <span class="tk-f">shoot</span>(); cooldown += <span class="tk-n">0.25f</span>; }
+<span class="tk-k">if</span> (cooldown &lt; <span class="tk-n">0</span>) cooldown = <span class="tk-n">0</span>;</code></pre></div>
+<p>Adding the period back (<code>+= 0.25f</code>) instead of setting it keeps the average rate exact even when frames do not divide the period evenly.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-coordinates-shapes-and-colours/"><span class="mono">previous</span><b>1.03 Coordinates, Shapes and Colours</b></a>
+      <a class="lp-next" href="../1-05-keyboard-mouse-and-gamepad-input/"><span class="mono">next</span><b>1.05 Keyboard, Mouse and Gamepad Input</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/1-04-frame-time-and-smooth-movement"></script>
+</body>
+</html>

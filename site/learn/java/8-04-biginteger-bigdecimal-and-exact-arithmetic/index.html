@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>BigInteger, BigDecimal and Exact Arithmetic · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/8-04-biginteger-bigdecimal-and-exact-arithmetic/">
+  <meta name="description" content="When int, long and double are not enough - silent overflow and the Math.addExact family that refuses it, BigInteger for whole numbers of any size, why 0.1 +…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="BigInteger, BigDecimal and Exact Arithmetic · Java · Xenon">
+  <meta property="og:description" content="When int, long and double are not enough - silent overflow and the Math.addExact family that refuses it, BigInteger for whole numbers of any size, why 0.1 +…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/8-04-biginteger-bigdecimal-and-exact-arithmetic/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="BigInteger, BigDecimal and Exact Arithmetic · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BigInteger, BigDecimal and Exact Arithmetic · Java · Xenon">
+  <meta name="twitter:description" content="When int, long and double are not enough - silent overflow and the Math.addExact family that refuses it, BigInteger for whole numbers of any size, why 0.1 +…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Java in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">BigInteger, BigDecimal and Exact Arithmetic</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.04</b></span><span>4 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">When int, long and double are not enough - silent overflow and the Math.addExact family that refuses it, BigInteger for whole numbers of any size, why 0.1 + 0.2 is not 0.3 in double, BigDecimal for exact decimal money with scale and RoundingMode, comparing with compareTo, and choosing the right type.</p>
+      <div class="prose">
+<h2>Overflow is silent</h2>
+<p><code>int</code> holds values up to 2,147,483,647. One more wraps around to the most negative number, with no error:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> big = <span class="tk-t">Integer</span>.MAX_VALUE;
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(big + <span class="tk-n">1</span>);                 <span class="tk-c">// -2147483648</span>
+        <span class="tk-k">long</span> ms = <span class="tk-n">30L</span> * <span class="tk-n">24</span> * <span class="tk-n">60</span> * <span class="tk-n">60</span> * <span class="tk-n">1000</span>;          <span class="tk-c">// 30 days in milliseconds: needs long</span>
+        <span class="tk-k">int</span> wrong = <span class="tk-n">30</span> * <span class="tk-n">24</span> * <span class="tk-n">60</span> * <span class="tk-n">60</span> * <span class="tk-n">1000</span>;         <span class="tk-c">// computed in int: wrapped</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(ms + <span class="tk-s">&quot; &quot;</span> + wrong);
+    }
+}</code></pre></div>
+<p>The <code>L</code> on the first number makes the whole expression <code>long</code>. Without it, the multiplication happens in <code>int</code> and wraps before being stored.</p>
+<h2>Arithmetic that refuses to overflow</h2>
+<p><code>Math.addExact</code>, <code>subtractExact</code>, <code>multiplyExact</code>, <code>incrementExact</code>, <code>negateExact</code> and <code>toIntExact</code> throw <code>ArithmeticException</code> instead of wrapping:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">multiplyExact</span>(<span class="tk-n">1_000_000</span>, <span class="tk-n">1_000</span>));
+        <span class="tk-k">try</span> {
+            <span class="tk-t">Math</span>.<span class="tk-f">multiplyExact</span>(<span class="tk-n">1_000_000</span>, <span class="tk-n">1_000_000</span>);
+        } <span class="tk-k">catch</span> (<span class="tk-t">ArithmeticException</span> e) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;refused: &quot;</span> + e.<span class="tk-f">getMessage</span>());
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">toIntExact</span>(<span class="tk-n">42L</span>));
+    }
+}</code></pre></div>
+<p>Use them wherever an overflow would be a bug: sizes, money in cents, counters that must not wrap.</p>
+<h2>BigInteger: whole numbers of any size</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.math.<span class="tk-t">BigInteger</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">BigInteger</span> f = <span class="tk-t">BigInteger</span>.ONE;
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">2</span>; i &lt;= <span class="tk-n">30</span>; i++) f = f.<span class="tk-f">multiply</span>(<span class="tk-t">BigInteger</span>.<span class="tk-f">valueOf</span>(i));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;30! = &quot;</span> + f);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(f.<span class="tk-f">bitLength</span>() + <span class="tk-s">&quot; bits, &quot;</span> + f.<span class="tk-f">toString</span>().<span class="tk-f">length</span>() + <span class="tk-s">&quot; digits&quot;</span>);
+
+        <span class="tk-t">BigInteger</span> a = <span class="tk-k">new</span> <span class="tk-f">BigInteger</span>(<span class="tk-s">&quot;123456789012345678901234567890&quot;</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a.<span class="tk-f">add</span>(<span class="tk-t">BigInteger</span>.TEN).<span class="tk-f">mod</span>(<span class="tk-t">BigInteger</span>.<span class="tk-f">valueOf</span>(<span class="tk-n">97</span>)));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">BigInteger</span>.TWO.<span class="tk-f">pow</span>(<span class="tk-n">100</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">BigInteger</span>.<span class="tk-f">valueOf</span>(<span class="tk-n">97</span>).<span class="tk-f">isProbablePrime</span>(<span class="tk-n">20</span>));
+    }
+}</code></pre></div>
+<p><code>BigInteger</code> objects never change: every operation returns a new one, so always use the result (<code>f = f.multiply(...)</code>). They are slower than <code>long</code>, so use them only when values can really be that large (cryptography, exact combinatorics, IDs from other systems).</p>
+<h2>The trouble with double</h2>
+<p><code>double</code> stores numbers in binary, and most decimal fractions have no exact binary form, just as 1/3 has no exact decimal form:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-n">0.1</span> + <span class="tk-n">0.2</span>);                      <span class="tk-c">// 0.30000000000000004</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-n">0.1</span> + <span class="tk-n">0.2</span> == <span class="tk-n">0.3</span>);               <span class="tk-c">// false</span>
+        <span class="tk-k">double</span> total = <span class="tk-n">0</span>;
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">10</span>; i++) total += <span class="tk-n">0.1</span>;
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(total);                          <span class="tk-c">// 0.9999999999999999</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Math</span>.<span class="tk-f">abs</span>(total - <span class="tk-n">1.0</span>) &lt; <span class="tk-n">1e-9</span>);    <span class="tk-c">// compare with a tolerance instead</span>
+    }
+}</code></pre></div>
+<p>For measurements and science, <code>double</code> is right and the tiny errors do not matter. For <strong>money</strong>, they do: a bank cannot lose a penny in a sum.</p>
+<h2>BigDecimal: exact decimals</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.math.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">BigDecimal</span> a = <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;0.1&quot;</span>);
+        <span class="tk-t">BigDecimal</span> b = <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;0.2&quot;</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a.<span class="tk-f">add</span>(b));                                   <span class="tk-c">// 0.3 exactly</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-n">0.1</span>));                        <span class="tk-c">// the double's real value: not what you want</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">BigDecimal</span>.<span class="tk-f">valueOf</span>(<span class="tk-n">0.1</span>));                    <span class="tk-c">// goes through the double's text: 0.1</span>
+
+        <span class="tk-t">BigDecimal</span> price = <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;19.99&quot;</span>);
+        <span class="tk-t">BigDecimal</span> qty = <span class="tk-t">BigDecimal</span>.<span class="tk-f">valueOf</span>(<span class="tk-n">3</span>);
+        <span class="tk-t">BigDecimal</span> vat = <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;0.20&quot;</span>);
+        <span class="tk-t">BigDecimal</span> net = price.<span class="tk-f">multiply</span>(qty);
+        <span class="tk-t">BigDecimal</span> gross = net.<span class="tk-f">add</span>(net.<span class="tk-f">multiply</span>(vat)).<span class="tk-f">setScale</span>(<span class="tk-n">2</span>, <span class="tk-t">RoundingMode</span>.HALF_UP);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(net + <span class="tk-s">&quot; + VAT = &quot;</span> + gross);
+    }
+}</code></pre></div>
+<p>Always create <code>BigDecimal</code> from a <strong>string</strong> (or <code>valueOf</code>), never with <code>new BigDecimal(double)</code>, which copies the double&#39;s binary error.</p>
+<h2>Scale and rounding</h2>
+<p>A <code>BigDecimal</code> is a whole number and a <strong>scale</strong> (how many digits after the point): <code>19.99</code> is 1999 with scale 2. Division can produce endless digits, so you must say how to round:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.math.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">BigDecimal</span> ten = <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;10.00&quot;</span>);
+        <span class="tk-k">try</span> {
+            ten.<span class="tk-f">divide</span>(<span class="tk-t">BigDecimal</span>.<span class="tk-f">valueOf</span>(<span class="tk-n">3</span>));
+        } <span class="tk-k">catch</span> (<span class="tk-t">ArithmeticException</span> e) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;needs rounding: &quot;</span> + e.<span class="tk-f">getMessage</span>());
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(ten.<span class="tk-f">divide</span>(<span class="tk-t">BigDecimal</span>.<span class="tk-f">valueOf</span>(<span class="tk-n">3</span>), <span class="tk-n">2</span>, <span class="tk-t">RoundingMode</span>.HALF_UP));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;2.5&quot;</span>).<span class="tk-f">setScale</span>(<span class="tk-n">0</span>, <span class="tk-t">RoundingMode</span>.HALF_UP) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;2.5&quot;</span>).<span class="tk-f">setScale</span>(<span class="tk-n">0</span>, <span class="tk-t">RoundingMode</span>.HALF_EVEN));
+    }
+}</code></pre></div>
+<p><code>HALF_UP</code> is school rounding; <code>HALF_EVEN</code> (banker&#39;s rounding) rounds halves to the even neighbour, which avoids a bias when adding many rounded values.</p>
+<h2>Comparing BigDecimal</h2>
+<p><code>equals</code> compares the scale too, so <code>2.0</code> and <code>2.00</code> are not equal. Compare values with <code>compareTo</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.math.<span class="tk-t">BigDecimal</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">BigDecimal</span> a = <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;2.0&quot;</span>), b = <span class="tk-k">new</span> <span class="tk-f">BigDecimal</span>(<span class="tk-s">&quot;2.00&quot;</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a.<span class="tk-f">equals</span>(b) + <span class="tk-s">&quot; &quot;</span> + (a.<span class="tk-f">compareTo</span>(b) == <span class="tk-n">0</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a.<span class="tk-f">stripTrailingZeros</span>().<span class="tk-f">equals</span>(b.<span class="tk-f">stripTrailingZeros</span>()));
+    }
+}</code></pre></div>
+<p>This also means <code>BigDecimal</code> values make poor <code>HashMap</code> keys unless you normalise them first.</p>
+<h2>Choosing</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>need</th>
+<th>type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>counts, indexes, ids</td>
+<td><code>int</code>, <code>long</code> (with <code>Math.*Exact</code> where overflow is a bug)</td>
+</tr>
+<tr>
+<td>measurements, physics, graphics</td>
+<td><code>double</code></td>
+</tr>
+<tr>
+<td>money, prices, tax</td>
+<td><code>BigDecimal</code>, or <code>long</code> cents</td>
+</tr>
+<tr>
+<td>whole numbers beyond <code>long</code></td>
+<td><code>BigInteger</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/8.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/8.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-03-collectors-in-depth/"><span class="mono">previous</span><b>8.03 Collectors in Depth</b></a>
+      <a class="lp-next" href="../8-05-formatting-locales-and-text/"><span class="mono">next</span><b>8.05 Formatting, Locales and Text</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/8-04-biginteger-bigdecimal-and-exact-arithmetic"></script>
+</body>
+</html>

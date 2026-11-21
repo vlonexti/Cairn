@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Memory from the Kernel · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/8-04-memory-from-the-kernel/">
+  <meta name="description" content="Getting memory at run time without a C library - the mmap system call with anonymous private pages, its six arguments and the flags that matter, errors as…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Memory from the Kernel · Assembly · Xenon">
+  <meta property="og:description" content="Getting memory at run time without a C library - the mmap system call with anonymous private pages, its six arguments and the flags that matter, errors as…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/8-04-memory-from-the-kernel/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Memory from the Kernel · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Memory from the Kernel · Assembly · Xenon">
+  <meta name="twitter:description" content="Getting memory at run time without a C library - the mmap system call with anonymous private pages, its six arguments and the flags that matter, errors as…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Assembly in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Memory from the Kernel</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.04</b></span><span>4 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Getting memory at run time without a C library - the mmap system call with anonymous private pages, its six arguments and the flags that matter, errors as negative return values, munmap to give memory back, page sizes and rounding, the older brk call, and a bump allocator built on one mmap.</p>
+      <div class="prose">
+<h2>Where does malloc get memory?</h2>
+<p>The <code>.bss</code> section gives a fixed amount of memory decided when the program is assembled. To get more while the program runs, a program asks the kernel. C&#39;s <code>malloc</code> does exactly that underneath, with the system calls this lesson uses directly.</p>
+<h2>mmap</h2>
+<p><code>mmap</code> (system call 9 on Linux x86-64) maps memory into the program&#39;s address space. For plain memory, ask for <strong>anonymous</strong> (not backed by a file), <strong>private</strong> pages:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>register</th>
+<th>meaning</th>
+<th>value here</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rdi</code></td>
+<td>where (0 lets the kernel choose)</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>rsi</code></td>
+<td>how many bytes</td>
+<td>the size</td>
+</tr>
+<tr>
+<td><code>rdx</code></td>
+<td>protection</td>
+<td>`PROT_READ</td>
+</tr>
+<tr>
+<td><code>r10</code></td>
+<td>flags</td>
+<td>`MAP_PRIVATE</td>
+</tr>
+<tr>
+<td><code>r8</code></td>
+<td>file descriptor</td>
+<td>-1 (no file)</td>
+</tr>
+<tr>
+<td><code>r9</code></td>
+<td>offset in the file</td>
+<td>0</td>
+</tr>
+</tbody></table>
+</div>
+<p>Note the fourth argument goes in <code>r10</code>, not <code>rcx</code>: the <code>syscall</code> instruction itself overwrites <code>rcx</code> (and <code>r11</code>).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+SYS_MMAP   <span class="tk-k">equ</span>  <span class="tk-n">9</span>
+SYS_MUNMAP <span class="tk-k">equ</span>  <span class="tk-n">11</span>
+PROT_RW    <span class="tk-k">equ</span>  <span class="tk-n">3</span>
+MAP_PRIV_ANON <span class="tk-k">equ</span> <span class="tk-n">0x22</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">eax</span>, SYS_MMAP
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">4096</span> * <span class="tk-n">4</span>           <span class="tk-c">; four pages</span>
+        mov     <span class="tk-t">edx</span>, PROT_RW
+        mov     <span class="tk-t">r10d</span>, MAP_PRIV_ANON
+        mov     <span class="tk-t">r8</span>, -<span class="tk-n">1</span>
+        xor     <span class="tk-t">r9d</span>, <span class="tk-t">r9d</span>
+        syscall
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        js      .failed                 <span class="tk-c">; a negative result is -errno</span>
+        mov     <span class="tk-t">rbx</span>, <span class="tk-t">rax</span>                <span class="tk-c">; the new memory, zero-filled</span>
+
+        mov     <span class="tk-k">qword</span> [<span class="tk-t">rbx</span>], <span class="tk-n">42</span>         <span class="tk-c">; use it like any other memory</span>
+        mov     <span class="tk-k">qword</span> [<span class="tk-t">rbx</span> + <span class="tk-n">16000</span>], <span class="tk-n">7</span>
+        mov     <span class="tk-t">rdi</span>, [<span class="tk-t">rbx</span>]
+        add     <span class="tk-t">rdi</span>, [<span class="tk-t">rbx</span> + <span class="tk-n">16000</span>]
+        call    print_int               <span class="tk-c">; 49</span>
+        call    print_newline
+
+        mov     <span class="tk-t">eax</span>, SYS_MUNMAP
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">4096</span> * <span class="tk-n">4</span>
+        syscall
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        jmp     .exit
+<span class="tk-f">.failed:</span>
+        neg     <span class="tk-t">rax</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; the error number</span>
+        call    print_newline
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>
+<span class="tk-f">.exit:</span>  mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        syscall</code></pre></div>
+<p>New anonymous memory is always zero-filled, so you never see another program&#39;s data.</p>
+<h2>Errors are negative</h2>
+<p>Raw system calls do not use <code>errno</code>. They return <code>-errno</code> in <code>rax</code> on failure (lesson 7.03): <code>-12</code> is <code>ENOMEM</code>, <code>-22</code> is <code>EINVAL</code>. Because no valid address is that close to the top of the range, <code>js</code> (jump if the sign bit is set) after <code>test rax, rax</code> is the usual check.</p>
+<h2>Pages</h2>
+<p>The kernel works in <strong>pages</strong> of 4096 bytes. <code>mmap</code> rounds the size up to whole pages, so asking for 10 bytes gives you a page. Round sizes yourself so you know what you got:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">round_to_page:</span>                          <span class="tk-c">; rdi = bytes, returns them rounded up to a multiple of 4096</span>
+        lea     <span class="tk-t">rax</span>, [<span class="tk-t">rdi</span> + <span class="tk-n">4095</span>]
+        and     <span class="tk-t">rax</span>, -<span class="tk-n">4096</span>              <span class="tk-c">; clear the low 12 bits</span>
+        ret
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>
+        call    round_to_page
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 4096</span>
+        call    print_newline
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">8193</span>
+        call    round_to_page
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 12288</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p><code>-4096</code> in two&#39;s complement is all 1s except the low 12 bits, so <code>and</code> clears exactly those (lesson 2.03).</p>
+<h2>brk, the old way</h2>
+<p><code>brk</code> (system call 12) moves the end of the program&#39;s data area. <code>brk(0)</code> returns the current end; <code>brk(new_end)</code> asks to grow it and returns the new end (or the old one if it failed). Early <code>malloc</code>s were built on it; modern ones use <code>mmap</code> for large blocks and both for small ones. <code>mmap</code> is simpler to use correctly, so prefer it.</p>
+<h2>A bump allocator</h2>
+<p>Allocating with one system call per object would be slow. Instead, map one large region and hand out pieces by moving a pointer, as lesson 6.02 of the pointers course and the arena idea describe:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .bss
+<span class="tk-f">arena_next:</span> <span class="tk-k">resq</span> <span class="tk-n">1</span>
+<span class="tk-f">arena_end:</span>  <span class="tk-k">resq</span> <span class="tk-n">1</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">arena_init:</span>                             <span class="tk-c">; rdi = size; returns 0 or -errno</span>
+        mov     <span class="tk-t">rsi</span>, <span class="tk-t">rdi</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">9</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        mov     <span class="tk-t">edx</span>, <span class="tk-n">3</span>
+        mov     <span class="tk-t">r10d</span>, <span class="tk-n">0x22</span>
+        mov     <span class="tk-t">r8</span>, -<span class="tk-n">1</span>
+        xor     <span class="tk-t">r9d</span>, <span class="tk-t">r9d</span>
+        push    <span class="tk-t">rsi</span>
+        syscall
+        pop     <span class="tk-t">rsi</span>
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        js      .done
+        mov     [<span class="tk-k">rel</span> arena_next], <span class="tk-t">rax</span>
+        add     <span class="tk-t">rsi</span>, <span class="tk-t">rax</span>
+        mov     [<span class="tk-k">rel</span> arena_end], <span class="tk-t">rsi</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+<span class="tk-f">.done:</span>  ret
+
+<span class="tk-f">arena_alloc:</span>                            <span class="tk-c">; rdi = bytes; returns an 8-byte-aligned pointer, or 0 when full</span>
+        add     <span class="tk-t">rdi</span>, <span class="tk-n">7</span>
+        and     <span class="tk-t">rdi</span>, -<span class="tk-n">8</span>                 <span class="tk-c">; round up to a multiple of 8</span>
+        mov     <span class="tk-t">rax</span>, [<span class="tk-k">rel</span> arena_next]
+        lea     <span class="tk-t">rdx</span>, [<span class="tk-t">rax</span> + <span class="tk-t">rdi</span>]
+        cmp     <span class="tk-t">rdx</span>, [<span class="tk-k">rel</span> arena_end]
+        ja      .full
+        mov     [<span class="tk-k">rel</span> arena_next], <span class="tk-t">rdx</span>
+        ret
+<span class="tk-f">.full:</span>  xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+        ret
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">64</span>
+        call    arena_init
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">10</span>
+        call    arena_alloc
+        mov     <span class="tk-t">rbx</span>, <span class="tk-t">rax</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">20</span>
+        call    arena_alloc
+        sub     <span class="tk-t">rax</span>, <span class="tk-t">rbx</span>                <span class="tk-c">; 16: 10 rounded up to 16</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int
+        call    print_newline
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">100</span>
+        call    arena_alloc             <span class="tk-c">; does not fit in 64 bytes</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 0</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>A bump allocator cannot free single objects; everything is released together (with <code>munmap</code>, or by resetting <code>arena_next</code>). For many programs, such as a compiler handling one file or a game handling one frame, that is exactly what is wanted, and it is far faster than a general allocator.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/8.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/8.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-03-jump-tables-and-function-pointers/"><span class="mono">previous</span><b>8.03 Jump Tables and Function Pointers</b></a>
+      <a class="lp-next" href="../8-05-command-line-arguments-and-the-environment/"><span class="mono">next</span><b>8.05 Command-Line Arguments and the Environment</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/8-04-memory-from-the-kernel"></script>
+</body>
+</html>

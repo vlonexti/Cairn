@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Frame and the Draw Data · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/1-03-the-frame-and-the-draw-data/">
+  <meta name="description" content="Every ImGui frame follows the same steps - input in, widgets described, draw data out. This lesson looks inside them, explains what draw data is, and covers…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Frame and the Draw Data · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Every ImGui frame follows the same steps - input in, widgets described, draw data out. This lesson looks inside them, explains what draw data is, and covers…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/1-03-the-frame-and-the-draw-data/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Frame and the Draw Data · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Frame and the Draw Data · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Every ImGui frame follows the same steps - input in, widgets described, draw data out. This lesson looks inside them, explains what draw data is, and covers…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Immediate-Mode Foundations</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Frame and the Draw Data</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.03</b></span><span>3 of 6 in milestone 1</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Every ImGui frame follows the same steps - input in, widgets described, draw data out. This lesson looks inside them, explains what draw data is, and covers the timing questions every tool runs into - frame rate, delta time, and only drawing when something changed.</p>
+      <div class="prose">
+<h2>Inside a frame</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">graph LR
+  A[Back ends' NewFrame: size, time, input] --&gt; B[ImGui::NewFrame]
+  B --&gt; C[Your code: Begin, widgets, End]
+  C --&gt; D[ImGui::Render]
+  D --&gt; E[Draw data]
+  E --&gt; F[Renderer back end draws it]</pre></div>
+<ul>
+<li><strong>Input in.</strong> The platform back end sets <code>io.DisplaySize</code>, <code>io.DeltaTime</code>, and queues input events (mouse position, buttons, keys, characters).</li>
+<li><strong>NewFrame.</strong> ImGui processes the events, decides which window is under the mouse, which widget is <strong>hovered</strong>, and clears last frame&#39;s draw lists.</li>
+<li><strong>Your code.</strong> Each widget function does three things at once: it <strong>lays itself out</strong> (takes space from the window&#39;s cursor), <strong>handles input</strong> (was it clicked?), and <strong>adds shapes</strong> to the window&#39;s draw list. It returns the result immediately.</li>
+<li><strong>Render.</strong> ImGui sorts windows by depth and collects every window&#39;s draw list into one <strong>ImDrawData</strong>.</li>
+<li><strong>Draw.</strong> The back end uploads vertices and indices to the GPU and issues one draw call per command.</li>
+</ul>
+<p>You can call widget functions anywhere between <code>NewFrame</code> and <code>Render</code>: in your game&#39;s update, in each system&#39;s own debug function, in a loop over entities. They all add to the same frame.</p>
+<h2>Draw data</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImDrawData</span>* data = <span class="tk-t">ImGui</span>::<span class="tk-f">GetDrawData</span>();
+<span class="tk-k">for</span> (<span class="tk-k">int</span> n = <span class="tk-n">0</span>; n &lt; data-&gt;<span class="tk-t">CmdListsCount</span>; ++n)
+{
+    <span class="tk-k">const</span> <span class="tk-t">ImDrawList</span>* list = data-&gt;<span class="tk-t">CmdLists</span>[n];        <span class="tk-c">// one per window, roughly</span>
+    <span class="tk-c">// list-&gt;VtxBuffer: vertices (position, texture coordinate, colour)</span>
+    <span class="tk-c">// list-&gt;IdxBuffer: triangle indices</span>
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-t">ImDrawCmd</span>&amp; cmd : list-&gt;<span class="tk-t">CmdBuffer</span>)
+    {
+        <span class="tk-c">// cmd.ClipRect: scissor rectangle; cmd.TextureId: which texture; cmd.ElemCount: how many indices</span>
+    }
+}</code></pre></div>
+<p>Everything ImGui draws, including text, is textured triangles. Text uses a <strong>font atlas</strong>: one texture containing every glyph, built at start-up (lesson 4.05). That is why ImGui is so portable: a back end only needs to draw coloured, textured triangles with scissor rectangles.</p>
+<p>You rarely touch draw data yourself, but it helps to know that <code>ImGui::GetWindowDrawList()</code> gives you the current window&#39;s draw list, so you can add your own lines, circles and text (useful for graphs and minimaps):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImDrawList</span>* draw = <span class="tk-t">ImGui</span>::<span class="tk-f">GetWindowDrawList</span>();
+<span class="tk-t">ImVec2</span> p = <span class="tk-t">ImGui</span>::<span class="tk-f">GetCursorScreenPos</span>();
+draw-&gt;<span class="tk-f">AddCircleFilled</span>(<span class="tk-f">ImVec2</span>(p.x + <span class="tk-n">20</span>, p.y + <span class="tk-n">20</span>), <span class="tk-n">12.0f</span>, <span class="tk-f">IM_COL32</span>(<span class="tk-n">240</span>, <span class="tk-n">180</span>, <span class="tk-n">70</span>, <span class="tk-n">255</span>));
+<span class="tk-t">ImGui</span>::<span class="tk-f">Dummy</span>(<span class="tk-f">ImVec2</span>(<span class="tk-n">40</span>, <span class="tk-n">40</span>));     <span class="tk-c">// reserve the space so the next widget goes below</span></code></pre></div>
+<h2>Delta time and frame rate</h2>
+<p>ImGui needs to know how much time passed since the last frame (<code>io.DeltaTime</code>) for double-click detection, key repeat, blinking cursors and animations. The Win32 back end measures it with <code>QueryPerformanceCounter</code>. Your own code can read it too:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGuiIO</span>&amp; io = <span class="tk-t">ImGui</span>::<span class="tk-f">GetIO</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%.1f FPS (%.2f ms)&quot;</span>, io.<span class="tk-t">Framerate</span>, <span class="tk-n">1000.0f</span> / io.<span class="tk-t">Framerate</span>);</code></pre></div>
+<p><code>io.Framerate</code> is an average over the last 60 frames or so, so the number does not jump around.</p>
+<h2>Tools that sleep</h2>
+<p>A game redraws every frame anyway. A standalone tool (a level editor, an asset browser) does not need to burn a CPU core redrawing an unchanged screen at 144 Hz. Common approaches:</p>
+<ul>
+<li><strong>V-sync:</strong> <code>Present(1, 0)</code> waits for the display, capping the frame rate at its refresh rate.</li>
+<li><strong>Wait for input when idle:</strong> if nothing is animating, block in <code>MsgWaitForMultipleObjects</code> or <code>WaitMessage</code> until a message arrives, then draw a few frames (ImGui sometimes needs one or two extra frames to settle a layout).</li>
+<li><strong>Minimised:</strong> when <code>IsIconic(hwnd)</code> is true, sleep instead of drawing.</li>
+</ul>
+<p>The practice for this lesson has you write the &quot;how many frames should I still draw?&quot; logic a sleeping tool uses.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Calling widget functions before NewFrame or after Render</span></div><div class="callout-body"><p>ImGui asserts. Every widget call belongs between the two.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Assuming one frame is enough after input</span></div><div class="callout-body"><p>Some layouts settle over two frames (a window measuring its content). Draw a couple more frames after the last input.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does a widget function do in one call?</div><ul><li>Lays itself out, handles input, adds its shapes to the draw list, and returns the result</li><li>Only adds itself to a list to be processed later</li><li>Draws itself directly with Direct3D</li></ul><details><summary>Show the answer</summary><p><b>Lays itself out, handles input, adds its shapes to the draw list, and returns the result</b> Layout, input and drawing happen together, immediately.</p></details></li><li><div class="q">Why can ImGui run on almost any graphics API?</div><ul><li>It only needs textured, coloured triangles with scissor rectangles drawn</li><li>It contains a back end for every API inside imgui.cpp</li><li>It uses the operating system&#39;s drawing functions</li></ul><details><summary>Show the answer</summary><p><b>It only needs textured, coloured triangles with scissor rectangles drawn</b> A back end is a small piece of code that draws ImDrawData.</p></details></li><li><div class="q">How should a standalone tool avoid using a full CPU core while idle?</div><ul><li>Wait for input when nothing changes, and use v-sync</li><li>Lower the font size</li><li>Call ImGui::Render less often but NewFrame every time</li></ul><details><summary>Show the answer</summary><p><b>Wait for input when nothing changes, and use v-sync</b> A tool only needs to redraw when something happens.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/1.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/1.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-02-setting-up-imgui-with-win32-and-directx-11/"><span class="mono">previous</span><b>1.02 Setting Up ImGui with Win32 and DirectX 11</b></a>
+      <a class="lp-next" href="../1-04-windows-text-and-buttons/"><span class="mono">next</span><b>1.04 Windows, Text and Buttons</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/1-03-the-frame-and-the-draw-data"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

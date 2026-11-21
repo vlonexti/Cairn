@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Spatial Grids for Many Objects · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/3-05-spatial-grids-for-many-objects/">
+  <meta name="description" content="Testing every object against every other is n squared - fine for 50 objects, hopeless for 5000. A uniform grid puts each object in the cells it touches and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Spatial Grids for Many Objects · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="Testing every object against every other is n squared - fine for 50 objects, hopeless for 5000. A uniform grid puts each object in the cells it touches and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/3-05-spatial-grids-for-many-objects/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Spatial Grids for Many Objects · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Spatial Grids for Many Objects · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="Testing every object against every other is n squared - fine for 50 objects, hopeless for 5000. A uniform grid puts each object in the cells it touches and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>Collision and Physics</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Spatial Grids for Many Objects</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Testing every object against every other is n squared - fine for 50 objects, hopeless for 5000. A uniform grid puts each object in the cells it touches and only tests objects that share a cell. This lesson builds one, rebuilds it every frame, and avoids testing pairs twice.</p>
+      <div class="prose">
+<h2>Every pair is too many</h2>
+<p>With <code>n</code> objects there are <code>n(n-1)/2</code> pairs. For 100 objects that is 4950 tests a frame: no problem. For 5000 bullets and enemies it is 12.5 million, many times the frame budget. Most of those pairs are on opposite sides of the screen and could never touch.</p>
+<p>The idea of <strong>broad phase</strong> collision is to cheaply find the pairs that <em>might</em> touch, and only run the real test (the <strong>narrow phase</strong>) on them.</p>
+<h2>A uniform grid</h2>
+<p>Divide the world into square <strong>cells</strong>, a bit bigger than a typical object. Each cell keeps a list of the objects that overlap it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Grid</span>
+{
+    <span class="tk-k">float</span> cellSize;
+    <span class="tk-k">int</span> cols, rows;
+    std::vector&lt;std::vector&lt;<span class="tk-k">int</span>&gt;&gt; cells;          <span class="tk-c">// object indices per cell</span>
+
+    <span class="tk-k">int</span> <span class="tk-f">cellX</span>(<span class="tk-k">float</span> x) <span class="tk-k">const</span> { <span class="tk-k">return</span> std::<span class="tk-f">clamp</span>(<span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(std::<span class="tk-f">floor</span>(x / cellSize)), <span class="tk-n">0</span>, cols - <span class="tk-n">1</span>); }
+    <span class="tk-k">int</span> <span class="tk-f">cellY</span>(<span class="tk-k">float</span> y) <span class="tk-k">const</span> { <span class="tk-k">return</span> std::<span class="tk-f">clamp</span>(<span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(std::<span class="tk-f">floor</span>(y / cellSize)), <span class="tk-n">0</span>, rows - <span class="tk-n">1</span>); }
+
+    <span class="tk-k">void</span> <span class="tk-f">insert</span>(<span class="tk-k">int</span> id, <span class="tk-t">Rectangle</span> r)
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> cy = <span class="tk-f">cellY</span>(r.y); cy &lt;= <span class="tk-f">cellY</span>(r.y + r.height); ++cy)
+            <span class="tk-k">for</span> (<span class="tk-k">int</span> cx = <span class="tk-f">cellX</span>(r.x); cx &lt;= <span class="tk-f">cellX</span>(r.x + r.width); ++cx)
+                cells[cy * cols + cx].<span class="tk-f">push_back</span>(id);
+    }
+};</code></pre></div>
+<p>An object overlapping a cell boundary is put in <strong>every</strong> cell it touches, so neighbours across a boundary still meet in some cell.</p>
+<h2>Using it</h2>
+<p>Each frame:</p>
+<ol>
+<li><strong>Clear</strong> the cells (keep the vectors&#39; memory; just <code>clear()</code> each).</li>
+<li><strong>Insert</strong> every object.</li>
+<li>For each cell, test each pair of objects <strong>in that cell</strong>.</li>
+</ol>
+<p>Two objects that share several cells would be tested several times, once in each. Avoid duplicates by testing a pair only when <code>a &lt; b</code> and recording tested pairs in a set, or, faster, only in the cell that contains the top-left corner of their overlap.</p>
+<p>For a <strong>query</strong> (&quot;which enemies are within the explosion?&quot;), look only in the cells the query area covers, and collect each object once.</p>
+<h2>Choosing the cell size</h2>
+<ul>
+<li>Too small: big objects are in many cells, and inserting costs more than it saves.</li>
+<li>Too large: many objects per cell, back towards n squared.</li>
+<li>A cell about <strong>twice the size of a typical object</strong> is a good start. Measure with a profiler and adjust.</li>
+</ul>
+<h2>Other structures</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Structure</th>
+<th>Good when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Uniform grid</td>
+<td>Objects of similar size spread over a bounded world: most 2D games</td>
+</tr>
+<tr>
+<td>Spatial hash</td>
+<td>The same, but the world is unbounded: cells are keys in a hash map</td>
+</tr>
+<tr>
+<td>Quadtree</td>
+<td>Sizes vary a lot, or objects cluster in a few places</td>
+</tr>
+<tr>
+<td>Sort and sweep</td>
+<td>Objects mostly spread along one axis, as in side-scrollers</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Static and moving things</h2>
+<p>Walls and tiles never move, so do not put them in the per-frame grid: a tile map is already a grid (lesson 4.02), and you can look up the tiles under an object directly from its position. Only moving objects need inserting every frame.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-fixed-time-steps/"><span class="mono">previous</span><b>3.04 Fixed Time Steps</b></a>
+      <a class="lp-next" href="../4-01-cameras-and-scrolling-worlds/"><span class="mono">next</span><b>4.01 Cameras and Scrolling Worlds</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/3-05-spatial-grids-for-many-objects"></script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>add, sub, inc, dec and neg · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/2-01-add-sub-inc-dec-and-neg/">
+  <meta name="description" content="add and sub combine two operands into the first, inc and dec add or take away one, and neg flips the sign. Results wrap around at the register's size, so…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="add, sub, inc, dec and neg · Assembly · Xenon">
+  <meta property="og:description" content="add and sub combine two operands into the first, inc and dec add or take away one, and neg flips the sign. Results wrap around at the register's size, so…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/2-01-add-sub-inc-dec-and-neg/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="add, sub, inc, dec and neg · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="add, sub, inc, dec and neg · Assembly · Xenon">
+  <meta name="twitter:description" content="add and sub combine two operands into the first, inc and dec add or take away one, and neg flips the sign. Results wrap around at the register's size, so…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Arithmetic and Logic</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">add, sub, inc, dec and neg</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.01</b></span><span>1 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">add and sub combine two operands into the first, inc and dec add or take away one, and neg flips the sign. Results wrap around at the register&#39;s size, so 32-bit arithmetic wraps at 2 to the 32 and also clears the upper half. The same add instruction serves signed and unsigned numbers, because two&#39;s complement makes them the same bits.</p>
+      <div class="prose">
+<h2>Two operands, one result</h2>
+<p>x86 arithmetic overwrites its first operand:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>add rax, rbx</code></td>
+<td>rax = rax + rbx</td>
+</tr>
+<tr>
+<td><code>sub rax, 5</code></td>
+<td>rax = rax − 5</td>
+</tr>
+<tr>
+<td><code>inc rcx</code></td>
+<td>rcx = rcx + 1</td>
+</tr>
+<tr>
+<td><code>dec rcx</code></td>
+<td>rcx = rcx − 1</td>
+</tr>
+<tr>
+<td><code>neg rax</code></td>
+<td>rax = −rax</td>
+</tr>
+</tbody></table>
+</div>
+<p>There is no &quot;c = a + b&quot; in one instruction (except with <code>lea</code>, lesson 4.01): copy first, then add.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">rbx</span>, <span class="tk-n">1000</span>
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rbx</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-n">337</span>        <span class="tk-c">; rax = 1337</span>
+        sub     <span class="tk-t">rax</span>, <span class="tk-n">1300</span>       <span class="tk-c">; rax = 37</span>
+        inc     <span class="tk-t">rax</span>             <span class="tk-c">; 38</span>
+        dec     <span class="tk-t">rbx</span>             <span class="tk-c">; rbx = 999</span>
+        neg     <span class="tk-t">rbx</span>             <span class="tk-c">; -999</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-t">rbx</span>        <span class="tk-c">; 38 - 999 = -961</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<h2>Wrapping around</h2>
+<p>A register has a fixed number of bits, so results wrap around like a car&#39;s odometer. With 8 bits, 255 + 1 is 0; with 64 bits, the biggest unsigned number plus one is 0 too.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/assembly/l/2.01">Try it in Xenon</a></div>
+<p>Watch the <strong>CF</strong> (carry) flag in the demo: it is set each time a result wrapped past the top. Lesson 2.04 is about the flags.</p>
+<div class="callout tip"><div class="callout-title"><span>32-bit arithmetic clears the top too</span></div><div class="callout-body"><p>Like <code>mov</code>, any instruction writing a 32-bit register zeroes the upper half. <code>add eax, 1</code> with <code>rax = 0x1_FFFFFFFF</code> gives <code>rax = 0</code>, not <code>0x2_00000000</code>. Use 64-bit registers when numbers can grow beyond about 4 billion.</p>
+</div></div>
+<h2>One add for signed and unsigned</h2>
+<p>In two&#39;s complement (from the Fundamentals course), −1 is all 1 bits. Adding 1 to it gives all 0 bits: 0, which is right whether you read the bits as signed (−1 + 1) or unsigned (the largest value + 1, wrapping). That is the beauty of two&#39;s complement: <strong>the same <code>add</code> and <code>sub</code> work for both</strong>. Only comparisons, division and widening need to know which you mean.</p>
+<h2>Instructions with memory</h2>
+<p>Arithmetic can read or update memory directly (lesson 4.01 shows addressing):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        add     <span class="tk-t">rax</span>, [<span class="tk-k">rel</span> total]        <span class="tk-c">; rax += the 8 bytes at total</span>
+        add     <span class="tk-k">qword</span> [<span class="tk-k">rel</span> total], <span class="tk-n">5</span>    <span class="tk-c">; the 8 bytes at total += 5</span>
+        inc     <span class="tk-k">dword</span> [<span class="tk-k">rel</span> count]       <span class="tk-c">; the 4 bytes at count += 1</span></code></pre></div>
+<p>When neither operand is a register, NASM cannot tell the size, so you write it: <code>byte</code>, <code>word</code>, <code>dword</code> or <code>qword</code>. Only one operand may be in memory: <code>add [a], [b]</code> does not exist.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does sub rax, rbx do?</div><ul><li>rax = rax - rbx</li><li>rbx = rbx - rax</li><li>rax = rbx - rax</li></ul><details><summary>Show the answer</summary><p><b>rax = rax - rbx</b> The first operand is the destination.</p></details></li><li><div class="q">al is 250. After add al, 10, what is al?</div><ul><li>4</li><li>260</li><li>255</li></ul><details><summary>Show the answer</summary><p><b>4</b> 260 wraps around at 256.</p></details></li><li><div class="q">Why can the same add instruction handle signed and unsigned numbers?</div><ul><li>In two&#39;s complement both give the same bits</li><li>add checks the sign first</li><li>It cannot: there is a separate signed add</li></ul><details><summary>Show the answer</summary><p><b>In two&#39;s complement both give the same bits</b> Comparisons and division are where the difference matters.</p></details></li><li><div class="q">What is wrong with inc [rel count]?</div><ul><li>The size is unknown: write inc dword [rel count] (or another size)</li><li>inc cannot use memory</li><li>Nothing</li></ul><details><summary>Show the answer</summary><p><b>The size is unknown: write inc dword [rel count] (or another size)</b> With no register in the instruction, NASM needs the size.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/2.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/2.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-06-xenon-s-print-and-read-routines/"><span class="mono">previous</span><b>1.06 Xenon's Print and Read Routines</b></a>
+      <a class="lp-next" href="../2-02-multiplying-and-dividing/"><span class="mono">next</span><b>2.02 Multiplying and Dividing</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/2-01-add-sub-inc-dec-and-neg"></script>
+</body>
+</html>

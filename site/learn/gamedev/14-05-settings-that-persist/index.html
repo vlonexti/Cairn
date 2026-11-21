@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Settings That Persist · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/14-05-settings-that-persist/">
+  <meta name="description" content="A tool that forgets its window positions, open panels and last connection every time it starts is tiring to use. ImGui saves window layout itself to an .ini…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Settings That Persist · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A tool that forgets its window positions, open panels and last connection every time it starts is tiring to use. ImGui saves window layout itself to an .ini…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/14-05-settings-that-persist/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Settings That Persist · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Settings That Persist · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A tool that forgets its window positions, open panels and last connection every time it starts is tiring to use. ImGui saves window layout itself to an .ini…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>User Interfaces for Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Settings That Persist</h1>
+      <div class="readout lp-readout"><span>lesson <b>14.05</b></span><span>5 of 6 in milestone 14</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A tool that forgets its window positions, open panels and last connection every time it starts is tiring to use. ImGui saves window layout itself to an <code>.ini</code> file; your tool saves its own settings alongside. This lesson covers both, where to store them, versioning them, and the classic bug of windows restored onto a monitor that is no longer connected.</p>
+      <div class="prose">
+<h2>What ImGui saves for you</h2>
+<p>ImGui remembers each window&#39;s position, size, collapsed state and (with docking) its docked layout, keyed by window title, and writes them to <code>imgui.ini</code> in the current directory every few seconds and on exit. Two adjustments make that robust:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static</span> std::string g_iniPath;          <span class="tk-c">// must outlive the ImGui context: ImGui keeps the pointer</span>
+g_iniPath = (<span class="tk-f">settingsFolder</span>() / <span class="tk-s">&quot;layout.ini&quot;</span>).<span class="tk-f">string</span>();
+io.<span class="tk-t">IniFilename</span> = g_iniPath.<span class="tk-f">c_str</span>();</code></pre></div>
+<ul>
+<li>Store it in the user&#39;s settings folder (Local AppData, lesson 5.04), not the current directory, which may be read-only or change with how the tool was started.</li>
+<li>Window titles are ids: renaming a window loses its saved layout. <code>&quot;Monsters###monsters&quot;</code> shows &quot;Monsters&quot; but uses the stable id <code>monsters</code>, so the visible title can change (with a count, say) without forgetting the layout.</li>
+</ul>
+<h2>Your own settings</h2>
+<p>Everything else the tool needs to remember is yours to save:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Which panels are open</td>
+<td><code>show.monsters = true</code></td>
+</tr>
+<tr>
+<td>Preferences</td>
+<td><code>refresh.ms = 100</code>, <code>theme = dark</code>, <code>font.size = 16</code></td>
+</tr>
+<tr>
+<td>Recent things</td>
+<td>Last connected process name, recent files</td>
+</tr>
+<tr>
+<td>Table state</td>
+<td>Sorted column (ImGui can also save table column widths and order itself, with <code>ImGuiTableFlags_Reorderable</code>, <code>_Hideable</code>)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Lesson 10.08&#39;s INI format is ideal: readable, easy to edit by hand when something goes wrong, tolerant of new and missing keys. Save on exit <strong>and</strong> whenever a setting changes (debounced, for example at most once per second), so a crash does not lose them, using lesson 5.04&#39;s write-to-temporary-then-replace.</p>
+<h2>Versioning settings</h2>
+<p>As with saves (lesson 10.07), include a version, and handle:</p>
+<ul>
+<li><strong>Missing keys</strong> (an older settings file): use the default.</li>
+<li><strong>Unknown keys</strong> (a newer one): ignore them, and preserve them when writing back if you can, so switching between tool versions does not destroy settings.</li>
+<li><strong>Invalid values</strong> (hand-edited): validate and fall back to the default, with a log message, never crash on bad settings.</li>
+</ul>
+<h2>Restoring windows safely</h2>
+<p>The classic bug: a tool remembers that its main window was at x = 2600 on the second monitor. The user unplugs that monitor, starts the tool, and the window opens off-screen where it cannot be seen or dragged back. Before restoring a saved window rectangle:</p>
+<ol>
+<li>Get the work areas of the monitors currently connected (on Windows, <code>EnumDisplayMonitors</code> / <code>GetMonitorInfoW</code>; with SDL, <code>SDL_GetDisplayUsableBounds</code>).</li>
+<li>If the saved rectangle does not overlap any of them enough to grab its title bar, move it onto the primary monitor.</li>
+<li>If it is larger than the monitor, shrink it to fit.</li>
+</ol>
+<p>The practice task implements this clamping, which applies equally to the main window of a game.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] <code>imgui.ini</code> in the current directory
+Point <code>io.IniFilename</code> at the user&#39;s settings folder, with a string that outlives the context.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Renaming windows and losing their layout</span></div><div class="callout-body"><p>Use <code>###id</code> for a stable id with a changing title.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Restoring a window off-screen</span></div><div class="callout-body"><p>Check the saved position against the monitors that exist now.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does ImGui save automatically?</div><ul><li>Window positions, sizes, collapsed state and docking layout, keyed by window id</li><li>All your tool&#39;s settings</li><li>The data shown in windows</li></ul><details><summary>Show the answer</summary><p><b>Window positions, sizes, collapsed state and docking layout, keyed by window id</b> Everything else is up to your code.</p></details></li><li><div class="q">What does the title <code>&quot;Monsters (12)###monsters&quot;</code> achieve?</div><ul><li>It shows &quot;Monsters (12)&quot; but keeps the stable id &quot;monsters&quot;, so the saved layout survives the changing count</li><li>It creates three windows</li><li>It hides the window</li></ul><details><summary>Show the answer</summary><p><b>It shows &quot;Monsters (12)&quot; but keeps the stable id &quot;monsters&quot;, so the saved layout survives the changing count</b> Text before <code>###</code> is shown; the id comes from after it.</p></details></li><li><div class="q">A saved window position is on a monitor that is no longer connected. What should the tool do?</div><ul><li>Move (and if needed shrink) the window onto a monitor that exists</li><li>Restore it exactly where it was</li><li>Delete the settings file</li></ul><details><summary>Show the answer</summary><p><b>Move (and if needed shrink) the window onto a monitor that exists</b> Otherwise the window opens where the user cannot see it.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/14.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/14.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../14-04-tables-trees-and-plots/"><span class="mono">previous</span><b>14.04 Tables, Trees and Plots</b></a>
+      <a class="lp-next" href="../14-06-a-complete-tool-window/"><span class="mono">next</span><b>14.06 A Complete Tool Window</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/14-05-settings-that-persist"></script>
+</body>
+</html>

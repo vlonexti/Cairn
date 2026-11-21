@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Keeping an Integration Observable · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/5-05-keeping-an-integration-observable/">
+  <meta name="description" content="Knowing an integration works without watching it - structured log lines with correlation ids, a summary per run, the few numbers worth tracking (processed,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Keeping an Integration Observable · Working with APIs · Xenon">
+  <meta property="og:description" content="Knowing an integration works without watching it - structured log lines with correlation ids, a summary per run, the few numbers worth tracking (processed,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/5-05-keeping-an-integration-observable/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Keeping an Integration Observable · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Keeping an Integration Observable · Working with APIs · Xenon">
+  <meta name="twitter:description" content="Knowing an integration works without watching it - structured log lines with correlation ids, a summary per run, the few numbers worth tracking (processed,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Joining Services Together</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Keeping an Integration Observable</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Knowing an integration works without watching it - structured log lines with correlation ids, a summary per run, the few numbers worth tracking (processed, failed, dead letters, lag), alerts that fire on the right things, health checks, and scheduling runs with cron or Windows Task Scheduler.</p>
+      <div class="prose">
+<h2>Silent failure</h2>
+<p>Integrations fail quietly. Nobody looks at a sync until the accountant asks why no invoices arrived for three weeks. Building in <strong>observability</strong> (being able to tell from the outside what it is doing) is part of the job, not an extra.</p>
+<h2>Structured logs</h2>
+<p>Log <strong>events</strong>, one JSON object per line, with fixed fields, rather than free text:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>{&quot;ts&quot;: &quot;2026-11-19T10:00:03Z&quot;, &quot;level&quot;: &quot;info&quot;, &quot;msg&quot;: &quot;invoice created&quot;, &quot;run&quot;: &quot;r-0193&quot;, &quot;order&quot;: &quot;1001&quot;, &quot;invoice&quot;: &quot;INV-42&quot;}
+{&quot;ts&quot;: &quot;2026-11-19T10:00:04Z&quot;, &quot;level&quot;: &quot;error&quot;, &quot;msg&quot;: &quot;dead letter&quot;, &quot;run&quot;: &quot;r-0193&quot;, &quot;order&quot;: &quot;1017&quot;, &quot;reason&quot;: &quot;422 invalid email&quot;}</code></pre></div>
+<ul>
+<li>Machines can search and count them: &quot;all errors for order 1017&quot;, &quot;invoices created per day&quot;.</li>
+<li>Every line of one run shares a <strong>run id</strong>; lines about one record share its id; requests carry the API&#39;s <strong>request id</strong> (lesson 1.02). These <strong>correlation ids</strong> let you follow one record through the whole system.</li>
+<li>Redact secrets before writing (lesson 2.05).</li>
+</ul>
+<h2>A summary per run</h2>
+<p>At the end of each run, write one summary line: when it started, how long it took, how many records were created, updated, skipped and dead-lettered, and the new checkpoint. Most questions (&quot;is it running?&quot;, &quot;did yesterday&#39;s run do anything?&quot;) are answered by the last few summaries.</p>
+<h2>The numbers that matter</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Tells you</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>records processed per run</td>
+<td>it is doing work</td>
+</tr>
+<tr>
+<td>errors and dead letters</td>
+<td>something needs attention</td>
+</tr>
+<tr>
+<td><strong>lag</strong>: now minus the checkpoint (or the oldest unprocessed change)</td>
+<td>how far behind it is</td>
+</tr>
+<tr>
+<td>time since the last successful run</td>
+<td>whether it is running at all</td>
+</tr>
+<tr>
+<td>API error rates and 429s</td>
+<td>the other side is struggling, or you are calling too fast</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Lag</strong> and <strong>time since the last success</strong> catch the failures that produce no errors at all: a scheduler that stopped, a webhook subscription that was deleted.</p>
+<h2>Alerts</h2>
+<p>Alert on things a person must act on, rarely enough that alerts are not ignored:</p>
+<ul>
+<li>no successful run for N intervals;</li>
+<li>lag above a threshold;</li>
+<li>new dead letters (or the count above zero for a day);</li>
+<li>the error rate far above normal.</li>
+</ul>
+<h2>Scheduling and health</h2>
+<p>A scheduled sync runs from <strong>cron</strong> on Linux and macOS, <strong>Task Scheduler</strong> on Windows, or a cloud scheduler. Make each run <strong>safe to run twice at once</strong> (or prevent it with a lock), since schedulers sometimes overlap runs. A webhook receiver should expose a <strong>health check</strong> URL that a monitor can call, returning 200 only if it can reach what it depends on.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-partial-failure-and-dead-letters/"><span class="mono">previous</span><b>5.04 Partial Failure and Dead Letters</b></a>
+      <a class="lp-next" href="../6-01-why-python-calls-c/"><span class="mono">next</span><b>6.01 Why Python Calls C</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/5-05-keeping-an-integration-observable"></script>
+</body>
+</html>

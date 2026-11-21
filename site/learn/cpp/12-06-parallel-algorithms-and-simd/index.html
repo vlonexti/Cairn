@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Parallel Algorithms and SIMD · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/12-06-parallel-algorithms-and-simd/">
+  <meta name="description" content="Most standard algorithms accept an execution policy as their first argument, as in std::sort(std::execution::par, v.begin(), v.end()). The library then…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Parallel Algorithms and SIMD · C++ · Xenon">
+  <meta property="og:description" content="Most standard algorithms accept an execution policy as their first argument, as in std::sort(std::execution::par, v.begin(), v.end()). The library then…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/12-06-parallel-algorithms-and-simd/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Parallel Algorithms and SIMD · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Parallel Algorithms and SIMD · C++ · Xenon">
+  <meta name="twitter:description" content="Most standard algorithms accept an execution policy as their first argument, as in std::sort(std::execution::par, v.begin(), v.end()). The library then…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Concurrency and Coroutines</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Parallel Algorithms and SIMD</h1>
+      <div class="readout lp-readout"><span>lesson <b>12.06</b></span><span>6 of 7 in milestone 12</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Most standard algorithms accept an <strong>execution policy</strong> as their first argument, as in <code>std::sort(std::execution::par, v.begin(), v.end())</code>. The library then divides the work across cores, and SIMD lanes, for you. The functions you pass must be safe to run concurrently. The policies are in <code>&lt;execution&gt;</code>.</p>
+      <div class="prose">
+<h2>One argument, every core</h2>
+<p>The highest level of parallelism in the standard library asks for none of the machinery of the previous lessons.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;cmath&gt;</span>
+<span class="tk-p">#include &lt;execution&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;numeric&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">double</span>&gt; <span class="tk-f">v</span>(<span class="tk-n">2'000'000</span>);
+    std::<span class="tk-f">iota</span>(v.<span class="tk-f">begin</span>(), v.<span class="tk-f">end</span>(), <span class="tk-n">0.0</span>);
+
+    std::<span class="tk-f">transform</span>(std::execution::par, v.<span class="tk-f">begin</span>(), v.<span class="tk-f">end</span>(), v.<span class="tk-f">begin</span>(),
+        [](<span class="tk-k">double</span> x) { <span class="tk-k">return</span> std::<span class="tk-f">sqrt</span>(x); });
+
+    <span class="tk-k">const</span> <span class="tk-k">double</span> total{ std::<span class="tk-f">reduce</span>(std::execution::par, v.<span class="tk-f">begin</span>(), v.<span class="tk-f">end</span>()) };
+    std::cout &lt;&lt; total &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The algorithm decides how to split the range, how many threads to use and how to combine the partial results. Most implementations run on a shared thread pool.</p>
+<h2>Execution policies</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>Threads</th>
+<th>Vectorized</th>
+<th>What your function may do</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::execution::seq</code></td>
+<td>One</td>
+<td>No</td>
+<td>Anything</td>
+</tr>
+<tr>
+<td><code>std::execution::par</code></td>
+<td>Several</td>
+<td>No</td>
+<td>Must be free of data races; may lock a mutex</td>
+</tr>
+<tr>
+<td><code>std::execution::par_unseq</code></td>
+<td>Several</td>
+<td>Yes</td>
+<td>Must not lock, allocate or otherwise synchronize</td>
+</tr>
+<tr>
+<td><code>std::execution::unseq</code> (C++20)</td>
+<td>One</td>
+<td>Yes</td>
+<td>The same restrictions as <code>par_unseq</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>SIMD</strong>, &quot;single instruction, multiple data&quot;, is parallelism inside one core. A vector register holds several values, and one instruction operates on all of them.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> scalar:   a0+b0   then   a1+b1   then   a2+b2   then   a3+b3        four instructions
+ SIMD:     [a0 a1 a2 a3] + [b0 b1 b2 b3]                              one instruction
+
+ par_unseq: several cores, each using its SIMD lanes</code></pre></div>
+<p>A policy is <strong>permission</strong>, not a command. The library may run sequentially if it judges the input too small.</p>
+<blockquote><p>[!warning] Why the <code>unseq</code> policies forbid locking
+Vectorizing means several iterations are interleaved <strong>on the same thread</strong>: iteration 1 may begin before iteration 0 finishes. If the function locks a mutex, the second iteration tries to take a lock the same thread already holds, and deadlocks. The same reasoning excludes memory allocation, which usually takes a lock internally.</p>
+</blockquote>
+<h2><code>reduce</code> and <code>accumulate</code></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Order of operations</th>
+<th>Can run in parallel</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::accumulate</code></td>
+<td>Strictly left to right</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>std::reduce</code></td>
+<td>Any grouping, any order</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>std::transform_reduce</code></td>
+<td>Transform each element, then reduce</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+</div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    subgraph acc[&quot;accumulate: one chain&quot;]
+        direction LR
+        x1[&quot;a&quot;] --&gt; x2[&quot;+ b&quot;] --&gt; x3[&quot;+ c&quot;] --&gt; x4[&quot;+ d&quot;]
+    end
+    subgraph red[&quot;reduce: a tree&quot;]
+        r1[&quot;a + b&quot;] --&gt; r3[&quot;(a + b) + (c + d)&quot;]
+        r2[&quot;c + d&quot;] --&gt; r3
+    end</pre></div>
+<p><code>accumulate</code> is defined as <code>((a + b) + c) + d</code>, which is inherently sequential. <code>reduce</code> is allowed to regroup, so two halves can be summed independently.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">double</span> dot{ std::<span class="tk-f">transform_reduce</span>(std::execution::par, a.<span class="tk-f">begin</span>(), a.<span class="tk-f">end</span>(), b.<span class="tk-f">begin</span>(), <span class="tk-n">0.0</span>) };</code></pre></div>
+<div class="callout note"><div class="callout-title"><span>The operation must be associative and commutative</span></div><div class="callout-body"><p><code>reduce</code> gives a well-defined answer only if regrouping and reordering do not change it. Subtraction fails that test. Floating-point addition nearly passes: it is not exactly associative, so <code>reduce</code> can differ from <code>accumulate</code> in the last digits, and from one run to the next.</p>
+</div></div>
+<h2>Rules for the functions you pass</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> count{ <span class="tk-n">0</span> };
+std::<span class="tk-f">for_each</span>(std::execution::par, v.<span class="tk-f">begin</span>(), v.<span class="tk-f">end</span>(),
+    [&amp;](<span class="tk-k">double</span> x) { <span class="tk-k">if</span> (x &gt; <span class="tk-n">10</span>) { ++count; } });    <span class="tk-c">// DATA RACE on count</span>
+
+<span class="tk-k">const</span> <span class="tk-k">auto</span> n{ std::<span class="tk-f">count_if</span>(std::execution::par, v.<span class="tk-f">begin</span>(), v.<span class="tk-f">end</span>(),
+    [](<span class="tk-k">double</span> x) { <span class="tk-k">return</span> x &gt; <span class="tk-n">10</span>; }) };             <span class="tk-c">// correct: the algorithm combines the results</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Do not write to shared state</td>
+<td>It is a data race. An atomic would fix the race and make it slow.</td>
+</tr>
+<tr>
+<td>Choose the algorithm that produces the result</td>
+<td><code>count_if</code>, <code>reduce</code>, <code>transform_reduce</code> and <code>any_of</code> aggregate safely for you</td>
+</tr>
+<tr>
+<td>Do not let an exception escape</td>
+<td>Under a parallel policy that calls <code>std::terminate</code></td>
+</tr>
+<tr>
+<td>Do not assume an order</td>
+<td>Elements are processed in no particular sequence</td>
+</tr>
+</tbody></table>
+</div>
+<p>The ideal function is <strong>pure</strong>: its result depends only on its argument and it changes nothing else (<a href="../10-03-ranges-and-views-cpp20-23/">10.03 Ranges and Views (C++20/23)</a>).</p>
+<h2>When it helps</h2>
+<p>Parallelism has overheads: dividing the work, waking threads and combining results.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Millions of elements, real work per element</td>
+<td>Close to one speed-up per core</td>
+</tr>
+<tr>
+<td>A cheap operation on a huge array</td>
+<td>Often limited by memory speed, not by the processor</td>
+</tr>
+<tr>
+<td>A few thousand elements</td>
+<td>Frequently <strong>slower</strong> than sequential</td>
+</tr>
+<tr>
+<td>The work is dominated by one sequential step</td>
+<td>Little gain, however many cores</td>
+</tr>
+</tbody></table>
+</div>
+<p>The last row is <strong>Amdahl&#39;s law</strong>: if 10% of a job cannot be parallelized, no number of cores makes it more than ten times faster. Measure before and after, in a Release build (<a href="../5-11-sorting-searching-big-o-and-timing-your-code/">5.11 Sorting, Searching, Big-O and Timing Your Code</a>).</p>
+<h2>Availability</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Standard library</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Microsoft&#39;s (used by Xenon)</td>
+<td>Works with no extra setup</td>
+</tr>
+<tr>
+<td>GNU libstdc++</td>
+<td>Requires Intel&#39;s TBB library to be installed and linked</td>
+</tr>
+<tr>
+<td>LLVM libc++</td>
+<td>Partial; check your version</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/12.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/12.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../12-05-atomics-and-the-memory-model/"><span class="mono">previous</span><b>12.05 Atomics and the Memory Model</b></a>
+      <a class="lp-next" href="../12-07-coroutines-cpp20-and-std-generator-cpp23/"><span class="mono">next</span><b>12.07 Coroutines (C++20) and std::generator (C++23)</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/12-06-parallel-algorithms-and-simd"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

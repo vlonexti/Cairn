@@ -1,27 +1,43 @@
 <!doctype html>
-<html lang="en" data-theme="dark" data-mode="static" data-build="e53a02d04f6d">
+<html lang="en" data-theme="dark" data-mode="static" data-build="5ec033cc34c5">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co https://godbolt.org https://huggingface.co https://*.huggingface.co https://*.hf.co">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qiwsnU8fV+tivMsJPMJxGvFaPYA6vaVI8XlXvJ6KMmo=' 'sha256-u1HB7ZLOn/V9bSOpMx8PQ/tm/hgyu9P+xCjpt5ba88w=' 'sha256-yYqdwWwM27oLhCyXv1CdOI08Lmait11FIIvWIhnq7Gs=' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co https://godbolt.org https://huggingface.co https://*.huggingface.co https://*.hf.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/">
+  <meta name="description" content="Short lessons, then practice that is really compiled and tested. C++, C, C#, Java, Python, JavaScript, Rust, Lua and x86-64 assembly, each from the first line to advanced work. Free while in beta.">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Xenon · Learn to program by writing real code">
+  <meta property="og:description" content="Short lessons, then practice that is really compiled and tested. C++, C, C#, Java, Python, JavaScript, Rust, Lua and x86-64 assembly, each from the first line to advanced work. Free while in beta.">
+  <meta property="og:url" content="https://xenon.justloofy.dev/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/xenon.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Xenon · Learn to program by writing real code">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Xenon · Learn to program by writing real code">
+  <meta name="twitter:description" content="Short lessons, then practice that is really compiled and tested. C++, C, C#, Java, Python, JavaScript, Rust, Lua and x86-64 assembly, each from the first line to advanced work. Free while in beta.">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/xenon.png">
   <link rel="icon" type="image/svg+xml" href="app/img/icon.svg">
   <link rel="alternate icon" href="app/img/icon.png">
   <link rel="manifest" href="app/manifest.json">
   <link rel="apple-touch-icon" href="app/img/icon-180.png">
   <meta name="apple-mobile-web-app-title" content="Xenon">
   <meta name="theme-color" content="#131416">
-  <link rel="stylesheet" href="app/css/app.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/prose.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/workbench.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/ide.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/shell.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/login.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/widgets.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/theme.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/polish.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/xenon.css?v=e53a02d04f6d">
-  <script src="app/js/theme.js?v=e53a02d04f6d"></script>
+  <link rel="stylesheet" href="app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/workbench.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/ide.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/shell.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/login.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/widgets.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/xenon.css?v=5ec033cc34c5">
+  <script src="app/js/theme.js?v=5ec033cc34c5"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -52,17 +68,18 @@
     if (window.XENON_SPLASH === 'short') { document.getElementById('splash').classList.add('quick'); window.XENON_QUICK = true; }
     if (window.XENON_SPLASH === 'off') { var sp = document.getElementById('splash'); if (sp) sp.parentNode.removeChild(sp); }
   </script>
-  <script src="app/js/splash.js?v=e53a02d04f6d"></script>
+  <script src="app/js/splash.js?v=5ec033cc34c5"></script>
+  <script src="app/js/visit.js?v=5ec033cc34c5" data-page="/app"></script>
   <div id="toasts" aria-live="polite"></div>
   <script>window.XENON = { token: 'local', version: '1.0.0', static: true, cloud: true };</script>
-    <link rel="preload" as="script" href="vendor/marked/marked.umd.js?v=e53a02d04f6d">
-  <link rel="preload" as="script" href="vendor/mermaid/mermaid.min.js?v=e53a02d04f6d">
-  <link rel="preload" as="script" href="vendor/monaco/vs/loader.js?v=e53a02d04f6d">
-  <link rel="modulepreload" href="app/js/main.js?v=e53a02d04f6d">
-  <script type="xenon/after-first-frame" src="vendor/marked/marked.umd.js?v=e53a02d04f6d"></script>
-  <script type="xenon/after-first-frame" src="vendor/mermaid/mermaid.min.js?v=e53a02d04f6d"></script>
-  <script type="xenon/after-first-frame" src="vendor/monaco/vs/loader.js?v=e53a02d04f6d"></script>
-  <script type="xenon/after-first-frame" data-module src="app/js/main.js?v=e53a02d04f6d"></script>
+    <link rel="preload" as="script" href="vendor/marked/marked.umd.js?v=5ec033cc34c5">
+  <link rel="preload" as="script" href="vendor/mermaid/mermaid.min.js?v=5ec033cc34c5">
+  <link rel="preload" as="script" href="vendor/monaco/vs/loader.js?v=5ec033cc34c5">
+  <link rel="modulepreload" href="app/js/main.js?v=5ec033cc34c5">
+  <script type="xenon/after-first-frame" src="vendor/marked/marked.umd.js?v=5ec033cc34c5"></script>
+  <script type="xenon/after-first-frame" src="vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script type="xenon/after-first-frame" src="vendor/monaco/vs/loader.js?v=5ec033cc34c5"></script>
+  <script type="xenon/after-first-frame" data-module src="app/js/main.js?v=5ec033cc34c5"></script>
   <script>
     (function () {
       var started = false;

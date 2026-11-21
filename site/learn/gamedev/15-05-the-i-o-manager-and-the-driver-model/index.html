@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The I/O Manager and the Driver Model · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/15-05-the-i-o-manager-and-the-driver-model/">
+  <meta name="description" content="Every read, write and device request in Windows becomes an I/O request packet (IRP) handed to a stack of drivers by the I/O manager . This lesson explains…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The I/O Manager and the Driver Model · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Every read, write and device request in Windows becomes an I/O request packet (IRP) handed to a stack of drivers by the I/O manager . This lesson explains…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/15-05-the-i-o-manager-and-the-driver-model/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The I/O Manager and the Driver Model · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The I/O Manager and the Driver Model · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Every read, write and device request in Windows becomes an I/O request packet (IRP) handed to a stack of drivers by the I/O manager . This lesson explains…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Windows Kernel Architecture</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The I/O Manager and the Driver Model</h1>
+      <div class="readout lp-readout"><span>lesson <b>15.05</b></span><span>5 of 8 in milestone 15</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Every read, write and device request in Windows becomes an <strong>I/O request packet</strong> (IRP) handed to a <strong>stack</strong> of drivers by the <strong>I/O manager</strong>. This lesson explains IRPs, driver and device objects, how a request travels down a device stack and its completion travels back up, the kinds of drivers (filter, function, bus), and the frameworks (WDM and KMDF) drivers are written with.</p>
+      <div class="prose">
+<h2>Requests as packets</h2>
+<p>When a program calls <code>ReadFile</code> on a file or a device, the I/O manager in the kernel builds an <strong>IRP</strong>, a structure describing the request:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part of an IRP</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Major function</strong></td>
+<td>What kind of request: <code>IRP_MJ_CREATE</code> (open), <code>IRP_MJ_READ</code>, <code>IRP_MJ_WRITE</code>, <code>IRP_MJ_DEVICE_CONTROL</code> (custom commands, lesson 16.05), <code>IRP_MJ_CLOSE</code> ...</td>
+</tr>
+<tr>
+<td><strong>Parameters</strong></td>
+<td>Length, offset, the control code ... in the current <strong>stack location</strong></td>
+</tr>
+<tr>
+<td><strong>Buffers</strong></td>
+<td>Where the data is, described in one of three ways (lesson 16.07)</td>
+</tr>
+<tr>
+<td><strong>I/O status</strong></td>
+<td>When finished: an NTSTATUS and how many bytes were transferred</td>
+</tr>
+</tbody></table>
+</div>
+<p>The I/O manager then hands the IRP to the driver responsible for the target device. Drivers never call each other&#39;s functions directly; everything goes through IRPs.</p>
+<h2>Driver objects and device objects</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Object</th>
+<th>One per</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Driver object</strong></td>
+<td>Loaded driver</td>
+<td>The table of <strong>dispatch routines</strong>: one function per major function the driver handles</td>
+</tr>
+<tr>
+<td><strong>Device object</strong></td>
+<td>Device the driver manages (a disk, a port, or a purely software device like chapter 16&#39;s)</td>
+<td>The device&#39;s state, and which driver handles it</td>
+</tr>
+</tbody></table>
+</div>
+<p>When <code>DriverEntry</code> (lesson 16.02) runs, the driver fills its driver object&#39;s dispatch table: <code>driver-&gt;MajorFunction[IRP_MJ_READ] = EchoRead;</code>. When an IRP for one of its devices arrives, the I/O manager calls the matching routine.</p>
+<h2>Device stacks</h2>
+<p>Most hardware is handled by several drivers layered on top of each other, each adding something:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    U[&quot;ReadFile on the volume&quot;] --&gt; F1[&quot;Upper filter driver&lt;br/&gt;e.g. encryption, antivirus scanning&quot;]
+    F1 --&gt; FN[&quot;Function driver&lt;br/&gt;e.g. the file system (NTFS) or the device's main driver&quot;]
+    FN --&gt; F2[&quot;Lower filter driver&quot;]
+    F2 --&gt; B[&quot;Bus driver&lt;br/&gt;e.g. USB, PCI: talks to the bus the device is on&quot;]
+    B --&gt; HW[&quot;Hardware&quot;]
+    B -.-&gt;|&quot;completion travels back up&quot;| F2
+    F2 -.-&gt; FN
+    FN -.-&gt; F1
+    F1 -.-&gt; U</pre></div>
+<p>Each driver, given an IRP, does one of three things:</p>
+<ol>
+<li><strong>Complete it</strong> itself (<code>IoCompleteRequest</code>) with a status, if it can satisfy the request.</li>
+<li><strong>Pass it down</strong> to the next driver in the stack (<code>IoCallDriver</code>), possibly after changing it, optionally asking to be told when it completes (a completion routine).</li>
+<li><strong>Queue it</strong> (mark it pending) to finish later, for example when hardware responds.</li>
+</ol>
+<p>The practice task simulates a request going down a stack until one driver completes it, and the completion coming back up through the drivers that asked to see it.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind of driver</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Bus driver</strong></td>
+<td>Discovers devices on a bus (PCI, USB) and creates their lowest device objects</td>
+</tr>
+<tr>
+<td><strong>Function driver</strong></td>
+<td>The main driver for a device: knows how to operate it</td>
+</tr>
+<tr>
+<td><strong>Filter driver</strong></td>
+<td>Sits above or below and adds or changes behaviour: encryption, compression, monitoring</td>
+</tr>
+<tr>
+<td><strong>Software-only driver</strong></td>
+<td>No hardware; provides a service to user mode through a device object (chapter 16&#39;s driver is one)</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Asynchronous by design</h2>
+<p>Device I/O takes time. Rather than making the caller&#39;s thread wait inside the driver, an IRP can be <strong>pending</strong>: the driver returns <code>STATUS_PENDING</code> at once, and completes the IRP later from an interrupt or a worker. User mode sees this as overlapped (asynchronous) I/O, or simply as <code>ReadFile</code> returning when the I/O manager finally completes the request. This design is why Windows I/O can keep thousands of requests in flight.</p>
+<h2>WDM and KMDF</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>WDM</strong> (Windows Driver Model)</td>
+<td>The original model: drivers handle IRPs directly, including all the plug-and-play and power management requests. Powerful and error-prone</td>
+</tr>
+<tr>
+<td><strong>KMDF</strong> (Kernel-Mode Driver Framework)</td>
+<td>A library over WDM that handles the standard plug-and-play, power and queueing logic, and gives drivers objects with reference counting and cleanup. Microsoft&#39;s recommended choice for new drivers</td>
+</tr>
+<tr>
+<td><strong>UMDF</strong></td>
+<td>Drivers for some device classes that run in <strong>user mode</strong>, so a bug crashes only a host process, not the machine. Preferred whenever the device type allows it</td>
+</tr>
+</tbody></table>
+</div>
+<p>Chapter 16 starts with a minimal WDM-style driver to see the raw mechanism, and the same ideas carry over to KMDF.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Completing an IRP and then touching it</span></div><div class="callout-body"><p>After <code>IoCompleteRequest</code>, the IRP belongs to the I/O manager and may already be freed.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Both completing and passing down the same IRP</span></div><div class="callout-body"><p>Each IRP must be completed exactly once, by one driver.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Writing a kernel driver when a user-mode one would do</span></div><div class="callout-body"><p>UMDF, or an ordinary service, keeps bugs out of the kernel.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is an IRP?</div><ul><li>A structure describing one I/O request, passed by the I/O manager to drivers</li><li>A kind of interrupt</li><li>A driver&#39;s configuration file</li></ul><details><summary>Show the answer</summary><p><b>A structure describing one I/O request, passed by the I/O manager to drivers</b> Major function, parameters, buffers and status.</p></details></li><li><div class="q">A filter driver receives an IRP it does not need to change. What does it do?</div><ul><li>Passes it down to the next driver with <code>IoCallDriver</code></li><li>Completes it with success</li><li>Deletes it</li></ul><details><summary>Show the answer</summary><p><b>Passes it down to the next driver with <code>IoCallDriver</code></b> Filters add behaviour only where they need to.</p></details></li><li><div class="q">Why is KMDF recommended over writing WDM drivers directly?</div><ul><li>It handles the standard plug-and-play, power and queueing logic correctly, leaving less error-prone code for the driver writer</li><li>KMDF drivers run in user mode</li><li>WDM no longer works</li></ul><details><summary>Show the answer</summary><p><b>It handles the standard plug-and-play, power and queueing logic correctly, leaving less error-prone code for the driver writer</b> UMDF is the user-mode framework.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/15.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/15.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../15-04-the-memory-manager/"><span class="mono">previous</span><b>15.04 The Memory Manager</b></a>
+      <a class="lp-next" href="../15-06-interrupts-irqls-and-scheduling/"><span class="mono">next</span><b>15.06 Interrupts, IRQLs and Scheduling</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/15-05-the-i-o-manager-and-the-driver-model"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

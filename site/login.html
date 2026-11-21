@@ -1,23 +1,38 @@
 <!doctype html>
-<html lang="en" data-theme="dark" data-mode="static" data-build="e53a02d04f6d">
+<html lang="en" data-theme="dark" data-mode="static" data-build="5ec033cc34c5">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co">
-  <meta name="description" content="Xenon: learn to program by doing. Lessons, practice checked by a real compiler, and projects, in C++, C, C#, Java, Python, JavaScript, Rust, Lua and assembly.">
-  <title>Sign in · Xenon</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Xenon · Learn to program by writing real code</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/">
+  <meta name="description" content="Short lessons, then practice that is really compiled and tested. C++, C, C#, Java, Python, JavaScript, Rust, Lua and x86-64 assembly, each from the first line to advanced work. Free while in beta.">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Xenon · Learn to program by writing real code">
+  <meta property="og:description" content="Short lessons, then practice that is really compiled and tested. C++, C, C#, Java, Python, JavaScript, Rust, Lua and x86-64 assembly, each from the first line to advanced work. Free while in beta.">
+  <meta property="og:url" content="https://xenon.justloofy.dev/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/xenon.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Xenon · Learn to program by writing real code">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Xenon · Learn to program by writing real code">
+  <meta name="twitter:description" content="Short lessons, then practice that is really compiled and tested. C++, C, C#, Java, Python, JavaScript, Rust, Lua and x86-64 assembly, each from the first line to advanced work. Free while in beta.">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/xenon.png">
   <link rel="icon" type="image/svg+xml" href="app/img/icon.svg">
   <link rel="alternate icon" href="app/img/icon.png">
   <link rel="manifest" href="app/manifest.json">
   <link rel="apple-touch-icon" href="app/img/icon-180.png">
   <meta name="apple-mobile-web-app-title" content="Xenon">
   <meta name="theme-color" content="#131416">
-  <link rel="stylesheet" href="app/css/app.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/login.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/theme.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/polish.css?v=e53a02d04f6d">
-  <link rel="stylesheet" href="app/css/xenon.css?v=e53a02d04f6d">
-  <script src="app/js/theme.js?v=e53a02d04f6d"></script>
+  <link rel="stylesheet" href="app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/login.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="app/css/xenon.css?v=5ec033cc34c5">
+  <script src="app/js/theme.js?v=5ec033cc34c5"></script>
 </head>
 <body class="login-page">
   <div class="signin">
@@ -30,13 +45,25 @@
       </div>
       <h1 class="signin-title">Learn to program by writing real code.</h1>
       <p class="signin-lede">You read a short lesson, then write code that is really compiled and tested. Every milestone ends with a project. <span id="pitch-sync">Your progress follows your account to every device.</span></p>
+      <figure class="signin-demo">
+        <div class="demo-frame">
+          <video id="demo" muted loop playsinline preload="metadata" poster="app/media/xenon-demo.jpg" aria-label="A 30-second look at Xenon: a Python lesson whose example is run, then a practice task written and checked against its tests">
+            <source src="app/media/xenon-demo.webm" type="video/webm">
+            <source src="app/media/xenon-demo.mp4" type="video/mp4">
+          </video>
+          <button type="button" class="demo-toggle" id="demo-toggle" aria-label="Pause the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-pause" d="M8 5v14M16 5v14"/><path class="i-play" d="M7 4.5v15l12-7.5z"/></svg></button>
+        </div>
+        <figcaption>30 seconds, no sound: a lesson, an example run, and a practice task checked against its tests.</figcaption>
+      </figure>
       <dl class="signin-facts">
         <dt>languages</dt>
         <dd>C++, C, C#, Java, Python, JavaScript and TypeScript, Rust, Lua, x86-64 assembly</dd>
         <dt>also</dt>
         <dd>How computers work, data structures and algorithms, game development, raylib, the Win32 API, Dear ImGui, DLLs, Windows kernel drivers</dd>
         <dt>in the box</dt>
-        <dd>A code editor with completion and live error checking, a terminal, a Playground for your own projects, review cards, notes</dd>
+        <dd>A code editor with completion and live error checking, a terminal, a Playground for your own projects, review cards, notes, a leaderboard</dd>
+        <dt>read first</dt>
+        <dd>Every lesson is open to read without an account: <a href="learn/">browse the courses</a></dd>
         <dt id="beta-label" hidden>beta</dt>
         <dd id="beta-line" hidden></dd>
       </dl>
@@ -46,9 +73,14 @@
         <div class="saved-title">Accounts on this device</div>
         <div class="saved-list" id="saved-list"></div>
       </div>
+      <div class="signin-places" id="places" hidden>
+        <div class="places-line"><span><b id="places-left">0</b> of <span id="places-cap">0</span> beta places left</span><span id="places-taken"></span></div>
+        <div class="places-bar" aria-hidden="true"><i id="places-fill"></i></div>
+      </div>
       <form class="card login-card" id="form" autocomplete="on" novalidate>
         <h2 id="heading">Sign in</h2>
         <p class="muted" id="lead">Pick up where you left off.</p>
+        <div id="account-fields">
         <label for="username">Username</label>
         <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24" required>
         <label for="password">Password</label>
@@ -60,6 +92,11 @@
           <label for="confirm">Password again</label>
           <input id="confirm" name="confirm" type="password" autocomplete="new-password" maxlength="200">
         </div>
+        </div>
+        <div id="wait-fields" hidden>
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" maxlength="254" spellcheck="false">
+        </div>
         <p class="signin-note" id="note" hidden></p>
         <label class="keep" id="keep-row"><input type="checkbox" id="keep" checked> <span>Keep me signed in on this device</span></label>
         <div class="login-error" id="error" role="alert"></div>
@@ -69,6 +106,7 @@
       <p class="login-foot"><span id="ask">No account yet? Ask the person who runs this site for one. </span><span class="mono">v1.0.0</span></p>
     </main>
   </div>
-  <script type="module" src="app/js/login.js?v=e53a02d04f6d"></script>
+  <script src="app/js/visit.js?v=5ec033cc34c5" data-page="/"></script>
+  <script type="module" src="app/js/login.js?v=5ec033cc34c5"></script>
 </body>
 </html>

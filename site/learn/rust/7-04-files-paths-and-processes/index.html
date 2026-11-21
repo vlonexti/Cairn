@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Files, Paths and Processes · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/7-04-files-paths-and-processes/">
+  <meta name="description" content="Working with the operating system - std::fs for reading, writing and listing files, BufReader for large files, Path and PathBuf, io::Error and its kinds,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Files, Paths and Processes · Rust · Xenon">
+  <meta property="og:description" content="Working with the operating system - std::fs for reading, writing and listing files, BufReader for large files, Path and PathBuf, io::Error and its kinds,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/7-04-files-paths-and-processes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Files, Paths and Processes · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Files, Paths and Processes · Rust · Xenon">
+  <meta name="twitter:description" content="Working with the operating system - std::fs for reading, writing and listing files, BufReader for large files, Path and PathBuf, io::Error and its kinds,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Advanced Rust</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Files, Paths and Processes</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.04</b></span><span>4 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Working with the operating system - std::fs for reading, writing and listing files, BufReader for large files, Path and PathBuf, io::Error and its kinds, environment variables and arguments, running other programs with std::process::Command, and exit codes.</p>
+      <div class="prose">
+<h2>Reading and writing whole files</h2>
+<p><code>std::fs</code> has one-call helpers for small files. Every one returns a <code>Result</code> with an <code>io::Error</code>, so <code>?</code> (lesson 3.04) passes failures on:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fs;
+<span class="tk-k">use</span> std::io;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() -&gt; io::<span class="tk-t">Result</span>&lt;()&gt; {
+    fs::<span class="tk-f">write</span>(<span class="tk-s">&quot;notes.txt&quot;</span>, <span class="tk-s">&quot;first line\nsecond line\n&quot;</span>)?;
+    <span class="tk-k">let</span> text = fs::<span class="tk-f">read_to_string</span>(<span class="tk-s">&quot;notes.txt&quot;</span>)?;
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} lines&quot;</span>, text.<span class="tk-f">lines</span>().<span class="tk-f">count</span>());
+
+    <span class="tk-k">let</span> bytes = fs::<span class="tk-f">read</span>(<span class="tk-s">&quot;notes.txt&quot;</span>)?;            <span class="tk-c">// Vec&lt;u8&gt; for binary data</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} bytes&quot;</span>, bytes.<span class="tk-f">len</span>());
+
+    fs::<span class="tk-f">create_dir_all</span>(<span class="tk-s">&quot;out/reports&quot;</span>)?;
+    fs::<span class="tk-f">copy</span>(<span class="tk-s">&quot;notes.txt&quot;</span>, <span class="tk-s">&quot;out/reports/notes.txt&quot;</span>)?;
+    fs::<span class="tk-f">remove_file</span>(<span class="tk-s">&quot;notes.txt&quot;</span>)?;
+    <span class="tk-f">Ok</span>(())
+}</code></pre></div>
+<p>(Examples in this lesson touch your file system, so they run on your own machine rather than in Xenon&#39;s sandbox.)</p>
+<h2>Large files, line by line</h2>
+<p><code>read_to_string</code> loads everything into memory. For a big file, wrap the <code>File</code> in a <code>BufReader</code> and read one line at a time:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fs::<span class="tk-t">File</span>;
+<span class="tk-k">use</span> std::io::{<span class="tk-k">self</span>, <span class="tk-t">BufRead</span>, <span class="tk-t">BufReader</span>, <span class="tk-t">BufWriter</span>, <span class="tk-t">Write</span>};
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() -&gt; io::<span class="tk-t">Result</span>&lt;()&gt; {
+    <span class="tk-k">let</span> input = <span class="tk-t">BufReader</span>::<span class="tk-f">new</span>(<span class="tk-t">File</span>::<span class="tk-f">open</span>(<span class="tk-s">&quot;server.log&quot;</span>)?);
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> output = <span class="tk-t">BufWriter</span>::<span class="tk-f">new</span>(<span class="tk-t">File</span>::<span class="tk-f">create</span>(<span class="tk-s">&quot;errors.log&quot;</span>)?);
+    <span class="tk-k">for</span> line <span class="tk-k">in</span> input.<span class="tk-f">lines</span>() {
+        <span class="tk-k">let</span> line = line?;
+        <span class="tk-k">if</span> line.<span class="tk-f">contains</span>(<span class="tk-s">&quot;ERROR&quot;</span>) {
+            <span class="tk-p">writeln!</span>(output, <span class="tk-s">&quot;{line}&quot;</span>)?;
+        }
+    }
+    output.<span class="tk-f">flush</span>()?;
+    <span class="tk-f">Ok</span>(())
+}</code></pre></div>
+<p><code>BufWriter</code> gathers small writes into large ones. The same <code>BufRead</code> trait works for <code>io::stdin().lock()</code>, so one function can read either a file or standard input.</p>
+<h2>Errors and their kinds</h2>
+<p>An <code>io::Error</code> has a <code>kind()</code> you can match on, to treat &quot;not found&quot; differently from &quot;permission denied&quot;:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fs;
+<span class="tk-k">use</span> std::io::<span class="tk-t">ErrorKind</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">match</span> fs::<span class="tk-f">read_to_string</span>(<span class="tk-s">&quot;does-not-exist.txt&quot;</span>) {
+        <span class="tk-f">Ok</span>(text) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} characters&quot;</span>, text.<span class="tk-f">len</span>()),
+        <span class="tk-f">Err</span>(e) <span class="tk-k">if</span> e.<span class="tk-f">kind</span>() == <span class="tk-t">ErrorKind</span>::<span class="tk-t">NotFound</span> =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;no such file, using defaults&quot;</span>),
+        <span class="tk-f">Err</span>(e) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;could not read it: {e}&quot;</span>),
+    }
+}</code></pre></div>
+<h2>Paths</h2>
+<p><code>Path</code> (borrowed) and <code>PathBuf</code> (owned) are to file paths what <code>&amp;str</code> and <code>String</code> are to text. They handle <code>/</code> and <code>\</code> correctly on every system:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::path::{<span class="tk-t">Path</span>, <span class="tk-t">PathBuf</span>};
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> p = <span class="tk-t">Path</span>::<span class="tk-f">new</span>(<span class="tk-s">&quot;photos/2026/beach.jpg&quot;</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} {:?} {:?}&quot;</span>, p.<span class="tk-f">file_name</span>(), p.<span class="tk-f">extension</span>(), p.<span class="tk-f">parent</span>());
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, p.<span class="tk-f">file_stem</span>());
+
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> out = <span class="tk-t">PathBuf</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;backup&quot;</span>);
+    out.<span class="tk-f">push</span>(<span class="tk-s">&quot;2026&quot;</span>);
+    out.<span class="tk-f">push</span>(<span class="tk-s">&quot;beach.jpg&quot;</span>);
+    out.<span class="tk-f">set_extension</span>(<span class="tk-s">&quot;png&quot;</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, out.<span class="tk-f">display</span>());
+}</code></pre></div>
+<p>Paths are not always valid UTF-8, so they print with <code>.display()</code> and convert to <code>&amp;str</code> with <code>to_str()</code>, which returns an <code>Option</code>.</p>
+<h2>Listing a folder</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fs;
+<span class="tk-k">use</span> std::io;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() -&gt; io::<span class="tk-t">Result</span>&lt;()&gt; {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> entries: <span class="tk-t">Vec</span>&lt;_&gt; = fs::<span class="tk-f">read_dir</span>(<span class="tk-s">&quot;.&quot;</span>)?.collect::&lt;<span class="tk-t">Result</span>&lt;_, _&gt;&gt;()?;
+    entries.<span class="tk-f">sort_by_key</span>(|e| e.<span class="tk-f">file_name</span>());
+    <span class="tk-k">for</span> entry <span class="tk-k">in</span> entries {
+        <span class="tk-k">let</span> meta = entry.<span class="tk-f">metadata</span>()?;
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:&gt;10} {}&quot;</span>, <span class="tk-k">if</span> meta.<span class="tk-f">is_dir</span>() { <span class="tk-s">&quot;&lt;dir&gt;&quot;</span>.<span class="tk-f">to_string</span>() } <span class="tk-k">else</span> { meta.<span class="tk-f">len</span>().<span class="tk-f">to_string</span>() }, entry.<span class="tk-f">path</span>().<span class="tk-f">display</span>());
+    }
+    <span class="tk-f">Ok</span>(())
+}</code></pre></div>
+<h2>Arguments, environment and exit codes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::env;
+<span class="tk-k">use</span> std::process::<span class="tk-t">ExitCode</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() -&gt; <span class="tk-t">ExitCode</span> {
+    <span class="tk-k">let</span> args: <span class="tk-t">Vec</span>&lt;<span class="tk-t">String</span>&gt; = env::<span class="tk-f">args</span>().<span class="tk-f">skip</span>(<span class="tk-n">1</span>).<span class="tk-f">collect</span>();      <span class="tk-c">// skip the program name</span>
+    <span class="tk-k">let</span> verbose = env::<span class="tk-f">var</span>(<span class="tk-s">&quot;VERBOSE&quot;</span>).<span class="tk-f">is_ok</span>();
+    <span class="tk-k">if</span> args.<span class="tk-f">is_empty</span>() {
+        <span class="tk-p">eprintln!</span>(<span class="tk-s">&quot;usage: tool FILE...&quot;</span>);
+        <span class="tk-k">return</span> <span class="tk-t">ExitCode</span>::<span class="tk-f">from</span>(<span class="tk-n">2</span>);
+    }
+    <span class="tk-k">if</span> verbose { <span class="tk-p">eprintln!</span>(<span class="tk-s">&quot;{} files&quot;</span>, args.<span class="tk-f">len</span>()); }
+    <span class="tk-t">ExitCode</span>::SUCCESS
+}</code></pre></div>
+<p><code>eprintln!</code> writes to standard error, so messages do not mix with the real output. For real argument parsing, the <code>clap</code> crate is the standard choice.</p>
+<h2>Running other programs</h2>
+<p><code>std::process::Command</code> starts a program, passes arguments, and collects its output and exit status:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::process::<span class="tk-t">Command</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() -&gt; std::io::<span class="tk-t">Result</span>&lt;()&gt; {
+    <span class="tk-k">let</span> output = <span class="tk-t">Command</span>::<span class="tk-f">new</span>(<span class="tk-s">&quot;git&quot;</span>).<span class="tk-f">args</span>([<span class="tk-s">&quot;log&quot;</span>, <span class="tk-s">&quot;--oneline&quot;</span>, <span class="tk-s">&quot;-3&quot;</span>]).<span class="tk-f">output</span>()?;
+    <span class="tk-k">if</span> output.status.<span class="tk-f">success</span>() {
+        <span class="tk-p">print!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-t">String</span>::<span class="tk-f">from_utf8_lossy</span>(&amp;output.stdout));
+    } <span class="tk-k">else</span> {
+        <span class="tk-p">eprintln!</span>(<span class="tk-s">&quot;git failed: {}&quot;</span>, <span class="tk-t">String</span>::<span class="tk-f">from_utf8_lossy</span>(&amp;output.stderr));
+    }
+    <span class="tk-f">Ok</span>(())
+}</code></pre></div>
+<p>Arguments are passed as a list, never glued into one string for a shell, so a file name with spaces or quotes cannot break the command.</p>
+<h2>A pure core again</h2>
+<p>As in the command-line project (lesson 6.05), keep parsing and deciding in functions that take <code>&amp;str</code> or <code>impl BufRead</code> and return values, and keep the files, arguments and process handling in a thin <code>main</code>. The core can then be tested without touching the disk.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/7.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/7.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-03-unsafe-rust-and-ffi/"><span class="mono">previous</span><b>7.03 Unsafe Rust and FFI</b></a>
+      <a class="lp-next" href="../7-05-type-state-and-phantomdata/"><span class="mono">next</span><b>7.05 Type-State and PhantomData</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/7-04-files-paths-and-processes"></script>
+</body>
+</html>

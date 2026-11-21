@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Listing Processes and Modules · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/6-07-listing-processes-and-modules/">
+  <meta name="description" content="Task Manager, Process Explorer and every debugger start by asking Windows &quot;what is running?&quot;. This lesson uses the Tool Help API to list running processes…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Listing Processes and Modules · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Task Manager, Process Explorer and every debugger start by asking Windows &quot;what is running?&quot;. This lesson uses the Tool Help API to list running processes…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/6-07-listing-processes-and-modules/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Listing Processes and Modules · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Listing Processes and Modules · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Task Manager, Process Explorer and every debugger start by asking Windows &quot;what is running?&quot;. This lesson uses the Tool Help API to list running processes…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Processes, Threads and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Listing Processes and Modules</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.07</b></span><span>7 of 9 in milestone 6</span><span>5 min</span></div>
+      <p class="lp-summary">Task Manager, Process Explorer and every debugger start by asking Windows &quot;what is running?&quot;. This lesson uses the <strong>Tool Help</strong> API to list running processes and the modules loaded in your own process, the building block of crash reporters, launchers that check whether the game is already open, and the tools in chapter 12.</p>
+      <div class="prose">
+<h2>Snapshots</h2>
+<p>The Tool Help API works in two steps: take a <strong>snapshot</strong> of some part of the system, then walk through it. A snapshot is a copy taken at one moment, so it does not change while you read it (processes that start or end afterwards are not reflected).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Snapshot flag</th>
+<th>Lists</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TH32CS_SNAPPROCESS</code></td>
+<td>Every running process</td>
+</tr>
+<tr>
+<td><code>TH32CS_SNAPTHREAD</code></td>
+<td>Every thread in the system</td>
+</tr>
+<tr>
+<td><code>TH32CS_SNAPMODULE</code></td>
+<td>The modules (exe and DLLs) of one process</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Listing processes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;tlhelp32.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    HANDLE snapshot{ <span class="tk-f">CreateToolhelp32Snapshot</span>(TH32CS_SNAPPROCESS, <span class="tk-n">0</span>) };
+    <span class="tk-k">if</span> (snapshot == INVALID_HANDLE_VALUE) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+
+    PROCESSENTRY32W entry{};
+    entry.dwSize = <span class="tk-k">sizeof</span>(entry);                  <span class="tk-c">// must be set before the first call</span>
+    <span class="tk-k">int</span> count{ <span class="tk-n">0</span> };
+    <span class="tk-k">bool</span> sawMyself{ <span class="tk-k">false</span> };
+    <span class="tk-k">for</span> (BOOL more{ <span class="tk-f">Process32FirstW</span>(snapshot, &amp;entry) }; more; more = <span class="tk-f">Process32NextW</span>(snapshot, &amp;entry))
+    {
+        ++count;
+        <span class="tk-k">if</span> (entry.th32ProcessID == <span class="tk-f">GetCurrentProcessId</span>()) sawMyself = <span class="tk-k">true</span>;
+        <span class="tk-c">// entry.szExeFile is the file name, entry.th32ParentProcessID the parent, entry.cntThreads the thread count</span>
+    }
+    <span class="tk-f">CloseHandle</span>(snapshot);
+    std::cout &lt;&lt; <span class="tk-s">&quot;found &quot;</span> &lt;&lt; (count &gt; <span class="tk-n">1</span> ? <span class="tk-s">&quot;several&quot;</span> : <span class="tk-s">&quot;too few&quot;</span>) &lt;&lt; <span class="tk-s">&quot; processes, including this one: &quot;</span> &lt;&lt; (sawMyself ? <span class="tk-s">&quot;yes&quot;</span> : <span class="tk-s">&quot;no&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>found several processes, including this one: yes</code></pre></div>
+<p>Each <code>PROCESSENTRY32W</code> gives the process id, its parent&#39;s id, its thread count and its executable&#39;s <strong>file name</strong> (not the full path). To learn more (the full path, memory use, start time) you open the process by id with <code>OpenProcess</code> asking for <code>PROCESS_QUERY_LIMITED_INFORMATION</code>, which Windows grants for almost every process, and call functions such as <code>QueryFullProcessImageNameW</code> (lesson 6.01) or <code>GetProcessTimes</code>.</p>
+<p>A common real use: a game launcher or the game itself checking whether another copy is already running before starting a second one. (The more robust way to enforce &quot;one copy only&quot; is a <strong>named mutex</strong>: <code>CreateMutexW(nullptr, FALSE, L&quot;MyGame.SingleInstance&quot;)</code>, then check whether <code>GetLastError()</code> returned <code>ERROR_ALREADY_EXISTS</code>.)</p>
+<h2>Listing your own modules</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;tlhelp32.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    HANDLE snapshot{ <span class="tk-f">CreateToolhelp32Snapshot</span>(TH32CS_SNAPMODULE, <span class="tk-f">GetCurrentProcessId</span>()) };
+    <span class="tk-k">if</span> (snapshot == INVALID_HANDLE_VALUE) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+
+    MODULEENTRY32W <span class="tk-k">module</span>{};
+    <span class="tk-k">module</span>.dwSize = <span class="tk-k">sizeof</span>(<span class="tk-k">module</span>);
+    <span class="tk-k">bool</span> kernel32{ <span class="tk-k">false</span> };
+    <span class="tk-k">int</span> count{ <span class="tk-n">0</span> };
+    <span class="tk-k">for</span> (BOOL more{ <span class="tk-f">Module32FirstW</span>(snapshot, &amp;<span class="tk-k">module</span>) }; more; more = <span class="tk-f">Module32NextW</span>(snapshot, &amp;<span class="tk-k">module</span>))
+    {
+        ++count;
+        <span class="tk-k">if</span> (<span class="tk-f">_wcsicmp</span>(<span class="tk-k">module</span>.szModule, <span class="tk-s">L&quot;kernel32.dll&quot;</span>) == <span class="tk-n">0</span>) kernel32 = <span class="tk-k">true</span>;
+        <span class="tk-c">// module.modBaseAddr is where it is loaded, module.modBaseSize its size, module.szExePath its full path</span>
+    }
+    <span class="tk-f">CloseHandle</span>(snapshot);
+    std::cout &lt;&lt; <span class="tk-s">&quot;modules loaded: &quot;</span> &lt;&lt; (count &gt; <span class="tk-n">3</span> ? <span class="tk-s">&quot;many&quot;</span> : <span class="tk-s">&quot;few&quot;</span>) &lt;&lt; <span class="tk-s">&quot;, kernel32.dll among them: &quot;</span> &lt;&lt; (kernel32 ? <span class="tk-s">&quot;yes&quot;</span> : <span class="tk-s">&quot;no&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>modules loaded: many, kernel32.dll among them: yes</code></pre></div>
+<p>Each <code>MODULEENTRY32W</code> gives a module&#39;s base address and size, exactly the ranges lesson 6.04&#39;s <code>VirtualQuery</code> walk found as <code>MEM_IMAGE</code> regions. Combining them turns any code address into &quot;module + offset&quot;, the form crash reports use (lesson 6.09).</p>
+<h2>A crash report&#39;s module list</h2>
+<p>When a game crashes, a useful report says not just &quot;crashed at <code>0x00007FF6A1235F10</code>&quot; but &quot;crashed in <code>game.exe</code> at offset <code>0x35F10</code>&quot;, together with the list of loaded modules and their versions. With that, a developer can open the matching build&#39;s <code>.pdb</code> and find the exact source line, even though addresses differ on the player&#39;s machine. Chapter 8 builds this with crash dumps; the module list above is half of it.</p>
+<h2>Rights and limits</h2>
+<p>Listing names and ids of all processes needs no special rights. Opening other processes for more than limited information, or listing their modules, requires access rights that Windows grants only for processes running as the same user and at the same or lower integrity level, and never for protected processes (next lesson). Tools in this course look at processes you start yourself.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Forgetting to set <code>dwSize</code>
+<code>Process32FirstW</code> fails if the structure&#39;s size field is not set first.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Treating a process name as unique</span></div><div class="callout-body"><p>Many processes can have the same file name. Use the process id, and check the full path if it matters.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Holding on to a PID for a long time</span></div><div class="callout-body"><p>When a process ends, its id can be reused by a new, unrelated process. Hold a process handle instead if you need to keep referring to it.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does <code>CreateToolhelp32Snapshot</code> capture?</div><ul><li>A copy of the chosen information (processes, threads or modules) at one moment</li><li>A live view that updates as processes start and stop</li><li>An image of a process&#39;s memory</li></ul><details><summary>Show the answer</summary><p><b>A copy of the chosen information (processes, threads or modules) at one moment</b> You walk the copy; later changes are not reflected.</p></details></li><li><div class="q">Two processes are both called <code>game.exe</code>. How do you tell them apart?</div><ul><li>By their process ids, and if needed their full paths</li><li>You cannot</li><li>By the order they appear in the snapshot</li></ul><details><summary>Show the answer</summary><p><b>By their process ids, and if needed their full paths</b> File names are not unique; ids are unique among running processes.</p></details></li><li><div class="q">Why is &quot;module + offset&quot; more useful in a crash report than a raw address?</div><ul><li>Modules load at different addresses on different machines, but an offset within a module matches the build&#39;s symbols everywhere</li><li>It is shorter</li><li>Raw addresses are secret</li></ul><details><summary>Show the answer</summary><p><b>Modules load at different addresses on different machines, but an offset within a module matches the build&#39;s symbols everywhere</b> The offset can be looked up in the matching <code>.pdb</code> to find the source line.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/6.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/6.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-06-data-races-mutexes-and-events/"><span class="mono">previous</span><b>6.06 Data Races, Mutexes and Events</b></a>
+      <a class="lp-next" href="../6-08-access-rights-tokens-and-why-windows-says-no/"><span class="mono">next</span><b>6.08 Access Rights, Tokens and Why Windows Says No</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/6-07-listing-processes-and-modules"></script>
+</body>
+</html>

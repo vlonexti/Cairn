@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Node.js · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/7-06-node-js/">
+  <meta name="description" content="JavaScript outside the browser - what Node.js adds, ES modules and CommonJS, reading and writing files with node:fs/promises, paths, command-line arguments…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Node.js · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="JavaScript outside the browser - what Node.js adds, ES modules and CommonJS, reading and writing files with node:fs/promises, paths, command-line arguments…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/7-06-node-js/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Node.js · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Node.js · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="JavaScript outside the browser - what Node.js adds, ES modules and CommonJS, reading and writing files with node:fs/promises, paths, command-line arguments…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Advanced JavaScript and TypeScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Node.js</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.06</b></span><span>6 of 6 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">JavaScript outside the browser - what Node.js adds, ES modules and CommonJS, reading and writing files with node:fs/promises, paths, command-line arguments and environment variables, exit codes, streams for big files, and package.json scripts.</p>
+      <div class="prose">
+<h2>One language, two places</h2>
+<p>The browser gives JavaScript the DOM, <code>fetch</code> and <code>localStorage</code>. <strong>Node.js</strong> runs the same language on a computer or server and gives it the operating system instead: files, processes, network sockets. Tools you already use (npm, Vite, the TypeScript compiler, ESLint) are Node programs.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// hello.mjs, run with:  node hello.mjs Ada</span>
+<span class="tk-k">const</span> name = process.argv[<span class="tk-n">2</span>] ?? <span class="tk-s">&quot;world&quot;</span>;
+console.<span class="tk-f">log</span>(<span class="tk-s">`hello, ${name}`</span>);</code></pre></div>
+<p>Xenon&#39;s practice sandbox imitates a small part of Node (<code>console</code>, <code>process.argv</code>, <code>require(&quot;fs&quot;)</code> for the project&#39;s own files). The examples marked as not runnable here are for your own machine.</p>
+<h2>Modules: two systems</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>ES modules</th>
+<th>CommonJS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Syntax</td>
+<td><code>import x from &quot;./x.js&quot;</code>, <code>export</code></td>
+<td><code>const x = require(&quot;./x&quot;)</code>, <code>module.exports</code></td>
+</tr>
+<tr>
+<td>Files</td>
+<td><code>.mjs</code>, or <code>.js</code> with <code>&quot;type&quot;: &quot;module&quot;</code> in package.json</td>
+<td><code>.cjs</code>, or <code>.js</code> by default</td>
+</tr>
+<tr>
+<td>Loading</td>
+<td>can <code>await</code> at the top level</td>
+<td>synchronous</td>
+</tr>
+</tbody></table>
+</div>
+<p>New code uses ES modules (lesson 3.05). You still meet CommonJS in older packages, and <code>import</code> can load it.</p>
+<h2>Files</h2>
+<p><code>node:fs/promises</code> has promise-based versions of every file function:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">import</span> { readFile, writeFile, readdir, mkdir } <span class="tk-k">from</span> <span class="tk-s">&quot;node:fs/promises&quot;</span>;
+<span class="tk-k">import</span> path <span class="tk-k">from</span> <span class="tk-s">&quot;node:path&quot;</span>;
+
+<span class="tk-k">const</span> text = <span class="tk-k">await</span> <span class="tk-f">readFile</span>(<span class="tk-s">&quot;notes.txt&quot;</span>, <span class="tk-s">&quot;utf8&quot;</span>);
+<span class="tk-k">const</span> words = text.<span class="tk-f">split</span>(/\s+/).<span class="tk-f">filter</span>(Boolean).length;
+
+<span class="tk-k">await</span> <span class="tk-f">mkdir</span>(<span class="tk-s">&quot;out&quot;</span>, { recursive: <span class="tk-k">true</span> });
+<span class="tk-k">await</span> <span class="tk-f">writeFile</span>(path.<span class="tk-f">join</span>(<span class="tk-s">&quot;out&quot;</span>, <span class="tk-s">&quot;count.txt&quot;</span>), <span class="tk-s">`${words} words\n`</span>);
+
+<span class="tk-k">for</span> (<span class="tk-k">const</span> entry <span class="tk-k">of</span> <span class="tk-k">await</span> <span class="tk-f">readdir</span>(<span class="tk-s">&quot;.&quot;</span>, { withFileTypes: <span class="tk-k">true</span> })) {
+  console.<span class="tk-f">log</span>(entry.<span class="tk-f">isDirectory</span>() ? <span class="tk-s">&quot;dir &quot;</span> : <span class="tk-s">&quot;file&quot;</span>, entry.name);
+}</code></pre></div>
+<p>A missing file rejects with an error whose <code>code</code> is <code>&quot;ENOENT&quot;</code>; check <code>err.code</code> to tell &quot;not there&quot; from other problems. <code>node:path</code> builds paths correctly on every system: <code>path.join</code>, <code>path.basename</code>, <code>path.extname</code>, <code>path.resolve</code>.</p>
+<h2>Arguments, environment and exit codes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// node tool.mjs --limit 5 input.csv</span>
+<span class="tk-k">const</span> args = process.argv.<span class="tk-f">slice</span>(<span class="tk-n">2</span>);          <span class="tk-c">// [ '--limit', '5', 'input.csv' ]</span>
+<span class="tk-k">const</span> debug = process.env.DEBUG === <span class="tk-s">&quot;1&quot;</span>;     <span class="tk-c">// set with:  DEBUG=1 node tool.mjs  (PowerShell: $env:DEBUG=1)</span>
+
+<span class="tk-k">if</span> (args.length === <span class="tk-n">0</span>) {
+  console.<span class="tk-f">error</span>(<span class="tk-s">&quot;usage: tool [--limit N] FILE&quot;</span>);
+  process.<span class="tk-f">exit</span>(<span class="tk-n">2</span>);                           <span class="tk-c">// non-zero means failure to whoever started the program</span>
+}</code></pre></div>
+<p><code>node:util</code> has <code>parseArgs</code> for real argument parsing; for anything bigger, packages such as commander do the work. Write errors to <code>console.error</code> (standard error) so they do not mix with the program&#39;s real output.</p>
+<h2>Streams for big files</h2>
+<p><code>readFile</code> loads a whole file into memory. For a file of several gigabytes, read it as a <strong>stream</strong>, piece by piece:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">import</span> { createReadStream } <span class="tk-k">from</span> <span class="tk-s">&quot;node:fs&quot;</span>;
+<span class="tk-k">import</span> { createInterface } <span class="tk-k">from</span> <span class="tk-s">&quot;node:readline&quot;</span>;
+
+<span class="tk-k">let</span> lines = <span class="tk-n">0</span>;
+<span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> line <span class="tk-k">of</span> <span class="tk-f">createInterface</span>({ input: <span class="tk-f">createReadStream</span>(<span class="tk-s">&quot;huge.log&quot;</span>) })) {
+  <span class="tk-k">if</span> (line.<span class="tk-f">includes</span>(<span class="tk-s">&quot;ERROR&quot;</span>)) lines++;
+}
+console.<span class="tk-f">log</span>(lines, <span class="tk-s">&quot;error lines&quot;</span>);</code></pre></div>
+<p><code>for await</code> (lesson 4.03) reads one line at a time, so memory use stays flat whatever the file size.</p>
+<h2>package.json and npm scripts</h2>
+<p><code>npm init -y</code> creates a <code>package.json</code> describing the project: its name, dependencies, and <strong>scripts</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JSON</span></div><pre><code>{
+  &quot;name&quot;: &quot;word-tool&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;scripts&quot;: {
+    &quot;start&quot;: &quot;node src/main.js&quot;,
+    &quot;test&quot;: &quot;node --test&quot;
+  },
+  &quot;dependencies&quot;: { &quot;chalk&quot;: &quot;^5.3.0&quot; }
+}</code></pre></div>
+<p><code>npm install chalk</code> adds a dependency, <code>npm run start</code> runs a script, and <code>npm test</code> runs the test script. <code>node --test</code> is Node&#39;s built-in test runner: files that call <code>test(...)</code> from <code>node:test</code> with <code>assert</code> from <code>node:assert/strict</code>.</p>
+<h2>A pure core, a thin shell</h2>
+<p>Keep the logic (parsing, counting, deciding) in plain functions that take values and return values, and keep the file and process handling in a thin outer layer. The core can then be tested anywhere, including Xenon&#39;s sandbox, and the shell is small enough to check by running it.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/7.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/7.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-05-advanced-typescript-types/"><span class="mono">previous</span><b>7.05 Advanced TypeScript Types</b></a>
+      <a class="lp-next" href="../8-01-binary-data-with-typed-arrays/"><span class="mono">next</span><b>8.01 Binary Data with Typed Arrays</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/7-06-node-js"></script>
+</body>
+</html>

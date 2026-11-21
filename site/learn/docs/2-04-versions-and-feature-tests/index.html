@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Versions and Feature Tests · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/2-04-versions-and-feature-tests/">
+  <meta name="description" content="Making sure what you read applies to what you compile - version markers on reference pages, choosing the language standard with /std and -std, compiler…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Versions and Feature Tests · Reading Documentation · Xenon">
+  <meta property="og:description" content="Making sure what you read applies to what you compile - version markers on reference pages, choosing the language standard with /std and -std, compiler…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/2-04-versions-and-feature-tests/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Versions and Feature Tests · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Versions and Feature Tests · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="Making sure what you read applies to what you compile - version markers on reference pages, choosing the language standard with /std and -std, compiler…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>The C++ Standard Library Reference</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Versions and Feature Tests</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 4 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making sure what you read applies to what you compile - version markers on reference pages, choosing the language standard with /std and -std, compiler support tables, __cplusplus and _MSVC_LANG, feature-test macros from the version header, deprecated and removed features, and reading the std::format specification as an example of a C++20 feature.</p>
+      <div class="prose">
+<h2>Is it in my version?</h2>
+<p>C++ gets a new standard every three years: C++11, 14, 17, 20, 23, 26. Reference pages mark what belongs to which:</p>
+<ul>
+<li><strong>(since C++17)</strong> next to an overload or member: only available from that version.</li>
+<li><strong>(until C++20)</strong> or <strong>(removed in C++20)</strong>: gone from that version on.</li>
+<li><strong>(deprecated in C++17)</strong>: still works, may be removed later; compilers warn.</li>
+</ul>
+<p>Before you rely on something, check the marker against the standard you compile with:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Compiler</th>
+<th>Option</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MSVC</td>
+<td><code>/std:c++17</code>, <code>/std:c++20</code>, <code>/std:c++latest</code></td>
+<td>Visual Studio: Project Properties &gt; C/C++ &gt; Language</td>
+</tr>
+<tr>
+<td>GCC, Clang</td>
+<td><code>-std=c++17</code>, <code>-std=c++20</code>, <code>-std=c++2b</code></td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<h2>Supported by my compiler?</h2>
+<p>A feature being in the standard does not mean your compiler has it yet. cppreference&#39;s <strong>&quot;Compiler support&quot;</strong> pages list each feature and the first version of GCC, Clang and MSVC that implements it. <code>std::format</code> is C++20 but arrived in GCC 13 only; <code>std::print</code> is C++23 and needs recent compilers.</p>
+<h2>Checking in code</h2>
+<p>The macro <code>__cplusplus</code> holds the standard version (<code>202002L</code> for C++20). MSVC leaves it at <code>199711L</code> unless you add <code>/Zc:__cplusplus</code>, and gives the real value in <code>_MSVC_LANG</code>. More precise are <strong>feature-test macros</strong>, defined by including <code>&lt;version&gt;</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;version&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+<span class="tk-p">#ifdef</span> __cpp_lib_format
+    std::cout &lt;&lt; <span class="tk-s">&quot;std::format available, version &quot;</span> &lt;&lt; __cpp_lib_format &lt;&lt; <span class="tk-s">'\n'</span>;
+<span class="tk-p">#else</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;no std::format\n&quot;</span>;
+<span class="tk-p">#endif</span>
+<span class="tk-p">#ifdef</span> __cpp_lib_expected
+    std::cout &lt;&lt; <span class="tk-s">&quot;std::expected available\n&quot;</span>;
+<span class="tk-p">#endif</span>
+}</code></pre></div>
+<p>Each library page lists its macro in a <strong>Notes</strong> table (&quot;Feature-test macro: <code>__cpp_lib_format</code>, value 201907L&quot;). Use them for code that must build on several compilers, with a fallback in the <code>#else</code>.</p>
+<h2>Reading a specification inside a page: std::format</h2>
+<p>Some pages contain a small language of their own. The <strong>format specification</strong> for <code>std::format</code> (C++20) is one, and it rewards precise reading. A replacement field is <code>{index:spec}</code>, and the spec for numbers and strings is:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>fill-and-align  sign  #  0  width  .precision  L  type</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Values</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>fill and align</td>
+<td><code>&lt;</code> left, <code>&gt;</code> right, <code>^</code> centre, optionally preceded by a fill character</td>
+<td><code>{:*&gt;6}</code> pads with <code>*</code> to width 6, right-aligned</td>
+</tr>
+<tr>
+<td>sign</td>
+<td><code>+</code> always, <code>-</code> only negative (default), space: a space for positive</td>
+<td><code>{:+}</code> gives <code>+5</code></td>
+</tr>
+<tr>
+<td><code>#</code></td>
+<td>alternate form</td>
+<td><code>{:#x}</code> gives <code>0xff</code></td>
+</tr>
+<tr>
+<td><code>0</code></td>
+<td>pad numbers with zeros after the sign</td>
+<td><code>{:05}</code> gives <code>00042</code></td>
+</tr>
+<tr>
+<td>width</td>
+<td>minimum width</td>
+<td><code>{:8}</code></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>digits after the point for floating point; maximum characters for strings</td>
+<td><code>{:.2f}</code>, <code>{:.3}</code></td>
+</tr>
+<tr>
+<td>type</td>
+<td><code>d</code> <code>x</code> <code>X</code> <code>b</code> <code>o</code> for integers; <code>f</code> <code>e</code> <code>g</code> for floating point; <code>s</code> for strings</td>
+<td><code>{:b}</code> gives binary</td>
+</tr>
+</tbody></table>
+</div>
+<p>Defaults matter, and the page states them: <strong>numbers align right, strings align left</strong>. So <code>std::format(&quot;[{:6}]&quot;, 42)</code> is <code>[    42]</code> while <code>std::format(&quot;[{:6}]&quot;, &quot;ab&quot;)</code> is <code>[ab    ]</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;format&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; std::<span class="tk-f">format</span>(<span class="tk-s">&quot;[{:6}] [{:6}] [{:^6}]\n&quot;</span>, <span class="tk-n">42</span>, <span class="tk-s">&quot;ab&quot;</span>, <span class="tk-s">&quot;mid&quot;</span>);
+    std::cout &lt;&lt; std::<span class="tk-f">format</span>(<span class="tk-s">&quot;{:#x} {:08.3f} {:+} {:*&lt;5}|\n&quot;</span>, <span class="tk-n">255</span>, <span class="tk-n">3.14159</span>, <span class="tk-n">7</span>, <span class="tk-s">&quot;x&quot;</span>);
+}</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-complexity-and-invalidation/"><span class="mono">previous</span><b>2.03 Complexity and Invalidation</b></a>
+      <a class="lp-next" href="../3-01-a-win32-reference-page/"><span class="mono">next</span><b>3.01 A Win32 Reference Page</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/2-04-versions-and-feature-tests"></script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Static Storage and the Layout of a Program in Memory · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/2-03-static-storage-and-the-layout-of-a-program-in-memory/">
+  <meta name="description" content="Besides the stack and the heap, a running program has memory that exists for its whole life: its code , its constants and its global and static variables .…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Static Storage and the Layout of a Program in Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Besides the stack and the heap, a running program has memory that exists for its whole life: its code , its constants and its global and static variables .…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/2-03-static-storage-and-the-layout-of-a-program-in-memory/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Static Storage and the Layout of a Program in Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Static Storage and the Layout of a Program in Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Besides the stack and the heap, a running program has memory that exists for its whole life: its code , its constants and its global and static variables .…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Memory in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Static Storage and the Layout of a Program in Memory</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 11 in milestone 2</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Besides the stack and the heap, a running program has memory that exists for its whole life: its <strong>code</strong>, its <strong>constants</strong> and its <strong>global and static variables</strong>. These come straight from the <code>.exe</code> file, in named <strong>sections</strong>. Knowing the layout tells you at a glance what kind of thing an address points to.</p>
+      <div class="prose">
+<h2>Three kinds of storage</h2>
+<p>Every object in a C++ program has a <strong>storage duration</strong>: how long its memory exists.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Storage duration</th>
+<th>Examples</th>
+<th>Lives</th>
+<th>Memory comes from</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Automatic</strong></td>
+<td>Locals, function arguments</td>
+<td>Until the block or function ends</td>
+<td>The stack</td>
+</tr>
+<tr>
+<td><strong>Dynamic</strong></td>
+<td>Anything from <code>new</code>, containers&#39; contents</td>
+<td>Until freed</td>
+<td>The heap</td>
+</tr>
+<tr>
+<td><strong>Static</strong></td>
+<td>Globals, <code>static</code> variables, string literals</td>
+<td>The whole run of the program</td>
+<td>The program&#39;s own image</td>
+</tr>
+</tbody></table>
+</div>
+<p>The last row is this lesson&#39;s subject. Static storage is not allocated while the program runs at all. It is laid out by the compiler and linker, written into the <code>.exe</code> file, and mapped into memory by the loader before <code>main</code> starts.</p>
+<h2>Sections of an executable</h2>
+<p>The linker groups everything with static storage into <strong>sections</strong>, each with its own purpose and its own memory protection.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Holds</th>
+<th>Protection when loaded</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.text</code></td>
+<td>The machine code of every function</td>
+<td>Read and execute</td>
+</tr>
+<tr>
+<td><code>.rdata</code></td>
+<td>Read-only data: string literals, <code>const</code> globals, tables the compiler generates</td>
+<td>Read only</td>
+</tr>
+<tr>
+<td><code>.data</code></td>
+<td>Global and static variables that start with a value</td>
+<td>Read and write</td>
+</tr>
+<tr>
+<td><code>.bss</code> part of <code>.data</code></td>
+<td>Globals that start at zero. They take no room in the file, only in memory</td>
+<td>Read and write</td>
+</tr>
+<tr>
+<td><code>.pdata</code>, <code>.reloc</code>, <code>.idata</code> ...</td>
+<td>Bookkeeping for exceptions, relocation and imports</td>
+<td>Read only</td>
+</tr>
+</tbody></table>
+</div>
+<p>The protections are enforced by the processor, page by page. Writing to <code>.rdata</code> or <code>.text</code> crashes the program with an <strong>access violation</strong>. Chapter 6 explains page protection, and chapter 9 reads these sections straight out of an <code>.exe</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> g_highScore{ <span class="tk-n">1200</span> };          <span class="tk-c">// .data: starts with a value, can change</span>
+<span class="tk-k">int</span> g_frameCount;                 <span class="tk-c">// zero-initialised: takes no space in the .exe file</span>
+<span class="tk-k">const</span> <span class="tk-k">int</span> g_maxLives{ <span class="tk-n">3</span> };        <span class="tk-c">// .rdata (or folded straight into the code)</span>
+<span class="tk-k">const</span> <span class="tk-k">char</span>* g_title{ <span class="tk-s">&quot;Dungeon&quot;</span> }; <span class="tk-c">// the pointer is in .data; the characters are in .rdata</span>
+
+<span class="tk-k">int</span> <span class="tk-f">nextId</span>()
+{
+    <span class="tk-k">static</span> <span class="tk-k">int</span> counter{ <span class="tk-n">0</span> };      <span class="tk-c">// static local: lives in .data, initialised once</span>
+    <span class="tk-k">return</span> ++counter;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-f">nextId</span>() &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; <span class="tk-f">nextId</span>() &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; <span class="tk-f">nextId</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; g_highScore &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; g_frameCount &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; g_maxLives &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; g_title &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1 2 3
+1200 0 3 Dungeon</code></pre></div>
+<p>The <code>static</code> local <code>counter</code> behaves like a global with a private name. It is initialised once, the first time <code>nextId</code> runs, and keeps its value between calls because it is not in any stack frame.</p>
+<h2>The whole picture</h2>
+<p>Put the three kinds of storage together and you have the outline of a process&#39;s memory. On 64-bit Windows the exact addresses are randomised (lesson 6.09), but the families are recognisable:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    subgraph IMG[&quot;The program's image (static storage)&quot;]
+        T[&quot;.text: code&quot;]
+        R[&quot;.rdata: constants, string literals&quot;]
+        D[&quot;.data: globals and statics&quot;]
+    end
+    H[&quot;Heap blocks&lt;br/&gt;(new, vector, string)&quot;]
+    S[&quot;Stack&lt;br/&gt;(one per thread)&quot;]
+    DLL[&quot;DLL images: kernel32, the C++ runtime, ...&lt;br/&gt;each with their own .text, .rdata, .data&quot;]</pre></div>
+<p>You can see the families by printing one address of each kind:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+
+<span class="tk-k">int</span> g_global{ <span class="tk-n">7</span> };
+
+<span class="tk-k">void</span> <span class="tk-f">someFunction</span>() {}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> local{ <span class="tk-n">1</span> };
+    <span class="tk-k">auto</span> onHeap{ std::make_unique&lt;<span class="tk-k">int</span>&gt;(<span class="tk-n">2</span>) };
+    <span class="tk-k">static</span> <span class="tk-k">int</span> staticLocal{ <span class="tk-n">3</span> };
+
+    std::cout &lt;&lt; <span class="tk-s">&quot;code     &quot;</span> &lt;&lt; <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">void</span>*&gt;(&amp;someFunction) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;literal  &quot;</span> &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">void</span>*&gt;(<span class="tk-s">&quot;hello&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;global   &quot;</span> &lt;&lt; &amp;g_global &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;static   &quot;</span> &lt;&lt; &amp;staticLocal &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;heap     &quot;</span> &lt;&lt; onHeap.<span class="tk-f">get</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;stack    &quot;</span> &lt;&lt; &amp;local &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output (yours will differ)</span></div><pre><code>code     00007FF7A3E413B6
+literal  00007FF7A3E5AC28
+global   00007FF7A3E61000
+static   00007FF7A3E61004
+heap     0000020E6C8F5E30
+stack    000000E4F1CFF6A4</code></pre></div>
+<p>Look at the first four. They share most of their digits (<code>00007FF7A3E...</code>), because code, literals and globals are all parts of the same image, loaded as one block. Within it, code comes first, then read-only data, then writable data. The heap and the stack are somewhere else entirely, and each looks different. With a little practice you can tell what a pointer points at from its value alone: a very useful skill in the Memory window.</p>
+<h2>Initialisation order, and why globals are risky</h2>
+<p>Globals with simple constant initial values are written straight into the <code>.data</code> section by the linker, so they are ready before any code runs. Globals that need code to initialise them (a <code>std::string</code>, a <code>std::vector</code>, anything with a constructor) run that code before <code>main</code>, in an order that is only defined <strong>within one <code>.cpp</code> file</strong>. Across files, the order is unspecified. A global in <code>a.cpp</code> that uses a global from <code>b.cpp</code> during its own initialisation may see it not yet constructed. This is called the <strong>static initialisation order fiasco</strong>.</p>
+<p>The usual fix is the pattern <code>nextId</code> used: a function holding a <code>static</code> local. The local is initialised the first time the function is called, whatever order things happen in, and C++ guarantees this is safe even with threads.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">const</span> std::string&amp; <span class="tk-f">defaultPlayerName</span>()
+{
+    <span class="tk-k">static</span> <span class="tk-k">const</span> std::string name{ <span class="tk-s">&quot;Adventurer&quot;</span> };   <span class="tk-c">// built on first use, then kept</span>
+    <span class="tk-k">return</span> name;
+}</code></pre></div>
+<p>More generally, mutable globals make code hard to follow and hard to test, because any function might change them. Use them sparingly. Constants are fine.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Writing through a pointer to a string literal</span></div><div class="callout-body"><p><code>char* s = (char*)&quot;hello&quot;; s[0] = &#39;J&#39;;</code> crashes: the characters are in read-only <code>.rdata</code>. Copy the text into a <code>std::string</code> or a <code>char</code> array first.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Returning a pointer to a static buffer</span></div><div class="callout-body"><p>A function that fills a <code>static char buffer[64]</code> and returns it hands every caller the same buffer, so the second call overwrites what the first caller still holds. It is also unsafe with threads.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Assuming globals in different files are initialised in a particular order</span></div><div class="callout-body"><p>They are not. Use a function with a <code>static</code> local for anything that other globals depend on.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which section holds the characters of the string literal <code>&quot;Game Over&quot;</code>?</div><ul><li><code>.text</code></li><li><code>.rdata</code></li><li><code>.data</code></li></ul><details><summary>Show the answer</summary><p><b><code>.rdata</code></b> Literals are read-only data. Writing to them is an access violation.</p></details></li><li><div class="q">A <code>static int counter{ 0 };</code> inside a function. How many times is <code>counter</code> initialised?</div><ul><li>Once, the first time the function runs</li><li>Every time the function is called</li><li>Never: statics are always zero</li></ul><details><summary>Show the answer</summary><p><b>Once, the first time the function runs</b> A static local lives in static storage for the whole program and is initialised the first time control reaches its declaration.</p></details></li><li><div class="q">Two addresses are <code>00007FF6C1A21000</code> and <code>00007FF6C1A3B0E0</code>. What is the most likely relationship?</div><ul><li>They are both inside the same loaded image, such as the program&#39;s own code and data</li><li>One is on the stack and one is on the heap</li><li>They belong to two different processes</li></ul><details><summary>Show the answer</summary><p><b>They are both inside the same loaded image, such as the program&#39;s own code and data</b> They share their high digits and differ only in the low ones: about 100 KB apart, typical of sections within one module.</p></details></li><li><div class="q">Why does a zero-initialised global array of a million <code>int</code>s not make the <code>.exe</code> four megabytes bigger?</div><ul><li>The compiler compresses it</li><li>Zero-initialised data takes no space in the file: the loader just provides zeroed memory for it</li><li>Globals are always allocated on the heap</li></ul><details><summary>Show the answer</summary><p><b>Zero-initialised data takes no space in the file: the loader just provides zeroed memory for it</b> The file only records how much zeroed memory is needed, not the zeros themselves.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-the-heap-asking-for-memory-at-run-time/"><span class="mono">previous</span><b>2.02 The Heap: Asking for Memory at Run Time</b></a>
+      <a class="lp-next" href="../2-04-object-lifetime-when-memory-is-valid/"><span class="mono">next</span><b>2.04 Object Lifetime: When Memory Is Valid</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/2-03-static-storage-and-the-layout-of-a-program-in-memory"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

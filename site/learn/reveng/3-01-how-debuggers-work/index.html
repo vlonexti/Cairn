@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>How Debuggers Work · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/3-01-how-debuggers-work/">
+  <meta name="description" content="A debugger is an ordinary program using the Windows debugging API - debug events, software breakpoints made from a single int3 byte, single-stepping with the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How Debuggers Work · Reverse Engineering · Xenon">
+  <meta property="og:description" content="A debugger is an ordinary program using the Windows debugging API - debug events, software breakpoints made from a single int3 byte, single-stepping with the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/3-01-how-debuggers-work/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="How Debuggers Work · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How Debuggers Work · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="A debugger is an ordinary program using the Windows debugging API - debug events, software breakpoints made from a single int3 byte, single-stepping with the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Dynamic Analysis</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">How Debuggers Work</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A debugger is an ordinary program using the Windows debugging API - debug events, software breakpoints made from a single int3 byte, single-stepping with the trap flag, the four hardware breakpoint registers, and first- and second-chance exceptions.</p>
+      <div class="prose">
+<h2>A program that controls another</h2>
+<p>A debugger is not magic built into Windows; it is a program that uses a documented API. It either starts the target with <code>CreateProcessW(..., DEBUG_ONLY_THIS_PROCESS, ...)</code> or attaches to a running one with <code>DebugActiveProcess(pid)</code>. From then on, whenever something interesting happens in the target, Windows <strong>freezes every thread of the target</strong> and reports a <strong>debug event</strong> to the debugger:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>DEBUG_EVENT event{};
+<span class="tk-k">while</span> (<span class="tk-f">WaitForDebugEvent</span>(&amp;event, INFINITE))
+{
+    <span class="tk-k">switch</span> (event.dwDebugEventCode)
+    {
+    <span class="tk-k">case</span> CREATE_PROCESS_DEBUG_EVENT: <span class="tk-c">/* the process started: its image base, entry point */</span> <span class="tk-k">break</span>;
+    <span class="tk-k">case</span> LOAD_DLL_DEBUG_EVENT:       <span class="tk-c">/* a DLL loaded: its base address */</span> <span class="tk-k">break</span>;
+    <span class="tk-k">case</span> EXCEPTION_DEBUG_EVENT:      <span class="tk-c">/* a breakpoint, a single step, or a real crash */</span> <span class="tk-k">break</span>;
+    <span class="tk-k">case</span> EXIT_PROCESS_DEBUG_EVENT:   <span class="tk-k">return</span>;
+    }
+    <span class="tk-f">ContinueDebugEvent</span>(event.dwProcessId, event.dwThreadId, DBG_CONTINUE);   <span class="tk-c">// let it run again</span>
+}</code></pre></div>
+<p>While the target is frozen, the debugger reads and writes its memory (<code>ReadProcessMemory</code>, <code>WriteProcessMemory</code>) and its registers (<code>GetThreadContext</code>, <code>SetThreadContext</code>). Everything a debugger shows you comes from those four calls.</p>
+<h2>Software breakpoints: one byte</h2>
+<p>To stop at an address, the debugger <strong>overwrites the first byte of the instruction there with <code>0xCC</code></strong>, the one-byte <code>int3</code> instruction, after saving the original byte.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>before:  48 89 5C 24 08     mov [rsp+8], rbx
+armed:   CC 89 5C 24 08     int3 (and garbage after it)</code></pre></div>
+<p>When the target executes <code>int3</code>, the processor raises a breakpoint exception, Windows freezes the process, and the debugger gets an <code>EXCEPTION_DEBUG_EVENT</code> with code <code>EXCEPTION_BREAKPOINT</code> (0x80000003). Then it must clean up carefully:</p>
+<ol>
+<li><code>int3</code> has already executed, so <code>rip</code> points one byte <strong>past</strong> the breakpoint. Set <code>rip</code> back by one.</li>
+<li>Write the original byte back, so the real instruction can run.</li>
+<li>To keep the breakpoint for next time, it cannot simply write <code>CC</code> back now: the instruction has not run yet. So it sets the <strong>trap flag</strong> and continues; after exactly one instruction the processor stops again with a single-step exception; the debugger re-writes <code>CC</code> and continues normally.</li>
+</ol>
+<p>When the debugger shows you memory, it shows the <strong>saved original bytes</strong>, not the <code>CC</code>s, so you never see them. But the program can: code that reads its own bytes (a checksum of its code, for example) sees a <code>CC</code> where a breakpoint is set. That is one reason the next kind exists.</p>
+<h2>Single-stepping</h2>
+<p>Bit 8 of the <code>EFLAGS</code> register is the <strong>trap flag</strong> (TF). When it is set, the processor raises a single-step exception (<code>EXCEPTION_SINGLE_STEP</code>, 0x80000004) after executing one instruction. &quot;Step into&quot; is: set TF, continue, wait for the event. &quot;Step over&quot; a <code>call</code> is: put a temporary breakpoint on the instruction after the call and run.</p>
+<h2>Hardware breakpoints</h2>
+<p>The processor has four <strong>debug registers</strong>, <code>DR0</code> to <code>DR3</code>, each holding an address, and a control register <code>DR7</code> that says for each one:</p>
+<ul>
+<li>whether it is enabled;</li>
+<li>what triggers it: <strong>execute</strong>, <strong>write</strong>, or <strong>read or write</strong>;</li>
+<li>how many bytes it covers: 1, 2, 4 or 8.</li>
+</ul>
+<p>When the condition is met, the processor raises a single-step exception and <code>DR6</code> says which one fired. Because nothing in memory changes, hardware breakpoints are invisible to code that checksums itself, and they can do something software breakpoints cannot: stop when <strong>data</strong> is written or read. A <strong>data breakpoint</strong> (&quot;break when this address is written&quot;) is the tool of lesson 3.03.</p>
+<p>There are only four, and they are per thread: the debugger sets them in every thread&#39;s context.</p>
+<h2>Exceptions: first and second chance</h2>
+<p>Breakpoints are exceptions, but so are real errors. When any exception happens in a debugged process, the debugger hears about it <strong>first</strong> (a <em>first-chance</em> exception) and can choose:</p>
+<ul>
+<li><code>DBG_CONTINUE</code>: &quot;I handled it&quot; (used for its own breakpoints);</li>
+<li><code>DBG_EXCEPTION_NOT_HANDLED</code>: &quot;pass it to the program&#39;s own handlers&quot;.</li>
+</ul>
+<p>If the program&#39;s own handlers (C++ <code>catch</code>, <code>__try</code>/<code>__except</code>) do not handle it either, the debugger is told a second time, <em>second chance</em>, just before the process would die. Many programs throw and catch exceptions in normal operation, which is why debuggers let you choose which first-chance exceptions stop and which only get logged.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-cpp-in-machine-code/"><span class="mono">previous</span><b>2.05 C++ in Machine Code</b></a>
+      <a class="lp-next" href="../3-02-tracing-execution/"><span class="mono">next</span><b>3.02 Tracing Execution</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/3-01-how-debuggers-work"></script>
+</body>
+</html>

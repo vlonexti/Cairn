@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Linked Lists · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/4-05-linked-lists/">
+  <meta name="description" content="A linked list is a chain of nodes on the heap, each holding a value and a pointer to the next, ending in NULL. Adding at the front is instant and nothing…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Linked Lists · C · Xenon">
+  <meta property="og:description" content="A linked list is a chain of nodes on the heap, each holding a value and a pointer to the next, ending in NULL. Adding at the front is instant and nothing…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/4-05-linked-lists/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Linked Lists · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Linked Lists · C · Xenon">
+  <meta name="twitter:description" content="A linked list is a chain of nodes on the heap, each holding a value and a pointer to the next, ending in NULL. Adding at the front is instant and nothing…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>Memory and Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Linked Lists</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A linked list is a chain of nodes on the heap, each holding a value and a pointer to the next, ending in NULL. Adding at the front is instant and nothing ever has to move, but finding the nth element means walking the chain. Inserting and removing use a pointer to the link being changed, and freeing the list walks it once.</p>
+      <div class="prose">
+<h2>Nodes that point to the next</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">struct</span> node {
+    <span class="tk-k">int</span> value;
+    <span class="tk-k">struct</span> node *next;      <span class="tk-c">// NULL in the last node</span>
+};</code></pre></div>
+<p>A list is just a pointer to the first node (the <strong>head</strong>), and <code>NULL</code> for an empty list:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">graph LR
+  head([head]) --&gt; A[&quot;7 | next&quot;] --&gt; B[&quot;3 | next&quot;] --&gt; C[&quot;9 | next&quot;] --&gt; N([NULL])</pre></div>
+<p>Unlike an array, the nodes can be anywhere in memory. Each one only knows where the next one is.</p>
+<h2>Pushing onto the front</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-k">struct</span> node {
+    <span class="tk-k">int</span> value;
+    <span class="tk-k">struct</span> node *next;
+};
+
+<span class="tk-c">// Adds value at the front. Returns false if memory ran out.</span>
+<span class="tk-k">int</span> <span class="tk-f">push_front</span>(<span class="tk-k">struct</span> node **head, <span class="tk-k">int</span> value)
+{
+    <span class="tk-k">struct</span> node *n = <span class="tk-f">malloc</span>(<span class="tk-k">sizeof</span> *n);
+    <span class="tk-k">if</span> (n == <span class="tk-k">NULL</span>) <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    n-&gt;value = value;
+    n-&gt;next = *head;        <span class="tk-c">// the new node points at the old first node</span>
+    *head = n;              <span class="tk-c">// and becomes the first node</span>
+    <span class="tk-k">return</span> <span class="tk-n">1</span>;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">print_list</span>(<span class="tk-k">const</span> <span class="tk-k">struct</span> node *head)
+{
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">struct</span> node *n = head; n != <span class="tk-k">NULL</span>; n = n-&gt;next) {
+        <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d -&gt; &quot;</span>, n-&gt;value);
+    }
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;NULL\n&quot;</span>);
+}
+
+<span class="tk-k">void</span> <span class="tk-f">free_list</span>(<span class="tk-k">struct</span> node *head)
+{
+    <span class="tk-k">while</span> (head != <span class="tk-k">NULL</span>) {
+        <span class="tk-k">struct</span> node *next = head-&gt;next;    <span class="tk-c">// save it before freeing</span>
+        <span class="tk-f">free</span>(head);
+        head = next;
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">struct</span> node *list = <span class="tk-k">NULL</span>;
+    <span class="tk-f">push_front</span>(&amp;list, <span class="tk-n">9</span>);
+    <span class="tk-f">push_front</span>(&amp;list, <span class="tk-n">3</span>);
+    <span class="tk-f">push_front</span>(&amp;list, <span class="tk-n">7</span>);
+    <span class="tk-f">print_list</span>(list);       <span class="tk-c">// 7 -&gt; 3 -&gt; 9 -&gt; NULL</span>
+    <span class="tk-f">free_list</span>(list);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<ul>
+<li><code>push_front</code> changes the caller&#39;s head pointer, so it takes <code>struct node **</code> (lesson 3.05).</li>
+<li>The loop <code>for (n = head; n != NULL; n = n-&gt;next)</code> visits every node: memorise it.</li>
+<li><code>free_list</code> must read <code>head-&gt;next</code> <strong>before</strong> freeing <code>head</code>; afterwards it would be a use after free.</li>
+</ul>
+<h2>Removing: a pointer to the link</h2>
+<p>Removing a node means making the link that points at it skip over it. The neat way keeps a pointer to <strong>that link</strong> (either <code>head</code> itself or some node&#39;s <code>next</code>), so the first node needs no special case:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-c">// Removes the first node holding value. Returns 1 if one was removed.</span>
+<span class="tk-k">int</span> <span class="tk-f">remove_value</span>(<span class="tk-k">struct</span> node **head, <span class="tk-k">int</span> value)
+{
+    <span class="tk-k">for</span> (<span class="tk-k">struct</span> node **link = head; *link != <span class="tk-k">NULL</span>; link = &amp;(*link)-&gt;next) {
+        <span class="tk-k">if</span> ((*link)-&gt;value == value) {
+            <span class="tk-k">struct</span> node *gone = *link;
+            *link = gone-&gt;next;     <span class="tk-c">// the link now skips the node</span>
+            <span class="tk-f">free</span>(gone);
+            <span class="tk-k">return</span> <span class="tk-n">1</span>;
+        }
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Linus Torvalds called this pointer-to-pointer version &quot;good taste&quot;: the special case for the head has disappeared.</p>
+<h2>Lists or arrays?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Growing array</th>
+<th>Linked list</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>get element i</td>
+<td>instant</td>
+<td>walk i nodes</td>
+</tr>
+<tr>
+<td>add at the end</td>
+<td>fast (on average)</td>
+<td>fast if you keep a tail pointer</td>
+</tr>
+<tr>
+<td>add at the front or middle</td>
+<td>move everything after it</td>
+<td>change two pointers</td>
+</tr>
+<tr>
+<td>memory</td>
+<td>one block, packed together</td>
+<td>one allocation per node, plus a pointer each</td>
+</tr>
+</tbody></table>
+</div>
+<p>Modern processors read memory that sits together much faster (thanks to caches, see the Fundamentals course), so arrays usually win in practice. Linked lists still shine where elements must never move, and inside operating systems, which link processes and buffers together this way all the time.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">How does the last node of a linked list mark the end?</div><ul><li>Its next pointer is NULL</li><li>Its value is 0</li><li>The list stores its length</li></ul><details><summary>Show the answer</summary><p><b>Its next pointer is NULL</b> Loops stop when they reach NULL.</p></details></li><li><div class="q">Why does push_front take struct node **head?</div><ul><li>It must change the caller&#39;s head pointer</li><li>The list holds pointers to pointers</li><li>To return two values</li></ul><details><summary>Show the answer</summary><p><b>It must change the caller&#39;s head pointer</b> The same idea as swap(int *, int *).</p></details></li><li><div class="q">In free_list, why save head-&gt;next before calling free(head)?</div><ul><li>After free, reading head-&gt;next is a use after free</li><li>free changes head-&gt;next to NULL</li><li>To make it faster</li></ul><details><summary>Show the answer</summary><p><b>After free, reading head-&gt;next is a use after free</b> Freed memory is no longer yours.</p></details></li><li><div class="q">Which is faster on a linked list than on an array?</div><ul><li>Inserting at the front</li><li>Reading the 500th element</li><li>Adding up every element</li></ul><details><summary>Show the answer</summary><p><b>Inserting at the front</b> Arrays win at access by index and at walking through memory.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-typedef-enum-and-union/"><span class="mono">previous</span><b>4.04 typedef, enum and union</b></a>
+      <a class="lp-next" href="../4-06-memory-bugs/"><span class="mono">next</span><b>4.06 Memory Bugs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/4-05-linked-lists"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

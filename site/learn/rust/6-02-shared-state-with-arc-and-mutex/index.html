@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Shared State with Arc and Mutex · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/6-02-shared-state-with-arc-and-mutex/">
+  <meta name="description" content="Sharing data between threads safely - Arc for shared ownership across threads, Mutex for exclusive access with lock guards, RwLock for many readers, atomics…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Shared State with Arc and Mutex · Rust · Xenon">
+  <meta property="og:description" content="Sharing data between threads safely - Arc for shared ownership across threads, Mutex for exclusive access with lock guards, RwLock for many readers, atomics…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/6-02-shared-state-with-arc-and-mutex/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Shared State with Arc and Mutex · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Shared State with Arc and Mutex · Rust · Xenon">
+  <meta name="twitter:description" content="Sharing data between threads safely - Arc for shared ownership across threads, Mutex for exclusive access with lock guards, RwLock for many readers, atomics…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Concurrency and Projects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Shared State with Arc and Mutex</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Sharing data between threads safely - Arc for shared ownership across threads, Mutex for exclusive access with lock guards, RwLock for many readers, atomics for counters and flags, avoiding deadlocks and holding locks briefly, poisoning, and choosing between message passing and shared state.</p>
+      <div class="prose">
+<h2>Arc: shared ownership across threads</h2>
+<p><code>Rc</code> is single-threaded. <strong><code>Arc&lt;T&gt;</code></strong> (atomically reference counted) is the thread-safe version: cloning it gives another owner, and the value is freed when the last owner is gone. On its own, <code>Arc</code> gives <strong>read-only</strong> sharing:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::sync::<span class="tk-t">Arc</span>;
+<span class="tk-k">use</span> std::thread;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> config = <span class="tk-t">Arc</span>::<span class="tk-f">new</span>(<span class="tk-p">vec!</span>[<span class="tk-s">&quot;fast&quot;</span>.<span class="tk-f">to_string</span>(), <span class="tk-s">&quot;safe&quot;</span>.<span class="tk-f">to_string</span>()]);
+    <span class="tk-k">let</span> handles: <span class="tk-t">Vec</span>&lt;_&gt; = (<span class="tk-n">0</span>..<span class="tk-n">3</span>).<span class="tk-f">map</span>(|i| {
+        <span class="tk-k">let</span> config = <span class="tk-t">Arc</span>::<span class="tk-f">clone</span>(&amp;config);
+        thread::<span class="tk-f">spawn</span>(<span class="tk-k">move</span> || <span class="tk-p">format!</span>(<span class="tk-s">&quot;thread {i} sees {}&quot;</span>, config.<span class="tk-f">join</span>(<span class="tk-s">&quot;+&quot;</span>)))
+    }).<span class="tk-f">collect</span>();
+    <span class="tk-k">for</span> h <span class="tk-k">in</span> handles {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, h.<span class="tk-f">join</span>().<span class="tk-f">unwrap</span>());
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;owners now: {}&quot;</span>, <span class="tk-t">Arc</span>::<span class="tk-f">strong_count</span>(&amp;config));
+}</code></pre></div>
+<h2>Mutex: one writer at a time</h2>
+<p>To <strong>change</strong> shared data, wrap it in a <strong><code>Mutex</code></strong> (mutual exclusion). <code>lock()</code> waits until no other thread holds the lock and returns a <strong>guard</strong> that gives access; the lock is released when the guard is dropped:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::sync::{<span class="tk-t">Arc</span>, <span class="tk-t">Mutex</span>};
+<span class="tk-k">use</span> std::thread;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> counter = <span class="tk-t">Arc</span>::<span class="tk-f">new</span>(<span class="tk-t">Mutex</span>::<span class="tk-f">new</span>(0<span class="tk-k">u64</span>));
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> handles = <span class="tk-t">Vec</span>::<span class="tk-f">new</span>();
+    <span class="tk-k">for</span> _ <span class="tk-k">in</span> <span class="tk-n">0</span>..<span class="tk-n">8</span> {
+        <span class="tk-k">let</span> counter = <span class="tk-t">Arc</span>::<span class="tk-f">clone</span>(&amp;counter);
+        handles.<span class="tk-f">push</span>(thread::<span class="tk-f">spawn</span>(<span class="tk-k">move</span> || {
+            <span class="tk-k">for</span> _ <span class="tk-k">in</span> <span class="tk-n">0</span>..<span class="tk-n">1000</span> {
+                *counter.<span class="tk-f">lock</span>().<span class="tk-f">unwrap</span>() += <span class="tk-n">1</span>;       <span class="tk-c">// lock, change, guard dropped at the end of the statement</span>
+            }
+        }));
+    }
+    <span class="tk-k">for</span> h <span class="tk-k">in</span> handles { h.<span class="tk-f">join</span>().<span class="tk-f">unwrap</span>(); }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, *counter.<span class="tk-f">lock</span>().<span class="tk-f">unwrap</span>());       <span class="tk-c">// always 8000</span>
+}</code></pre></div>
+<p><code>Arc&lt;Mutex&lt;T&gt;&gt;</code> is the thread-safe counterpart of <code>Rc&lt;RefCell&lt;T&gt;&gt;</code>. The data lives <strong>inside</strong> the mutex, so it is impossible to touch it without locking: forgetting the lock, the classic C bug, cannot be written.</p>
+<p>If a thread panics while holding a lock, the mutex becomes <strong>poisoned</strong> and later <code>lock()</code> calls return <code>Err</code>. <code>unwrap()</code> then propagates the panic, which is usually right; <code>into_inner()</code> on the error recovers the data if you know it is still valid.</p>
+<h2>RwLock and atomics</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Mutex&lt;T&gt;</code></td>
+<td>Any shared data that changes</td>
+</tr>
+<tr>
+<td><code>RwLock&lt;T&gt;</code></td>
+<td>Data that is read often and written rarely: many <code>read()</code> guards at once, or one <code>write()</code></td>
+</tr>
+<tr>
+<td><code>AtomicUsize</code>, <code>AtomicBool</code>, <code>AtomicU64</code>...</td>
+<td>A single number or flag: no lock at all</td>
+</tr>
+<tr>
+<td><code>OnceLock&lt;T&gt;</code> / <code>LazyLock&lt;T&gt;</code></td>
+<td>A value initialised once and then shared read-only</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::sync::atomic::{<span class="tk-t">AtomicBool</span>, <span class="tk-t">AtomicUsize</span>, <span class="tk-t">Ordering</span>};
+<span class="tk-k">use</span> std::sync::{<span class="tk-t">Arc</span>, <span class="tk-t">RwLock</span>};
+<span class="tk-k">use</span> std::thread;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> hits = <span class="tk-t">Arc</span>::<span class="tk-f">new</span>(<span class="tk-t">AtomicUsize</span>::<span class="tk-f">new</span>(<span class="tk-n">0</span>));
+    <span class="tk-k">let</span> stop = <span class="tk-t">Arc</span>::<span class="tk-f">new</span>(<span class="tk-t">AtomicBool</span>::<span class="tk-f">new</span>(<span class="tk-k">false</span>));
+    <span class="tk-k">let</span> settings = <span class="tk-t">Arc</span>::<span class="tk-f">new</span>(<span class="tk-t">RwLock</span>::<span class="tk-f">new</span>(<span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;v1&quot;</span>)));
+
+    thread::<span class="tk-f">scope</span>(|s| {
+        <span class="tk-k">for</span> _ <span class="tk-k">in</span> <span class="tk-n">0</span>..<span class="tk-n">4</span> {
+            <span class="tk-k">let</span> (hits, settings) = (<span class="tk-t">Arc</span>::<span class="tk-f">clone</span>(&amp;hits), <span class="tk-t">Arc</span>::<span class="tk-f">clone</span>(&amp;settings));
+            s.<span class="tk-f">spawn</span>(<span class="tk-k">move</span> || {
+                <span class="tk-k">for</span> _ <span class="tk-k">in</span> <span class="tk-n">0</span>..<span class="tk-n">250</span> {
+                    <span class="tk-k">let</span> _version = settings.<span class="tk-f">read</span>().<span class="tk-f">unwrap</span>();      <span class="tk-c">// many readers at once</span>
+                    hits.<span class="tk-f">fetch_add</span>(<span class="tk-n">1</span>, <span class="tk-t">Ordering</span>::<span class="tk-t">Relaxed</span>);
+                }
+            });
+        }
+        s.<span class="tk-f">spawn</span>(|| {
+            *settings.<span class="tk-f">write</span>().<span class="tk-f">unwrap</span>() = <span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;v2&quot;</span>);      <span class="tk-c">// one writer</span>
+            stop.<span class="tk-f">store</span>(<span class="tk-k">true</span>, <span class="tk-t">Ordering</span>::<span class="tk-t">Release</span>);
+        });
+    });
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {} {}&quot;</span>, hits.<span class="tk-f">load</span>(<span class="tk-t">Ordering</span>::<span class="tk-t">Relaxed</span>), stop.<span class="tk-f">load</span>(<span class="tk-t">Ordering</span>::<span class="tk-t">Acquire</span>), settings.<span class="tk-f">read</span>().<span class="tk-f">unwrap</span>());
+}</code></pre></div>
+<p>For simple counters, <code>Ordering::Relaxed</code> is enough; flags that publish other data use <code>Release</code> when storing and <code>Acquire</code> when loading. When unsure, <code>SeqCst</code> is the strongest and simplest.</p>
+<h2>Deadlocks and lock hygiene</h2>
+<p>The compiler prevents data races, but not <strong>deadlocks</strong>: thread A holds lock 1 and waits for lock 2 while thread B holds lock 2 and waits for lock 1. Avoid them by:</p>
+<ul>
+<li>holding locks briefly: copy what you need out of the guard, drop it, then do the slow work;</li>
+<li>always taking several locks in the same order;</li>
+<li>never calling unknown code (callbacks) while holding a lock.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">let</span> snapshot = { data.<span class="tk-f">lock</span>().<span class="tk-f">unwrap</span>().<span class="tk-f">clone</span>() };    <span class="tk-c">// the guard is dropped at the end of the block</span>
+<span class="tk-f">expensive_report</span>(&amp;snapshot);                        <span class="tk-c">// the lock is free while this runs</span></code></pre></div>
+<h2>Message passing or shared state?</h2>
+<p>Both are safe in Rust. Prefer <strong>message passing</strong> (channels) or <strong>splitting the work</strong> (scoped threads, each with its own data) when it fits naturally: there is nothing to lock. Use <strong>shared state</strong> for data many threads read and update, such as a cache or a counter. Libraries like <strong>rayon</strong> (<code>data.par_iter().map(...).sum()</code>) parallelise iterator chains with almost no code.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-threads-and-message-passing/"><span class="mono">previous</span><b>6.01 Threads and Message Passing</b></a>
+      <a class="lp-next" href="../6-03-async-rust/"><span class="mono">next</span><b>6.03 Async Rust</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/6-02-shared-state-with-arc-and-mutex"></script>
+</body>
+</html>

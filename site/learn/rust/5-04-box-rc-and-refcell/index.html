@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Box, Rc and RefCell · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/5-04-box-rc-and-refcell/">
+  <meta name="description" content="Smart pointers - Box for heap allocation and recursive types, Deref and Drop, Rc for shared ownership with reference counting, RefCell for interior…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Box, Rc and RefCell · Rust · Xenon">
+  <meta property="og:description" content="Smart pointers - Box for heap allocation and recursive types, Deref and Drop, Rc for shared ownership with reference counting, RefCell for interior…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/5-04-box-rc-and-refcell/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Box, Rc and RefCell · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Box, Rc and RefCell · Rust · Xenon">
+  <meta name="twitter:description" content="Smart pointers - Box for heap allocation and recursive types, Deref and Drop, Rc for shared ownership with reference counting, RefCell for interior…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Closures, Iterators and Smart Pointers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Box, Rc and RefCell</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Smart pointers - Box for heap allocation and recursive types, Deref and Drop, Rc for shared ownership with reference counting, RefCell for interior mutability checked at run time, Rc&lt;RefCell&lt;T&gt;&gt; for shared mutable data, Weak references to break cycles, and when each is the right tool.</p>
+      <div class="prose">
+<h2>Box</h2>
+<p><code>Box&lt;T&gt;</code> stores a value on the heap and owns it. It has the size of a pointer, which makes <strong>recursive types</strong> possible (a type that contains itself would otherwise be infinitely large):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">enum</span> <span class="tk-t">List</span> {
+    <span class="tk-f">Cons</span>(<span class="tk-k">i32</span>, <span class="tk-t">Box</span>&lt;<span class="tk-t">List</span>&gt;),
+    <span class="tk-t">Nil</span>,
+}
+
+<span class="tk-k">use</span> <span class="tk-t">List</span>::{<span class="tk-t">Cons</span>, <span class="tk-t">Nil</span>};
+
+<span class="tk-k">fn</span> <span class="tk-f">sum</span>(list: &amp;<span class="tk-t">List</span>) -&gt; <span class="tk-k">i32</span> {
+    <span class="tk-k">match</span> list {
+        <span class="tk-f">Cons</span>(value, rest) =&gt; value + <span class="tk-f">sum</span>(rest),
+        <span class="tk-t">Nil</span> =&gt; <span class="tk-n">0</span>,
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> list = <span class="tk-f">Cons</span>(<span class="tk-n">1</span>, <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-f">Cons</span>(<span class="tk-n">2</span>, <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-f">Cons</span>(<span class="tk-n">3</span>, <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">Nil</span>))))));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{list:?} sum={}&quot;</span>, <span class="tk-f">sum</span>(&amp;list));
+    <span class="tk-k">let</span> big = <span class="tk-t">Box</span>::<span class="tk-f">new</span>([0<span class="tk-k">u8</span>; <span class="tk-n">1000</span>]);            <span class="tk-c">// a large value on the heap instead of the stack</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, big.<span class="tk-f">len</span>());
+}</code></pre></div>
+<p><code>Box</code> implements <strong><code>Deref</code></strong>, so a <code>Box&lt;T&gt;</code> can be used like a <code>&amp;T</code> (<code>*b</code>, method calls, <code>&amp;Box&lt;T&gt;</code> coercing to <code>&amp;T</code>). When the box goes out of scope it is <strong>dropped</strong>: the <code>Drop</code> trait runs clean-up code, and you can implement it yourself:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-f">Noisy</span>(&amp;'<span class="tk-k">static</span> <span class="tk-k">str</span>);
+
+<span class="tk-k">impl</span> <span class="tk-t">Drop</span> <span class="tk-k">for</span> <span class="tk-t">Noisy</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">drop</span>(&amp;<span class="tk-k">mut</span> <span class="tk-k">self</span>) {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;dropping {}&quot;</span>, <span class="tk-k">self</span>.<span class="tk-n">0</span>);
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> _a = <span class="tk-f">Noisy</span>(<span class="tk-s">&quot;a&quot;</span>);
+    {
+        <span class="tk-k">let</span> _b = <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-f">Noisy</span>(<span class="tk-s">&quot;b&quot;</span>));
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;inner scope ends&quot;</span>);
+    }
+    <span class="tk-k">let</span> c = <span class="tk-f">Noisy</span>(<span class="tk-s">&quot;c&quot;</span>);
+    <span class="tk-f">drop</span>(c);                                    <span class="tk-c">// drop early</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;main ends&quot;</span>);
+}</code></pre></div>
+<h2>Rc: shared ownership</h2>
+<p>Sometimes one value genuinely has several owners: a node shared by two lists, a texture used by many sprites. <code>Rc&lt;T&gt;</code> (reference counted) keeps a count of owners and frees the value when the last one goes away:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::rc::<span class="tk-t">Rc</span>;
+
+<span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">struct</span> <span class="tk-t">Texture</span> { name: <span class="tk-t">String</span> }
+
+<span class="tk-k">struct</span> <span class="tk-t">Sprite</span> { texture: <span class="tk-t">Rc</span>&lt;<span class="tk-t">Texture</span>&gt;, x: <span class="tk-k">i32</span> }
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> grass = <span class="tk-t">Rc</span>::<span class="tk-f">new</span>(<span class="tk-t">Texture</span> { name: <span class="tk-s">&quot;grass.png&quot;</span>.<span class="tk-f">into</span>() });
+    <span class="tk-k">let</span> sprites = <span class="tk-p">vec!</span>[
+        <span class="tk-t">Sprite</span> { texture: <span class="tk-t">Rc</span>::<span class="tk-f">clone</span>(&amp;grass), x: <span class="tk-n">0</span> },
+        <span class="tk-t">Sprite</span> { texture: <span class="tk-t">Rc</span>::<span class="tk-f">clone</span>(&amp;grass), x: <span class="tk-n">16</span> },
+    ];
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;owners: {}&quot;</span>, <span class="tk-t">Rc</span>::<span class="tk-f">strong_count</span>(&amp;grass));     <span class="tk-c">// 3: grass and two sprites</span>
+    <span class="tk-k">for</span> s <span class="tk-k">in</span> &amp;sprites {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} at {}&quot;</span>, s.texture.name, s.x);
+    }
+    <span class="tk-f">drop</span>(sprites);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;owners: {}&quot;</span>, <span class="tk-t">Rc</span>::<span class="tk-f">strong_count</span>(&amp;grass));     <span class="tk-c">// 1</span>
+}</code></pre></div>
+<p><code>Rc::clone</code> copies the pointer and increments the count; it does not copy the texture. <code>Rc</code> gives <strong>shared, read-only</strong> access and works within one thread (<code>Arc</code> is the thread-safe version, lesson 6.02).</p>
+<h2>RefCell: interior mutability</h2>
+<p>The borrow rules are normally checked at compile time. <code>RefCell&lt;T&gt;</code> moves the check to <strong>run time</strong>: <code>borrow()</code> gives a shared borrow, <code>borrow_mut()</code> a mutable one, and breaking the rules <strong>panics</strong> instead of failing to compile. This allows changing data through a shared reference when the compiler cannot prove it is safe but you can:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::cell::<span class="tk-t">RefCell</span>;
+<span class="tk-k">use</span> std::rc::<span class="tk-t">Rc</span>;
+
+<span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">struct</span> <span class="tk-t">Account</span> { balance: <span class="tk-k">i64</span> }
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> shared = <span class="tk-t">Rc</span>::<span class="tk-f">new</span>(<span class="tk-t">RefCell</span>::<span class="tk-f">new</span>(<span class="tk-t">Account</span> { balance: <span class="tk-n">100</span> }));
+    <span class="tk-k">let</span> alias = <span class="tk-t">Rc</span>::<span class="tk-f">clone</span>(&amp;shared);
+
+    alias.<span class="tk-f">borrow_mut</span>().balance -= <span class="tk-n">30</span>;           <span class="tk-c">// change through one owner</span>
+    shared.<span class="tk-f">borrow_mut</span>().balance += <span class="tk-n">5</span>;           <span class="tk-c">// and through the other</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, shared.<span class="tk-f">borrow</span>().balance);
+
+    <span class="tk-k">let</span> log = <span class="tk-t">RefCell</span>::<span class="tk-f">new</span>(<span class="tk-t">Vec</span>::<span class="tk-f">new</span>());
+    <span class="tk-k">let</span> record = |msg: &amp;<span class="tk-k">str</span>| log.<span class="tk-f">borrow_mut</span>().<span class="tk-f">push</span>(msg.<span class="tk-f">to_string</span>());   <span class="tk-c">// a Fn closure that still mutates</span>
+    <span class="tk-f">record</span>(<span class="tk-s">&quot;start&quot;</span>);
+    <span class="tk-f">record</span>(<span class="tk-s">&quot;stop&quot;</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, log.<span class="tk-f">borrow</span>());
+}</code></pre></div>
+<p><code>Rc&lt;RefCell&lt;T&gt;&gt;</code> is the classic combination for shared, mutable data in single-threaded code (graphs, observers, GUI state). Use it sparingly: it trades compile-time guarantees for run-time checks.</p>
+<h2>Weak: breaking cycles</h2>
+<p>Two <code>Rc</code>s pointing at each other never reach a count of zero: a memory leak. <strong><code>Weak&lt;T&gt;</code></strong> is a non-owning reference that does not keep the value alive; <code>upgrade()</code> returns <code>Some(Rc)</code> only if it still exists. Trees use <code>Rc</code> from parent to child and <code>Weak</code> from child to parent:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::cell::<span class="tk-t">RefCell</span>;
+<span class="tk-k">use</span> std::rc::{<span class="tk-t">Rc</span>, <span class="tk-t">Weak</span>};
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span> {
+    name: <span class="tk-t">String</span>,
+    parent: <span class="tk-t">RefCell</span>&lt;<span class="tk-t">Weak</span>&lt;<span class="tk-t">Node</span>&gt;&gt;,
+    children: <span class="tk-t">RefCell</span>&lt;<span class="tk-t">Vec</span>&lt;<span class="tk-t">Rc</span>&lt;<span class="tk-t">Node</span>&gt;&gt;&gt;,
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> root = <span class="tk-t">Rc</span>::<span class="tk-f">new</span>(<span class="tk-t">Node</span> { name: <span class="tk-s">&quot;root&quot;</span>.<span class="tk-f">into</span>(), parent: <span class="tk-t">RefCell</span>::<span class="tk-f">new</span>(<span class="tk-t">Weak</span>::<span class="tk-f">new</span>()), children: <span class="tk-t">RefCell</span>::<span class="tk-f">new</span>(<span class="tk-p">vec!</span>[]) });
+    <span class="tk-k">let</span> leaf = <span class="tk-t">Rc</span>::<span class="tk-f">new</span>(<span class="tk-t">Node</span> { name: <span class="tk-s">&quot;leaf&quot;</span>.<span class="tk-f">into</span>(), parent: <span class="tk-t">RefCell</span>::<span class="tk-f">new</span>(<span class="tk-t">Weak</span>::<span class="tk-f">new</span>()), children: <span class="tk-t">RefCell</span>::<span class="tk-f">new</span>(<span class="tk-p">vec!</span>[]) });
+    *leaf.parent.<span class="tk-f">borrow_mut</span>() = <span class="tk-t">Rc</span>::<span class="tk-f">downgrade</span>(&amp;root);
+    root.children.<span class="tk-f">borrow_mut</span>().<span class="tk-f">push</span>(<span class="tk-t">Rc</span>::<span class="tk-f">clone</span>(&amp;leaf));
+    <span class="tk-k">let</span> parent_name = leaf.parent.<span class="tk-f">borrow</span>().<span class="tk-f">upgrade</span>().<span class="tk-f">map</span>(|p| p.name.<span class="tk-f">clone</span>());
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} children={} strong={} weak={}&quot;</span>, parent_name, root.children.<span class="tk-f">borrow</span>().<span class="tk-f">len</span>(),
+             <span class="tk-t">Rc</span>::<span class="tk-f">strong_count</span>(&amp;root), <span class="tk-t">Rc</span>::<span class="tk-f">weak_count</span>(&amp;root));
+}</code></pre></div>
+<h2>Choosing</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One owner, value on the heap, recursive type, trait object</td>
+<td><code>Box&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Several owners, read-only, one thread</td>
+<td><code>Rc&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Several owners, threads</td>
+<td><code>Arc&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Change data behind <code>&amp;</code> in one thread</td>
+<td><code>RefCell&lt;T&gt;</code> (or <code>Cell&lt;T&gt;</code> for <code>Copy</code> values)</td>
+</tr>
+<tr>
+<td>Shared mutable data, one thread</td>
+<td><code>Rc&lt;RefCell&lt;T&gt;&gt;</code></td>
+</tr>
+<tr>
+<td>Shared mutable data, threads</td>
+<td><code>Arc&lt;Mutex&lt;T&gt;&gt;</code></td>
+</tr>
+<tr>
+<td>A back-reference that must not keep things alive</td>
+<td><code>Weak&lt;T&gt;</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-implementing-iterator/"><span class="mono">previous</span><b>5.03 Implementing Iterator</b></a>
+      <a class="lp-next" href="../5-05-pattern-matching-in-depth/"><span class="mono">next</span><b>5.05 Pattern Matching in Depth</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/5-04-box-rc-and-refcell"></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>CSV and JSON · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/6-02-csv-and-json/">
+  <meta name="description" content="The two data formats you meet everywhere - reading and writing CSV with the csv module (quoting, DictReader and DictWriter, converting types), and JSON with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CSV and JSON · Python · Xenon">
+  <meta property="og:description" content="The two data formats you meet everywhere - reading and writing CSV with the csv module (quoting, DictReader and DictWriter, converting types), and JSON with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/6-02-csv-and-json/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="CSV and JSON · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CSV and JSON · Python · Xenon">
+  <meta name="twitter:description" content="The two data formats you meet everywhere - reading and writing CSV with the csv module (quoting, DictReader and DictWriter, converting types), and JSON with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Data and Automation</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">CSV and JSON</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The two data formats you meet everywhere - reading and writing CSV with the csv module (quoting, DictReader and DictWriter, converting types), and JSON with the json module (loading, dumping, pretty printing, and what maps to what).</p>
+      <div class="prose">
+<h2>CSV</h2>
+<p><strong>CSV</strong> (comma-separated values) is how spreadsheets and databases exchange tables:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>name,city,score
+Ada,London,95
+&quot;Hopper, Grace&quot;,New York,88</code></pre></div>
+<p>Splitting lines on commas breaks on the second row: a field that contains a comma is <strong>quoted</strong>. The <code>csv</code> module handles quoting, embedded quotes and line breaks correctly:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> csv, io
+
+data = <span class="tk-s">'name,city,score\nAda,London,95\n&quot;Hopper, Grace&quot;,New York,88\n'</span>
+reader = csv.<span class="tk-f">DictReader</span>(io.<span class="tk-f">StringIO</span>(data))          <span class="tk-c"># with a real file: open(path, newline=&quot;&quot;, encoding=&quot;utf-8&quot;)</span>
+rows = <span class="tk-f">list</span>(reader)
+<span class="tk-f">print</span>(rows[<span class="tk-n">1</span>][<span class="tk-s">&quot;name&quot;</span>], rows[<span class="tk-n">1</span>][<span class="tk-s">&quot;score&quot;</span>])            <span class="tk-c"># Hopper, Grace  88</span>
+total = <span class="tk-f">sum</span>(<span class="tk-f">int</span>(r[<span class="tk-s">&quot;score&quot;</span>]) <span class="tk-k">for</span> r <span class="tk-k">in</span> rows)          <span class="tk-c"># every field is TEXT: convert it</span>
+<span class="tk-f">print</span>(total)</code></pre></div>
+<p><code>csv.reader</code> gives each row as a list; <code>csv.DictReader</code> uses the header row to give dictionaries, which is clearer. Open CSV files with <code>newline=&quot;&quot;</code> so the module can handle line endings itself.</p>
+<p>Writing:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> csv, io
+
+out = io.<span class="tk-f">StringIO</span>()
+writer = csv.<span class="tk-f">DictWriter</span>(out, fieldnames=[<span class="tk-s">&quot;name&quot;</span>, <span class="tk-s">&quot;score&quot;</span>])
+writer.<span class="tk-f">writeheader</span>()
+writer.<span class="tk-f">writerow</span>({<span class="tk-s">&quot;name&quot;</span>: <span class="tk-s">&quot;Hopper, Grace&quot;</span>, <span class="tk-s">&quot;score&quot;</span>: <span class="tk-n">88</span>})
+writer.<span class="tk-f">writerows</span>([{<span class="tk-s">&quot;name&quot;</span>: <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;score&quot;</span>: <span class="tk-n">95</span>}])
+<span class="tk-f">print</span>(out.<span class="tk-f">getvalue</span>())</code></pre></div>
+<p>The writer adds quotes where needed. Spreadsheets in some countries use <code>;</code> as the separator: pass <code>delimiter=&quot;;&quot;</code>.</p>
+<h2>JSON</h2>
+<p><strong>JSON</strong> is the format of web APIs and many configuration files. It maps directly to Python values:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>JSON</th>
+<th>Python</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>object <code>{...}</code></td>
+<td><code>dict</code></td>
+</tr>
+<tr>
+<td>array <code>[...]</code></td>
+<td><code>list</code></td>
+</tr>
+<tr>
+<td>string</td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td>number</td>
+<td><code>int</code> or <code>float</code></td>
+</tr>
+<tr>
+<td><code>true</code> / <code>false</code></td>
+<td><code>True</code> / <code>False</code></td>
+</tr>
+<tr>
+<td><code>null</code></td>
+<td><code>None</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> json
+
+text = <span class="tk-s">'{&quot;name&quot;: &quot;Ada&quot;, &quot;languages&quot;: [&quot;en&quot;, &quot;fr&quot;], &quot;active&quot;: true, &quot;manager&quot;: null}'</span>
+person = json.<span class="tk-f">loads</span>(text)                  <span class="tk-c"># text -&gt; Python</span>
+<span class="tk-f">print</span>(person[<span class="tk-s">&quot;languages&quot;</span>][<span class="tk-n">1</span>], person[<span class="tk-s">&quot;active&quot;</span>], person[<span class="tk-s">&quot;manager&quot;</span>])
+person[<span class="tk-s">&quot;score&quot;</span>] = <span class="tk-n">95</span>
+<span class="tk-f">print</span>(json.<span class="tk-f">dumps</span>(person))                  <span class="tk-c"># Python -&gt; text</span>
+<span class="tk-f">print</span>(json.<span class="tk-f">dumps</span>(person, indent=<span class="tk-n">2</span>, sort_keys=<span class="tk-k">True</span>))</code></pre></div>
+<p>With files, <code>json.load(f)</code> and <code>json.dump(obj, f, indent=2)</code> read and write directly. Pass <code>ensure_ascii=False</code> to write accented characters as they are rather than as <code>é</code> escapes.</p>
+<p>Only these types can be written. Dates, sets, tuples (written as lists) and your own classes need converting first, for example with <code>dataclasses.asdict(obj)</code> or a <code>default=</code> function. Keys of JSON objects are always strings: a dict with int keys comes back with string keys.</p>
+<h2>Errors in data</h2>
+<p>Real files contain surprises: missing columns, empty fields, numbers with spaces, invalid JSON. Validate as you convert (lesson 4.05): <code>json.loads</code> raises <code>json.JSONDecodeError</code> (a <code>ValueError</code>) with the line and column of the problem; for CSV, check each row and collect errors rather than stopping at the first one. The final project does exactly that.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-text-processing-and-regular-expressions/"><span class="mono">previous</span><b>6.01 Text Processing and Regular Expressions</b></a>
+      <a class="lp-next" href="../6-03-dates-and-times/"><span class="mono">next</span><b>6.03 Dates and Times</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/6-02-csv-and-json"></script>
+</body>
+</html>

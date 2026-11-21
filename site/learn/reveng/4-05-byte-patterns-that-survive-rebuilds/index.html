@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Byte Patterns That Survive Rebuilds · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/4-05-byte-patterns-that-survive-rebuilds/">
+  <meta name="description" content="Every new build moves code around, so fixed addresses break. Byte patterns with wildcards find the same code in any build - which bytes to keep and which to…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Byte Patterns That Survive Rebuilds · Reverse Engineering · Xenon">
+  <meta property="og:description" content="Every new build moves code around, so fixed addresses break. Byte patterns with wildcards find the same code in any build - which bytes to keep and which to…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/4-05-byte-patterns-that-survive-rebuilds/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Byte Patterns That Survive Rebuilds · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Byte Patterns That Survive Rebuilds · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="Every new build moves code around, so fixed addresses break. Byte patterns with wildcards find the same code in any build - which bytes to keep and which to…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Patching Programs You Build</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Byte Patterns That Survive Rebuilds</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Every new build moves code around, so fixed addresses break. Byte patterns with wildcards find the same code in any build - which bytes to keep and which to wildcard, keeping a pattern unique, scanning efficiently, and resolving the RIP-relative address inside a match.</p>
+      <div class="prose">
+<h2>Addresses do not survive a rebuild</h2>
+<p>A patch or a pointer path recorded as <code>game.exe+0x2A1F</code> is correct for exactly one build. Change one line of source, rebuild, and functions shift by a few bytes; everything after them moves. Debug tooling for your own game, patch scripts for an old build, and analysis notes all need a way to find &quot;the same code&quot; in a different build.</p>
+<p>The instructions themselves change much less than their addresses. A <strong>byte pattern</strong> (also called a signature, or an AOB, &quot;array of bytes&quot;) describes the code by its bytes, with <strong>wildcards</strong> for the bytes that vary between builds.</p>
+<h2>Which bytes vary</h2>
+<p>Take the instruction that subtracts damage from health:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>2B C3                   sub <span class="tk-t">eax</span>, <span class="tk-t">ebx</span>
+<span class="tk-n">89</span> <span class="tk-n">47</span> 1C                mov <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rdi</span>+<span class="tk-n">1Ch</span>], <span class="tk-t">eax</span>
+<span class="tk-n">48</span> 8B 0D 6A 2F <span class="tk-n">01</span> <span class="tk-n">00</span>    mov <span class="tk-t">rcx</span>, <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rip</span>+<span class="tk-n">12F6Ah</span>]    <span class="tk-c">; a global</span>
+E8 F5 <span class="tk-n">03</span> <span class="tk-n">00</span> <span class="tk-n">00</span>          call UpdateHud</code></pre></div>
+<ul>
+<li><strong>Opcodes and registers</strong> (<code>2B C3</code>, <code>89 47</code>, <code>48 8B 0D</code>, <code>E8</code>): change only if the compiler chooses differently, which is rare for unchanged source.</li>
+<li><strong>Struct offsets</strong> (<code>1C</code>): change only if the struct changes.</li>
+<li><strong>RIP-relative displacements</strong> (<code>6A 2F 01 00</code>) and <strong>call/jump displacements</strong> (<code>F5 03 00 00</code>): change with almost every build, because they are distances to other code and data that moved.</li>
+<li><strong>Absolute addresses</strong> in data: change with every build and every relocation.</li>
+</ul>
+<p>So the pattern is:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>2B C3 89 47 1C 48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ??</code></pre></div>
+<h2>Making it unique</h2>
+<p>A pattern is only useful if it matches <strong>exactly once</strong> in the module. Short patterns of common instruction sequences match hundreds of places. Tools that generate signatures (plugins for x64dbg, IDA and Ghidra) start at the instruction you want and keep adding the following instructions, wildcarding the displacements, until the pattern is unique. Good habits:</p>
+<ul>
+<li>Prefer patterns built from distinctive instructions: uncommon struct offsets, unusual immediates.</li>
+<li>Keep them short enough to survive small code changes nearby; 15 to 30 bytes is typical.</li>
+<li>Record the <strong>offset</strong> of the instruction you care about within the pattern (&quot;the patch goes 2 bytes into the match&quot;).</li>
+<li>Check uniqueness again after every rebuild; the build that breaks a pattern is the one that tells you to make a better one.</li>
+</ul>
+<h2>Scanning</h2>
+<p>The simplest scanner compares the pattern at every position, skipping wildcard positions:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">for</span> (std::size_t i{ <span class="tk-n">0</span> }; i + pattern.<span class="tk-f">size</span>() &lt;= bytes.<span class="tk-f">size</span>(); ++i)
+{
+    <span class="tk-k">bool</span> match{ <span class="tk-k">true</span> };
+    <span class="tk-k">for</span> (std::size_t k{ <span class="tk-n">0</span> }; k &lt; pattern.<span class="tk-f">size</span>() &amp;&amp; match; ++k)
+        match = !pattern[k].<span class="tk-f">has_value</span>() || bytes[i + k] == *pattern[k];
+    <span class="tk-k">if</span> (match) hits.<span class="tk-f">push_back</span>(i);
+}</code></pre></div>
+<p>That is fast enough for one module of a few megabytes. Scan only executable sections (<code>.text</code>) for code patterns; it is quicker and avoids accidental matches in data. Faster scanners first look for the pattern&#39;s rarest fixed byte with <code>memchr</code>, or use SIMD to compare 16 or 32 bytes at once.</p>
+<h2>Resolving what a match points at</h2>
+<p>Often the pattern finds an instruction that <strong>refers</strong> to what you want: a global variable, a function. The wildcards hide the displacement, but once you have a match you can read it and compute the target, exactly as the processor does:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>match at  game.exe+0x2A1F:  48 8B 0D 6A 2F 01 00   mov rcx, [rip+0x12F6A]
+instruction starts at match + 5, is 7 bytes long, displacement at its byte 3
+target = (address of the instruction + 7) + 0x12F6A</code></pre></div>
+<p>The same for a <code>call</code> (<code>E8</code>, 5 bytes, displacement at byte 1). This is how a pattern finds a global or function in every build: the pattern survives, and the displacement inside it tells you where the thing is this time.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-hooking-functions-in-your-own-programs/"><span class="mono">previous</span><b>4.04 Hooking Functions in Your Own Programs</b></a>
+      <a class="lp-next" href="../5-01-how-x64-instructions-are-encoded/"><span class="mono">next</span><b>5.01 How x64 Instructions Are Encoded</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/4-05-byte-patterns-that-survive-rebuilds"></script>
+</body>
+</html>

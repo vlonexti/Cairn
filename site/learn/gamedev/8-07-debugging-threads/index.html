@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Debugging Threads · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/8-07-debugging-threads/">
+  <meta name="description" content="Multithreaded bugs are timing-dependent, so they hide when you look for them. This lesson covers the tools that make them visible: naming threads, the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Debugging Threads · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Multithreaded bugs are timing-dependent, so they hide when you look for them. This lesson covers the tools that make them visible: naming threads, the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/8-07-debugging-threads/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Debugging Threads · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Debugging Threads · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Multithreaded bugs are timing-dependent, so they hide when you look for them. This lesson covers the tools that make them visible: naming threads, the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Debugging and Diagnostics</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Debugging Threads</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.07</b></span><span>7 of 8 in milestone 8</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Multithreaded bugs are timing-dependent, so they hide when you look for them. This lesson covers the tools that make them visible: naming threads, the <strong>Threads</strong> and <strong>Parallel Stacks</strong> windows, freezing threads to force an ordering, diagnosing <strong>deadlocks</strong> from call stacks, and finding races with careful logging and data breakpoints.</p>
+      <div class="prose">
+<h2>Name your threads</h2>
+<p>The first step costs one line per thread. Give each thread a name, and every tool shows it instead of a bare id:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;thread&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">startAudioThread</span>()
+{
+    std::jthread audio{ [] {
+        <span class="tk-f">SetThreadDescription</span>(<span class="tk-f">GetCurrentThread</span>(), <span class="tk-s">L&quot;Audio mixer&quot;</span>);
+        <span class="tk-c">// ...</span>
+    } };
+}</code></pre></div>
+<p><code>SetThreadDescription</code> (Windows 10 1607 and later; lesson 5.08 showed how to call it safely on older systems) names the thread for Visual Studio, WinDbg, crash dumps and profilers.</p>
+<h2>The Threads window</h2>
+<p><strong>Debug → Windows → Threads</strong> lists every thread when the program is paused: its id, name, location (the function it is in) and priority. Double-click a thread to switch to it: the Call Stack, Locals and editor then show that thread&#39;s view. A yellow arrow marks the current thread.</p>
+<p>Right-click → <strong>Freeze</strong> suspends a thread so it will not run when you continue; <strong>Thaw</strong> releases it. Freezing is a powerful way to <strong>force an interleaving</strong>: freeze the main thread at a chosen line, let a worker run past a critical point, then thaw the main thread. A race that appears once in a thousand runs can be reproduced every time this way.</p>
+<h2>Parallel Stacks</h2>
+<p><strong>Debug → Windows → Parallel Stacks</strong> draws every thread&#39;s call stack at once, merging the frames they share into a graph. With twenty worker threads, you see at a glance that eighteen are idle in the job queue&#39;s wait, one is in physics, and one is stuck somewhere unexpected.</p>
+<h2>Diagnosing a deadlock</h2>
+<p>The game freezes and the CPU usage is near zero: the signature of a deadlock (lesson 6.06), as opposed to an infinite loop, which shows 100% of a core.</p>
+<ol>
+<li><strong>Break All</strong> (Ctrl+Alt+Break).</li>
+<li>Open <strong>Parallel Stacks</strong> or go through the threads in the Threads window. Look for threads waiting inside lock functions: <code>std::mutex::lock</code>, <code>EnterCriticalSection</code>, <code>WaitForSingleObject</code>, <code>RtlpWaitOnCriticalSection</code>.</li>
+<li>For each, find <strong>which lock it waits for</strong> (the argument to the lock call, visible in its frame) and <strong>which locks it holds</strong> (locks taken in earlier frames of its own stack).</li>
+<li>Draw the arrows: &quot;thread A holds lock 1 and waits for lock 2; thread B holds lock 2 and waits for lock 1&quot;. A cycle is a deadlock.</li>
+</ol>
+<p>In WinDbg, <code>!locks</code> lists Windows critical sections that are held, with the owning thread, and <code>~*k</code> prints every thread&#39;s stack, which does steps 2 and 3 quickly. The practice task automates step 4: finding a cycle in &quot;who waits for whom&quot;.</p>
+<h2>Finding races</h2>
+<p>Data races are harder: there is no hang and no crash at the moment of the race, only a wrong value later. Approaches, cheapest first:</p>
+<ul>
+<li><strong>Think about ownership.</strong> For each piece of shared data, which threads touch it and which lock protects it? Data touched by two threads with no lock in common is the suspect.</li>
+<li><strong>Data breakpoints</strong> (lesson 4.09) on the corrupted value: the debugger stops on whichever thread writes it, and the Threads window shows what the others were doing.</li>
+<li><strong>Logging with thread ids and sequence numbers</strong>, written to a lock-free per-thread ring buffer (formatting and locks inside logging change the timing enough to hide the bug).</li>
+<li><strong>Stress</strong>: run the suspected code in a tight loop with many threads to make the race frequent.</li>
+<li><strong>Tools</strong>: Clang&#39;s ThreadSanitizer (on Linux builds, or Clang on Windows with limits) detects races automatically; on MSVC, the Concurrency Visualizer extension shows which threads ran when.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Stepping a single thread and expecting others to wait</span></div><div class="callout-body"><p>When you step, all threads run (unless frozen). Breakpoints in shared code can hit on any thread.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Adding a log line and the bug disappears</span></div><div class="callout-body"><p>Logging changes timing. That does not mean the bug is fixed; it confirms it is timing-dependent.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Fixing a deadlock by adding a timeout</span></div><div class="callout-body"><p>The cycle is still there. Fix the lock order.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">The game freezes with almost no CPU use. What is most likely?</div><ul><li>A deadlock: threads waiting on each other</li><li>An infinite loop</li><li>A memory leak</li></ul><details><summary>Show the answer</summary><p><b>A deadlock: threads waiting on each other</b> An infinite loop would keep a core busy.</p></details></li><li><div class="q">What does freezing a thread in the Threads window let you do?</div><ul><li>Stop it from running while others continue, to force a particular order of events</li><li>Make it run faster</li><li>Kill it permanently</li></ul><details><summary>Show the answer</summary><p><b>Stop it from running while others continue, to force a particular order of events</b> Forced interleavings make rare races reproducible.</p></details></li><li><div class="q">Why is <code>SetThreadDescription</code> worth calling?</div><ul><li>Debuggers, dumps and profilers then show each thread&#39;s name</li><li>It makes threads safer</li><li>It sets the thread&#39;s priority</li></ul><details><summary>Show the answer</summary><p><b>Debuggers, dumps and profilers then show each thread&#39;s name</b> Named threads make every multithreaded investigation faster.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/8.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/8.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-06-debugging-optimised-code/"><span class="mono">previous</span><b>8.06 Debugging Optimised Code</b></a>
+      <a class="lp-next" href="../8-08-profiling-finding-where-the-time-goes/"><span class="mono">next</span><b>8.08 Profiling: Finding Where the Time Goes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/8-07-debugging-threads"></script>
+</body>
+</html>

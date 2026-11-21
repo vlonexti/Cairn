@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Memory Is a Row of Bytes · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/1-01-memory-is-a-row-of-bytes/">
+  <meta name="description" content="A program's memory is one long row of bytes, each with a number called its address. Every variable occupies a few of those bytes, sizeof says how many, and &amp;…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Memory Is a Row of Bytes · Pointers and Memory · Xenon">
+  <meta property="og:description" content="A program's memory is one long row of bytes, each with a number called its address. Every variable occupies a few of those bytes, sizeof says how many, and &amp;…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/1-01-memory-is-a-row-of-bytes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Memory Is a Row of Bytes · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Memory Is a Row of Bytes · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="A program's memory is one long row of bytes, each with a number called its address. Every variable occupies a few of those bytes, sizeof says how many, and &amp;…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Addresses and Dereferencing</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Memory Is a Row of Bytes</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A program&#39;s memory is one long row of bytes, each with a number called its address. Every variable occupies a few of those bytes, sizeof says how many, and &amp; gives the address of the first one. Addresses are written in hexadecimal and change from run to run.</p>
+      <div class="prose">
+<h2>One long row</h2>
+<p>Everything a running program works with, its variables, its strings, its arrays, even its own machine code, sits in <strong>memory</strong>. To the program, memory looks like one very long row of bytes. Each byte holds a number from 0 to 255, and each byte has its own number too: its <strong>address</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>address   0x1000  0x1001  0x1002  0x1003  0x1004  0x1005  0x1006  0x1007
+value       2A      00      00      00      48      69      00      FF</code></pre></div>
+<p>That is the whole model. There are no &quot;variables&quot; in memory, no types, no names: only bytes with addresses. Variables, types and names are how <em>your code</em> decides to read those bytes.</p>
+<h2>A variable is a few bytes</h2>
+<p>When you write <code>int score{ 42 };</code>, the compiler sets aside a few bytes somewhere in that row and agrees with itself that those bytes are <code>score</code>. How many bytes depends on the type, and <code>sizeof</code> tells you:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-s">&quot;char:      &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">char</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;short:     &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">short</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;int:       &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">int</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;long long: &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">long</span> <span class="tk-k">long</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;float:     &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">float</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;double:    &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">double</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;int*:      &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-k">int</span>*) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>On a 64-bit Windows program you get 1, 2, 4, 8, 4, 8 and 8. <code>char</code> is 1 by definition; the others are set by the platform, which is why code that cares uses the fixed-width types from <code>&lt;cstdint&gt;</code>: <code>std::uint8_t</code>, <code>std::int32_t</code>, <code>std::uint64_t</code> and friends always have the size in their name.</p>
+<p>The last line matters for this whole course: <strong>an address is itself a number that takes 8 bytes</strong> in a 64-bit program, whatever it points at.</p>
+<h2>&amp; gives an address</h2>
+<p>The <code>&amp;</code> operator in front of a variable gives the address of its first byte:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> score{ <span class="tk-n">42</span> };
+    <span class="tk-k">double</span> ratio{ <span class="tk-n">0.75</span> };
+    <span class="tk-k">char</span> grade{ <span class="tk-s">'A'</span> };
+
+    std::cout &lt;&lt; <span class="tk-s">&quot;score is at &quot;</span> &lt;&lt; &amp;score &lt;&lt; <span class="tk-s">&quot; and takes &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(score) &lt;&lt; <span class="tk-s">&quot; bytes\n&quot;</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;ratio is at &quot;</span> &lt;&lt; &amp;ratio &lt;&lt; <span class="tk-s">&quot; and takes &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(ratio) &lt;&lt; <span class="tk-s">&quot; bytes\n&quot;</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;grade is at &quot;</span> &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">void</span>*&gt;(&amp;grade) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>Two things to notice:</p>
+<ul>
+<li>Addresses are printed in <strong>hexadecimal</strong>, because a 64-bit address in decimal is a long unreadable number. <code>0x000000E5B1AFF8A4</code> is easier to compare by eye than 986 316 798 116.</li>
+<li>For <code>grade</code> we had to cast to <code>void*</code>. <code>std::cout</code> treats a <code>char*</code> as the start of a text string and would try to print characters from that address until it found a zero byte. <code>void*</code> means &quot;just an address&quot;, and prints as one.</li>
+</ul>
+<p>Run it twice and the addresses change. Windows places the stack, the heap and the program itself at a random position every time it starts (<strong>address space layout randomisation</strong>, ASLR), so a bug cannot rely on a fixed address. The <em>distances</em> between your variables usually stay the same; the starting point moves.</p>
+<h2>Bigger values span several bytes</h2>
+<p>A 4-byte <code>int</code> occupies four consecutive addresses, and <code>&amp;score</code> is the address of the <strong>lowest</strong> of them. Which byte holds which part of the number is the <strong>byte order</strong>. Every x86 and ARM computer you will use is <strong>little-endian</strong>: the least significant byte comes first.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/pointers/l/1.01">Try it in Xenon</a></div>
+<p>So the int <code>0x12345678</code> is stored as <code>78 56 34 12</code>. This looks backwards on paper and is completely natural to the processor: the byte at the variable&#39;s address is always the lowest part, whatever the size.</p>
+<h2>Looking at the bytes</h2>
+<p>You can look at any object&#39;s bytes with a pointer to <code>unsigned char</code>, the one type C++ guarantees may view the bytes of anything. Pointers are the next lesson, so for now read this as &quot;start at the object&#39;s address and read one byte at a time&quot;:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdio&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> value{ <span class="tk-n">0x12345678</span> };
+    <span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>* bytes{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>*&gt;(&amp;value) };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-k">sizeof</span>(value)); ++i)
+        std::<span class="tk-f">printf</span>(<span class="tk-s">&quot;byte %d: %02X\n&quot;</span>, i, bytes[i]);
+}</code></pre></div>
+<p>It prints <code>78</code>, <code>56</code>, <code>34</code>, <code>12</code>. You will write a full hex dump of any object in this milestone&#39;s project.</p>
+<div class="callout tip"><div class="callout-title"><span class="label">Tip</span></div><div class="callout-body"><p>A debugger&#39;s <strong>Memory</strong> window shows exactly this row of bytes. In Visual Studio, while stopped at a breakpoint, open Debug &gt; Windows &gt; Memory &gt; Memory 1 and type <code>&amp;score</code> in the address box. Watching the bytes change as you step is the fastest way to build a picture of memory.</p>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-pointers-are-variables-that-hold-addresses/"><span class="mono">next</span><b>1.02 Pointers Are Variables That Hold Addresses</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/1-01-memory-is-a-row-of-bytes"></script>
+</body>
+</html>

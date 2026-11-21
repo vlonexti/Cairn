@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Unit Tests for Low-Level Code · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/17-01-unit-tests-for-low-level-code/">
+  <meta name="description" content="Every practice task in this course has been checked by unit tests. This lesson turns that around: writing tests for your own low-level code with a framework…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Unit Tests for Low-Level Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Every practice task in this course has been checked by unit tests. This lesson turns that around: writing tests for your own low-level code with a framework…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/17-01-unit-tests-for-low-level-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Unit Tests for Low-Level Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Unit Tests for Low-Level Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Every practice task in this course has been checked by unit tests. This lesson turns that around: writing tests for your own low-level code with a framework…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Testing, Security and Reliability</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Unit Tests for Low-Level Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>17.01</b></span><span>1 of 8 in milestone 17</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Every practice task in this course has been checked by unit tests. This lesson turns that around: writing tests for your own low-level code with a framework such as Catch2 or GoogleTest, structuring code so it can be tested (pure logic, injected clocks, random numbers and platform calls), and deciding what is worth testing in games, tools and drivers.</p>
+      <div class="prose">
+<h2>What a unit test is</h2>
+<p>A <strong>unit test</strong> calls one piece of code with chosen inputs and checks its outputs, automatically, in milliseconds. A suite of them runs on every build:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;catch2/catch_test_macros.hpp&gt;</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;inventory.h&quot;</span>
+
+<span class="tk-f">TEST_CASE</span>(<span class="tk-s">&quot;potions stack up to their limit&quot;</span>)
+{
+    <span class="tk-t">Inventory</span> inv{ <span class="tk-n">4</span>, { { <span class="tk-s">&quot;potion&quot;</span>, <span class="tk-n">5</span> } } };
+    <span class="tk-f">REQUIRE</span>(inv.<span class="tk-f">add</span>(<span class="tk-s">&quot;potion&quot;</span>, <span class="tk-n">7</span>) == <span class="tk-n">0</span>);
+    <span class="tk-f">CHECK</span>(inv.<span class="tk-f">slot</span>(<span class="tk-n">0</span>) == std::pair&lt;std::string, <span class="tk-k">int</span>&gt;{ <span class="tk-s">&quot;potion&quot;</span>, <span class="tk-n">5</span> });
+    <span class="tk-f">CHECK</span>(inv.<span class="tk-f">slot</span>(<span class="tk-n">1</span>) == std::pair&lt;std::string, <span class="tk-k">int</span>&gt;{ <span class="tk-s">&quot;potion&quot;</span>, <span class="tk-n">2</span> });
+}</code></pre></div>
+<p>The course&#39;s practice harness works the same way (<code>TEST</code>, <code>CHECK</code>, <code>CHECK_EQ</code>). Real projects use a framework:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Catch2</strong></td>
+<td>Header-friendly, readable, <code>TEST_CASE</code> and sections; vcpkg port <code>catch2</code></td>
+</tr>
+<tr>
+<td><strong>GoogleTest</strong></td>
+<td>Widely used, fixtures and mocking (GoogleMock); vcpkg port <code>gtest</code>; Visual Studio&#39;s Test Explorer runs it</td>
+</tr>
+<tr>
+<td><strong>Microsoft Native Unit Test Framework</strong></td>
+<td>Built into Visual Studio&#39;s C++ test project template</td>
+</tr>
+<tr>
+<td><strong>doctest</strong></td>
+<td>Very fast to compile, Catch2-like</td>
+</tr>
+</tbody></table>
+</div>
+<p>Put tests in a separate project (lesson 4.01&#39;s <code>tests</code>), linked against the engine library, and run it after every build, locally and in continuous integration (lesson 17.08).</p>
+<h2>Designing code to be testable</h2>
+<p>Code is easy to test when its logic does not reach directly for things the test cannot control:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Hard to test</th>
+<th>Make it testable by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Calls <code>QueryPerformanceCounter</code> or <code>std::chrono</code> directly</td>
+<td>Passing a <strong>clock</strong> (an interface or function) in; tests use a fake clock they advance by hand</td>
+</tr>
+<tr>
+<td>Calls <code>rand()</code></td>
+<td>Passing a seeded <strong>random generator</strong> in</td>
+</tr>
+<tr>
+<td>Opens files, windows, devices</td>
+<td>Separating the <strong>platform layer</strong> from pure logic (lesson 12.07): parse text, not files</td>
+</tr>
+<tr>
+<td>Uses global state</td>
+<td>Passing state in, or resetting it per test</td>
+</tr>
+<tr>
+<td>Big functions doing everything</td>
+<td>Small functions with inputs and outputs</td>
+</tr>
+</tbody></table>
+</div>
+<p>This is why the practice tasks always asked for a function taking data and returning data: <code>parseLevel(text)</code> rather than <code>loadLevel(path)</code>, <code>tryMove(map, ...)</code> rather than code buried in the game loop. The practice task for this lesson injects a clock into a cooldown timer.</p>
+<h2>What to test</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Normal cases</strong></td>
+<td>A potion heals 10</td>
+</tr>
+<tr>
+<td><strong>Edges</strong></td>
+<td>Health exactly 0; an inventory exactly full; the first and last tile of a map</td>
+</tr>
+<tr>
+<td><strong>Invalid input</strong></td>
+<td>A ragged level file, a negative count, an unknown command</td>
+</tr>
+<tr>
+<td><strong>Regression tests</strong></td>
+<td>For every bug fixed, a test that would have caught it (lesson 8.01)</td>
+</tr>
+<tr>
+<td><strong>Round trips</strong></td>
+<td>Save then load gives the same state (lesson 11.06)</td>
+</tr>
+<tr>
+<td><strong>Properties</strong></td>
+<td>For any random input, sorting gives an ordered result of the same length</td>
+</tr>
+</tbody></table>
+</div>
+<p>Not everything needs a unit test: rendering and &quot;does it feel right&quot; are checked by people, and drivers&#39; kernel code is tested in the VM (lesson 16.10). But every piece of pure logic, the majority of most programs, can and should be.</p>
+<h2>Testing low-level code specifically</h2>
+<ul>
+<li><strong>Bit and byte code</strong> (lessons 1.02, 2.06, 9.02): test against known byte sequences, written out in the test, including the edges (0, maximum values, negative numbers).</li>
+<li><strong>Parsers of untrusted data</strong> (save files, network messages, PE headers): test valid, truncated, oversized and nonsense inputs; then fuzz them (lesson 17.03).</li>
+<li><strong>Concurrency</strong> (lesson 6.06): tests that run many threads are useful but cannot prove absence of races; combine with careful design and tools.</li>
+<li><strong>Memory</strong>: run the test suite under AddressSanitizer (lesson 2.10) in a separate configuration, so tests also catch overruns and use-after-free.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Tests that depend on time or randomness</span></div><div class="callout-body"><p>They pass and fail at random. Inject the clock and the generator.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Testing only the happy path</span></div><div class="callout-body"><p>Bugs live at edges and in invalid input.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Tests that are slow or need setup</span></div><div class="callout-body"><p>Unit tests should run in seconds with no outside dependencies, or nobody runs them.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why pass a clock into a cooldown timer instead of reading the system time inside it?</div><ul><li>So a test can control time exactly and check the behaviour deterministically</li><li>Reading the system time is slow</li><li>Timers cannot read the time</li></ul><details><summary>Show the answer</summary><p><b>So a test can control time exactly and check the behaviour deterministically</b> A fake clock makes timing logic testable.</p></details></li><li><div class="q">What is a regression test?</div><ul><li>A test added for a fixed bug, so it cannot come back unnoticed</li><li>A test that runs slowly</li><li>A test of old features only</li></ul><details><summary>Show the answer</summary><p><b>A test added for a fixed bug, so it cannot come back unnoticed</b> Every fixed bug deserves one.</p></details></li><li><div class="q">Which code benefits most from tests with truncated and nonsense inputs?</div><ul><li>Parsers of untrusted data, such as save files and network messages</li><li>Rendering code</li><li>Constant definitions</li></ul><details><summary>Show the answer</summary><p><b>Parsers of untrusted data, such as save files and network messages</b> Then fuzz them too.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/17.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/17.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../16-10-project-an-echo-driver-in-a-virtual-machine/"><span class="mono">previous</span><b>16.10 Project: An Echo Driver in a Virtual Machine</b></a>
+      <a class="lp-next" href="../17-02-sanitizers-and-static-analysis/"><span class="mono">next</span><b>17.02 Sanitizers and Static Analysis</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/17-01-unit-tests-for-low-level-code"></script>
+</body>
+</html>

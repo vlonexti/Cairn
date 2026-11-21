@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Tuples and Unpacking · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/2-04-tuples-and-unpacking/">
+  <meta name="description" content="Tuples are fixed sequences for values that belong together - coordinates, records, several return values. This lesson covers creating them, unpacking with ,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tuples and Unpacking · Python · Xenon">
+  <meta property="og:description" content="Tuples are fixed sequences for values that belong together - coordinates, records, several return values. This lesson covers creating them, unpacking with ,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/2-04-tuples-and-unpacking/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Tuples and Unpacking · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tuples and Unpacking · Python · Xenon">
+  <meta name="twitter:description" content="Tuples are fixed sequences for values that belong together - coordinates, records, several return values. This lesson covers creating them, unpacking with ,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Collections and Loops</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Tuples and Unpacking</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Tuples are fixed sequences for values that belong together - coordinates, records, several return values. This lesson covers creating them, unpacking with *, swapping, and when to choose a tuple over a list.</p>
+      <div class="prose">
+<h2>Tuples</h2>
+<p>A <strong>tuple</strong> is like a list that cannot be changed: written with parentheses (or just commas):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>point = (<span class="tk-n">3</span>, <span class="tk-n">4</span>)
+person = (<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">1815</span>, <span class="tk-s">&quot;London&quot;</span>)
+single = (<span class="tk-n">42</span>,)          <span class="tk-c"># the comma makes it a tuple; (42) is just 42</span>
+<span class="tk-f">print</span>(point[<span class="tk-n">0</span>], <span class="tk-f">len</span>(person), person[<span class="tk-n">1</span>:])</code></pre></div>
+<p>Tuples support indexing, slicing, <code>in</code>, <code>len</code>, <code>count</code> and <code>index</code>, but not <code>append</code> or item assignment.</p>
+<h2>When to use a tuple</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>List</th>
+<th>Tuple</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Many items of the <strong>same kind</strong> that may change: a list of scores</td>
+<td>A <strong>fixed group</strong> of values with different meanings: a point, a date, a record</td>
+</tr>
+<tr>
+<td>Grows and shrinks</td>
+<td>Fixed size</td>
+</tr>
+<tr>
+<td>Cannot be a dictionary key</td>
+<td>Can be a dictionary key (if its items can)</td>
+</tr>
+</tbody></table>
+</div>
+<p>A good rule: if the position of an item has a meaning (index 0 is the name, index 1 the year), it is a tuple; if all items mean the same thing, it is a list.</p>
+<h2>Unpacking</h2>
+<p>Assigning a tuple (or any sequence) to several names <strong>unpacks</strong> it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>name, year, city = (<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">1815</span>, <span class="tk-s">&quot;London&quot;</span>)
+x, y = (<span class="tk-n">3</span>, <span class="tk-n">4</span>)
+a, b = b_and_a = (<span class="tk-n">1</span>, <span class="tk-n">2</span>)
+<span class="tk-f">print</span>(name, year, x + y)</code></pre></div>
+<p>The number of names must match, unless one name has a <code>*</code>, which collects the rest into a list:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>first, *rest = [<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>]
+*body, last = <span class="tk-s">&quot;hello&quot;</span>
+head, *_, tail = <span class="tk-f">range</span>(<span class="tk-n">10</span>)
+<span class="tk-f">print</span>(first, rest, body, last, head, tail)</code></pre></div>
+<p><code>_</code> is the conventional name for a value you do not need.</p>
+<h2>Swapping and multiple return values</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>a, b = <span class="tk-n">1</span>, <span class="tk-n">2</span>
+a, b = b, a             <span class="tk-c"># swap, no temporary variable</span>
+
+<span class="tk-k">def</span> <span class="tk-f">min_max</span>(values):
+    <span class="tk-k">return</span> <span class="tk-f">min</span>(values), <span class="tk-f">max</span>(values)    <span class="tk-c"># returns one tuple</span>
+
+low, high = <span class="tk-f">min_max</span>([<span class="tk-n">3</span>, <span class="tk-n">9</span>, <span class="tk-n">1</span>])
+<span class="tk-f">print</span>(low, high)</code></pre></div>
+<p>Unpacking in loops is where it is used most:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">for</span> name, score <span class="tk-k">in</span> [(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">95</span>), (<span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-n">88</span>)]:
+    <span class="tk-f">print</span>(name, score)</code></pre></div>
+<h2>Named tuples</h2>
+<p>When a tuple has many fields, positions become hard to remember. <code>collections.namedtuple</code> (or dataclasses, lesson 4.04) gives them names:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> collections <span class="tk-k">import</span> namedtuple
+Point = <span class="tk-f">namedtuple</span>(<span class="tk-s">&quot;Point&quot;</span>, [<span class="tk-s">&quot;x&quot;</span>, <span class="tk-s">&quot;y&quot;</span>])
+p = <span class="tk-f">Point</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>)
+<span class="tk-f">print</span>(p.x, p.y, p)</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-loops-for-and-while/"><span class="mono">previous</span><b>2.03 Loops: for and while</b></a>
+      <a class="lp-next" href="../2-05-dictionaries-and-sets/"><span class="mono">next</span><b>2.05 Dictionaries and Sets</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/2-04-tuples-and-unpacking"></script>
+</body>
+</html>

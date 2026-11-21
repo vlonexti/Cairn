@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Pattern Matching in Depth · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/7-04-pattern-matching-in-depth/">
+  <meta name="description" content="Everything match can take apart - literal, capture and wildcard patterns, sequences with rest, dictionaries with rest, objects by class and attribute, match…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pattern Matching in Depth · Python · Xenon">
+  <meta property="og:description" content="Everything match can take apart - literal, capture and wildcard patterns, sequences with rest, dictionaries with rest, objects by class and attribute, match…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/7-04-pattern-matching-in-depth/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pattern Matching in Depth · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pattern Matching in Depth · Python · Xenon">
+  <meta name="twitter:description" content="Everything match can take apart - literal, capture and wildcard patterns, sequences with rest, dictionaries with rest, objects by class and attribute, match…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Advanced Python</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Pattern Matching in Depth</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.04</b></span><span>4 of 6 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Everything match can take apart - literal, capture and wildcard patterns, sequences with *rest, dictionaries with **rest, objects by class and attribute, <strong>match_args</strong>, nested patterns, alternatives, guards, and when match is clearer than if.</p>
+      <div class="prose">
+<h2>More than a switch</h2>
+<p>Lessons 1.05 and 5.03 used <code>match</code> to choose between strings and to split commands by length. A <code>case</code> is a <strong>pattern</strong>: a description of a shape. If the value has that shape, the names in the pattern are bound to its parts and the block runs. The first matching <code>case</code> wins.</p>
+<h2>The basic patterns</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Matches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>42</code>, <code>&quot;stop&quot;</code>, <code>None</code>, <code>True</code></td>
+<td>that exact value</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>anything, and binds it to <code>name</code></td>
+</tr>
+<tr>
+<td><code>_</code></td>
+<td>anything, binds nothing</td>
+</tr>
+<tr>
+<td><code>a | b</code></td>
+<td>either pattern</td>
+</tr>
+<tr>
+<td><code>[x, y]</code></td>
+<td>a sequence of exactly two items</td>
+</tr>
+<tr>
+<td><code>[first, *rest]</code></td>
+<td>a sequence of one or more items</td>
+</tr>
+<tr>
+<td><code>{&quot;type&quot;: t}</code></td>
+<td>a mapping that has at least that key</td>
+</tr>
+<tr>
+<td><code>Point(x=0, y=yy)</code></td>
+<td>an object of that class whose attributes match</td>
+</tr>
+</tbody></table>
+</div>
+<p>A bare name always captures. To compare with a constant, use a dotted name such as <code>Color.RED</code>: dotted names are compared, not bound.</p>
+<h2>Sequences</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">describe</span>(items):
+    <span class="tk-k">match</span> items:
+        <span class="tk-k">case</span> []:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;empty&quot;</span>
+        <span class="tk-k">case</span> [only]:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;one item: {only}&quot;</span>
+        <span class="tk-k">case</span> [first, second]:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;a pair: {first} and {second}&quot;</span>
+        <span class="tk-k">case</span> [first, *rest]:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;{first} and {len(rest)} more&quot;</span>
+
+<span class="tk-k">for</span> value <span class="tk-k">in</span> ([], [<span class="tk-n">1</span>], [<span class="tk-n">1</span>, <span class="tk-n">2</span>], [<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>]):
+    <span class="tk-f">print</span>(<span class="tk-f">describe</span>(value))</code></pre></div>
+<p>Strings are <strong>not</strong> treated as sequences here, so <code>&quot;ab&quot;</code> does not match <code>[a, b]</code>.</p>
+<h2>Dictionaries</h2>
+<p>A mapping pattern checks the keys you name and ignores any others. That is perfect for JSON (lesson 6.02):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">handle</span>(event):
+    <span class="tk-k">match</span> event:
+        <span class="tk-k">case</span> {<span class="tk-s">&quot;type&quot;</span>: <span class="tk-s">&quot;click&quot;</span>, <span class="tk-s">&quot;x&quot;</span>: x, <span class="tk-s">&quot;y&quot;</span>: y}:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;click at {x},{y}&quot;</span>
+        <span class="tk-k">case</span> {<span class="tk-s">&quot;type&quot;</span>: <span class="tk-s">&quot;key&quot;</span>, <span class="tk-s">&quot;key&quot;</span>: <span class="tk-s">&quot;q&quot;</span> | <span class="tk-s">&quot;Q&quot;</span>}:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;quit&quot;</span>
+        <span class="tk-k">case</span> {<span class="tk-s">&quot;type&quot;</span>: <span class="tk-s">&quot;key&quot;</span>, <span class="tk-s">&quot;key&quot;</span>: key}:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;key {key}&quot;</span>
+        <span class="tk-k">case</span> {<span class="tk-s">&quot;type&quot;</span>: other, **details}:
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;unknown {other} with {sorted(details)}&quot;</span>
+        <span class="tk-k">case</span> _:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;not an event&quot;</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">handle</span>({<span class="tk-s">&quot;type&quot;</span>: <span class="tk-s">&quot;click&quot;</span>, <span class="tk-s">&quot;x&quot;</span>: <span class="tk-n">3</span>, <span class="tk-s">&quot;y&quot;</span>: <span class="tk-n">4</span>, <span class="tk-s">&quot;button&quot;</span>: <span class="tk-n">1</span>}))
+<span class="tk-f">print</span>(<span class="tk-f">handle</span>({<span class="tk-s">&quot;type&quot;</span>: <span class="tk-s">&quot;key&quot;</span>, <span class="tk-s">&quot;key&quot;</span>: <span class="tk-s">&quot;Q&quot;</span>}))
+<span class="tk-f">print</span>(<span class="tk-f">handle</span>({<span class="tk-s">&quot;type&quot;</span>: <span class="tk-s">&quot;scroll&quot;</span>, <span class="tk-s">&quot;dy&quot;</span>: -<span class="tk-n">1</span>}))</code></pre></div>
+<h2>Objects</h2>
+<p>A class pattern checks the type with <code>isinstance</code> and then the attributes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> dataclasses <span class="tk-k">import</span> dataclass
+
+<span class="tk-p">@dataclass</span>
+<span class="tk-k">class</span> Point:
+    x: float
+    y: float
+
+<span class="tk-p">@dataclass</span>
+<span class="tk-k">class</span> Circle:
+    centre: Point
+    radius: float
+
+<span class="tk-k">def</span> <span class="tk-f">where</span>(shape):
+    <span class="tk-k">match</span> shape:
+        <span class="tk-k">case</span> <span class="tk-f">Circle</span>(centre=<span class="tk-f">Point</span>(x=<span class="tk-n">0</span>, y=<span class="tk-n">0</span>), radius=r):
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;circle of radius {r} at the origin&quot;</span>
+        <span class="tk-k">case</span> <span class="tk-f">Circle</span>(centre=<span class="tk-f">Point</span>(x=x, y=y)):
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;circle at {x},{y}&quot;</span>
+        <span class="tk-k">case</span> <span class="tk-f">Point</span>(x=<span class="tk-n">0</span>, y=<span class="tk-n">0</span>):
+            <span class="tk-k">return</span> <span class="tk-s">&quot;the origin&quot;</span>
+        <span class="tk-k">case</span> <span class="tk-f">Point</span>(x=x, y=<span class="tk-n">0</span>):
+            <span class="tk-k">return</span> <span class="tk-s">f&quot;on the x axis at {x}&quot;</span>
+        <span class="tk-k">case</span> _:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;something else&quot;</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">where</span>(<span class="tk-f">Circle</span>(<span class="tk-f">Point</span>(<span class="tk-n">0</span>, <span class="tk-n">0</span>), <span class="tk-n">2</span>)))
+<span class="tk-f">print</span>(<span class="tk-f">where</span>(<span class="tk-f">Point</span>(<span class="tk-n">5</span>, <span class="tk-n">0</span>)))</code></pre></div>
+<p>Patterns nest: the circle&#39;s centre is matched by a <code>Point</code> pattern inside the <code>Circle</code> pattern.</p>
+<h2>Positional class patterns and <strong>match_args</strong></h2>
+<p>Writing <code>Point(x=..., y=...)</code> every time is long. A dataclass sets <code>__match_args__</code> to its fields in order, so the attributes can be given by position:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> dataclasses <span class="tk-k">import</span> dataclass
+
+<span class="tk-p">@dataclass</span>
+<span class="tk-k">class</span> Move:
+    dx: int
+    dy: int
+
+<span class="tk-k">match</span> <span class="tk-f">Move</span>(<span class="tk-n">0</span>, -<span class="tk-n">1</span>):
+    <span class="tk-k">case</span> <span class="tk-f">Move</span>(<span class="tk-n">0</span>, dy) <span class="tk-k">if</span> dy &lt; <span class="tk-n">0</span>:
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;up by&quot;</span>, -dy)
+    <span class="tk-k">case</span> <span class="tk-f">Move</span>(dx, <span class="tk-n">0</span>):
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;sideways&quot;</span>, dx)</code></pre></div>
+<p>For an ordinary class, set <code>__match_args__ = (&quot;dx&quot;, &quot;dy&quot;)</code> yourself.</p>
+<h2>Guards and binding a whole match</h2>
+<p><code>if</code> after a pattern adds a condition (a <strong>guard</strong>). <code>as</code> binds what an inner pattern matched:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">classify</span>(value):
+    <span class="tk-k">match</span> value:
+        <span class="tk-k">case</span> <span class="tk-f">int</span>(n) <span class="tk-k">if</span> n &lt; <span class="tk-n">0</span>:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;negative int&quot;</span>
+        <span class="tk-k">case</span> <span class="tk-f">int</span>() | <span class="tk-f">float</span>() <span class="tk-k">as</span> number <span class="tk-k">if</span> number == <span class="tk-n">0</span>:
+            <span class="tk-k">return</span> <span class="tk-s">&quot;zero&quot;</span>
+        <span class="tk-k">case</span> <span class="tk-f">int</span>() | <span class="tk-f">float</span>():
+            <span class="tk-k">return</span> <span class="tk-s">&quot;a number&quot;</span>
+        <span class="tk-k">case</span> <span class="tk-f">str</span>() <span class="tk-k">as</span> text <span class="tk-k">if</span> text.<span class="tk-f">isdigit</span>():
+            <span class="tk-k">return</span> <span class="tk-s">&quot;digits in a string&quot;</span>
+        <span class="tk-k">case</span> <span class="tk-f">str</span>():
+            <span class="tk-k">return</span> <span class="tk-s">&quot;text&quot;</span>
+        <span class="tk-k">case</span> _:
+            <span class="tk-k">return</span> <span class="tk-k">type</span>(value).__name__
+
+<span class="tk-k">for</span> v <span class="tk-k">in</span> (-<span class="tk-n">3</span>, <span class="tk-n">0</span>, <span class="tk-n">2.5</span>, <span class="tk-s">&quot;42&quot;</span>, <span class="tk-s">&quot;hi&quot;</span>, [<span class="tk-n">1</span>]):
+    <span class="tk-f">print</span>(v, <span class="tk-s">&quot;-&gt;&quot;</span>, <span class="tk-f">classify</span>(v))</code></pre></div>
+<p><code>int(n)</code> is the shortcut for built-in types: it matches an <code>int</code> and binds it to <code>n</code>.</p>
+<h2>When to use it</h2>
+<p><code>match</code> shines when the decision depends on the <strong>shape</strong> of data: commands, JSON messages, syntax trees, events. For a plain test like <code>if x &gt; 10</code>, keep using <code>if</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/7.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/7.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-03-advanced-classes/"><span class="mono">previous</span><b>7.03 Advanced Classes</b></a>
+      <a class="lp-next" href="../7-05-threads-and-processes/"><span class="mono">next</span><b>7.05 Threads and Processes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/7-04-pattern-matching-in-depth"></script>
+</body>
+</html>

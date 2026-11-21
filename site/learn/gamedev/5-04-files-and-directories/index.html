@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Files and Directories · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/5-04-files-and-directories/">
+  <meta name="description" content="Games read assets and configuration and write save files and logs. This lesson uses the Windows file API directly (CreateFileW, ReadFile, WriteFile), shows…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Files and Directories · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Games read assets and configuration and write save files and logs. This lesson uses the Windows file API directly (CreateFileW, ReadFile, WriteFile), shows…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/5-04-files-and-directories/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Files and Directories · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Files and Directories · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Games read assets and configuration and write save files and logs. This lesson uses the Windows file API directly (CreateFileW, ReadFile, WriteFile), shows…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>The Windows API</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Files and Directories</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 9 in milestone 5</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Games read assets and configuration and write save files and logs. This lesson uses the Windows file API directly (<code>CreateFileW</code>, <code>ReadFile</code>, <code>WriteFile</code>), shows where a game should keep its files, how to list a directory, how to save without ever leaving a half-written file, and when the portable <code>std::filesystem</code> and <code>std::fstream</code> are the better choice.</p>
+      <div class="prose">
+<h2>Opening a file</h2>
+<p>Every file operation starts with <code>CreateFileW</code>, which both creates new files and opens existing ones despite its name:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE file{ <span class="tk-f">CreateFileW</span>(
+    <span class="tk-s">L&quot;settings.ini&quot;</span>,            <span class="tk-c">// path</span>
+    GENERIC_READ,               <span class="tk-c">// what you want to do: GENERIC_READ, GENERIC_WRITE or both</span>
+    FILE_SHARE_READ,            <span class="tk-c">// what others may do while you have it open</span>
+    <span class="tk-k">nullptr</span>,                    <span class="tk-c">// security attributes: default</span>
+    OPEN_EXISTING,              <span class="tk-c">// what to do if it exists or not (see below)</span>
+    FILE_ATTRIBUTE_NORMAL,      <span class="tk-c">// flags</span>
+    <span class="tk-k">nullptr</span>) };                 <span class="tk-c">// template file: unused</span></code></pre></div>
+<p>The <strong>creation disposition</strong> decides what happens depending on whether the file exists:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Value</th>
+<th>If it exists</th>
+<th>If it does not</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>OPEN_EXISTING</code></td>
+<td>Open it</td>
+<td>Fail (error 2)</td>
+</tr>
+<tr>
+<td><code>CREATE_NEW</code></td>
+<td>Fail (error 80)</td>
+<td>Create it</td>
+</tr>
+<tr>
+<td><code>CREATE_ALWAYS</code></td>
+<td>Truncate it to empty</td>
+<td>Create it</td>
+</tr>
+<tr>
+<td><code>OPEN_ALWAYS</code></td>
+<td>Open it</td>
+<td>Create it</td>
+</tr>
+<tr>
+<td><code>TRUNCATE_EXISTING</code></td>
+<td>Truncate it</td>
+<td>Fail</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <strong>share mode</strong> is often overlooked. It says what other handles may do to the file while yours is open. With <code>0</code>, no one else can even read it, and they get <code>ERROR_SHARING_VIOLATION</code> (32). That is why a game that holds its log file open with share mode 0 stops you viewing the log while it runs.</p>
+<h2>Reading and writing</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">wchar_t</span> tempDir[MAX_PATH]{};
+    <span class="tk-f">GetTempPathW</span>(MAX_PATH, tempDir);
+    <span class="tk-k">const</span> std::wstring path{ std::wstring{ tempDir } + <span class="tk-s">L&quot;xenon_demo_save.txt&quot;</span> };
+
+    <span class="tk-c">// Write</span>
+    HANDLE out{ <span class="tk-f">CreateFileW</span>(path.<span class="tk-f">c_str</span>(), GENERIC_WRITE, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, <span class="tk-k">nullptr</span>) };
+    <span class="tk-k">if</span> (out == INVALID_HANDLE_VALUE) { std::cout &lt;&lt; <span class="tk-s">&quot;create failed &quot;</span> &lt;&lt; <span class="tk-f">GetLastError</span>() &lt;&lt; <span class="tk-s">'\n'</span>; <span class="tk-k">return</span> <span class="tk-n">1</span>; }
+    <span class="tk-k">const</span> std::string text{ <span class="tk-s">&quot;level=4\ngold=1250\n&quot;</span> };
+    DWORD written{ <span class="tk-n">0</span> };
+    <span class="tk-f">WriteFile</span>(out, text.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;DWORD&gt;(text.<span class="tk-f">size</span>()), &amp;written, <span class="tk-k">nullptr</span>);
+    <span class="tk-f">CloseHandle</span>(out);
+
+    <span class="tk-c">// Read it back</span>
+    HANDLE in{ <span class="tk-f">CreateFileW</span>(path.<span class="tk-f">c_str</span>(), GENERIC_READ, FILE_SHARE_READ, <span class="tk-k">nullptr</span>, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, <span class="tk-k">nullptr</span>) };
+    <span class="tk-k">if</span> (in == INVALID_HANDLE_VALUE) { std::cout &lt;&lt; <span class="tk-s">&quot;open failed &quot;</span> &lt;&lt; <span class="tk-f">GetLastError</span>() &lt;&lt; <span class="tk-s">'\n'</span>; <span class="tk-k">return</span> <span class="tk-n">1</span>; }
+    LARGE_INTEGER size{};
+    <span class="tk-f">GetFileSizeEx</span>(in, &amp;size);
+    std::vector&lt;<span class="tk-k">char</span>&gt; <span class="tk-f">buffer</span>(<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(size.<span class="tk-t">QuadPart</span>));
+    DWORD read{ <span class="tk-n">0</span> };
+    <span class="tk-f">ReadFile</span>(in, buffer.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;DWORD&gt;(buffer.<span class="tk-f">size</span>()), &amp;read, <span class="tk-k">nullptr</span>);
+    <span class="tk-f">CloseHandle</span>(in);
+    <span class="tk-f">DeleteFileW</span>(path.<span class="tk-f">c_str</span>());
+
+    std::cout &lt;&lt; <span class="tk-s">&quot;wrote &quot;</span> &lt;&lt; written &lt;&lt; <span class="tk-s">&quot; bytes, read &quot;</span> &lt;&lt; read &lt;&lt; <span class="tk-s">&quot;:\n&quot;</span> &lt;&lt; std::<span class="tk-f">string</span>(buffer.<span class="tk-f">data</span>(), read);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>wrote 18 bytes, read 18:
+level=4
+gold=1250</code></pre></div>
+<p>Note the <code>DWORD</code> out parameters: <code>WriteFile</code> and <code>ReadFile</code> report how many bytes they actually moved. A <code>ReadFile</code> that returns success with <code>read == 0</code> means end of file. A read can also return fewer bytes than asked (for pipes and network files especially), so code that needs an exact amount loops until it has it.</p>
+<h2>Where a game should put its files</h2>
+<p>The folder the <code>.exe</code> is in (<code>C:\Program Files\...</code>) is <strong>read-only</strong> for normal users. Writing saves there fails with <code>ERROR_ACCESS_DENIED</code>, or worse, gets silently redirected by compatibility shims. Windows provides per-user folders, found with <code>SHGetKnownFolderPath</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Known folder id</th>
+<th>Typical path</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Saved Games</td>
+<td><code>FOLDERID_SavedGames</code></td>
+<td><code>C:\Users\name\Saved Games</code></td>
+<td>Save files</td>
+</tr>
+<tr>
+<td>Local AppData</td>
+<td><code>FOLDERID_LocalAppData</code></td>
+<td><code>C:\Users\name\AppData\Local</code></td>
+<td>Settings, caches, logs</td>
+</tr>
+<tr>
+<td>Roaming AppData</td>
+<td><code>FOLDERID_RoamingAppData</code></td>
+<td><code>...\AppData\Roaming</code></td>
+<td>Settings that follow the user between PCs on a domain</td>
+</tr>
+<tr>
+<td>Documents</td>
+<td><code>FOLDERID_Documents</code></td>
+<td><code>C:\Users\name\Documents</code></td>
+<td>Things the user made and wants to find, such as screenshots</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;shlobj.h&gt;</span>
+<span class="tk-p">#pragma</span> <span class="tk-f">comment</span>(lib, <span class="tk-s">&quot;shell32.lib&quot;</span>)
+
+std::wstring <span class="tk-f">savedGamesFolder</span>()
+{
+    PWSTR path{ <span class="tk-k">nullptr</span> };
+    std::wstring result;
+    <span class="tk-k">if</span> (<span class="tk-f">SUCCEEDED</span>(<span class="tk-f">SHGetKnownFolderPath</span>(FOLDERID_SavedGames, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>, &amp;path))) result = path;
+    <span class="tk-f">CoTaskMemFree</span>(path);                 <span class="tk-c">// the documentation says to free it this way</span>
+    <span class="tk-k">return</span> result + <span class="tk-s">L&quot;\\MyGame&quot;</span>;
+}</code></pre></div>
+<h2>Saving safely</h2>
+<p>If the game crashes, or the power goes, halfway through writing a save file, the player loses their save. The standard technique: <strong>write to a temporary file, then replace the real one in a single step</strong>.</p>
+<ol>
+<li>Write the whole save to <code>slot1.sav.tmp</code>.</li>
+<li>Call <code>FlushFileBuffers</code> and close it, so the data is on disk.</li>
+<li><code>MoveFileExW(L&quot;slot1.sav.tmp&quot;, L&quot;slot1.sav&quot;, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)</code>, or <code>ReplaceFileW</code>.</li>
+</ol>
+<p>At every moment, either the old complete save or the new complete save is on disk, never a broken mixture.</p>
+<h2>Listing a directory</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    WIN32_FIND_DATAW entry{};
+    HANDLE find{ <span class="tk-f">FindFirstFileW</span>(<span class="tk-s">L&quot;C:\\Windows\\*.exe&quot;</span>, &amp;entry) };
+    <span class="tk-k">if</span> (find == INVALID_HANDLE_VALUE) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    <span class="tk-k">int</span> count{ <span class="tk-n">0</span> };
+    <span class="tk-k">do</span>
+    {
+        <span class="tk-k">if</span> (!(entry.dwFileAttributes &amp; FILE_ATTRIBUTE_DIRECTORY)) ++count;
+    } <span class="tk-k">while</span> (<span class="tk-f">FindNextFileW</span>(find, &amp;entry));
+    <span class="tk-f">FindClose</span>(find);                     <span class="tk-c">// not CloseHandle: find handles have their own close function</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;found &quot;</span> &lt;&lt; (count &gt; <span class="tk-n">0</span> ? <span class="tk-s">&quot;some&quot;</span> : <span class="tk-s">&quot;no&quot;</span>) &lt;&lt; <span class="tk-s">&quot; programs\n&quot;</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>found some programs</code></pre></div>
+<h2>The portable alternative</h2>
+<p>For ordinary game files, the C++ standard library is simpler and works on every platform:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;filesystem&gt;</span>
+<span class="tk-p">#include &lt;fstream&gt;</span>
+<span class="tk-k">namespace</span> fs = std::filesystem;
+
+<span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; entry : fs::directory_iterator{ <span class="tk-s">&quot;levels&quot;</span> })
+    <span class="tk-k">if</span> (entry.<span class="tk-f">path</span>().<span class="tk-f">extension</span>() == <span class="tk-s">&quot;.lvl&quot;</span>) <span class="tk-f">loadLevel</span>(entry.<span class="tk-f">path</span>());
+
+std::ofstream log{ fs::path{ <span class="tk-s">&quot;logs&quot;</span> } / <span class="tk-s">&quot;game.log&quot;</span>, std::ios::app };</code></pre></div>
+<p>On Windows, <code>std::filesystem::path</code> stores UTF-16 internally and calls the W functions, so it handles any characters correctly. Use the Windows API directly when you need what the standard library does not expose: share modes, overlapped (asynchronous) I/O, memory-mapped files (chapter 12), file change notifications, or exact error codes.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Writing next to the <code>.exe</code>
+It works on your machine because you are an administrator or the game is in your own folder. On players&#39; machines it fails. Use Saved Games or AppData.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Overwriting a save in place</span></div><div class="callout-body"><p>A crash mid-write destroys it. Write a temporary file and replace atomically.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Share mode 0 on files others need to read</span></div><div class="callout-body"><p>Logs and config files should usually allow <code>FILE_SHARE_READ</code>.</p>
+</div></div>
+<blockquote><p>[!warning] Assuming one <code>ReadFile</code> reads everything
+Check the bytes-read count, and loop when you need an exact amount.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which creation disposition opens a file if it exists and creates it if not?</div><ul><li><code>CREATE_ALWAYS</code></li><li><code>OPEN_ALWAYS</code></li><li><code>OPEN_EXISTING</code></li></ul><details><summary>Show the answer</summary><p><b><code>OPEN_ALWAYS</code></b> <code>CREATE_ALWAYS</code> also creates when missing, but truncates an existing file to empty.</p></details></li><li><div class="q">Another program cannot open your game&#39;s log while the game runs, getting error 32. Why?</div><ul><li>The game opened the file with a share mode that does not allow reading</li><li>The log file is too large</li><li>Windows locks all files a game opens</li></ul><details><summary>Show the answer</summary><p><b>The game opened the file with a share mode that does not allow reading</b> Error 32 is a sharing violation: the existing handle&#39;s share mode forbids it.</p></details></li><li><div class="q">Why should save files not be written to the game&#39;s installation folder?</div><ul><li>Under Program Files it is read-only for normal users</li><li>Windows deletes files there on restart</li><li>It is slower</li></ul><details><summary>Show the answer</summary><p><b>Under Program Files it is read-only for normal users</b> Use the per-user Saved Games or AppData folders.</p></details></li><li><div class="q">How do you update a save file so a crash can never leave it half-written?</div><ul><li>Write a temporary file completely, then replace the real file with it in one step</li><li>Write the new save in small pieces</li><li>Delete the old file first, then write the new one</li></ul><details><summary>Show the answer</summary><p><b>Write a temporary file completely, then replace the real file with it in one step</b> The move or replace is atomic: the file is always either the old version or the new one.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-strings-on-windows-ansi-utf-16-and-utf-8/"><span class="mono">previous</span><b>5.03 Strings on Windows: ANSI, UTF-16 and UTF-8</b></a>
+      <a class="lp-next" href="../5-05-windows-and-the-message-loop/"><span class="mono">next</span><b>5.05 Windows and the Message Loop</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/5-04-files-and-directories"></script>
+</body>
+</html>

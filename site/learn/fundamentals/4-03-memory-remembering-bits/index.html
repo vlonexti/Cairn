@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Memory: Remembering Bits · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/4-03-memory-remembering-bits/">
+  <meta name="description" content="Gates connected in a loop can remember a bit - a latch or flip-flop. A row of them is a register. Main memory (RAM) is billions of tiny cells arranged as a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Memory: Remembering Bits · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="Gates connected in a loop can remember a bit - a latch or flip-flop. A row of them is a register. Main memory (RAM) is billions of tiny cells arranged as a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/4-03-memory-remembering-bits/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Memory: Remembering Bits · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Memory: Remembering Bits · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="Gates connected in a loop can remember a bit - a latch or flip-flop. A row of them is a register. Main memory (RAM) is billions of tiny cells arranged as a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Inside the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Memory: Remembering Bits</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.03</b></span><span>3 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Gates connected in a loop can remember a bit - a latch or flip-flop. A row of them is a register. Main memory (RAM) is billions of tiny cells arranged as a long row of bytes, each with a numbered address. Programs read and write memory by address, and RAM forgets everything when the power goes off.</p>
+      <div class="prose">
+<h2>A circuit that remembers</h2>
+<p>The gates in 4.01 and 4.02 have no memory: their output depends only on their inputs right now. To store a bit, a circuit must keep its value after the input is gone. The trick is <strong>feedback</strong>: connect a gate&#39;s output back into its own input.</p>
+<p>Two NAND gates wired to feed into each other form a <strong>latch</strong>. It has two stable states, and stays in whichever one it was put into:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&quot;set&quot;</td>
+<td>the stored bit becomes 1</td>
+</tr>
+<tr>
+<td>&quot;reset&quot;</td>
+<td>the stored bit becomes 0</td>
+</tr>
+<tr>
+<td>neither</td>
+<td>the bit stays as it was, for as long as there is power</td>
+</tr>
+</tbody></table>
+</div>
+<p>Add a little control (a <strong>clock</strong> signal saying <em>when</em> to store) and it becomes a <strong>flip-flop</strong>, the basic memory cell inside a CPU.</p>
+<h2>Registers</h2>
+<p>A row of flip-flops that store a whole number together is a <strong>register</strong>. A 64-bit CPU&#39;s registers are 64 flip-flops each. Registers are inside the CPU itself, next to the ALU, so they are the fastest memory there is - but there are only a few dozen of them. x86-64 has 16 general registers, called <code>rax</code>, <code>rbx</code>, <code>rcx</code> and so on (you will use them all in the Assembly course).</p>
+<h2>RAM: a long row of bytes</h2>
+<p>The program and its data cannot all fit in registers, so they live in <strong>main memory</strong>, <strong>RAM</strong> (random-access memory). RAM is made differently - each bit is a tiny capacitor that holds a charge, with one transistor to read or write it - which makes it far denser and cheaper than flip-flops, but slower.</p>
+<p>The important idea is how a program sees it: <strong>one long row of bytes, each with a number called its address</strong>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Address</th>
+<th>0x1000</th>
+<th>0x1001</th>
+<th>0x1002</th>
+<th>0x1003</th>
+<th>0x1004</th>
+<th>...</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Byte</td>
+<td>48</td>
+<td>105</td>
+<td>0</td>
+<td>2A</td>
+<td>0</td>
+<td>...</td>
+</tr>
+</tbody></table>
+</div>
+<p>To read memory, the CPU sends an address and gets back the byte (or several bytes) stored there. To write, it sends an address and a value. &quot;Random access&quot; means any address can be reached as quickly as any other, unlike a tape you would have to wind through.</p>
+<p>Every variable in a program lives at some address. A 4-byte integer takes four neighbouring addresses; which byte goes first is the byte order from 2.06.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/4.03">Try it in Xenon</a></div>
+<p>The demo shows variables in memory, each with its address and size. Notice the <strong>padding</strong> gaps: CPUs read faster when a 4-byte number starts at an address divisible by 4 (an &quot;aligned&quot; address), so the compiler leaves gaps to line things up.</p>
+<h2>Addresses are numbers too</h2>
+<p>An address is just a number, so it can be stored in memory like any other number. A variable holding an address is called a <strong>pointer</strong>: it &quot;points at&quot; another place in memory. Pointers are central to C and assembly, and every language uses them under the hood (Python&#39;s variables are pointers to objects).</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/4.03">Try it in Xenon</a></div>
+<h2>Memory forgets</h2>
+<p>RAM is <strong>volatile</strong>: when the power goes off, the capacitors drain and every bit is lost. That is why there are two kinds of storage:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>RAM (memory)</th>
+<th>SSD or hard drive (storage)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Keeps data without power</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Speed</td>
+<td>Very fast (tens of nanoseconds)</td>
+<td>Slower (SSD: tens of microseconds; hard drive: milliseconds)</td>
+</tr>
+<tr>
+<td>Typical size</td>
+<td>8 to 64 GB</td>
+<td>256 GB to several TB</td>
+</tr>
+<tr>
+<td>Holds</td>
+<td>The programs running now and their data</td>
+<td>Files, installed programs, the operating system</td>
+</tr>
+</tbody></table>
+</div>
+<p>When you open an app, its program file is copied from storage into RAM so the CPU can run it. When you &quot;save&quot;, data is copied from RAM to storage so it survives.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What makes a latch able to remember a bit?</div><ul><li>Its gates&#39; outputs are fed back into their own inputs, so it holds its state</li><li>It contains a tiny battery</li><li>It is made of magnets</li></ul><details><summary>Show the answer</summary><p><b>Its gates&#39; outputs are fed back into their own inputs, so it holds its state</b> Feedback gives the circuit two stable states.</p></details></li><li><div class="q">How does a program find a particular byte in RAM?</div><ul><li>By its name</li><li>By its address, a number</li><li>By searching from the start</li></ul><details><summary>Show the answer</summary><p><b>By its address, a number</b> Memory is a numbered row of bytes. Any address can be read directly.</p></details></li><li><div class="q">What happens to the contents of RAM when the computer is switched off?</div><ul><li>They are saved automatically</li><li>They are lost</li><li>They move to the CPU</li></ul><details><summary>Show the answer</summary><p><b>They are lost</b> RAM is volatile. Saving copies data to storage, which is not.</p></details></li><li><div class="q">A 4-byte integer is stored starting at address 0x2000. Which addresses does it use?</div><ul><li>0x2000 only</li><li>0x2000, 0x2001, 0x2002 and 0x2003</li><li>0x2000 to 0x2004</li></ul><details><summary>Show the answer</summary><p><b>0x2000, 0x2001, 0x2002 and 0x2003</b> One byte per address, four neighbouring addresses.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/4.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/4.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-02-adding-with-gates/"><span class="mono">previous</span><b>4.02 Adding with Gates</b></a>
+      <a class="lp-next" href="../4-04-the-cpu-fetch-decode-execute/"><span class="mono">next</span><b>4.04 The CPU: Fetch, Decode, Execute</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/4-03-memory-remembering-bits"></script>
+</body>
+</html>

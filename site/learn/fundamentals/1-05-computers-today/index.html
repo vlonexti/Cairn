@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Computers Today · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/1-05-computers-today/">
+  <meta name="description" content="Today's computers - laptops, phones, game consoles, servers - are still von Neumann machines, but with many cores, graphics processors, layers of fast…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Computers Today · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="Today's computers - laptops, phones, game consoles, servers - are still von Neumann machines, but with many cores, graphics processors, layers of fast…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/1-05-computers-today/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Computers Today · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Computers Today · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="Today's computers - laptops, phones, game consoles, servers - are still von Neumann machines, but with many cores, graphics processors, layers of fast…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Where Computers Came From</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Computers Today</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.05</b></span><span>5 of 5 in milestone 1</span><span>5 min</span></div>
+      <p class="lp-summary">Today&#39;s computers - laptops, phones, game consoles, servers - are still von Neumann machines, but with many cores, graphics processors, layers of fast memory, and chips designed around low power. The two main families are x86 (most PCs) and ARM (phones and new Macs).</p>
+      <div class="prose">
+<h2>The same ideas, everywhere</h2>
+<p>There are far more computers around you than the ones called computers: a phone, a watch, a car (often over 50 small computers), a washing machine, a games console, a router. Inside every one is the same thing you met in 1.03: a CPU fetching instructions from memory and carrying them out.</p>
+<h2>Two families: x86 and ARM</h2>
+<p>A CPU understands one particular set of instructions, its <strong>instruction set architecture</strong> (ISA). A program built for one ISA does not run on another, the way a book in French cannot be read by someone who only reads English.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Who makes it</th>
+<th>Where it is</th>
+<th>Style</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>x86-64</strong> (also called x64, AMD64)</td>
+<td>Intel, AMD</td>
+<td>Most Windows PCs, most servers, PlayStation 5, Xbox</td>
+<td>Many complex instructions; descends from the 8086 of 1978</td>
+</tr>
+<tr>
+<td><strong>ARM64</strong> (also called AArch64)</td>
+<td>Designed by Arm, built by Apple, Qualcomm, Samsung and others</td>
+<td>Almost every phone and tablet, Apple-chip Macs, Nintendo Switch, many servers</td>
+<td>Fewer, simpler instructions; built around low power</td>
+</tr>
+</tbody></table>
+</div>
+<p>This is why an app is built separately for each: the same program is translated into x86-64 machine code for one, and ARM64 machine code for the other. The Assembly course on this site uses x86-64.</p>
+<h2>Many cores</h2>
+<p>Around 2005, making one CPU faster and faster ran into a wall: faster switching made chips too hot. The answer was to put <strong>several CPUs on one chip</strong>. Each is called a <strong>core</strong>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    subgraph Chip[&quot;One processor chip&quot;]
+      C1[&quot;Core 1&quot;]
+      C2[&quot;Core 2&quot;]
+      C3[&quot;Core 3&quot;]
+      C4[&quot;Core 4&quot;]
+      L3[&quot;Shared cache&quot;]
+    end
+    Chip &lt;--&gt; RAM[&quot;RAM&quot;]</pre></div>
+<p>A laptop typically has 4 to 16 cores; a big server, over a hundred. Four cores can do four things at once - but only if the program is written to split its work up (lesson 6.02). A program that does one thing after another uses one core and leaves the rest idle.</p>
+<h2>GPUs</h2>
+<p>A <strong>GPU</strong> (graphics processing unit) is a chip with thousands of small, simple cores, all doing the same kind of sum at the same time on different data. That is exactly what drawing a picture needs: work out the colour of each of 8 million pixels, 60 or more times a second.</p>
+<p>The same design is perfect for the maths of AI, which is why modern AI is trained on GPUs, and why phones and new laptops now also have an <strong>NPU</strong> (neural processing unit) for AI tasks.</p>
+<h2>Speed in numbers</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Thing</th>
+<th>Typical today</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clock speed of one core</td>
+<td>3 to 5 GHz (billion ticks a second)</td>
+</tr>
+<tr>
+<td>Cores in a laptop</td>
+<td>4 to 16</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>8 to 64 GB</td>
+</tr>
+<tr>
+<td>Storage (SSD)</td>
+<td>256 GB to 4 TB</td>
+</tr>
+<tr>
+<td>A phone&#39;s chip</td>
+<td>10 to 20 billion transistors</td>
+</tr>
+</tbody></table>
+</div>
+<p>You will learn what GB, GHz and the other units mean exactly in milestone 2.</p>
+<h2>Where computers live now</h2>
+<ul>
+<li><strong>Personal devices</strong>: phones, laptops, tablets, consoles.</li>
+<li><strong>Embedded computers</strong>: small chips inside other things - cars, cameras, microwaves - often with no screen at all, running one program forever.</li>
+<li><strong>The cloud</strong>: huge buildings of servers (data centres). When you stream a film or ask a chatbot something, a computer in a data centre does much of the work and sends you the result over the internet (lesson 6.06).</li>
+</ul>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does a program built for an x86-64 PC not run directly on an ARM phone?</div><ul><li>The phone is too slow</li><li>The two chips understand different instruction sets, so the machine code is different</li><li>ARM chips cannot run programs</li></ul><details><summary>Show the answer</summary><p><b>The two chips understand different instruction sets, so the machine code is different</b> Each instruction set has its own machine code. The program has to be built (translated) for each one.</p></details></li><li><div class="q">What is a CPU core?</div><ul><li>One complete processor; a modern chip has several of them working side by side</li><li>The centre of the screen</li><li>The memory inside a phone</li></ul><details><summary>Show the answer</summary><p><b>One complete processor; a modern chip has several of them working side by side</b> Several cores on one chip can run several things at the same time.</p></details></li><li><div class="q">Why is a GPU good at drawing pictures and AI maths?</div><ul><li>It has one very fast core</li><li>It has thousands of simple cores doing the same kind of sum on lots of data at once</li><li>It stores more photos</li></ul><details><summary>Show the answer</summary><p><b>It has thousands of simple cores doing the same kind of sum on lots of data at once</b> Pixels and the maths of AI are both huge numbers of similar, independent sums.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/1.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/1.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-04-transistors-chips-and-the-personal-computer/"><span class="mono">previous</span><b>1.04 Transistors, Chips and the Personal Computer</b></a>
+      <a class="lp-next" href="../2-01-why-binary/"><span class="mono">next</span><b>2.01 Why Binary</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/1-05-computers-today"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

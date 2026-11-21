@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Kernel Objects and the Object Manager · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/15-03-kernel-objects-and-the-object-manager/">
+  <meta name="description" content="Lesson 5.01 showed handles from the user's side. Inside the kernel, the object manager creates every kernel object (files, processes, threads, events,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Kernel Objects and the Object Manager · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Lesson 5.01 showed handles from the user's side. Inside the kernel, the object manager creates every kernel object (files, processes, threads, events,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/15-03-kernel-objects-and-the-object-manager/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Kernel Objects and the Object Manager · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Kernel Objects and the Object Manager · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Lesson 5.01 showed handles from the user's side. Inside the kernel, the object manager creates every kernel object (files, processes, threads, events,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Windows Kernel Architecture</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Kernel Objects and the Object Manager</h1>
+      <div class="readout lp-readout"><span>lesson <b>15.03</b></span><span>3 of 8 in milestone 15</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Lesson 5.01 showed handles from the user&#39;s side. Inside the kernel, the <strong>object manager</strong> creates every kernel object (files, processes, threads, events, devices, registry keys), gives each a header with its type, reference counts and security, keeps a <strong>namespace</strong> of named objects, and maintains each process&#39;s handle table. This lesson looks at all of that, and at the object names drivers use.</p>
+      <div class="prose">
+<h2>Every object has a header</h2>
+<p>Each kernel object is a block of kernel memory: an <strong>object header</strong> managed by the object manager, followed by the object&#39;s own body (an event&#39;s signalled state, a file&#39;s position):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>In the header</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Type</strong></td>
+<td>Which kind of object: Process, Thread, File, Event, Device, Key, Section ... Each type has its own procedures (open, close, delete) and its own access rights</td>
+</tr>
+<tr>
+<td><strong>Handle count</strong></td>
+<td>How many handles, in all processes, refer to it</td>
+</tr>
+<tr>
+<td><strong>Pointer (reference) count</strong></td>
+<td>How many references in total, including the kernel&#39;s own pointers</td>
+</tr>
+<tr>
+<td><strong>Security descriptor</strong></td>
+<td>Who may do what (lesson 6.08)</td>
+</tr>
+<tr>
+<td><strong>Name</strong></td>
+<td>For named objects, its place in the namespace</td>
+</tr>
+</tbody></table>
+</div>
+<p>An object is deleted only when <strong>both</strong> counts reach zero. Kernel code that keeps a pointer to an object takes a reference (<code>ObReferenceObject</code>) and later releases it (<code>ObDereferenceObject</code>), the kernel&#39;s equivalent of lesson 10.06&#39;s reference counting. Forgetting to release keeps the object alive until reboot; releasing twice frees it while still in use, usually ending in a bug check.</p>
+<h2>Handles, from the inside</h2>
+<p>A handle (lesson 5.01) is an index into the process&#39;s <strong>handle table</strong>, maintained by the object manager. Each entry holds a pointer to the object and the <strong>access mask granted</strong> when it was opened. When a user calls, say, <code>SetEvent(h)</code>, the kernel:</p>
+<ol>
+<li>looks up <code>h</code> in the calling process&#39;s table (<code>ObReferenceObjectByHandle</code>);</li>
+<li>checks the object&#39;s type is right (an Event), and the granted access includes what the operation needs;</li>
+<li>takes a reference while it works, and drops it afterwards.</li>
+</ol>
+<p>The access check against the security descriptor happened only once, when the handle was created (lesson 6.08).</p>
+<h2>The object namespace</h2>
+<p>Named objects live in a tree, like a file system for the kernel:</p>
+<div class="codeblock diagram plain"><pre><code>\
+├── Device\
+│   ├── HarddiskVolume3          the C: volume
+│   ├── Null
+│   └── XenonEcho                a device created by chapter 16's driver
+├── Driver\                      loaded drivers
+├── GLOBAL??\                    &quot;DOS device&quot; names: symbolic links
+│   ├── C:  → \Device\HarddiskVolume3
+│   └── XenonEcho → \Device\XenonEcho
+├── BaseNamedObjects\            named events, mutexes, sections from user mode
+│   └── (Local\ and Global\ names, lesson 12.01)
+└── Sessions\ ...                per-session namespaces</code></pre></div>
+<p><strong>Symbolic links</strong> connect friendly names to devices. The user-mode path <code>C:\save.dat</code> becomes <code>\??\C:\save.dat</code> in the kernel; <code>\??</code> looks in the caller&#39;s own and then the global DOS device directory, where <code>C:</code> is a symbolic link to <code>\Device\HarddiskVolume3</code>; the object manager follows it, and the rest of the path (<code>\save.dat</code>) is handed to the file system driver on that device. The practice task resolves paths through links like this, including stopping a link that points back at itself.</p>
+<p>Chapter 16&#39;s driver creates a <strong>device object</strong> (<code>\Device\XenonEcho</code>) and a symbolic link to it (<code>\??\XenonEcho</code>), so a user program can open it with <code>CreateFileW(L&quot;\\\\.\\XenonEcho&quot;, ...)</code>: the <code>\\.\</code> prefix is user mode&#39;s way of saying <code>\??\</code>.</p>
+<h2>Seeing it</h2>
+<p>Sysinternals <strong>WinObj</strong> shows the whole namespace: devices, drivers, symbolic links and named objects. Sysinternals <strong>Handle</strong> and Process Explorer&#39;s lower pane list every handle a process holds, with types and names, which is how you find which program has a file locked (lesson 5.04&#39;s sharing violations).</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Holding an object pointer without a reference</span></div><div class="callout-body"><p>The object can be deleted underneath you. Reference it for as long as you keep the pointer.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Unbalanced reference counts</span></div><div class="callout-body"><p>A missing dereference leaks the object until reboot; an extra one frees it while still in use.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Confusing user-mode and kernel-mode names</span></div><div class="callout-body"><p><code>\\.\Name</code> from user mode corresponds to <code>\??\Name</code> (a link) in the kernel, which points at <code>\Device\Name</code>.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">When is a kernel object deleted?</div><ul><li>When both its handle count and its reference (pointer) count reach zero</li><li>When its creator exits</li><li>When its first handle is closed</li></ul><details><summary>Show the answer</summary><p><b>When both its handle count and its reference (pointer) count reach zero</b> Kernel code&#39;s own references keep it alive too.</p></details></li><li><div class="q">What does a handle table entry store?</div><ul><li>A pointer to the object and the access rights granted when the handle was opened</li><li>The object&#39;s whole contents</li><li>The object&#39;s name only</li></ul><details><summary>Show the answer</summary><p><b>A pointer to the object and the access rights granted when the handle was opened</b> Rights are checked once, at open time.</p></details></li><li><div class="q">What does <code>\??\C:</code> refer to?</div><ul><li>A symbolic link in the DOS device directory that points to a device such as <code>\Device\HarddiskVolume3</code></li><li>The C: folder on disk</li><li>A registry key</li></ul><details><summary>Show the answer</summary><p><b>A symbolic link in the DOS device directory that points to a device such as <code>\Device\HarddiskVolume3</code></b> The object manager follows the link to the device.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/15.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/15.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../15-02-system-calls-crossing-the-boundary/"><span class="mono">previous</span><b>15.02 System Calls: Crossing the Boundary</b></a>
+      <a class="lp-next" href="../15-04-the-memory-manager/"><span class="mono">next</span><b>15.04 The Memory Manager</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/15-03-kernel-objects-and-the-object-manager"></script>
+</body>
+</html>

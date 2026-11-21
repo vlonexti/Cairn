@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Debugging Optimised Code · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/8-06-debugging-optimised-code/">
+  <meta name="description" content="Some bugs only appear in Release builds, and crash dumps from players are always from optimised code. Debugging it is harder (variables vanish, lines run out…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Debugging Optimised Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Some bugs only appear in Release builds, and crash dumps from players are always from optimised code. Debugging it is harder (variables vanish, lines run out…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/8-06-debugging-optimised-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Debugging Optimised Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Debugging Optimised Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Some bugs only appear in Release builds, and crash dumps from players are always from optimised code. Debugging it is harder (variables vanish, lines run out…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Debugging and Diagnostics</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Debugging Optimised Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.06</b></span><span>6 of 8 in milestone 8</span><span>6 min</span></div>
+      <p class="lp-summary">Some bugs only appear in Release builds, and crash dumps from players are always from optimised code. Debugging it is harder (variables vanish, lines run out of order, functions disappear into their callers) but entirely possible. This lesson gives a practical toolkit: make Release builds debuggable, read values from registers and the disassembly, switch optimisation off selectively, and use logging where stepping fails.</p>
+      <div class="prose">
+<h2>What goes wrong in the debugger</h2>
+<p>Lesson 4.10 explained what the optimiser does; here is what that looks like when you debug:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&quot;Variable is optimised away and not available&quot;</td>
+<td>It lives only in a register, which has since been reused, or it was removed</td>
+</tr>
+<tr>
+<td>The yellow arrow jumps backwards and forwards</td>
+<td>Instructions from different lines were interleaved</td>
+</tr>
+<tr>
+<td>A breakpoint in a function never hits</td>
+<td>The function was inlined into its callers</td>
+</tr>
+<tr>
+<td>A function is missing from the call stack</td>
+<td>Inlined, or left by a tail call (lesson 7.11)</td>
+</tr>
+<tr>
+<td>Locals show wrong values</td>
+<td>The debugger reads a stack slot the optimised code no longer uses</td>
+</tr>
+</tbody></table>
+</div>
+<p>None of this means the debugger is broken. It means the source is only an approximation of what runs, and you sometimes have to look at what really runs.</p>
+<h2>Make Release builds debuggable</h2>
+<p>These settings cost nothing at run time and should be on for every Release build:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>C/C++ → General → Debug Information Format: /Zi</strong></td>
+<td>Writes a full PDB for Release</td>
+</tr>
+<tr>
+<td><strong>Linker → Debugging → Generate Debug Info: /DEBUG</strong></td>
+<td>Links the PDB</td>
+</tr>
+<tr>
+<td><strong>C/C++ → Command Line: /Zo</strong> (default in recent versions)</td>
+<td>Records which register each variable is in at each point, so more locals are visible</td>
+</tr>
+<tr>
+<td><strong>Linker → Optimization → /OPT:REF, /OPT:ICF</strong> (keep them)</td>
+<td>Unaffected; note that ICF can merge identical functions, so a call stack may show a different name with the same body</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Reading values the debugger cannot show</h2>
+<p>When a variable is &quot;optimised away&quot;, the value usually still exists somewhere:</p>
+<ol>
+<li>Open the <strong>Disassembly</strong> window (Ctrl+Alt+D) at the current instruction.</li>
+<li>Find the instruction that last loaded or computed the value. <code>mov ebx, dword ptr [rcx+0Ch]</code> tells you <code>ebx</code> holds the member at offset 12 of whatever <code>rcx</code> pointed to.</li>
+<li>Read the register in the <strong>Registers</strong> window, or in Watch as <code>@ebx</code>.</li>
+<li>For objects, cast a register in Watch: <code>(Player*)@rdi</code>.</li>
+</ol>
+<p>Function arguments are in <code>rcx</code>, <code>rdx</code>, <code>r8</code>, <code>r9</code> only at the very start of a function (lesson 7.06); optimised code moves them into non-volatile registers or overwrites them soon after. Set the breakpoint on the function&#39;s first instruction (right-click → Go To Disassembly, F9 on the first line) to catch them in place.</p>
+<h2>Turn optimisation off where you are looking</h2>
+<p>When you need to step through one area of a Release build comfortably:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#pragma</span> <span class="tk-f">optimize</span>(<span class="tk-s">&quot;&quot;</span>, off)
+<span class="tk-k">void</span> <span class="tk-t">Inventory</span>::<span class="tk-f">recalculate</span>()
+{
+    <span class="tk-c">// compiled without optimisation in an otherwise optimised build</span>
+}
+<span class="tk-p">#pragma</span> <span class="tk-f">optimize</span>(<span class="tk-s">&quot;&quot;</span>, on)</code></pre></div>
+<p>Or disable it for a whole <code>.cpp</code> file: right-click the file → Properties → <strong>C/C++ → Optimization: Disabled (/Od)</strong>. Remember to remove these: they are debugging aids, not fixes. If the bug disappears when optimisation is turned off in one place, that is itself a strong clue: undefined behaviour (uninitialised values, overruns, data races, lesson 4.10) in or near that code.</p>
+<h2>Logging and asserts in Release</h2>
+<p>Stepping is often impractical in timing-sensitive or rare bugs. Use the tools from lesson 8.03, kept enabled in a test configuration:</p>
+<ul>
+<li>a <strong>ring-buffer log</strong> dumped on crash;</li>
+<li><strong>asserts</strong> enabled in an &quot;optimised with checks&quot; configuration;</li>
+<li><strong>tracepoints</strong> (lesson 4.09), which work in optimised code at instruction level.</li>
+</ul>
+<h2>Bugs that only appear in Release</h2>
+<p>A checklist, roughly in order of how often each is the cause:</p>
+<ol>
+<li><strong>Uninitialised variables</strong>: Debug&#39;s <code>0xCC</code> fill was consistent; Release&#39;s garbage is not. Turn on warning level 4 (C4700, C4701).</li>
+<li><strong>Out-of-bounds access</strong>: Debug&#39;s padding and guard bytes absorbed it. Run AddressSanitizer (lesson 2.10).</li>
+<li><strong>Data races</strong>: Release keeps values in registers and reorders memory accesses (lesson 6.06).</li>
+<li><strong>Code inside <code>assert</code></strong> that no longer runs.</li>
+<li><strong>Timing</strong>: Release runs faster, changing the order of events between threads or frames.</li>
+<li><strong>Signed overflow or other undefined behaviour</strong> the optimiser exploited.</li>
+<li>A <strong>compiler bug</strong>: possible, but almost always the last explanation, after everything above.</li>
+</ol>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Giving up when a variable is optimised away</span></div><div class="callout-body"><p>Look at the disassembly: the value is usually in a register.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Fixing a Release-only bug by turning optimisation off</span></div><div class="callout-body"><p>That hides it. Find the undefined behaviour.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Trusting the source view&#39;s line in optimised code</span></div><div class="callout-body"><p>Check the Disassembly window to see which instruction actually faulted.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">The debugger says a local is &quot;optimised away&quot;. What should you try?</div><ul><li>Look in the disassembly for the register that holds it, and read that register</li><li>Rebuild in Debug and hope it reproduces</li><li>Assume the value is zero</li></ul><details><summary>Show the answer</summary><p><b>Look in the disassembly for the register that holds it, and read that register</b> Optimised code keeps most values in registers.</p></details></li><li><div class="q">A bug disappears when one file is compiled with <code>/Od</code>. What does that suggest?</div><ul><li>Undefined behaviour in or near that code, which the optimiser exposed</li><li>The optimiser has a bug in that file</li><li>The file should always be built with <code>/Od</code></li></ul><details><summary>Show the answer</summary><p><b>Undefined behaviour in or near that code, which the optimiser exposed</b> UB behaves differently under optimisation; find and fix it.</p></details></li><li><div class="q">Where are a function&#39;s first four arguments most reliably found in optimised code?</div><ul><li>In <code>rcx</code>, <code>rdx</code>, <code>r8</code>, <code>r9</code> at the function&#39;s first instruction</li><li>In the shadow space, always</li><li>On the heap</li></ul><details><summary>Show the answer</summary><p><b>In <code>rcx</code>, <code>rdx</code>, <code>r8</code>, <code>r9</code> at the function&#39;s first instruction</b> Optimised code soon moves or overwrites them.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/8.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/8.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-05-a-first-look-at-windbg/"><span class="mono">previous</span><b>8.05 A First Look at WinDbg</b></a>
+      <a class="lp-next" href="../8-07-debugging-threads/"><span class="mono">next</span><b>8.07 Debugging Threads</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/8-06-debugging-optimised-code"></script>
+</body>
+</html>

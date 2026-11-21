@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Sizes, SameLine, Spacing and Groups · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/3-01-sizes-sameline-spacing-and-groups/">
+  <meta name="description" content="ImGui places widgets with a cursor that moves down after each one. This lesson shows how to control it - SameLine, item widths, spacing, indentation, groups,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Sizes, SameLine, Spacing and Groups · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="ImGui places widgets with a cursor that moves down after each one. This lesson shows how to control it - SameLine, item widths, spacing, indentation, groups,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/3-01-sizes-sameline-spacing-and-groups/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Sizes, SameLine, Spacing and Groups · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sizes, SameLine, Spacing and Groups · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="ImGui places widgets with a cursor that moves down after each one. This lesson shows how to control it - SameLine, item widths, spacing, indentation, groups,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Layout and Structure</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Sizes, SameLine, Spacing and Groups</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">ImGui places widgets with a <strong>cursor</strong> that moves down after each one. This lesson shows how to control it - <code>SameLine</code>, item widths, spacing, indentation, groups, alignment and disabled sections - so a tool&#39;s window reads cleanly at any font size.</p>
+      <div class="prose">
+<h2>The cursor</h2>
+<p>Every window has a layout <strong>cursor</strong>. Each widget is placed at the cursor, then the cursor moves to the start of the next line. That is why widgets stack vertically by default. Everything in this lesson changes where the cursor goes, or how wide the next widget is.</p>
+<h2>SameLine</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;Stones:&quot;</span>);
+<span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>();                    <span class="tk-c">// the next widget goes to the right of the last one</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%d&quot;</span>, count);
+<span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>(<span class="tk-n">200.0f</span>);              <span class="tk-c">// ...at x = 200 from the window's left edge</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Add&quot;</span>);
+<span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>(<span class="tk-n">0.0f</span>, <span class="tk-n">2.0f</span>);          <span class="tk-c">// default position, but only 2 pixels of spacing</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;-&quot;</span>);</code></pre></div>
+<h2>Widths</h2>
+<p>By default, widgets with a frame (sliders, inputs, combos) take about two thirds of the window width, leaving room for the label on the right. Change it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">SetNextItemWidth</span>(<span class="tk-n">120.0f</span>);                 <span class="tk-c">// the next widget only</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">DragFloat</span>(<span class="tk-s">&quot;Mass&quot;</span>, &amp;mass);
+
+<span class="tk-t">ImGui</span>::<span class="tk-f">PushItemWidth</span>(-FLT_MIN);                  <span class="tk-c">// all following widgets: fill to the right edge</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputText</span>(<span class="tk-s">&quot;##notes&quot;</span>, &amp;notes);             <span class="tk-c">// (hide the label with ##, or it would be cut off)</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">PopItemWidth</span>();
+
+<span class="tk-t">ImGui</span>::<span class="tk-f">PushItemWidth</span>(<span class="tk-t">ImGui</span>::<span class="tk-f">GetFontSize</span>() * <span class="tk-n">10</span>); <span class="tk-c">// ten &quot;M&quot; widths: scales with the font</span></code></pre></div>
+<p>Prefer sizes based on <code>GetFontSize()</code>, <code>GetFrameHeight()</code> and <code>GetContentRegionAvail()</code> over fixed pixel numbers, so the tool still looks right when someone raises the font size or the display scale.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">float</span> avail = <span class="tk-t">ImGui</span>::<span class="tk-f">GetContentRegionAvail</span>().x;            <span class="tk-c">// width left on this line</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Half&quot;</span>, <span class="tk-f">ImVec2</span>(avail * <span class="tk-n">0.5f</span>, <span class="tk-n">0</span>));                  <span class="tk-c">// 0 height = the normal height</span></code></pre></div>
+<h2>Spacing, separators, indentation</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">Spacing</span>();                 <span class="tk-c">// a little vertical space</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Separator</span>();               <span class="tk-c">// a horizontal line</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">SeparatorText</span>(<span class="tk-s">&quot;Physics&quot;</span>);  <span class="tk-c">// a line with a title</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Indent</span>();                  <span class="tk-c">// move the left edge right (by the style's indent width)</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;indented&quot;</span>);
+<span class="tk-t">ImGui</span>::<span class="tk-f">Unindent</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">Dummy</span>(<span class="tk-f">ImVec2</span>(<span class="tk-n">0</span>, <span class="tk-n">20</span>));      <span class="tk-c">// an invisible widget that takes space</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">NewLine</span>();                 <span class="tk-c">// move to the next line, like pressing Enter</span></code></pre></div>
+<h2>Groups</h2>
+<p>A <strong>group</strong> makes several widgets act as one item for layout: you can put the whole group on the same line as something else, and <code>IsItemHovered</code> asks about the whole group.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">BeginGroup</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;Player&quot;</span>);
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;HP %d&quot;</span>, hp);
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;MP %d&quot;</span>, mp);
+<span class="tk-t">ImGui</span>::<span class="tk-f">EndGroup</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>();                <span class="tk-c">// the next group sits to the right of the whole first group</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">BeginGroup</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;Enemy&quot;</span>);
+<span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;HP %d&quot;</span>, enemyHp);
+<span class="tk-t">ImGui</span>::<span class="tk-f">EndGroup</span>();</code></pre></div>
+<h2>Alignment</h2>
+<p>ImGui lays text from the top of the line. Next to a framed widget (a button, an input) plain text looks too high. Call <code>ImGui::AlignTextToFramePadding()</code> before such text to line it up with the frames on the same line.</p>
+<p>To right-align something, move the cursor yourself:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">float</span> w = <span class="tk-t">ImGui</span>::<span class="tk-f">CalcTextSize</span>(<span class="tk-s">&quot;Delete&quot;</span>).x + <span class="tk-t">ImGui</span>::<span class="tk-f">GetStyle</span>().<span class="tk-t">FramePadding</span>.x * <span class="tk-n">2</span>;
+<span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>(<span class="tk-t">ImGui</span>::<span class="tk-f">GetContentRegionMax</span>().x - w);
+<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Delete&quot;</span>);</code></pre></div>
+<p><code>CalcTextSize</code> measures text with the current font. The practice uses that kind of measurement to lay out a row of buttons.</p>
+<h2>Disabled sections</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">BeginDisabled</span>(!level.loaded);    <span class="tk-c">// greyed out and not interactive while no level is loaded</span>
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Save&quot;</span>)) <span class="tk-f">saveLevel</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">EndDisabled</span>();</code></pre></div>
+<p>Better than hiding the button: the user sees it exists and why it cannot be used yet (add a tooltip, lesson 4.02).</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Fixed pixel sizes everywhere</span></div><div class="callout-body"><p>They break at other font sizes and display scales. Measure from the font and the available width.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>A full-width widget with a visible label</span></div><div class="callout-body"><p>The label is pushed off the right edge. Hide it with ## and put a Text in front instead.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which call puts the next widget to the right of the previous one?</div><ul><li>ImGui::SameLine()</li><li>ImGui::NewLine()</li><li>ImGui::Indent()</li></ul><details><summary>Show the answer</summary><p><b>ImGui::SameLine()</b> SameLine moves the cursor back up to the end of the last item.</p></details></li><li><div class="q">What does a width of -FLT_MIN mean for PushItemWidth?</div><ul><li>Fill up to the right edge of the window</li><li>No width at all</li><li>The default width</li></ul><details><summary>Show the answer</summary><p><b>Fill up to the right edge of the window</b> It is ImGui&#39;s idiom for &quot;all the space that is left&quot;.</p></details></li><li><div class="q">Why use BeginDisabled instead of hiding a button?</div><ul><li>The user sees the action exists and that it cannot be used right now</li><li>Disabled buttons draw faster</li><li>Hidden buttons still receive clicks</li></ul><details><summary>Show the answer</summary><p><b>The user sees the action exists and that it cannot be used right now</b> Make it clear why, with a tooltip.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-sharing-input-with-your-game/"><span class="mono">previous</span><b>2.05 Sharing Input with Your Game</b></a>
+      <a class="lp-next" href="../3-02-child-windows-and-scrolling/"><span class="mono">next</span><b>3.02 Child Windows and Scrolling</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/3-01-sizes-sameline-spacing-and-groups"></script>
+</body>
+</html>

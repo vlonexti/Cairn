@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Errors and Exceptions · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/4-05-errors-and-exceptions/">
+  <meta name="description" content="Handling what goes wrong - reading tracebacks, try and except, catching specific exceptions, else and finally, raising your own errors, custom exception…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Errors and Exceptions · Python · Xenon">
+  <meta property="og:description" content="Handling what goes wrong - reading tracebacks, try and except, catching specific exceptions, else and finally, raising your own errors, custom exception…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/4-05-errors-and-exceptions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Errors and Exceptions · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Errors and Exceptions · Python · Xenon">
+  <meta name="twitter:description" content="Handling what goes wrong - reading tracebacks, try and except, catching specific exceptions, else and finally, raising your own errors, custom exception…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Objects and Errors</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Errors and Exceptions</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Handling what goes wrong - reading tracebacks, try and except, catching specific exceptions, else and finally, raising your own errors, custom exception classes, and the difference between asking permission and asking forgiveness.</p>
+      <div class="prose">
+<h2>Exceptions and tracebacks</h2>
+<p>When something goes wrong, Python <strong>raises an exception</strong>. If nothing handles it, the program stops with a <strong>traceback</strong>:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Traceback (most recent call last):
+  File &quot;main.py&quot;, line 3, in &lt;module&gt;
+    print(average([]))
+  File &quot;main.py&quot;, line 2, in average
+    return sum(values) / len(values)
+ZeroDivisionError: division by zero</code></pre></div>
+<p>Read it from the <strong>bottom</strong>: the last line says what happened (<code>ZeroDivisionError</code>) and why; the lines above show the chain of calls, ending at the line that failed.</p>
+<p>Common exceptions:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>Typical cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ValueError</code></td>
+<td>Right type, wrong value: <code>int(&quot;abc&quot;)</code></td>
+</tr>
+<tr>
+<td><code>TypeError</code></td>
+<td>Wrong type: <code>&quot;a&quot; + 1</code></td>
+</tr>
+<tr>
+<td><code>KeyError</code></td>
+<td>Missing dictionary key</td>
+</tr>
+<tr>
+<td><code>IndexError</code></td>
+<td>List index out of range</td>
+</tr>
+<tr>
+<td><code>AttributeError</code></td>
+<td>Misspelt attribute or method, or <code>None</code> where an object was expected</td>
+</tr>
+<tr>
+<td><code>FileNotFoundError</code></td>
+<td>Opening a missing file</td>
+</tr>
+<tr>
+<td><code>ZeroDivisionError</code></td>
+<td>Division by zero</td>
+</tr>
+</tbody></table>
+</div>
+<h2>try and except</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>text = <span class="tk-f">input</span>(<span class="tk-s">&quot;A number: &quot;</span>)
+<span class="tk-k">try</span>:
+    number = <span class="tk-f">int</span>(text)
+<span class="tk-k">except</span> ValueError:
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;That was not a whole number.&quot;</span>)
+<span class="tk-k">else</span>:
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;Twice that is&quot;</span>, number * <span class="tk-n">2</span>)     <span class="tk-c"># runs only if there was no exception</span>
+<span class="tk-k">finally</span>:
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;Done.&quot;</span>)                         <span class="tk-c"># always runs</span></code></pre></div>
+<p>Catch <strong>specific</strong> exceptions. A bare <code>except:</code> (or <code>except Exception:</code>) also hides bugs such as misspelt names, and makes problems silently disappear.</p>
+<p>Several kinds can share a handler, and the exception object can be inspected:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">for</span> raw <span class="tk-k">in</span> [<span class="tk-s">&quot;12&quot;</span>, <span class="tk-s">&quot;x&quot;</span>, <span class="tk-k">None</span>]:
+    <span class="tk-k">try</span>:
+        <span class="tk-f">print</span>(<span class="tk-f">int</span>(raw) * <span class="tk-n">2</span>)
+    <span class="tk-k">except</span> (ValueError, TypeError) <span class="tk-k">as</span> e:
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;skipping:&quot;</span>, e)</code></pre></div>
+<h2>Raising exceptions</h2>
+<p>A function that cannot do its job should <strong>raise</strong> rather than return a strange value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">withdraw</span>(balance, amount):
+    <span class="tk-k">if</span> amount &lt;= <span class="tk-n">0</span>:
+        <span class="tk-k">raise</span> <span class="tk-f">ValueError</span>(<span class="tk-s">f&quot;amount must be positive, got {amount}&quot;</span>)
+    <span class="tk-k">if</span> amount &gt; balance:
+        <span class="tk-k">raise</span> <span class="tk-f">ValueError</span>(<span class="tk-s">&quot;insufficient funds&quot;</span>)
+    <span class="tk-k">return</span> balance - amount</code></pre></div>
+<p>The caller decides what to do: show a message, retry, or let it stop the program.</p>
+<h2>Your own exception classes</h2>
+<p>For errors specific to your program, define a class deriving from <code>Exception</code>, so callers can catch exactly them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">class</span> <span class="tk-f">ConfigError</span>(Exception):
+    <span class="tk-s">&quot;&quot;&quot;The configuration file is invalid.&quot;&quot;&quot;</span>
+
+<span class="tk-k">def</span> <span class="tk-f">read_port</span>(settings):
+    <span class="tk-k">if</span> <span class="tk-s">&quot;port&quot;</span> <span class="tk-k">not</span> <span class="tk-k">in</span> settings:
+        <span class="tk-k">raise</span> <span class="tk-f">ConfigError</span>(<span class="tk-s">&quot;missing port&quot;</span>)
+    <span class="tk-k">return</span> <span class="tk-f">int</span>(settings[<span class="tk-s">&quot;port&quot;</span>])
+
+<span class="tk-k">try</span>:
+    <span class="tk-f">read_port</span>({})
+<span class="tk-k">except</span> ConfigError <span class="tk-k">as</span> e:
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;Config problem:&quot;</span>, e)</code></pre></div>
+<p><code>raise NewError(...) from e</code> inside an <code>except</code> keeps the original exception attached as the cause, which makes the traceback tell the whole story.</p>
+<h2>Asking forgiveness</h2>
+<p>Python style often prefers trying and handling the failure (<strong>EAFP</strong>: easier to ask forgiveness than permission) over checking first (<strong>LBYL</strong>: look before you leap):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>counts = {<span class="tk-s">&quot;a&quot;</span>: <span class="tk-n">1</span>}
+<span class="tk-k">try</span>:
+    value = counts[<span class="tk-s">&quot;b&quot;</span>]
+<span class="tk-k">except</span> KeyError:
+    value = <span class="tk-n">0</span></code></pre></div>
+<p>Checking first can be wrong anyway: a file that exists when you check can be deleted before you open it. For simple cases, <code>dict.get</code> and <code>str.isdigit</code> are clearer than either.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-dataclasses-and-enums/"><span class="mono">previous</span><b>4.04 Dataclasses and Enums</b></a>
+      <a class="lp-next" href="../5-01-comprehensions/"><span class="mono">next</span><b>5.01 Comprehensions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/4-05-errors-and-exceptions"></script>
+</body>
+</html>

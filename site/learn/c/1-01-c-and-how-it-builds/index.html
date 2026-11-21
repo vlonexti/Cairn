@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>C and How It Builds · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/1-01-c-and-how-it-builds/">
+  <meta name="description" content="C is a small, fast language close to the machine, created in 1972 to write Unix. A C program is text that a compiler turns into machine code in steps -…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="C and How It Builds · C · Xenon">
+  <meta property="og:description" content="C is a small, fast language close to the machine, created in 1972 to write Unix. A C program is text that a compiler turns into machine code in steps -…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/1-01-c-and-how-it-builds/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="C and How It Builds · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="C and How It Builds · C · Xenon">
+  <meta name="twitter:description" content="C is a small, fast language close to the machine, created in 1972 to write Unix. A C program is text that a compiler turns into machine code in steps -…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">C and How It Builds</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 5 in milestone 1</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">C is a small, fast language close to the machine, created in 1972 to write Unix. A C program is text that a compiler turns into machine code in steps - preprocess, compile, assemble, link - and every program starts in a function called main.</p>
+      <div class="prose">
+<h2>Why C</h2>
+<p>C was created by Dennis Ritchie at Bell Labs in 1972 to write the Unix operating system (the Computer Fundamentals course tells the story in lesson 5.04). Fifty years later it is still everywhere:</p>
+<ul>
+<li>operating system kernels: Linux, and the cores of Windows and macOS;</li>
+<li>small chips in cars, washing machines, routers and medical devices;</li>
+<li>databases (SQLite, PostgreSQL), and the interpreters of other languages: <strong>Python&#39;s main interpreter is written in C</strong>.</li>
+</ul>
+<p>C is small - the whole language fits in a short book - and it is close to the machine: you decide exactly how much memory each value takes and where it lives. That makes it fast and powerful, and also unforgiving: C trusts you, and does not stop you from making a mistake. This course teaches the power and the care together.</p>
+<h2>The first program</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;Hello, world!\n&quot;</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Press <strong>Run</strong>. Line by line:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>#include &lt;stdio.h&gt;</code></td>
+<td>Bring in the declarations of the standard input/output functions, such as <code>printf</code></td>
+</tr>
+<tr>
+<td><code>int main(void)</code></td>
+<td>Every C program starts in the function <code>main</code>. It takes nothing (<code>void</code>) and gives back an <code>int</code></td>
+</tr>
+<tr>
+<td><code>{ ... }</code></td>
+<td>The body of the function</td>
+</tr>
+<tr>
+<td><code>printf(&quot;Hello, world!\n&quot;);</code></td>
+<td>Print the text. <code>\n</code> is a new line. Every statement ends with <code>;</code></td>
+</tr>
+<tr>
+<td><code>return 0;</code></td>
+<td>Finish, telling the operating system &quot;all went well&quot; (0). Any other number means something went wrong</td>
+</tr>
+</tbody></table>
+</div>
+<h2>How C becomes a program</h2>
+<p>C is a <strong>compiled</strong> language: before it runs, a compiler turns the text into machine code. It happens in four steps:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    S[&quot;hello.c&lt;br/&gt;your source&quot;] --&gt;|1 preprocess| P[&quot;#include and&lt;br/&gt;#define done&quot;]
+    P --&gt;|2 compile| A[&quot;assembly&quot;]
+    A --&gt;|3 assemble| O[&quot;object file&lt;br/&gt;(machine code)&quot;]
+    O --&gt;|4 link| E[&quot;hello&lt;br/&gt;(a program)&quot;]
+    L[&quot;libraries:&lt;br/&gt;the code of printf&quot;] --&gt; E</pre></div>
+<ol>
+<li><strong>Preprocess</strong>: lines starting with <code>#</code> are handled first. <code>#include &lt;stdio.h&gt;</code> is replaced by the contents of that header file.</li>
+<li><strong>Compile</strong>: the C code is translated into assembly for your CPU.</li>
+<li><strong>Assemble</strong>: the assembly becomes machine code, in an <strong>object file</strong>.</li>
+<li><strong>Link</strong>: your object file is joined with the libraries it uses (the machine code of <code>printf</code> lives in the C standard library) into one program.</li>
+</ol>
+<p>On your own computer you would run one command, which does all four:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>gcc hello.c -o hello     <span class="tk-c"> # or: clang hello.c -o hello</span>
+./hello</code></pre></div>
+<p>On Windows with Visual Studio the command is <code>cl hello.c</code>. On this site, pressing Run does it for you with GCC.</p>
+<h2>Compiler errors and warnings</h2>
+<p>When the compiler cannot understand the code, it stops with an <strong>error</strong> and the line number. When the code is valid but suspicious, it gives a <strong>warning</strong> and builds anyway. Treat warnings as errors you have not met yet: most of them point at a real bug.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;Hello, world!\n&quot;</span>)     <span class="tk-c">// error: expected ';' before 'return'</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The error is reported on the line <em>after</em> the missing semicolon, because that is where the compiler noticed. When an error makes no sense, look at the line above.</p>
+<h2>Comments</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-c">/* A comment can span
+   several lines like this. */</span>
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-c">// and this kind runs to the end of the line</span>
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;Comments are ignored by the compiler.\n&quot;</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Where does every C program start running?</div><ul><li>At the first line of the file</li><li>In the function main</li><li>In stdio.h</li></ul><details><summary>Show the answer</summary><p><b>In the function main</b> The operating system calls main.</p></details></li><li><div class="q">What does #include &lt;stdio.h&gt; do?</div><ul><li>Before compiling, it inserts the declarations of the standard input/output functions, such as printf</li><li>It downloads a library from the internet</li><li>It starts the program</li></ul><details><summary>Show the answer</summary><p><b>Before compiling, it inserts the declarations of the standard input/output functions, such as printf</b> The preprocessor replaces the line with the header&#39;s contents.</p></details></li><li><div class="q">What does return 0; at the end of main tell the operating system?</div><ul><li>The program finished successfully</li><li>The program printed nothing</li><li>To run the program again</li></ul><details><summary>Show the answer</summary><p><b>The program finished successfully</b> 0 means success; other values mean an error.</p></details></li><li><div class="q">Which step joins your code with the code of printf?</div><ul><li>Preprocessing</li><li>Assembling</li><li>Linking</li></ul><details><summary>Show the answer</summary><p><b>Linking</b> printf&#39;s machine code lives in the C standard library; the linker joins them.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-variables-and-types/"><span class="mono">next</span><b>1.02 Variables and Types</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/1-01-c-and-how-it-builds"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

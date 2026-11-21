@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Inheritance · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/5-04-inheritance/">
+  <meta name="description" content="Making a subclass whose missing keys fall back to its base class, calling the base constructor and overridden methods, polymorphism with one loop over…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Inheritance · Lua · Xenon">
+  <meta property="og:description" content="Making a subclass whose missing keys fall back to its base class, calling the base constructor and overridden methods, polymorphism with one loop over…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/5-04-inheritance/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Inheritance · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Inheritance · Lua · Xenon">
+  <meta name="twitter:description" content="Making a subclass whose missing keys fall back to its base class, calling the base constructor and overridden methods, polymorphism with one loop over…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Metatables and Objects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Inheritance</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making a subclass whose missing keys fall back to its base class, calling the base constructor and overridden methods, polymorphism with one loop over different kinds of object, checking what an object is, and when composition is simpler.</p>
+      <div class="prose">
+<h2>A chain of __index</h2>
+<p>A subclass is a class whose own missing keys fall back to another class. Since a class is just a table, give it a metatable whose <code>__index</code> is the base class:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Animal = {}
+Animal.__index = Animal
+
+<span class="tk-k">function</span> Animal.<span class="tk-f">new</span>(name, sound)
+    <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ name = name, sound = sound <span class="tk-k">or</span> <span class="tk-s">&quot;...&quot;</span> }, Animal)
+<span class="tk-k">end</span>
+<span class="tk-k">function</span> Animal:<span class="tk-f">speak</span>() <span class="tk-k">return</span> <span class="tk-k">self</span>.name .. <span class="tk-s">&quot; says &quot;</span> .. <span class="tk-k">self</span>.sound <span class="tk-k">end</span>
+<span class="tk-k">function</span> Animal:<span class="tk-f">describe</span>() <span class="tk-k">return</span> <span class="tk-k">self</span>.name .. <span class="tk-s">&quot; is an animal&quot;</span> <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> Dog = <span class="tk-f">setmetatable</span>({}, { __index = Animal })   <span class="tk-c">-- Dog falls back to Animal</span>
+Dog.__index = Dog                                    <span class="tk-c">-- dogs fall back to Dog</span>
+
+<span class="tk-k">function</span> Dog.<span class="tk-f">new</span>(name, trick)
+    <span class="tk-k">local</span> <span class="tk-k">self</span> = Animal.<span class="tk-f">new</span>(name, <span class="tk-s">&quot;woof&quot;</span>)            <span class="tk-c">-- build the Animal part</span>
+    <span class="tk-k">self</span>.trick = trick
+    <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>(<span class="tk-k">self</span>, Dog)                   <span class="tk-c">-- then make it a Dog</span>
+<span class="tk-k">end</span>
+<span class="tk-k">function</span> Dog:<span class="tk-f">describe</span>()                              <span class="tk-c">-- override</span>
+    <span class="tk-k">return</span> Animal.<span class="tk-f">describe</span>(<span class="tk-k">self</span>) .. <span class="tk-s">&quot; that can &quot;</span> .. <span class="tk-k">self</span>.trick
+<span class="tk-k">end</span>
+<span class="tk-k">function</span> Dog:<span class="tk-f">fetch</span>() <span class="tk-k">return</span> <span class="tk-k">self</span>.name .. <span class="tk-s">&quot; fetches the ball&quot;</span> <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> cat = Animal.<span class="tk-f">new</span>(<span class="tk-s">&quot;Tom&quot;</span>, <span class="tk-s">&quot;meow&quot;</span>)
+<span class="tk-k">local</span> rex = Dog.<span class="tk-f">new</span>(<span class="tk-s">&quot;Rex&quot;</span>, <span class="tk-s">&quot;roll over&quot;</span>)
+<span class="tk-f">print</span>(cat:<span class="tk-f">speak</span>())
+<span class="tk-f">print</span>(rex:<span class="tk-f">speak</span>())          <span class="tk-c">-- found in Animal</span>
+<span class="tk-f">print</span>(rex:<span class="tk-f">describe</span>())       <span class="tk-c">-- Dog's own version</span>
+<span class="tk-f">print</span>(rex:<span class="tk-f">fetch</span>())
+<span class="tk-f">print</span>(cat.fetch)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Tom says meow
+Rex says woof
+Rex is an animal that can roll over
+Rex fetches the ball
+nil</code></pre></div>
+<p>Looking up <code>rex:speak</code>: not in <code>rex</code>, so try <code>Dog</code> (rex&#39;s metatable&#39;s <code>__index</code>); not in <code>Dog</code>, so try <code>Animal</code> (Dog&#39;s metatable&#39;s <code>__index</code>); found. Any depth works the same way.</p>
+<h2>Calling the base class</h2>
+<p>Lua has no <code>super</code>. Call the base class&#39;s function by name and pass <code>self</code> yourself: <code>Animal.describe(self)</code>. The same goes for the constructor: <code>Dog.new</code> calls <code>Animal.new</code> to fill in the shared fields, then sets the metatable to <code>Dog</code>.</p>
+<h2>One loop, many kinds</h2>
+<p><strong>Polymorphism</strong>: code that calls <code>obj:area()</code> works for any object that has an <code>area</code> method, whatever its class:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Shape = {}
+Shape.__index = Shape
+<span class="tk-k">function</span> Shape:<span class="tk-f">describe</span>() <span class="tk-k">return</span> string.<span class="tk-f">format</span>(<span class="tk-s">&quot;%s with area %.2f&quot;</span>, <span class="tk-k">self</span>.kind, <span class="tk-k">self</span>:<span class="tk-f">area</span>()) <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> Circle = <span class="tk-f">setmetatable</span>({}, { __index = Shape })
+Circle.__index = Circle
+<span class="tk-k">function</span> Circle.<span class="tk-f">new</span>(r) <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ kind = <span class="tk-s">&quot;circle&quot;</span>, r = r }, Circle) <span class="tk-k">end</span>
+<span class="tk-k">function</span> Circle:<span class="tk-f">area</span>() <span class="tk-k">return</span> math.pi * <span class="tk-k">self</span>.r ^ <span class="tk-n">2</span> <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> Rect = <span class="tk-f">setmetatable</span>({}, { __index = Shape })
+Rect.__index = Rect
+<span class="tk-k">function</span> Rect.<span class="tk-f">new</span>(w, h) <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ kind = <span class="tk-s">&quot;rectangle&quot;</span>, w = w, h = h }, Rect) <span class="tk-k">end</span>
+<span class="tk-k">function</span> Rect:<span class="tk-f">area</span>() <span class="tk-k">return</span> <span class="tk-k">self</span>.w * <span class="tk-k">self</span>.h <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> shapes = { Circle.<span class="tk-f">new</span>(<span class="tk-n">1</span>), Rect.<span class="tk-f">new</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>), Circle.<span class="tk-f">new</span>(<span class="tk-n">0.5</span>) }
+<span class="tk-k">local</span> total = <span class="tk-n">0</span>
+<span class="tk-k">for</span> _, s <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(shapes) <span class="tk-k">do</span>
+    <span class="tk-f">print</span>(s:<span class="tk-f">describe</span>())
+    total = total + s:<span class="tk-f">area</span>()
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(string.<span class="tk-f">format</span>(<span class="tk-s">&quot;total %.2f&quot;</span>, total))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>circle with area 3.14
+rectangle with area 6.00
+circle with area 0.79
+total 9.93</code></pre></div>
+<p><code>Shape:describe</code> calls <code>self:area()</code>, which runs whichever <code>area</code> the actual object has.</p>
+<h2>What is this object?</h2>
+<p>There is no built-in <code>instanceof</code>. Walk up the chain of metatables:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Base = {}
+Base.__index = Base
+<span class="tk-k">local</span> Child = <span class="tk-f">setmetatable</span>({}, { __index = Base })
+Child.__index = Child
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">is_a</span>(obj, class)
+    <span class="tk-k">local</span> mt = <span class="tk-f">getmetatable</span>(obj)
+    <span class="tk-k">while</span> mt <span class="tk-k">do</span>
+        <span class="tk-k">if</span> mt == class <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-k">true</span> <span class="tk-k">end</span>
+        <span class="tk-k">local</span> parent = <span class="tk-f">getmetatable</span>(mt)
+        mt = parent <span class="tk-k">and</span> parent.__index
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> <span class="tk-k">false</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> c = <span class="tk-f">setmetatable</span>({}, Child)
+<span class="tk-f">print</span>(<span class="tk-f">is_a</span>(c, Child), <span class="tk-f">is_a</span>(c, Base), <span class="tk-f">is_a</span>({}, Base), <span class="tk-f">is_a</span>(<span class="tk-f">setmetatable</span>({}, Base), Child))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>true	true	false	false</code></pre></div>
+<p>Often a simpler question is better: &quot;can it do what I need?&quot;, <code>if obj.area then</code>.</p>
+<h2>A helper for classes</h2>
+<p>Writing the two <code>__index</code> lines for every class gets old. Many projects have a tiny helper like this one:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">class</span>(parent)
+    <span class="tk-k">local</span> c = {}
+    c.__index = c
+    <span class="tk-k">if</span> parent <span class="tk-k">then</span> <span class="tk-f">setmetatable</span>(c, { __index = parent }) <span class="tk-k">end</span>
+    c.new = <span class="tk-k">function</span>(...)
+        <span class="tk-k">local</span> obj = <span class="tk-f">setmetatable</span>({}, c)
+        <span class="tk-k">if</span> obj.init <span class="tk-k">then</span> obj:<span class="tk-f">init</span>(...) <span class="tk-k">end</span>
+        <span class="tk-k">return</span> obj
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> c
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> Animal = <span class="tk-f">class</span>()
+<span class="tk-k">function</span> Animal:<span class="tk-f">init</span>(name) <span class="tk-k">self</span>.name = name <span class="tk-k">end</span>
+<span class="tk-k">function</span> Animal:<span class="tk-f">hello</span>() <span class="tk-k">return</span> <span class="tk-s">&quot;I am &quot;</span> .. <span class="tk-k">self</span>.name <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> Bird = <span class="tk-f">class</span>(Animal)
+<span class="tk-k">function</span> Bird:<span class="tk-f">init</span>(name, can_fly)
+    Animal.<span class="tk-f">init</span>(<span class="tk-k">self</span>, name)
+    <span class="tk-k">self</span>.can_fly = can_fly
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> b = Bird.<span class="tk-f">new</span>(<span class="tk-s">&quot;Pip&quot;</span>, <span class="tk-k">true</span>)
+<span class="tk-f">print</span>(b:<span class="tk-f">hello</span>(), b.can_fly)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>I am Pip	true</code></pre></div>
+<p>Libraries such as <em>middleclass</em> and <em>classic</em> do the same with more features, and Roblox&#39;s Luau adds typed classes. They are all built on this <code>__index</code> chain.</p>
+<h2>Composition</h2>
+<p>Deep hierarchies get hard to follow. Often an object that <strong>has</strong> another object reads more simply than one that <strong>is</strong> another: a <code>Player</code> with a <code>position</code> vector and an <code>inventory</code> table, rather than <code>Player</code> inheriting from <code>Movable</code> inheriting from <code>Entity</code>. Use inheritance for real &quot;is a kind of&quot; relationships, and keep it shallow.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-classes-and-objects/"><span class="mono">previous</span><b>5.03 Classes and Objects</b></a>
+      <a class="lp-next" href="../5-05-modules/"><span class="mono">next</span><b>5.05 Modules</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/5-04-inheritance"></script>
+</body>
+</html>

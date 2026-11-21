@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Data Structures in Lua · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/8-01-data-structures-in-lua/">
+  <meta name="description" content="Building the classic data structures from Lua's one table type - stacks, queues that do not shift (two indexes), double-ended queues, sets with union and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Data Structures in Lua · Lua · Xenon">
+  <meta property="og:description" content="Building the classic data structures from Lua's one table type - stacks, queues that do not shift (two indexes), double-ended queues, sets with union and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/8-01-data-structures-in-lua/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Data Structures in Lua · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Data Structures in Lua · Lua · Xenon">
+  <meta name="twitter:description" content="Building the classic data structures from Lua's one table type - stacks, queues that do not shift (two indexes), double-ended queues, sets with union and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Lua in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Data Structures in Lua</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.01</b></span><span>1 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Building the classic data structures from Lua&#39;s one table type - stacks, queues that do not shift (two indexes), double-ended queues, sets with union and intersection, linked lists, and a binary heap for priority queues, with the costs of each operation.</p>
+      <div class="prose">
+<h2>Everything is a table</h2>
+<p>Lua has one data structure, the table, and every other structure is built from it. The trick is choosing <strong>how</strong> to use the table so the common operations are fast.</p>
+<h2>A stack</h2>
+<p>A list with <code>t[#t + 1] = v</code> to push and <code>t[#t] = nil</code> to pop. Both are O(1):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Stack = {}
+Stack.__index = Stack
+
+<span class="tk-k">function</span> Stack.<span class="tk-f">new</span>() <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ n = <span class="tk-n">0</span> }, Stack) <span class="tk-k">end</span>
+<span class="tk-k">function</span> Stack:<span class="tk-f">push</span>(v) <span class="tk-k">self</span>.n = <span class="tk-k">self</span>.n + <span class="tk-n">1</span>; <span class="tk-k">self</span>[<span class="tk-k">self</span>.n] = v <span class="tk-k">end</span>
+<span class="tk-k">function</span> Stack:<span class="tk-f">pop</span>()
+    <span class="tk-k">if</span> <span class="tk-k">self</span>.n == <span class="tk-n">0</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-k">nil</span> <span class="tk-k">end</span>
+    <span class="tk-k">local</span> v = <span class="tk-k">self</span>[<span class="tk-k">self</span>.n]
+    <span class="tk-k">self</span>[<span class="tk-k">self</span>.n] = <span class="tk-k">nil</span>
+    <span class="tk-k">self</span>.n = <span class="tk-k">self</span>.n - <span class="tk-n">1</span>
+    <span class="tk-k">return</span> v
+<span class="tk-k">end</span>
+<span class="tk-k">function</span> Stack:<span class="tk-f">peek</span>() <span class="tk-k">return</span> <span class="tk-k">self</span>[<span class="tk-k">self</span>.n] <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> s = Stack.<span class="tk-f">new</span>()
+s:<span class="tk-f">push</span>(<span class="tk-s">&quot;a&quot;</span>); s:<span class="tk-f">push</span>(<span class="tk-s">&quot;b&quot;</span>); s:<span class="tk-f">push</span>(<span class="tk-s">&quot;c&quot;</span>)
+<span class="tk-f">print</span>(s:<span class="tk-f">pop</span>(), s:<span class="tk-f">pop</span>(), s:<span class="tk-f">peek</span>(), s.n)    <span class="tk-c">--&gt; c  b  a  1</span></code></pre></div>
+<p>Keeping the count in a field (<code>n</code>) is faster than <code>#self</code> and is not confused by <code>nil</code> values.</p>
+<h2>A queue that does not shift</h2>
+<p><code>table.remove(t, 1)</code> moves every other element down: O(n). A queue that keeps a <code>first</code> and a <code>last</code> index never moves anything:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Queue = {}
+Queue.__index = Queue
+
+<span class="tk-k">function</span> Queue.<span class="tk-f">new</span>() <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ first = <span class="tk-n">1</span>, last = <span class="tk-n">0</span> }, Queue) <span class="tk-k">end</span>
+<span class="tk-k">function</span> Queue:<span class="tk-f">push</span>(v) <span class="tk-k">self</span>.last = <span class="tk-k">self</span>.last + <span class="tk-n">1</span>; <span class="tk-k">self</span>[<span class="tk-k">self</span>.last] = v <span class="tk-k">end</span>
+<span class="tk-k">function</span> Queue:<span class="tk-f">pop</span>()
+    <span class="tk-k">if</span> <span class="tk-k">self</span>.first &gt; <span class="tk-k">self</span>.last <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-k">nil</span> <span class="tk-k">end</span>
+    <span class="tk-k">local</span> v = <span class="tk-k">self</span>[<span class="tk-k">self</span>.first]
+    <span class="tk-k">self</span>[<span class="tk-k">self</span>.first] = <span class="tk-k">nil</span>            <span class="tk-c">-- let the value be collected</span>
+    <span class="tk-k">self</span>.first = <span class="tk-k">self</span>.first + <span class="tk-n">1</span>
+    <span class="tk-k">return</span> v
+<span class="tk-k">end</span>
+<span class="tk-k">function</span> Queue:<span class="tk-f">size</span>() <span class="tk-k">return</span> <span class="tk-k">self</span>.last - <span class="tk-k">self</span>.first + <span class="tk-n">1</span> <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> q = Queue.<span class="tk-f">new</span>()
+<span class="tk-k">for</span> _, name <span class="tk-k">in</span> <span class="tk-f">ipairs</span>({ <span class="tk-s">&quot;ada&quot;</span>, <span class="tk-s">&quot;bob&quot;</span>, <span class="tk-s">&quot;cy&quot;</span> }) <span class="tk-k">do</span> q:<span class="tk-f">push</span>(name) <span class="tk-k">end</span>
+<span class="tk-f">print</span>(q:<span class="tk-f">pop</span>(), q:<span class="tk-f">size</span>())   <span class="tk-c">--&gt; ada  2</span>
+q:<span class="tk-f">push</span>(<span class="tk-s">&quot;dee&quot;</span>)
+<span class="tk-k">while</span> q:<span class="tk-f">size</span>() &gt; <span class="tk-n">0</span> <span class="tk-k">do</span> io.<span class="tk-f">write</span>(q:<span class="tk-f">pop</span>(), <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()</code></pre></div>
+<p>The indexes only grow, but that is fine: Lua integers go far past any queue you will ever fill. Adding <code>pushfront</code> (decrementing <code>first</code>) and <code>poplast</code> makes it a double-ended queue.</p>
+<h2>Sets</h2>
+<p>A set is a table whose keys are the members and whose values are <code>true</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">Set</span>(list)
+    <span class="tk-k">local</span> s = {}
+    <span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(list) <span class="tk-k">do</span> s[v] = <span class="tk-k">true</span> <span class="tk-k">end</span>
+    <span class="tk-k">return</span> s
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">union</span>(a, b)
+    <span class="tk-k">local</span> r = {}
+    <span class="tk-k">for</span> k <span class="tk-k">in</span> <span class="tk-f">pairs</span>(a) <span class="tk-k">do</span> r[k] = <span class="tk-k">true</span> <span class="tk-k">end</span>
+    <span class="tk-k">for</span> k <span class="tk-k">in</span> <span class="tk-f">pairs</span>(b) <span class="tk-k">do</span> r[k] = <span class="tk-k">true</span> <span class="tk-k">end</span>
+    <span class="tk-k">return</span> r
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">intersection</span>(a, b)
+    <span class="tk-k">local</span> r = {}
+    <span class="tk-k">for</span> k <span class="tk-k">in</span> <span class="tk-f">pairs</span>(a) <span class="tk-k">do</span> <span class="tk-k">if</span> b[k] <span class="tk-k">then</span> r[k] = <span class="tk-k">true</span> <span class="tk-k">end</span> <span class="tk-k">end</span>
+    <span class="tk-k">return</span> r
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">sorted</span>(s)
+    <span class="tk-k">local</span> out = {}
+    <span class="tk-k">for</span> k <span class="tk-k">in</span> <span class="tk-f">pairs</span>(s) <span class="tk-k">do</span> out[#out + <span class="tk-n">1</span>] = k <span class="tk-k">end</span>
+    table.<span class="tk-f">sort</span>(out)
+    <span class="tk-k">return</span> table.<span class="tk-f">concat</span>(out, <span class="tk-s">&quot;,&quot;</span>)
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> red = <span class="tk-f">Set</span>({ <span class="tk-s">&quot;apple&quot;</span>, <span class="tk-s">&quot;cherry&quot;</span>, <span class="tk-s">&quot;strawberry&quot;</span> })
+<span class="tk-k">local</span> small = <span class="tk-f">Set</span>({ <span class="tk-s">&quot;cherry&quot;</span>, <span class="tk-s">&quot;blueberry&quot;</span>, <span class="tk-s">&quot;grape&quot;</span> })
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(<span class="tk-f">union</span>(red, small)))
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(<span class="tk-f">intersection</span>(red, small)))
+<span class="tk-f">print</span>(red.apple, red.grape)          <span class="tk-c">--&gt; true  nil</span></code></pre></div>
+<p>Membership (<code>set[x]</code>) is O(1), which is why &quot;is it in the list?&quot; questions should use a set instead of a loop.</p>
+<h2>A linked list</h2>
+<p>Each node is a table with a value and a <code>next</code> field. Inserting at the front is O(1), and removing from the middle needs no shifting:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> list = <span class="tk-k">nil</span>
+<span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>({ <span class="tk-n">3</span>, <span class="tk-n">2</span>, <span class="tk-n">1</span> }) <span class="tk-k">do</span>
+    list = { value = v, next = list }       <span class="tk-c">-- push at the front</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">each</span>(node)
+    <span class="tk-k">return</span> <span class="tk-k">function</span>()
+        <span class="tk-k">if</span> node <span class="tk-k">then</span>
+            <span class="tk-k">local</span> v = node.value
+            node = node.next
+            <span class="tk-k">return</span> v
+        <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">for</span> v <span class="tk-k">in</span> <span class="tk-f">each</span>(list) <span class="tk-k">do</span> io.<span class="tk-f">write</span>(v, <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()</code></pre></div>
+<p>In Lua, plain lists (arrays) are usually faster than linked lists because of how tables are stored; linked lists are worth it mainly when you insert and remove in the middle a lot.</p>
+<h2>A binary heap: a priority queue</h2>
+<p>A heap keeps the smallest item at index 1 and needs only O(log n) work to add an item or take the smallest. Children of position <code>i</code> are at <code>2i</code> and <code>2i + 1</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Heap = {}
+Heap.__index = Heap
+
+<span class="tk-k">function</span> Heap.<span class="tk-f">new</span>(less) <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ n = <span class="tk-n">0</span>, less = less <span class="tk-k">or</span> <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a &lt; b <span class="tk-k">end</span> }, Heap) <span class="tk-k">end</span>
+
+<span class="tk-k">function</span> Heap:<span class="tk-f">push</span>(v)
+    <span class="tk-k">self</span>.n = <span class="tk-k">self</span>.n + <span class="tk-n">1</span>
+    <span class="tk-k">local</span> i = <span class="tk-k">self</span>.n
+    <span class="tk-k">self</span>[i] = v
+    <span class="tk-k">while</span> i &gt; <span class="tk-n">1</span> <span class="tk-k">do</span>
+        <span class="tk-k">local</span> parent = i // <span class="tk-n">2</span>
+        <span class="tk-k">if</span> <span class="tk-k">not</span> <span class="tk-k">self</span>.<span class="tk-f">less</span>(<span class="tk-k">self</span>[i], <span class="tk-k">self</span>[parent]) <span class="tk-k">then</span> <span class="tk-k">break</span> <span class="tk-k">end</span>
+        <span class="tk-k">self</span>[i], <span class="tk-k">self</span>[parent] = <span class="tk-k">self</span>[parent], <span class="tk-k">self</span>[i]
+        i = parent
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">function</span> Heap:<span class="tk-f">pop</span>()
+    <span class="tk-k">if</span> <span class="tk-k">self</span>.n == <span class="tk-n">0</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-k">nil</span> <span class="tk-k">end</span>
+    <span class="tk-k">local</span> top = <span class="tk-k">self</span>[<span class="tk-n">1</span>]
+    <span class="tk-k">self</span>[<span class="tk-n">1</span>] = <span class="tk-k">self</span>[<span class="tk-k">self</span>.n]
+    <span class="tk-k">self</span>[<span class="tk-k">self</span>.n] = <span class="tk-k">nil</span>
+    <span class="tk-k">self</span>.n = <span class="tk-k">self</span>.n - <span class="tk-n">1</span>
+    <span class="tk-k">local</span> i = <span class="tk-n">1</span>
+    <span class="tk-k">while</span> <span class="tk-k">true</span> <span class="tk-k">do</span>
+        <span class="tk-k">local</span> l, r, best = <span class="tk-n">2</span> * i, <span class="tk-n">2</span> * i + <span class="tk-n">1</span>, i
+        <span class="tk-k">if</span> l &lt;= <span class="tk-k">self</span>.n <span class="tk-k">and</span> <span class="tk-k">self</span>.<span class="tk-f">less</span>(<span class="tk-k">self</span>[l], <span class="tk-k">self</span>[best]) <span class="tk-k">then</span> best = l <span class="tk-k">end</span>
+        <span class="tk-k">if</span> r &lt;= <span class="tk-k">self</span>.n <span class="tk-k">and</span> <span class="tk-k">self</span>.<span class="tk-f">less</span>(<span class="tk-k">self</span>[r], <span class="tk-k">self</span>[best]) <span class="tk-k">then</span> best = r <span class="tk-k">end</span>
+        <span class="tk-k">if</span> best == i <span class="tk-k">then</span> <span class="tk-k">break</span> <span class="tk-k">end</span>
+        <span class="tk-k">self</span>[i], <span class="tk-k">self</span>[best] = <span class="tk-k">self</span>[best], <span class="tk-k">self</span>[i]
+        i = best
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> top
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> tasks = Heap.<span class="tk-f">new</span>(<span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a.priority &lt; b.priority <span class="tk-k">end</span>)
+tasks:<span class="tk-f">push</span>({ priority = <span class="tk-n">3</span>, name = <span class="tk-s">&quot;write report&quot;</span> })
+tasks:<span class="tk-f">push</span>({ priority = <span class="tk-n">1</span>, name = <span class="tk-s">&quot;fix crash&quot;</span> })
+tasks:<span class="tk-f">push</span>({ priority = <span class="tk-n">2</span>, name = <span class="tk-s">&quot;reply to email&quot;</span> })
+<span class="tk-k">while</span> tasks.n &gt; <span class="tk-n">0</span> <span class="tk-k">do</span> <span class="tk-f">print</span>(tasks:<span class="tk-f">pop</span>().name) <span class="tk-k">end</span></code></pre></div>
+<p>The comparison function makes the same heap work for any items: a game&#39;s event queue, path finding, or scheduling.</p>
+<h2>Costs at a glance</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>structure</th>
+<th>add</th>
+<th>remove</th>
+<th>find</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>stack (list)</td>
+<td>O(1) at the end</td>
+<td>O(1) at the end</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>queue (two indexes)</td>
+<td>O(1) at the back</td>
+<td>O(1) at the front</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>set (keys)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>heap</td>
+<td>O(log n)</td>
+<td>O(log n) for the smallest</td>
+<td>smallest in O(1)</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/8.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/8.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-03-integers-bitwise-operators-and-binary-data/"><span class="mono">previous</span><b>7.03 Integers, Bitwise Operators and Binary Data</b></a>
+      <a class="lp-next" href="../8-02-functional-lua/"><span class="mono">next</span><b>8.02 Functional Lua</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/8-01-data-structures-in-lua"></script>
+</body>
+</html>

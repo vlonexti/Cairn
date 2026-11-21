@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Working with C · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/5-05-working-with-c/">
+  <meta name="description" content="Assembly functions that follow the calling convention can be called from C, and C functions from assembly, using global and extern and a linker. int values…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Working with C · Assembly · Xenon">
+  <meta property="og:description" content="Assembly functions that follow the calling convention can be called from C, and C functions from assembly, using global and extern and a linker. int values…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/5-05-working-with-c/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Working with C · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Working with C · Assembly · Xenon">
+  <meta name="twitter:description" content="Assembly functions that follow the calling convention can be called from C, and C functions from assembly, using global and extern and a linker. int values…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Functions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Working with C</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Assembly functions that follow the calling convention can be called from C, and C functions from assembly, using global and extern and a linker. int values live in the low 32 bits with undefined upper bits. Windows x64 uses rcx, rdx, r8 and r9 with 32 bytes of shadow space and different saved registers. GCC&#39;s inline asm puts single instructions inside C.</p>
+      <div class="prose">
+<h2>Assembly called from C</h2>
+<p>Because your functions follow the System V convention, a C program can call them. The assembly side makes the name visible to the linker with <code>global</code>; the C side declares the prototype:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; mathlib.asm</span>
+        <span class="tk-k">global</span>  add_scaled
+        <span class="tk-k">section</span> .text
+<span class="tk-c">; long add_scaled(long a, long b, long scale): a + b * scale</span>
+<span class="tk-f">add_scaled:</span>
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rsi</span>
+        imul    <span class="tk-t">rax</span>, <span class="tk-t">rdx</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-t">rdi</span>
+        ret</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-c">// main.c</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">long</span> <span class="tk-f">add_scaled</span>(<span class="tk-k">long</span> a, <span class="tk-k">long</span> b, <span class="tk-k">long</span> scale);   <span class="tk-c">// written in assembly</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%ld\n&quot;</span>, <span class="tk-f">add_scaled</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">10</span>));     <span class="tk-c">// 21</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>nasm -f elf64 mathlib.asm -o mathlib.o
+gcc main.c mathlib.o -o app</code></pre></div>
+<p>That is how the hot loops of codecs, crypto libraries and game engines are written: most of the program in C, a few functions in hand-tuned assembly.</p>
+<h2>C called from assembly</h2>
+<p>The other way round, <code>extern</code> declares a name that another file defines, and the program is linked with the C library (so it starts at C&#39;s <code>main</code> rather than <code>_start</code>):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">extern</span>  printf
+        <span class="tk-k">global</span>  main
+        <span class="tk-k">section</span> .data
+<span class="tk-f">format:</span> <span class="tk-k">db</span>      <span class="tk-s">&quot;%d squared is %d&quot;</span>, <span class="tk-n">10</span>, <span class="tk-n">0</span>
+        <span class="tk-k">section</span> .text
+<span class="tk-f">main:</span>
+        push    <span class="tk-t">rbx</span>                     <span class="tk-c">; also aligns the stack to 16</span>
+        mov     <span class="tk-t">ebx</span>, <span class="tk-n">12</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> format]
+        mov     <span class="tk-t">esi</span>, <span class="tk-t">ebx</span>
+        imul    <span class="tk-t">ebx</span>, <span class="tk-t">ebx</span>
+        mov     <span class="tk-t">edx</span>, <span class="tk-t">ebx</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>                <span class="tk-c">; variadic functions: al = how many vector registers are used</span>
+        call    printf
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>                <span class="tk-c">; return 0 from main</span>
+        pop     <span class="tk-t">rbx</span>
+        ret</code></pre></div>
+<p>Built with <code>gcc program.o -o program</code>. The website links assembly without the C library, which is why the course uses system calls and Xenon&#39;s routines instead.</p>
+<h2>int is 32 bits</h2>
+<p>C&#39;s <code>int</code> is 32 bits, so an <code>int</code> argument is in <code>edi</code> and an <code>int</code> result in <code>eax</code>. The convention says nothing about the upper 32 bits of the register: they may hold anything. So:</p>
+<ul>
+<li>Read <code>int</code> arguments through the 32-bit names (<code>edi</code>, <code>esi</code>), never the full register, unless you extend them first: <code>movsxd rax, edi</code> for a signed <code>int</code>, <code>mov eax, edi</code> for an <code>unsigned</code>.</li>
+<li><code>char</code> and <code>short</code> arguments are in <code>dil</code>, <code>di</code> and so on.</li>
+</ul>
+<p>C compilers rely on this, which is why their output is full of <code>movsxd</code> and 32-bit instructions.</p>
+<h2>You can see C do it</h2>
+<p>This C function contains one assembly instruction, written with GCC&#39;s <strong>inline assembly</strong>. Run it (it is C, compiled with GCC):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">long</span> <span class="tk-f">times_three</span>(<span class="tk-k">long</span> x)
+{
+    <span class="tk-k">long</span> result;
+    <span class="tk-f">__asm__</span>(<span class="tk-s">&quot;lea (%1,%1,2), %0&quot;</span> : <span class="tk-s">&quot;=r&quot;</span>(result) : <span class="tk-s">&quot;r&quot;</span>(x));   <span class="tk-c">// GCC's own (AT&amp;T) syntax</span>
+    <span class="tk-k">return</span> result;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%ld\n&quot;</span>, <span class="tk-f">times_three</span>(<span class="tk-n">14</span>));
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Inline assembly uses GCC&#39;s AT&amp;T syntax by default (source first, <code>%</code> before registers), and the <code>: &quot;=r&quot;(result) : &quot;r&quot;(x)</code> parts tell the compiler which registers to use. It is handy for a single special instruction; for anything longer, a separate <code>.asm</code> file is clearer.</p>
+<h2>Windows does it differently</h2>
+<p>The Microsoft x64 convention, used by Windows, differs in the details:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>System V (Linux, macOS)</th>
+<th>Microsoft x64 (Windows)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>integer arguments</td>
+<td><code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code></td>
+<td><code>rcx</code>, <code>rdx</code>, <code>r8</code>, <code>r9</code></td>
+</tr>
+<tr>
+<td>callee-saved</td>
+<td><code>rbx</code>, <code>rbp</code>, <code>r12</code> to <code>r15</code></td>
+<td>the same <strong>plus <code>rdi</code>, <code>rsi</code></strong> and <code>xmm6</code> to <code>xmm15</code></td>
+</tr>
+<tr>
+<td>before a call</td>
+<td></td>
+<td>32 bytes of <strong>shadow space</strong> reserved on the stack for the callee</td>
+</tr>
+<tr>
+<td>red zone</td>
+<td>128 bytes</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>long</code></td>
+<td>64 bits</td>
+<td>32 bits</td>
+</tr>
+</tbody></table>
+</div>
+<p>Same instructions, different agreement: code written for one convention cannot simply be called with the other. (The website&#39;s C++ course compiles with MSVC by default, which follows the Windows convention.)</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does global add_scaled do?</div><ul><li>Makes the label visible to the linker, so other files can call it</li><li>Makes the function run faster</li><li>Declares a C function</li></ul><details><summary>Show the answer</summary><p><b>Makes the label visible to the linker, so other files can call it</b> extern is the opposite: a name defined elsewhere.</p></details></li><li><div class="q">A C function takes an int. Where is it, and what about the rest of the register?</div><ul><li>In edi; the upper 32 bits of rdi may be anything</li><li>In rdi, sign-extended</li><li>On the stack</li></ul><details><summary>Show the answer</summary><p><b>In edi; the upper 32 bits of rdi may be anything</b> Extend it yourself with movsxd if you need 64 bits.</p></details></li><li><div class="q">Where does the first integer argument go on Windows x64?</div><ul><li>rcx</li><li>rdi</li><li>rax</li></ul><details><summary>Show the answer</summary><p><b>rcx</b> Then rdx, r8, r9.</p></details></li><li><div class="q">What is shadow space?</div><ul><li>32 bytes the caller reserves on the stack for the callee, in the Windows convention</li><li>The red zone</li><li>Memory the debugger uses</li></ul><details><summary>Show the answer</summary><p><b>32 bytes the caller reserves on the stack for the callee, in the Windows convention</b> System V has no shadow space.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-recursion/"><span class="mono">previous</span><b>5.04 Recursion</b></a>
+      <a class="lp-next" href="../6-01-reading-compiler-output/"><span class="mono">next</span><b>6.01 Reading Compiler Output</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/5-05-working-with-c"></script>
+</body>
+</html>

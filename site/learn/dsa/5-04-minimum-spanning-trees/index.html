@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Minimum Spanning Trees · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/5-04-minimum-spanning-trees/">
+  <meta name="description" content="Connecting everything as cheaply as possible - spanning trees, the cut property that makes greedy choices safe, Kruskal's algorithm with sorting and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Minimum Spanning Trees · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Connecting everything as cheaply as possible - spanning trees, the cut property that makes greedy choices safe, Kruskal's algorithm with sorting and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/5-04-minimum-spanning-trees/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Minimum Spanning Trees · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Minimum Spanning Trees · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Connecting everything as cheaply as possible - spanning trees, the cut property that makes greedy choices safe, Kruskal's algorithm with sorting and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Graphs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Minimum Spanning Trees</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 5 in milestone 5</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Connecting everything as cheaply as possible - spanning trees, the cut property that makes greedy choices safe, Kruskal&#39;s algorithm with sorting and union-find, Prim&#39;s algorithm with a priority queue, the dense O(V^2) version of Prim for complete graphs, minimum spanning forests, and uses from network design to clustering.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>A council wants to connect every village with roads, a company every office with fibre, an engineer every point of a circuit with wire. Each possible link has a cost. What is the cheapest set of links that connects <strong>everything</strong>?</p>
+<p>The answer never contains a cycle (dropping any edge of a cycle keeps everything connected and saves money), so it is a tree that spans all vertices: a <strong>minimum spanning tree</strong> (MST). For V vertices it has exactly V − 1 edges.</p>
+<p>Note the difference from shortest paths: an MST minimises the <strong>total</strong> cost of the network, not the distance between any particular pair. The MST route between two villages can be long.</p>
+<h2>The cut property</h2>
+<p>Split the vertices into two groups in any way (a <strong>cut</strong>). The cheapest edge crossing between the groups belongs to some minimum spanning tree. (If a spanning tree did not use it, adding it would create a cycle that crosses the cut a second time through a more expensive edge; swapping them gives a tree at least as cheap.)</p>
+<p>This makes <strong>greedy</strong> algorithms correct: repeatedly take the cheapest edge that is safe. Kruskal and Prim differ in which cut they look at.</p>
+<h2>Kruskal&#39;s algorithm</h2>
+<p>Sort all edges by cost. Go through them cheapest first, and add an edge <strong>unless it would close a cycle</strong>. Union-find (lesson 4.05) answers &quot;would it close a cycle?&quot; in effectively O(1): the ends are already connected exactly when <code>find(u) == find(v)</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;numeric&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;tuple&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">UnionFind</span>
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; parent, size;
+    <span class="tk-k">explicit</span> <span class="tk-f">UnionFind</span>(<span class="tk-k">int</span> n) : <span class="tk-f">parent</span>(n), <span class="tk-f">size</span>(n, <span class="tk-n">1</span>) { std::<span class="tk-f">iota</span>(parent.<span class="tk-f">begin</span>(), parent.<span class="tk-f">end</span>(), <span class="tk-n">0</span>); }
+    <span class="tk-k">int</span> <span class="tk-f">find</span>(<span class="tk-k">int</span> x) { <span class="tk-k">while</span> (parent[x] != x) x = parent[x] = parent[parent[x]]; <span class="tk-k">return</span> x; }   <span class="tk-c">// path halving</span>
+    <span class="tk-k">bool</span> <span class="tk-f">unite</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b)
+    {
+        a = <span class="tk-f">find</span>(a); b = <span class="tk-f">find</span>(b);
+        <span class="tk-k">if</span> (a == b) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+        <span class="tk-k">if</span> (size[a] &lt; size[b]) std::<span class="tk-f">swap</span>(a, b);
+        parent[b] = a;
+        size[a] += size[b];
+        <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;std::string&gt; town{ <span class="tk-s">&quot;Ash&quot;</span>, <span class="tk-s">&quot;Birch&quot;</span>, <span class="tk-s">&quot;Cedar&quot;</span>, <span class="tk-s">&quot;Dale&quot;</span>, <span class="tk-s">&quot;Elm&quot;</span> };
+    std::vector&lt;std::tuple&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;&gt; edges{                        <span class="tk-c">// (cost, a, b)</span>
+        { <span class="tk-n">7</span>, <span class="tk-n">0</span>, <span class="tk-n">1</span> }, { <span class="tk-n">5</span>, <span class="tk-n">0</span>, <span class="tk-n">3</span> }, { <span class="tk-n">8</span>, <span class="tk-n">1</span>, <span class="tk-n">2</span> }, { <span class="tk-n">9</span>, <span class="tk-n">1</span>, <span class="tk-n">3</span> }, { <span class="tk-n">7</span>, <span class="tk-n">1</span>, <span class="tk-n">4</span> }, { <span class="tk-n">5</span>, <span class="tk-n">2</span>, <span class="tk-n">4</span> }, { <span class="tk-n">15</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span> }, { <span class="tk-n">6</span>, <span class="tk-n">3</span>, <span class="tk-n">2</span> } };
+    std::<span class="tk-f">sort</span>(edges.<span class="tk-f">begin</span>(), edges.<span class="tk-f">end</span>());
+
+    <span class="tk-t">UnionFind</span> <span class="tk-f">uf</span>(<span class="tk-n">5</span>);
+    <span class="tk-k">int</span> total = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">auto</span> [cost, a, b] : edges)
+        <span class="tk-k">if</span> (uf.<span class="tk-f">unite</span>(a, b))
+        {
+            total += cost;
+            std::cout &lt;&lt; town[a] &lt;&lt; <span class="tk-s">&quot; - &quot;</span> &lt;&lt; town[b] &lt;&lt; <span class="tk-s">&quot; (&quot;</span> &lt;&lt; cost &lt;&lt; <span class="tk-s">&quot;)\n&quot;</span>;
+        }
+    std::cout &lt;&lt; <span class="tk-s">&quot;total &quot;</span> &lt;&lt; total &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>Sorting dominates: <strong>O(E log E)</strong>. Kruskal is simple and works directly on an edge list. If the graph is not connected, it naturally produces a <strong>minimum spanning forest</strong>: one tree per component.</p>
+<h2>Prim&#39;s algorithm</h2>
+<p>Prim grows a <strong>single tree</strong> from a start vertex. At each step it adds the cheapest edge that connects the tree to a vertex outside it (the cut between &quot;in the tree&quot; and &quot;not yet&quot;). It looks just like Dijkstra, with one change: the priority of a vertex is the cost of the <strong>single edge</strong> that would attach it, not the length of a whole path.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;functional&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> V = <span class="tk-n">5</span>;
+    std::vector&lt;std::vector&lt;std::pair&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;&gt;&gt; <span class="tk-f">adj</span>(V);       <span class="tk-c">// (neighbour, cost)</span>
+    <span class="tk-k">auto</span> link = [&amp;](<span class="tk-k">int</span> a, <span class="tk-k">int</span> b, <span class="tk-k">int</span> c) { adj[a].<span class="tk-f">push_back</span>({ b, c }); adj[b].<span class="tk-f">push_back</span>({ a, c }); };
+    <span class="tk-f">link</span>(<span class="tk-n">0</span>, <span class="tk-n">1</span>, <span class="tk-n">7</span>); <span class="tk-f">link</span>(<span class="tk-n">0</span>, <span class="tk-n">3</span>, <span class="tk-n">5</span>); <span class="tk-f">link</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">8</span>); <span class="tk-f">link</span>(<span class="tk-n">1</span>, <span class="tk-n">3</span>, <span class="tk-n">9</span>); <span class="tk-f">link</span>(<span class="tk-n">1</span>, <span class="tk-n">4</span>, <span class="tk-n">7</span>); <span class="tk-f">link</span>(<span class="tk-n">2</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>); <span class="tk-f">link</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">15</span>); <span class="tk-f">link</span>(<span class="tk-n">3</span>, <span class="tk-n">2</span>, <span class="tk-n">6</span>);
+
+    std::vector&lt;<span class="tk-k">bool</span>&gt; <span class="tk-f">inTree</span>(V, <span class="tk-k">false</span>);
+    <span class="tk-k">using</span> <span class="tk-t">Item</span> = std::pair&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;;                            <span class="tk-c">// (edge cost, vertex)</span>
+    std::priority_queue&lt;<span class="tk-t">Item</span>, std::vector&lt;<span class="tk-t">Item</span>&gt;, std::greater&lt;<span class="tk-t">Item</span>&gt;&gt; pq;
+    pq.<span class="tk-f">push</span>({ <span class="tk-n">0</span>, <span class="tk-n">0</span> });
+    <span class="tk-k">int</span> total = <span class="tk-n">0</span>, added = <span class="tk-n">0</span>;
+    <span class="tk-k">while</span> (!pq.<span class="tk-f">empty</span>() &amp;&amp; added &lt; V)
+    {
+        <span class="tk-k">auto</span> [cost, u] = pq.<span class="tk-f">top</span>();
+        pq.<span class="tk-f">pop</span>();
+        <span class="tk-k">if</span> (inTree[u]) <span class="tk-k">continue</span>;                                 <span class="tk-c">// already attached more cheaply</span>
+        inTree[u] = <span class="tk-k">true</span>;
+        total += cost;
+        ++added;
+        <span class="tk-k">for</span> (<span class="tk-k">auto</span> [v, c] : adj[u])
+            <span class="tk-k">if</span> (!inTree[v]) pq.<span class="tk-f">push</span>({ c, v });
+    }
+    std::cout &lt;&lt; <span class="tk-s">&quot;total &quot;</span> &lt;&lt; total &lt;&lt; <span class="tk-s">&quot; with &quot;</span> &lt;&lt; added &lt;&lt; <span class="tk-s">&quot; vertices\n&quot;</span>;
+}</code></pre></div>
+<p>With a binary heap, Prim is <strong>O(E log V)</strong>. Both algorithms find a tree of the same total cost (the MST is unique when all edge costs differ).</p>
+<h2>Dense graphs: O(V²) Prim</h2>
+<p>When every pair of vertices can be linked, for example connecting points in the plane where any two can be wired together, E is about V²/2 and building the edge list alone is expensive. A version of Prim <strong>without a heap</strong> is then better: keep for every outside vertex the cheapest known cost to attach it, pick the minimum by scanning the array, and update the array from the new tree vertex. Each of the V steps scans V entries: <strong>O(V²)</strong>, with no edge list at all. Practice 5.04 uses it.</p>
+<h2>Uses</h2>
+<ul>
+<li><strong>Network design</strong>: roads, pipes, cables, circuit wiring.</li>
+<li><strong>Clustering</strong>: build the MST of points with distances as costs, then delete the k − 1 most expensive edges: what remains are k clusters whose closest members are as far apart as possible (single-linkage clustering).</li>
+<li><strong>Approximation</strong>: the MST gives a route at most twice the optimum for the travelling salesman problem with distances that obey the triangle inequality.</li>
+<li><strong>Image segmentation</strong>: pixels as vertices, colour differences as costs.</li>
+</ul>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does a minimum spanning tree never contain a cycle?</div><ul><li>Removing the most expensive edge of a cycle keeps everything connected and lowers the cost</li><li>Because trees cannot have weights</li><li>Because Kruskal sorts the edges</li><li>It can contain one cycle</li></ul><details><summary>Show the answer</summary><p><b>Removing the most expensive edge of a cycle keeps everything connected and lowers the cost</b> Any cycle has an edge that can be dropped without disconnecting anything.</p></details></li><li><div class="q">In Kruskal&#39;s algorithm, what does union-find decide?</div><ul><li>Which edge is cheapest</li><li>Whether an edge&#39;s two ends are already connected, so adding it would close a cycle</li><li>The order of the vertices</li><li>The total cost</li></ul><details><summary>Show the answer</summary><p><b>Whether an edge&#39;s two ends are already connected, so adding it would close a cycle</b> unite(a, b) returning false means a and b are already in the same tree.</p></details></li><li><div class="q">How does Prim&#39;s priority differ from Dijkstra&#39;s?</div><ul><li>It does not use a priority queue</li><li>A vertex&#39;s priority is the cost of the single edge attaching it, not the total path length from the start</li><li>It processes the largest edge first</li><li>There is no difference</li></ul><details><summary>Show the answer</summary><p><b>A vertex&#39;s priority is the cost of the single edge attaching it, not the total path length from the start</b> Prim minimises the tree&#39;s total weight, Dijkstra the distance from the source.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>A minimum spanning tree connects all vertices with V − 1 edges of least total cost.</li>
+<li>The cut property makes greedy choices safe.</li>
+<li>Kruskal: sort edges, add each unless union-find says it closes a cycle; O(E log E).</li>
+<li>Prim: grow one tree with a min-heap of attaching edges; O(E log V), or O(V²) without a heap on dense graphs.</li>
+<li>MSTs design networks, cluster data and approximate harder problems.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-shortest-paths-with-dijkstra/"><span class="mono">previous</span><b>5.03 Shortest Paths with Dijkstra</b></a>
+      <a class="lp-next" href="../5-05-grid-search-and-a/"><span class="mono">next</span><b>5.05 Grid Search and A*</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/5-04-minimum-spanning-trees"></script>
+</body>
+</html>

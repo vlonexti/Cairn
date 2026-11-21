@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Memory Bugs · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/4-06-memory-bugs/">
+  <meta name="description" content="Overflows, use after free, double frees, leaks and uninitialised reads often run without any visible problem - until they don't. AddressSanitizer adds checks…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Memory Bugs · C · Xenon">
+  <meta property="og:description" content="Overflows, use after free, double frees, leaks and uninitialised reads often run without any visible problem - until they don't. AddressSanitizer adds checks…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/4-06-memory-bugs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Memory Bugs · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Memory Bugs · C · Xenon">
+  <meta name="twitter:description" content="Overflows, use after free, double frees, leaks and uninitialised reads often run without any visible problem - until they don't. AddressSanitizer adds checks…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>Memory and Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Memory Bugs</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.06</b></span><span>6 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Overflows, use after free, double frees, leaks and uninitialised reads often run without any visible problem - until they don&#39;t. AddressSanitizer adds checks around every memory access and reports the exact line, and Valgrind does it without rebuilding. Warnings and simple habits prevent most of them in the first place.</p>
+      <div class="prose">
+<h2>Silent bugs</h2>
+<p>C trusts you. When a program writes past the end of an array, nothing stops it: the write lands on whatever is next. It might crash at once, crash minutes later somewhere unrelated, print wrong results, or work perfectly on your computer and fail on someone else&#39;s. These bugs are the reason most serious security holes in C programs exist.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Bug</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>buffer overflow</td>
+<td><code>int a[4]; a[4] = 1;</code></td>
+</tr>
+<tr>
+<td>use after free</td>
+<td><code>free(p); p-&gt;x = 1;</code></td>
+</tr>
+<tr>
+<td>double free</td>
+<td><code>free(p); free(p);</code></td>
+</tr>
+<tr>
+<td>memory leak</td>
+<td><code>malloc</code> with no <code>free</code></td>
+</tr>
+<tr>
+<td>uninitialised read</td>
+<td><code>int x; if (x &gt; 0) ...</code></td>
+</tr>
+<tr>
+<td>returning a local&#39;s address</td>
+<td><code>return &amp;local;</code></td>
+</tr>
+</tbody></table>
+</div>
+<h2>AddressSanitizer</h2>
+<p><strong>AddressSanitizer</strong> (ASan) is built into GCC and Clang. Compiling with <code>-fsanitize=address</code> makes the compiler add a check before every memory access and keep a &quot;shadow&quot; map of which bytes may be touched. The moment a program steps out of bounds, it stops with a report showing the bad access, the line, and where the memory came from.</p>
+<p>On this website, turn it on with <strong>Memory checks (AddressSanitizer)</strong> in the editor&#39;s menu, then run this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> *scores = <span class="tk-f">malloc</span>(<span class="tk-n">4</span> * <span class="tk-k">sizeof</span> *scores);
+    <span class="tk-k">if</span> (scores == <span class="tk-k">NULL</span>) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt;= <span class="tk-n">4</span>; i++) {      <span class="tk-c">// one too many</span>
+        scores[i] = i * <span class="tk-n">10</span>;
+    }
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d\n&quot;</span>, scores[<span class="tk-n">0</span>]);
+    <span class="tk-f">free</span>(scores);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Without memory checks, it probably prints <code>0</code> and looks fine. With them, it stops with <strong>heap-buffer-overflow</strong> and points at the line inside the loop: &quot;0 bytes after 16-byte region&quot;, which is exactly the fifth <code>int</code> of a four-<code>int</code> block.</p>
+<p>The website&#39;s memory checks also switch on <strong>UndefinedBehaviorSanitizer</strong> (<code>-fsanitize=undefined</code>), which catches things like signed integer overflow and shifts by too much (lesson 6.02).</p>
+<div class="callout tip"><div class="callout-title"><span>Use it all the time while developing</span></div><div class="callout-body"><p>Programs run about twice as slowly with ASan, which hardly matters while you are testing. Professional C projects run their whole test suite with sanitizers on.</p>
+</div></div>
+<h2>Valgrind</h2>
+<p>On Linux, <strong>Valgrind</strong> runs an ordinary, unchanged program inside a simulated processor and checks every access. It is slower (20 to 50 times) but needs no recompiling, and its leak report at the end lists every block that was never freed:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>$ valgrind --leak-check=full ./program
+==1234== 40 bytes in 1 blocks are definitely lost in loss record 1 of 1
+==1234==    at 0x483B7F3: malloc
+==1234==    by 0x109162: main (program.c:6)</code></pre></div>
+<p>ASan finds leaks too, when the program ends (on Linux).</p>
+<h2>Habits that prevent them</h2>
+<ul>
+<li>Compile with <code>-Wall -Wextra</code> and fix every warning: uninitialised variables and returned local addresses are warnings.</li>
+<li>Give every variable a value when it is declared, pointers included (<code>NULL</code> if nothing else).</li>
+<li>Keep the size next to the pointer, and use <code>size_t</code> and <code>&lt;</code> for loops: <code>for (size_t i = 0; i &lt; count; i++)</code>.</li>
+<li>Use the length-taking functions: <code>snprintf</code> and <code>fgets</code>, never <code>gets</code> (removed from C) or <code>sprintf</code> into a small buffer.</li>
+<li>Decide who owns every heap block, and free it in one place. Set the pointer to <code>NULL</code> afterwards.</li>
+<li>For every <code>malloc</code>, check <code>NULL</code>.</li>
+</ul>
+<h2>Why other languages exist</h2>
+<p>Every one of these bugs is impossible in safe Rust, which checks ownership at compile time, and in garbage-collected languages like Python and Java, which free memory for you and check every index. C gives up those checks for speed and control. That trade-off is why the C you write today should be tested with sanitizers, and why parts of Linux, Windows and Android are now being written in Rust.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why are memory bugs in C dangerous even when the program seems to work?</div><ul><li>The bad access silently changes or reads other memory, and the effects show up later or elsewhere</li><li>They always crash at once</li><li>They only slow the program down</li></ul><details><summary>Show the answer</summary><p><b>The bad access silently changes or reads other memory, and the effects show up later or elsewhere</b> That is why tools are needed to find them.</p></details></li><li><div class="q">What does AddressSanitizer do?</div><ul><li>Adds checks to every memory access and reports the first bad one with its line</li><li>Frees memory automatically</li><li>Makes the program faster</li></ul><details><summary>Show the answer</summary><p><b>Adds checks to every memory access and reports the first bad one with its line</b> Turn on Memory checks in the editor&#39;s menu.</p></details></li><li><div class="q">Which function should never be used to read a line?</div><ul><li>gets</li><li>fgets</li><li>getline</li></ul><details><summary>Show the answer</summary><p><b>gets</b> gets cannot know the buffer size. It was removed in C11.</p></details></li><li><div class="q">Which tool checks an unchanged program for leaks on Linux?</div><ul><li>Valgrind</li><li>printf</li><li>The preprocessor</li></ul><details><summary>Show the answer</summary><p><b>Valgrind</b> ASan needs a rebuild; Valgrind does not.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/4.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/4.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-linked-lists/"><span class="mono">previous</span><b>4.05 Linked Lists</b></a>
+      <a class="lp-next" href="../5-01-bitwise-operators/"><span class="mono">next</span><b>5.01 Bitwise Operators</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/4-06-memory-bugs"></script>
+</body>
+</html>

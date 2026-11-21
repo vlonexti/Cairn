@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Stack, push, pop, call and ret · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/7-05-the-stack-push-pop-call-and-ret/">
+  <meta name="description" content="Four instructions manage the stack from lesson 1.05 at the machine level. push and pop add and remove 8-byte values; call pushes a return address and jumps;…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Stack, push, pop, call and ret · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Four instructions manage the stack from lesson 1.05 at the machine level. push and pop add and remove 8-byte values; call pushes a return address and jumps;…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/7-05-the-stack-push-pop-call-and-ret/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Stack, push, pop, call and ret · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Stack, push, pop, call and ret · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Four instructions manage the stack from lesson 1.05 at the machine level. push and pop add and remove 8-byte values; call pushes a return address and jumps;…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>x64 Assembly Language</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Stack, push, pop, call and ret</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.05</b></span><span>5 of 11 in milestone 7</span><span>5 min</span></div>
+      <p class="lp-summary">Four instructions manage the stack from lesson 1.05 at the machine level. <code>push</code> and <code>pop</code> add and remove 8-byte values; <code>call</code> pushes a return address and jumps; <code>ret</code> pops it and jumps back. This lesson steps through them, shows a function&#39;s <strong>prologue</strong> and <strong>epilogue</strong>, and explains what a corrupted stack does to <code>ret</code>.</p>
+      <div class="prose">
+<h2>push and pop</h2>
+<p>The stack grows downwards, and <code>rsp</code> always points at the value on top (lesson 1.05).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Does</th>
+<th>Equivalent to</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>push rbx</code></td>
+<td>rsp −= 8, then store rbx at [rsp]</td>
+<td><code>sub rsp, 8</code> / <code>mov [rsp], rbx</code></td>
+</tr>
+<tr>
+<td><code>pop rbx</code></td>
+<td>load [rsp] into rbx, then rsp += 8</td>
+<td><code>mov rbx, [rsp]</code> / <code>add rsp, 8</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>On x64, <code>push</code> and <code>pop</code> always move 8 bytes. Their main use in compiled code is saving and restoring the <strong>non-volatile</strong> registers (<code>rbx</code>, <code>rbp</code>, <code>rdi</code>, <code>rsi</code>, <code>r12</code> to <code>r15</code>) that a function must give back unchanged (lesson 2.01).</p>
+<h2>call and ret</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>call target</code></td>
+<td>push the address of the next instruction (the <strong>return address</strong>), then jump to target</td>
+</tr>
+<tr>
+<td><code>ret</code></td>
+<td>pop the return address into <code>rip</code>: continue there</td>
+</tr>
+<tr>
+<td><code>ret 0</code></td>
+<td>the same (the number is how many extra bytes to pop; always 0 on x64)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Step through a function that saves <code>rbx</code>, uses it, and returns. Watch the stack panel: <code>call</code> pushes the return address, <code>push rbx</code> saves the caller&#39;s <code>rbx</code> below it, and they come off again in reverse order.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/gamedev/l/7.05">Try it in Xenon</a></div>
+<p>At the end, <code>rax</code> is 37 and <code>rbx</code> is back to 77: <code>square</code> used <code>rbx</code> but restored it, as the calling convention requires.</p>
+<h2>Prologue and epilogue</h2>
+<p>Most compiled functions start and end with a fixed pattern that builds and dismantles their stack frame:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>update PROC
+    push  <span class="tk-t">rbx</span>                 <span class="tk-c">; prologue: save non-volatile registers used below</span>
+    push  <span class="tk-t">rdi</span>
+    sub   <span class="tk-t">rsp</span>, <span class="tk-n">40</span>             <span class="tk-c">; reserve the frame: locals + 32 bytes of shadow space, aligned</span>
+    ...                       <span class="tk-c">; the body</span>
+    add   <span class="tk-t">rsp</span>, <span class="tk-n">40</span>             <span class="tk-c">; epilogue: release the frame</span>
+    pop   <span class="tk-t">rdi</span>                 <span class="tk-c">; restore in reverse order</span>
+    pop   <span class="tk-t">rbx</span>
+    ret
+update ENDP</code></pre></div>
+<p>The numbers follow the alignment rule from lesson 2.01: on entry <code>rsp</code> is 8 off a multiple of 16 (the return address), two pushes make it 8 off again (24 bytes), and <code>sub rsp, 40</code> brings the total to 64, a multiple of 16, ready for this function&#39;s own calls.</p>
+<p>Older code, and code compiled for easier debugging, also sets up <code>rbp</code> as a <strong>frame pointer</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>push  <span class="tk-t">rbp</span>
+mov   <span class="tk-t">rbp</span>, <span class="tk-t">rsp</span>          <span class="tk-c">; rbp marks the frame; locals are at rbp-8, rbp-16 ...</span>
+sub   <span class="tk-t">rsp</span>, <span class="tk-n">48</span>
+...
+mov   <span class="tk-t">rsp</span>, <span class="tk-t">rbp</span>
+pop   <span class="tk-t">rbp</span>
+ret</code></pre></div>
+<p>x64 Windows code usually omits it. The debugger and Windows find frames through <strong>unwind information</strong> that the compiler stores in the <code>.pdata</code> and <code>.xdata</code> sections, describing each function&#39;s prologue so the stack can be walked without a frame pointer (lesson 8.02).</p>
+<h2>When the stack is corrupted</h2>
+<p><code>ret</code> trusts whatever 8 bytes are at <code>[rsp]</code>. If a buffer overrun on the stack (lesson 2.09) has overwritten the return address, <code>ret</code> jumps to that garbage, and the crash happens at a nonsense address with a nonsense call stack. This is also the classic way attackers hijack programs, which is why compilers add defences:</p>
+<ul>
+<li><strong>Stack cookies</strong> (<code>/GS</code>, on by default): the prologue puts a secret value between the locals and the return address, and the epilogue checks it before <code>ret</code>. An overrun that reaches the return address changes the cookie first, and the program is stopped with a security check failure instead of jumping.</li>
+<li><strong>Control-flow guard</strong> and <strong>shadow stacks</strong> (on recent CPUs and Windows) check calls and returns against what is allowed.</li>
+</ul>
+<p>When you see a crash at a strange address with a broken call stack, suspect a stack overrun and turn on AddressSanitizer (lesson 2.10).</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Unbalanced push and pop</span></div><div class="callout-body"><p>Every push in a function must be matched by a pop (or an <code>add rsp</code>) before <code>ret</code>, or <code>ret</code> pops the wrong value.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Popping in the wrong order</span></div><div class="callout-body"><p>Registers must be restored in the reverse order they were saved.</p>
+</div></div>
+<blockquote><p>[!warning] Reading <code>ret 0</code> as &quot;return 0&quot;
+The 0 is a byte count for the stack, not the return value. The return value is in <code>rax</code>.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does <code>call square</code> push onto the stack?</div><ul><li>The address of the instruction after the call</li><li>The address of <code>square</code></li><li>The value of <code>rax</code></li></ul><details><summary>Show the answer</summary><p><b>The address of the instruction after the call</b> <code>ret</code> later pops it to continue after the call.</p></details></li><li><div class="q">A function&#39;s prologue is <code>push rbx</code> then <code>push rsi</code>. In what order must its epilogue restore them?</div><ul><li><code>pop rsi</code>, then <code>pop rbx</code></li><li><code>pop rbx</code>, then <code>pop rsi</code></li><li>Either order</li></ul><details><summary>Show the answer</summary><p><b><code>pop rsi</code>, then <code>pop rbx</code></b> The stack is last in, first out.</p></details></li><li><div class="q">What does a stack cookie protect?</div><ul><li>The return address, by detecting overruns from locals before <code>ret</code> uses it</li><li>The heap</li><li>The code section</li></ul><details><summary>Show the answer</summary><p><b>The return address, by detecting overruns from locals before <code>ret</code> uses it</b> The epilogue checks the cookie and stops the program if it changed.</p></details></li><li><div class="q">In <code>square</code> above, why does the function push and pop <code>rbx</code>?</div><ul><li><code>rbx</code> is non-volatile: the caller expects it unchanged after the call</li><li><code>rbx</code> holds the return address</li><li><code>imul</code> requires it</li></ul><details><summary>Show the answer</summary><p><b><code>rbx</code> is non-volatile: the caller expects it unchanged after the call</b> Functions may use non-volatile registers only if they restore them.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/7.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/7.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-04-flags-comparisons-and-jumps/"><span class="mono">previous</span><b>7.04 Flags, Comparisons and Jumps</b></a>
+      <a class="lp-next" href="../7-06-the-microsoft-x64-calling-convention/"><span class="mono">next</span><b>7.06 The Microsoft x64 Calling Convention</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/7-05-the-stack-push-pop-call-and-ret"></script>
+</body>
+</html>

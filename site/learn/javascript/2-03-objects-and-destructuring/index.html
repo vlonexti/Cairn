@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Objects and Destructuring · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/2-03-objects-and-destructuring/">
+  <meta name="description" content="Objects as collections of named values - creating and reading them, dot and bracket access, adding and deleting properties, shorthand and computed names,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Objects and Destructuring · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Objects as collections of named values - creating and reading them, dot and bracket access, adding and deleting properties, shorthand and computed names,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/2-03-objects-and-destructuring/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Objects and Destructuring · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Objects and Destructuring · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Objects as collections of named values - creating and reading them, dot and bracket access, adding and deleting properties, shorthand and computed names,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Functions and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Objects and Destructuring</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Objects as collections of named values - creating and reading them, dot and bracket access, adding and deleting properties, shorthand and computed names, Object.keys, values and entries, spread and copying, and destructuring objects and arrays.</p>
+      <div class="prose">
+<h2>Object literals</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> book = {
+  title: <span class="tk-s">&quot;Dune&quot;</span>,
+  author: <span class="tk-s">&quot;Frank Herbert&quot;</span>,
+  year: <span class="tk-n">1965</span>,
+  <span class="tk-s">&quot;page count&quot;</span>: <span class="tk-n">412</span>,          <span class="tk-c">// names with spaces need quotes</span>
+};
+console.<span class="tk-f">log</span>(book.title, book[<span class="tk-s">&quot;page count&quot;</span>]);
+book.rating = <span class="tk-n">5</span>;               <span class="tk-c">// add</span>
+<span class="tk-k">delete</span> book.year;              <span class="tk-c">// remove</span>
+console.<span class="tk-f">log</span>(book, <span class="tk-s">&quot;year&quot;</span> <span class="tk-k">in</span> book, book.missing);   <span class="tk-c">// undefined for missing properties</span></code></pre></div>
+<p>Use dot access for fixed names and brackets when the name is in a variable: <code>book[field]</code>.</p>
+<h2>Shorthand and computed names</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> title = <span class="tk-s">&quot;Dune&quot;</span>;
+<span class="tk-k">const</span> year = <span class="tk-n">1965</span>;
+<span class="tk-k">const</span> field = <span class="tk-s">&quot;genre&quot;</span>;
+<span class="tk-k">const</span> entry = { title, year, [field]: <span class="tk-s">&quot;sci-fi&quot;</span>, <span class="tk-f">describe</span>() { <span class="tk-k">return</span> <span class="tk-s">`${this.title} (${this.year})`</span>; } };
+console.<span class="tk-f">log</span>(entry, entry.<span class="tk-f">describe</span>());</code></pre></div>
+<p><code>{ title }</code> is short for <code>{ title: title }</code>; <code>[field]</code> uses the variable&#39;s value as the name; <code>describe() {...}</code> is a method.</p>
+<h2>Looping over an object</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> scores = { ada: <span class="tk-n">95</span>, grace: <span class="tk-n">88</span>, linus: <span class="tk-n">72</span> };
+console.<span class="tk-f">log</span>(Object.<span class="tk-f">keys</span>(scores), Object.<span class="tk-f">values</span>(scores));
+<span class="tk-k">for</span> (<span class="tk-k">const</span> [name, score] <span class="tk-k">of</span> Object.<span class="tk-f">entries</span>(scores)) {
+  console.<span class="tk-f">log</span>(<span class="tk-s">`${name}: ${score}`</span>);
+}
+<span class="tk-k">const</span> curved = Object.<span class="tk-f">fromEntries</span>(Object.<span class="tk-f">entries</span>(scores).<span class="tk-f">map</span>(([n, s]) =&gt; [n, s + <span class="tk-n">5</span>]));
+console.<span class="tk-f">log</span>(curved);</code></pre></div>
+<p><code>Object.entries</code> and <code>Object.fromEntries</code> turn an object into <code>[key, value]</code> pairs and back, so array methods can transform objects.</p>
+<h2>Copying and merging</h2>
+<p>Spread copies properties into a new object; later properties win:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> defaults = { theme: <span class="tk-s">&quot;light&quot;</span>, size: <span class="tk-n">12</span> };
+<span class="tk-k">const</span> user = { size: <span class="tk-n">14</span> };
+<span class="tk-k">const</span> settings = { ...defaults, ...user, wrap: <span class="tk-k">true</span> };
+console.<span class="tk-f">log</span>(settings);</code></pre></div>
+<p>Spread makes a <strong>shallow</strong> copy: nested objects are still shared. <code>structuredClone(obj)</code> makes a deep copy.</p>
+<h2>Destructuring</h2>
+<p><strong>Destructuring</strong> takes values out of objects and arrays into variables:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> person = { name: <span class="tk-s">&quot;Ada&quot;</span>, age: <span class="tk-n">36</span>, address: { city: <span class="tk-s">&quot;London&quot;</span> } };
+<span class="tk-k">const</span> { name, age: years, email = <span class="tk-s">&quot;none&quot;</span>, address: { city } } = person;
+console.<span class="tk-f">log</span>(name, years, email, city);
+
+<span class="tk-k">const</span> [first, second = <span class="tk-n">0</span>, ...others] = [<span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">40</span>];
+console.<span class="tk-f">log</span>(first, second, others);
+
+<span class="tk-k">let</span> a = <span class="tk-n">1</span>, b = <span class="tk-n">2</span>;
+[a, b] = [b, a];                       <span class="tk-c">// swap</span>
+console.<span class="tk-f">log</span>(a, b);</code></pre></div>
+<p><code>age: years</code> renames; <code>= &quot;none&quot;</code> gives a default when the property is <code>undefined</code>; nested patterns reach inside.</p>
+<p>It is especially useful in parameters:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">formatUser</span>({ name, age, city = <span class="tk-s">&quot;unknown&quot;</span> }) {
+  <span class="tk-k">return</span> <span class="tk-s">`${name}, ${age}, ${city}`</span>;
+}
+console.<span class="tk-f">log</span>(<span class="tk-f">formatUser</span>({ name: <span class="tk-s">&quot;Grace&quot;</span>, age: <span class="tk-n">85</span> }));</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-arrays-and-array-methods/"><span class="mono">previous</span><b>2.02 Arrays and Array Methods</b></a>
+      <a class="lp-next" href="../2-04-scope-and-closures/"><span class="mono">next</span><b>2.04 Scope and Closures</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/2-03-objects-and-destructuring"></script>
+</body>
+</html>

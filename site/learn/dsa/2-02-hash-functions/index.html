@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Hash Functions · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/2-02-hash-functions/">
+  <meta name="description" content="Turning keys into numbers - what a hash function must and should do, from keys to bucket indexes, why naive hashes cluster, polynomial string hashing,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hash Functions · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Turning keys into numbers - what a hash function must and should do, from keys to bucket indexes, why naive hashes cluster, polynomial string hashing,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/2-02-hash-functions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Hash Functions · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hash Functions · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Turning keys into numbers - what a hash function must and should do, from keys to bucket indexes, why naive hashes cluster, polynomial string hashing,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Searching and Hashing</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Hash Functions</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 5 in milestone 2</span><span>8 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Turning keys into numbers - what a hash function must and should do, from keys to bucket indexes, why naive hashes cluster, polynomial string hashing, FNV-1a, std::hash and how to hash your own types, combining hashes, collisions and the birthday paradox, and hash flooding attacks.</p>
+      <div class="prose">
+<h2>From keys to positions</h2>
+<p>Binary search finds a key in O(log n). A <strong>hash table</strong> aims for O(1) on average, by computing where a key should be instead of searching for it. The computation is a <strong>hash function</strong>: it turns a key (a number, a string, a point) into a big number, the <strong>hash</strong>, and the table takes it modulo its number of slots, the <strong>buckets</strong>:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>bucket = hash(key) % bucketCount</code></pre></div>
+<p>If every key landed in its own bucket, lookup would be a single step. Different keys that land in the same bucket are a <strong>collision</strong>, and lessons 2.03 and 2.04 show the two ways to handle them.</p>
+<h2>What a hash function needs</h2>
+<p><strong>It must be deterministic and consistent with equality</strong>: equal keys must always give equal hashes. If <code>a == b</code> but <code>hash(a) != hash(b)</code>, the table looks in the wrong bucket and never finds <code>a</code>. (The reverse is not required: different keys may share a hash.)</p>
+<p><strong>It should spread keys evenly</strong> over the buckets, including keys that are similar or follow patterns, like <code>&quot;item1&quot;</code>, <code>&quot;item2&quot;</code>, ... or multiples of 1000.</p>
+<p><strong>It should be fast</strong>, since every lookup computes it.</p>
+<h2>Bad hashes and what goes wrong</h2>
+<p>Summing the characters of a string is a classic bad hash: <code>&quot;stop&quot;</code>, <code>&quot;pots&quot;</code>, <code>&quot;tops&quot;</code> and <code>&quot;spot&quot;</code> all collide, and every short word lands in a few hundred buckets at most, however big the table is.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;set&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span> <span class="tk-f">sumHash</span>(<span class="tk-k">const</span> std::string&amp; s)
+{
+    <span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span> h = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">unsigned</span> <span class="tk-k">char</span> c : s) h += c;
+    <span class="tk-k">return</span> h;
+}
+
+<span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span> <span class="tk-f">polyHash</span>(<span class="tk-k">const</span> std::string&amp; s)
+{
+    <span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span> h = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">unsigned</span> <span class="tk-k">char</span> c : s) h = h * <span class="tk-n">31</span> + c;        <span class="tk-c">// position matters</span>
+    <span class="tk-k">return</span> h;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;std::string&gt; keys;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">10000</span>; ++i) keys.<span class="tk-f">push_back</span>(<span class="tk-s">&quot;user&quot;</span> + std::<span class="tk-f">to_string</span>(i));
+
+    <span class="tk-k">for</span> (<span class="tk-k">auto</span> [name, hash] : { std::pair{ <span class="tk-s">&quot;sum of characters&quot;</span>, &amp;sumHash }, std::pair{ <span class="tk-s">&quot;polynomial&quot;</span>, &amp;polyHash } })
+    {
+        std::set&lt;<span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span>&gt; buckets;
+        <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; k : keys) buckets.<span class="tk-f">insert</span>(<span class="tk-f">hash</span>(k) % <span class="tk-n">10007</span>);
+        std::cout &lt;&lt; name &lt;&lt; <span class="tk-s">&quot;: 10000 keys used &quot;</span> &lt;&lt; buckets.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; of 10007 buckets\n&quot;</span>;
+    }
+}</code></pre></div>
+<p>Placing 10,000 keys in 10,007 buckets at random would use about 63% of them (some buckets get two or three keys, so others stay empty). The polynomial hash does even better on these regular keys, using about 80%. The sum uses fewer than a hundred buckets, so its chains would be over a hundred keys long.</p>
+<p>Integer keys have their own trap: <code>key % bucketCount</code> is a fine hash for random integers, but if the keys are all multiples of 8 and the bucket count is 64, only 8 buckets are ever used. That is why some tables use a <strong>prime</strong> number of buckets, and others scramble the integer first.</p>
+<h2>Polynomial string hashing</h2>
+<p>The polynomial hash treats the string as the digits of a number in base <code>B</code>:</p>
+<p>hash(s) = s₀·Bⁿ⁻¹ + s₁·Bⁿ⁻² + ... + sₙ₋₁</p>
+<p>computed left to right as <code>h = h * B + c</code> (Horner&#39;s rule). With <code>unsigned</code> arithmetic the result wraps modulo 2⁶⁴, which is well defined in C++. Java&#39;s <code>String.hashCode</code> is exactly this with B = 31 and 32-bit wrapping.</p>
+<p>A useful property: the hash of a <strong>sliding window</strong> can be updated in O(1) by removing the first character&#39;s contribution and adding the next one. Lesson 6.04 uses this rolling hash for string matching (the Rabin-Karp algorithm).</p>
+<h2>FNV-1a</h2>
+<p><strong>FNV-1a</strong> is a simple, fast and well-spread hash for bytes: start from a fixed &quot;offset basis&quot;, and for each byte, XOR it in and multiply by a fixed prime.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdint&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string_view&gt;</span>
+
+std::uint64_t <span class="tk-f">fnv1a</span>(std::string_view text)
+{
+    std::uint64_t h = <span class="tk-n">14695981039346656037ULL</span>;      <span class="tk-c">// the 64-bit offset basis</span>
+    <span class="tk-k">for</span> (<span class="tk-k">unsigned</span> <span class="tk-k">char</span> c : text)
+    {
+        h ^= c;
+        h *= <span class="tk-n">1099511628211ULL</span>;                       <span class="tk-c">// the 64-bit FNV prime</span>
+    }
+    <span class="tk-k">return</span> h;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (std::string_view s : { <span class="tk-s">&quot;&quot;</span>, <span class="tk-s">&quot;a&quot;</span>, <span class="tk-s">&quot;b&quot;</span>, <span class="tk-s">&quot;stop&quot;</span>, <span class="tk-s">&quot;pots&quot;</span> }) std::cout &lt;&lt; <span class="tk-s">'&quot;'</span> &lt;&lt; s &lt;&lt; <span class="tk-s">&quot;\&quot; -&gt; &quot;</span> &lt;&lt; <span class="tk-f">fnv1a</span>(s) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>Notice how <code>&quot;a&quot;</code> and <code>&quot;b&quot;</code> give completely different hashes even though they differ by one bit. That <strong>avalanche</strong> behaviour is what makes a hash spread similar keys apart.</p>
+<h2>std::hash and your own types</h2>
+<p><code>std::unordered_map</code> and <code>std::unordered_set</code> use <code>std::hash&lt;Key&gt;</code>, which the library provides for numbers, pointers, <code>std::string</code> and <code>std::string_view</code>. For your own types, provide a hash yourself and an <code>operator==</code>. The simplest way is a function object passed as a template argument:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstddef&gt;</span>
+<span class="tk-p">#include &lt;functional&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;unordered_set&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Point</span>
+{
+    <span class="tk-k">int</span> x, y;
+    <span class="tk-k">bool</span> <span class="tk-k">operator</span>==(<span class="tk-k">const</span> <span class="tk-t">Point</span>&amp;) <span class="tk-k">const</span> = <span class="tk-k">default</span>;
+};
+
+std::size_t <span class="tk-f">hashCombine</span>(std::size_t seed, std::size_t value)
+{
+    <span class="tk-k">return</span> seed ^ (value + <span class="tk-n">0x9e3779b97f4a7c15ULL</span> + (seed &lt;&lt; <span class="tk-n">6</span>) + (seed &gt;&gt; <span class="tk-n">2</span>));
+}
+
+<span class="tk-k">struct</span> <span class="tk-t">PointHash</span>
+{
+    std::size_t <span class="tk-k">operator</span>()(<span class="tk-k">const</span> <span class="tk-t">Point</span>&amp; p) <span class="tk-k">const</span>
+    {
+        <span class="tk-k">return</span> <span class="tk-f">hashCombine</span>(std::hash&lt;<span class="tk-k">int</span>&gt;{}(p.x), std::hash&lt;<span class="tk-k">int</span>&gt;{}(p.y));
+    }
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::unordered_set&lt;<span class="tk-t">Point</span>, <span class="tk-t">PointHash</span>&gt; visited;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">5</span>; ++i) visited.<span class="tk-f">insert</span>({ i % <span class="tk-n">3</span>, i % <span class="tk-n">2</span> });
+    std::cout &lt;&lt; visited.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot; distinct points; contains (1,1)? &quot;</span> &lt;&lt; visited.<span class="tk-f">count</span>({ <span class="tk-n">1</span>, <span class="tk-n">1</span> }) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>Combining hashes with plain XOR (<code>hx ^ hy</code>) is tempting but bad: <code>(1, 2)</code> and <code>(2, 1)</code> collide, and so does every point with <code>x == y</code> (they all hash to 0). The <code>hashCombine</code> formula above (from the Boost library) mixes the bits so that order matters.</p>
+<h2>Collisions are unavoidable: the birthday paradox</h2>
+<p>How many people must be in a room before two probably share a birthday? Only 23. In general, with <code>m</code> buckets, you expect the first collision after about <strong>√(πm/2)</strong> keys. With a million buckets, that is about 1,250 keys. Collisions are not a sign of a bad hash; they are certain, and a hash table must handle them. A good hash only keeps them <strong>evenly spread</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;random&gt;</span>
+<span class="tk-p">#include &lt;unordered_set&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::mt19937_64 <span class="tk-f">rng</span>(<span class="tk-n">42</span>);
+    <span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span> buckets = <span class="tk-n">1'000'000</span>;
+    <span class="tk-k">double</span> total = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> trial = <span class="tk-n">0</span>; trial &lt; <span class="tk-n">200</span>; ++trial)
+    {
+        std::unordered_set&lt;<span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-k">long</span>&gt; used;
+        <span class="tk-k">int</span> keys = <span class="tk-n">0</span>;
+        <span class="tk-k">while</span> (used.<span class="tk-f">insert</span>(<span class="tk-f">rng</span>() % buckets).second) ++keys;
+        total += keys + <span class="tk-n">1</span>;
+    }
+    std::cout &lt;&lt; <span class="tk-s">&quot;first collision after &quot;</span> &lt;&lt; total / <span class="tk-n">200</span> &lt;&lt; <span class="tk-s">&quot; keys on average (theory: about 1253)\n&quot;</span>;
+}</code></pre></div>
+<h2>Hash flooding</h2>
+<p>If an attacker knows your hash function, they can send thousands of keys that all land in the same bucket, turning every O(1) operation into O(n) and a web server&#39;s request handling into O(n²). This <strong>hash flooding</strong> attack took down many web frameworks in 2011. Defences include <strong>seeded</strong> hash functions (SipHash, with a random key chosen at start-up), which Python, Rust and many others use by default, and tables that switch a long bucket into a balanced tree (Java&#39;s <code>HashMap</code>). <code>std::hash</code> is not seeded on the common implementations, so do not use <code>std::unordered_map</code> with keys chosen by untrusted users in performance-critical servers without care.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which property is required (not just desirable) of a hash function?</div><ul><li>Equal keys always produce equal hashes</li><li>Different keys always produce different hashes</li><li>It is a cryptographic hash</li><li>It returns a prime number</li></ul><details><summary>Show the answer</summary><p><b>Equal keys always produce equal hashes</b> If equal keys could hash differently, lookups would search the wrong bucket. Different keys sharing a hash is allowed.</p></details></li><li><div class="q">Why is hashing a point as hash(x) ^ hash(y) a poor choice?</div><ul><li>XOR is slow</li><li>(1, 2) and (2, 1) collide, and every point with x == y hashes to 0</li><li>XOR cannot be used on size_t</li><li>It is not deterministic</li></ul><details><summary>Show the answer</summary><p><b>(1, 2) and (2, 1) collide, and every point with x == y hashes to 0</b> XOR is symmetric and cancels equal values, so structured keys collide a lot.</p></details></li><li><div class="q">With 365 buckets, about how many random keys until the first collision is likely?</div><ul><li>183</li><li>365</li><li>about 23</li><li>2</li></ul><details><summary>Show the answer</summary><p><b>about 23</b> The birthday paradox: about the square root of the bucket count.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>A hash function maps a key to a number; <code>hash % buckets</code> picks the bucket.</li>
+<li>It must agree with equality, and should spread similar keys evenly and be fast.</li>
+<li>Polynomial hashing and FNV-1a are simple, good string hashes; combine field hashes with a mixing formula, not plain XOR.</li>
+<li>Collisions are certain (the birthday paradox): tables must handle them.</li>
+<li>Unseeded hashes are open to flooding attacks; seeded hashes like SipHash defend against them.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-binary-search-and-its-variants/"><span class="mono">previous</span><b>2.01 Binary Search and Its Variants</b></a>
+      <a class="lp-next" href="../2-03-hash-tables-with-chaining/"><span class="mono">next</span><b>2.03 Hash Tables with Chaining</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/2-02-hash-functions"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Requests and Responses · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/1-02-requests-and-responses/">
+  <meta name="description" content="The parts of an HTTP request and response as an API client sees them - method, URL with path and query, headers such as Content-Type, Accept and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Requests and Responses · Working with APIs · Xenon">
+  <meta property="og:description" content="The parts of an HTTP request and response as an API client sees them - method, URL with path and query, headers such as Content-Type, Accept and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/1-02-requests-and-responses/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Requests and Responses · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Requests and Responses · Working with APIs · Xenon">
+  <meta name="twitter:description" content="The parts of an HTTP request and response as an API client sees them - method, URL with path and query, headers such as Content-Type, Accept and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>HTTP and JSON</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Requests and Responses</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.02</b></span><span>2 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The parts of an HTTP request and response as an API client sees them - method, URL with path and query, headers such as Content-Type, Accept and Authorization, the body, status codes and their families, response headers worth reading, and timeouts.</p>
+      <div class="prose">
+<h2>The request</h2>
+<p>Every call you make is an HTTP request with four parts:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>POST /v1/books?notify=true HTTP/1.1
+Host: api.example.com
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer abc123
+
+{&quot;title&quot;: &quot;Dune&quot;, &quot;year&quot;: 1965}</code></pre></div>
+<ul>
+<li>The <strong>method</strong> and the <strong>URL</strong>: scheme and host (<code>https://api.example.com</code>), <strong>path</strong> (<code>/v1/books</code>) and <strong>query string</strong> (<code>?notify=true</code>), name-value pairs after the <code>?</code>, separated by <code>&amp;</code>.</li>
+<li><strong>Headers</strong>: metadata. <code>Content-Type</code> says what the body is; <code>Accept</code> says what you want back; <code>Authorization</code> carries your credentials (milestone 2); <code>User-Agent</code> names your program; <code>Idempotency-Key</code> (milestone 3) makes a retry safe.</li>
+<li>The <strong>body</strong>: the data you send, for <code>POST</code>, <code>PUT</code> and <code>PATCH</code>. For JSON APIs, a JSON document.</li>
+</ul>
+<h2>The response</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>HTTP/1.1 201 Created
+Content-Type: application/json
+Location: /v1/books/77
+X-Request-Id: 9f2c1e
+
+{&quot;id&quot;: 77, &quot;title&quot;: &quot;Dune&quot;, &quot;year&quot;: 1965}</code></pre></div>
+<p>The <strong>status code</strong> is the first thing to check. Its first digit is its family:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Meaning</th>
+<th>Common codes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2xx</td>
+<td>success</td>
+<td>200 OK, 201 Created, 202 Accepted, 204 No Content</td>
+</tr>
+<tr>
+<td>3xx</td>
+<td>go elsewhere</td>
+<td>301 Moved Permanently, 304 Not Modified (lesson 3.05)</td>
+</tr>
+<tr>
+<td>4xx</td>
+<td><strong>your</strong> request is wrong</td>
+<td>400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 422 Unprocessable, 429 Too Many Requests</td>
+</tr>
+<tr>
+<td>5xx</td>
+<td>the <strong>server</strong> failed</td>
+<td>500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout</td>
+</tr>
+</tbody></table>
+</div>
+<p>The distinction between 4xx and 5xx drives your error handling: repeating a 4xx request unchanged gives the same error (fix the request), while a 5xx or a 429 may succeed if you <strong>retry later</strong> (milestone 3).</p>
+<p>Response headers worth reading: <code>Content-Type</code> (is it really JSON?), <code>Location</code> (where a created resource lives), <code>Retry-After</code> (how long to wait), <code>ETag</code> (lesson 3.05), rate-limit headers, and a request id such as <code>X-Request-Id</code>, which you should log: it is what the API&#39;s support team asks for.</p>
+<h2>Error bodies</h2>
+<p>Most APIs also put details of an error in the body, often in a documented shape:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JSON</span></div><pre><code>{&quot;error&quot;: {&quot;code&quot;: &quot;invalid_year&quot;, &quot;message&quot;: &quot;year must be between 0 and 2100&quot;, &quot;field&quot;: &quot;year&quot;}}</code></pre></div>
+<p>Your client should surface the status, the API&#39;s error code and message, and the request id, rather than a bare &quot;request failed&quot;.</p>
+<h2>Timeouts</h2>
+<p>A request without a timeout can hang <strong>forever</strong> if the server or network stalls. Always pass one: <code>urlopen(url, timeout=10)</code> or <code>requests.get(url, timeout=(3, 10))</code> (connect and read timeouts). Choose it from what your program can afford to wait, and treat a timeout like a 5xx: maybe retry, maybe give up.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/1.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/1.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-01-what-a-web-api-is/"><span class="mono">previous</span><b>1.01 What a Web API Is</b></a>
+      <a class="lp-next" href="../1-03-json-in-python/"><span class="mono">next</span><b>1.03 JSON in Python</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/1-02-requests-and-responses"></script>
+</body>
+</html>

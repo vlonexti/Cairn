@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Complexity and Invalidation · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/2-03-complexity-and-invalidation/">
+  <meta name="description" content="Two promises every container page makes - how cost grows (constant, amortised constant, logarithmic, linear) and which iterators, pointers and references…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Complexity and Invalidation · Reading Documentation · Xenon">
+  <meta property="og:description" content="Two promises every container page makes - how cost grows (constant, amortised constant, logarithmic, linear) and which iterators, pointers and references…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/2-03-complexity-and-invalidation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Complexity and Invalidation · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Complexity and Invalidation · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="Two promises every container page makes - how cost grows (constant, amortised constant, logarithmic, linear) and which iterators, pointers and references…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>The C++ Standard Library Reference</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Complexity and Invalidation</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 4 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Two promises every container page makes - how cost grows (constant, amortised constant, logarithmic, linear) and which iterators, pointers and references stay valid after each operation - how to read the invalidation rules, and the bugs that come from ignoring them.</p>
+      <div class="prose">
+<h2>Complexity is a guarantee</h2>
+<p>Every function page on cppreference ends its description with <strong>Complexity</strong>. It is not a hint, it is a promise the library must keep, and it decides which container and which function you choose:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phrase</th>
+<th>Means</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>constant</td>
+<td>the same cost whatever the size</td>
+<td><code>vector::operator[]</code>, <code>vector::size</code></td>
+</tr>
+<tr>
+<td><strong>amortised</strong> constant</td>
+<td>usually constant, occasionally expensive, constant on average</td>
+<td><code>vector::push_back</code> (sometimes reallocates)</td>
+</tr>
+<tr>
+<td>logarithmic</td>
+<td>grows slowly, like a binary search</td>
+<td><code>map::find</code>, <code>std::lower_bound</code></td>
+</tr>
+<tr>
+<td>linear in <code>n</code></td>
+<td>proportional to the size</td>
+<td><code>std::find</code>, <code>vector::insert</code> in the middle</td>
+</tr>
+<tr>
+<td>average constant, worst linear</td>
+<td>hash tables</td>
+<td><code>unordered_map::find</code></td>
+</tr>
+<tr>
+<td><code>O(n log n)</code> comparisons</td>
+<td>sorting</td>
+<td><code>std::sort</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Read the exact wording: &quot;linear in the distance between <code>pos</code> and the end&quot; (inserting near the end of a vector is cheap), &quot;exactly <code>N</code> applications of the predicate&quot; (you can count on side effects happening exactly once each).</p>
+<h2>Invalidation: when your iterators go bad</h2>
+<p>Iterators, pointers and references into a container can become <strong>invalid</strong> when the container changes. Using an invalid one is undefined behaviour (lesson 1.04): it may read freed memory, read the wrong element, or crash. Each modifying function&#39;s page says what it invalidates, and the container pages have a summary table. For the containers you use most:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Container</th>
+<th>Operation</th>
+<th>Invalidated</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>vector</code>, <code>string</code></td>
+<td><code>push_back</code>, <code>insert</code>, <code>reserve</code> <strong>if capacity changes</strong></td>
+<td><strong>all</strong> iterators, pointers, references</td>
+</tr>
+<tr>
+<td><code>vector</code>, <code>string</code></td>
+<td><code>insert</code>/<code>push_back</code> without reallocation</td>
+<td>those at or after the insertion point (and <code>end()</code>)</td>
+</tr>
+<tr>
+<td><code>vector</code></td>
+<td><code>erase</code></td>
+<td>those at or after the erased element</td>
+</tr>
+<tr>
+<td><code>deque</code></td>
+<td>insert at either end</td>
+<td>all iterators, but <strong>not</strong> references</td>
+</tr>
+<tr>
+<td><code>list</code>, <code>map</code>, <code>set</code></td>
+<td>insert</td>
+<td><strong>nothing</strong></td>
+</tr>
+<tr>
+<td><code>list</code>, <code>map</code>, <code>set</code></td>
+<td>erase</td>
+<td>only the erased element</td>
+</tr>
+<tr>
+<td><code>unordered_map</code></td>
+<td>insert causing a rehash</td>
+<td>all iterators, but not references</td>
+</tr>
+</tbody></table>
+</div>
+<h2>The classic bugs</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// 1. Growing a vector while iterating over it</span>
+<span class="tk-k">for</span> (<span class="tk-k">int</span> x : v)
+    <span class="tk-k">if</span> (x % <span class="tk-n">2</span> == <span class="tk-n">0</span>) v.<span class="tk-f">push_back</span>(x);       <span class="tk-c">// push_back may reallocate: the loop's iterators dangle</span>
+
+<span class="tk-c">// 2. Keeping a reference across a push_back</span>
+<span class="tk-k">int</span>&amp; first{ v[<span class="tk-n">0</span>] };
+v.<span class="tk-f">push_back</span>(<span class="tk-n">7</span>);                           <span class="tk-c">// may reallocate</span>
+std::cout &lt;&lt; first;                       <span class="tk-c">// may read freed memory</span>
+
+<span class="tk-c">// 3. Erasing in a loop the wrong way</span>
+<span class="tk-k">for</span> (<span class="tk-k">auto</span> it{ v.<span class="tk-f">begin</span>() }; it != v.<span class="tk-f">end</span>(); ++it)
+    <span class="tk-k">if</span> (*it &lt; <span class="tk-n">0</span>) v.<span class="tk-f">erase</span>(it);             <span class="tk-c">// 'it' is invalid after erase; ++it is undefined</span></code></pre></div>
+<p>The fixes come straight from the pages:</p>
+<ul>
+<li><code>erase</code> <strong>returns</strong> an iterator to the element after the erased one: <code>it = v.erase(it);</code> and only <code>++it</code> when you did not erase.</li>
+<li>Better still, <code>std::erase_if(v, pred)</code> (C++20) removes all matching elements in one linear pass.</li>
+<li>For growing while reading, loop over <strong>indices</strong> up to the <em>original</em> size, or build the new elements in a separate vector and append them afterwards.</li>
+<li><code>reserve</code> before taking pointers, if the page&#39;s guarantee is what you need: &quot;no reallocation takes place until the size exceeds the capacity&quot;.</li>
+</ul>
+<p>Microsoft&#39;s debug library checks many of these and stops the program with a debug assertion about an invalid or incompatible iterator. The release build does not check: the bug is still there, just silent.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-return-values-and-error-reporting/"><span class="mono">previous</span><b>2.02 Return Values and Error Reporting</b></a>
+      <a class="lp-next" href="../2-04-versions-and-feature-tests/"><span class="mono">next</span><b>2.04 Versions and Feature Tests</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/2-03-complexity-and-invalidation"></script>
+</body>
+</html>

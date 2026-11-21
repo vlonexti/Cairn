@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Pointers as Parameters · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/3-03-pointers-as-parameters/">
+  <meta name="description" content="Passing a variable's address lets a function change it, which is how swap works and why scanf needs &amp;. Out-parameters return extra results, with the return…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pointers as Parameters · C · Xenon">
+  <meta property="og:description" content="Passing a variable's address lets a function change it, which is how swap works and why scanf needs &amp;. Out-parameters return extra results, with the return…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/3-03-pointers-as-parameters/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pointers as Parameters · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pointers as Parameters · C · Xenon">
+  <meta name="twitter:description" content="Passing a variable's address lets a function change it, which is how swap works and why scanf needs &amp;. Out-parameters return extra results, with the return…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>Pointers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Pointers as Parameters</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Passing a variable&#39;s address lets a function change it, which is how swap works and why scanf needs &amp;. Out-parameters return extra results, with the return value saying whether it worked. Never return the address of a local variable - it dies when the function returns.</p>
+      <div class="prose">
+<h2>Changing the caller&#39;s variables</h2>
+<p>Arguments are copies (lesson 2.02). To let a function change a variable, give it the variable&#39;s <strong>address</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">swap</span>(<span class="tk-k">int</span> *a, <span class="tk-k">int</span> *b)
+{
+    <span class="tk-k">int</span> temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> x = <span class="tk-n">1</span>, y = <span class="tk-n">2</span>;
+    <span class="tk-f">swap</span>(&amp;x, &amp;y);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;x=%d y=%d\n&quot;</span>, x, y);    <span class="tk-c">// x=2 y=1</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The pointers are copies too, but copies of an address still lead to the same variables.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/c/l/3.03">Try it in Xenon</a></div>
+<p>This is also why <code>scanf(&quot;%d&quot;, &amp;n)</code> needs the <code>&amp;</code>: scanf has to store into your variable, so it needs its address.</p>
+<h2>Out-parameters</h2>
+<p>A function returns one value. For more, the caller passes addresses where the extra results go. The return value usually says whether it worked:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdbool.h&gt;</span>
+
+<span class="tk-k">bool</span> <span class="tk-f">divide</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b, <span class="tk-k">int</span> *quotient, <span class="tk-k">int</span> *remainder)
+{
+    <span class="tk-k">if</span> (b == <span class="tk-n">0</span>) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+    *quotient = a / b;
+    *remainder = a % b;
+    <span class="tk-k">return</span> <span class="tk-k">true</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> q = <span class="tk-n">0</span>, r = <span class="tk-n">0</span>;
+    <span class="tk-k">if</span> (<span class="tk-f">divide</span>(<span class="tk-n">17</span>, <span class="tk-n">5</span>, &amp;q, &amp;r)) {
+        <span class="tk-f">printf</span>(<span class="tk-s">&quot;17 = 5 x %d + %d\n&quot;</span>, q, r);
+    }
+    <span class="tk-k">if</span> (!<span class="tk-f">divide</span>(<span class="tk-n">1</span>, <span class="tk-n">0</span>, &amp;q, &amp;r)) {
+        <span class="tk-f">printf</span>(<span class="tk-s">&quot;cannot divide by zero\n&quot;</span>);
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The standard library does this everywhere: <code>strtol(text, &amp;end, 10)</code> returns the number and stores where it stopped in <code>end</code>.</p>
+<div class="callout tip"><div class="callout-title"><span>Optional outputs</span></div><div class="callout-body"><p>Let the caller pass <code>NULL</code> for a result it does not want, and check before writing: <code>if (remainder != NULL) *remainder = a % b;</code>.</p>
+</div></div>
+<h2>Pointers to big things</h2>
+<p>Copying a large structure into a parameter takes time; passing its address costs 8 bytes. <code>const</code> (next lesson) says the function only reads through it: <code>void print_report(const struct report *r)</code>.</p>
+<h2>Never return a local&#39;s address</h2>
+<div class="callout danger"><div class="callout-title"><span>Dangling pointers</span></div><div class="callout-body">
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">int</span> *<span class="tk-f">broken</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> result = <span class="tk-n">42</span>;
+    <span class="tk-k">return</span> &amp;result;      <span class="tk-c">// result dies when the function returns</span>
+}</code></pre></div>
+<p>The caller gets the address of a stack frame that is already gone. The next function call reuses that memory, and the &quot;42&quot; turns into something else. GCC warns: &quot;function returns address of local variable&quot;. A function can return pointers to: the caller&#39;s memory (that it was given), static or global variables, string literals, or memory from <code>malloc</code> (lesson 4.01).</p>
+</div></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does scanf need &amp;n rather than n?</div><ul><li>It has to store the number into n, so it needs n&#39;s address</li><li>&amp; converts the text to a number</li><li>It reads n&#39;s old value first</li></ul><details><summary>Show the answer</summary><p><b>It has to store the number into n, so it needs n&#39;s address</b> Without the address, scanf would only get a copy.</p></details></li><li><div class="q">swap(int *a, int *b) is called as swap(&amp;x, &amp;y). Inside, what is *a?</div><ul><li>x itself</li><li>A copy of x</li><li>The address of x</li></ul><details><summary>Show the answer</summary><p><b>x itself</b> a is the address; *a is the variable at that address.</p></details></li><li><div class="q">What is wrong with returning the address of a local variable?</div><ul><li>The local stops existing when the function returns</li><li>Locals have no address</li><li>Nothing, it is common practice</li></ul><details><summary>Show the answer</summary><p><b>The local stops existing when the function returns</b> It leaves a dangling pointer.</p></details></li><li><div class="q">How do functions usually report whether an out-parameter was filled?</div><ul><li>Through their return value, such as true or false</li><li>By setting it to -1</li><li>They cannot</li></ul><details><summary>Show the answer</summary><p><b>Through their return value, such as true or false</b> Like divide above, or scanf&#39;s count.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-pointers-and-arrays/"><span class="mono">previous</span><b>3.02 Pointers and Arrays</b></a>
+      <a class="lp-next" href="../3-04-const-and-pointers/"><span class="mono">next</span><b>3.04 const and Pointers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/3-03-pointers-as-parameters"></script>
+</body>
+</html>

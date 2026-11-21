@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Writing Documentation Others Can Use · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/5-04-writing-documentation-others-can-use/">
+  <meta name="description" content="Turning everything this course taught about reading documentation into writing it - doc comments that state the contract, what every function's documentation…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Writing Documentation Others Can Use · Reading Documentation · Xenon">
+  <meta property="og:description" content="Turning everything this course taught about reading documentation into writing it - doc comments that state the contract, what every function's documentation…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/5-04-writing-documentation-others-can-use/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Writing Documentation Others Can Use · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Writing Documentation Others Can Use · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="Turning everything this course taught about reading documentation into writing it - doc comments that state the contract, what every function's documentation…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>From Docs to Working Code</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Writing Documentation Others Can Use</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 4 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Turning everything this course taught about reading documentation into writing it - doc comments that state the contract, what every function&#39;s documentation must answer, examples that are correct, READMEs that get someone started, changelogs, and keeping documentation true as the code changes.</p>
+      <div class="prose">
+<h2>Write the page you wished you had</h2>
+<p>Every frustration in this course came from documentation that left something out: the return value when the buffer is too small, the difference between missing and invalid, the version a feature arrived in. When you write code others use (including yourself in six months), write the documentation that would have saved you that time.</p>
+<h2>Doc comments that state the contract</h2>
+<p>For each public function, the comment should answer the questions of lesson 1.02, in a few lines:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">/// Reads a whole file into memory.</span>
+<span class="tk-c">///</span>
+<span class="tk-c">/// @param path  the file to read; may be relative to the current directory.</span>
+<span class="tk-c">/// @return the file's contents, or std::nullopt if the file cannot be opened</span>
+<span class="tk-c">///         or a read fails part way. An empty file gives an empty string.</span>
+<span class="tk-c">/// @throws std::bad_alloc if the file does not fit in memory.</span>
+<span class="tk-c">/// @note Not safe to call while another thread writes the same file.</span>
+std::optional&lt;std::string&gt; <span class="tk-f">readWholeFile</span>(<span class="tk-k">const</span> std::filesystem::path&amp; path);</code></pre></div>
+<p>A checklist for each function:</p>
+<ul>
+<li><strong>What</strong> it does, in one sentence starting with a verb.</li>
+<li><strong>Each parameter</strong>: meaning, units (bytes or characters, seconds or milliseconds), allowed values, whether null or empty is allowed.</li>
+<li><strong>The result</strong> in every case, including the empty, missing and failed ones.</li>
+<li><strong>Errors</strong>: exceptions, error codes, what state things are left in.</li>
+<li><strong>Preconditions</strong> the caller must meet, and what happens if they do not.</li>
+<li><strong>Ownership and lifetime</strong> of anything returned by pointer or reference.</li>
+<li><strong>Thread safety</strong> and <strong>complexity</strong>, when they are not obvious.</li>
+</ul>
+<p>Leave out what the signature already says (&quot;<code>count</code>: the count&quot;), and do not describe the implementation: say <em>what</em>, not <em>how</em>, so you can change the how.</p>
+<h2>Examples that are correct</h2>
+<p>An example in documentation is copied more than anything else you write (lesson 5.01), so:</p>
+<ul>
+<li>make it <strong>compile and run</strong>, ideally by building it as part of your tests;</li>
+<li>handle errors in it, or say plainly that it skips them for brevity;</li>
+<li>show the most <strong>common</strong> use first, then the tricky ones.</li>
+</ul>
+<h2>README and the four kinds</h2>
+<p>A project&#39;s <strong>README</strong> is often the only page someone reads. It should say, in order: what the project does and for whom, how to install or build it, a minimal example that works, where the full documentation is, and the licence. Beyond that, keep the four kinds of documentation from lesson 1.01 apart: a tutorial for newcomers, how-to guides for tasks, the reference generated from your doc comments, and explanation for the design decisions.</p>
+<h2>Changelogs</h2>
+<p>Keep a <code>CHANGELOG.md</code> with one section per release and entries under <strong>Added</strong>, <strong>Changed</strong>, <strong>Deprecated</strong>, <strong>Removed</strong>, <strong>Fixed</strong>, <strong>Security</strong>. Write each entry for the person upgrading: what changed and what they must do about it. Mark breaking changes clearly, and match them to your version numbers (a breaking change means a new major version under Semantic Versioning).</p>
+<h2>Keeping it true</h2>
+<p>Documentation that is wrong is worse than none, because people trust it. Habits that keep it true:</p>
+<ul>
+<li>Change the doc comment <strong>in the same commit</strong> as the behaviour.</li>
+<li>Let <strong>tests</strong> check the claims you can test: every documented error case is a test case.</li>
+<li>Compile the examples.</li>
+<li>When someone asks a question the docs should have answered, <strong>fix the docs</strong>, not just the person&#39;s question.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-when-the-docs-are-wrong-or-missing/"><span class="mono">previous</span><b>5.03 When the Docs Are Wrong or Missing</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/5-04-writing-documentation-others-can-use"></script>
+</body>
+</html>

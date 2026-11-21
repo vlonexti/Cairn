@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Process and Thread Notifications · Windows Kernel Driver Development · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/kernel/4-01-process-and-thread-notifications/">
+  <meta name="description" content="Windows lets drivers observe system events through documented callbacks - process creation and exit, thread creation and exit, and image loads. This lesson…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Process and Thread Notifications · Windows Kernel Driver Development · Xenon">
+  <meta property="og:description" content="Windows lets drivers observe system events through documented callbacks - process creation and exit, thread creation and exit, and image loads. This lesson…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/kernel/4-01-process-and-thread-notifications/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Process and Thread Notifications · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Process and Thread Notifications · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:description" content="Windows lets drivers observe system events through documented callbacks - process creation and exit, thread creation and exit, and image loads. This lesson…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Kernel Driver Development</a><span>/</span><span>Observing the System</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Process and Thread Notifications</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 3 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Windows lets drivers observe system events through documented callbacks - process creation and exit, thread creation and exit, and image loads. This lesson registers them, explains the context they run in and what information they carry, and keeps the course&#39;s log driver strictly an observer.</p>
+      <div class="prose">
+<h2>Documented observation points</h2>
+<p>Security products, monitoring tools and system utilities need to know what happens on the machine. Instead of guessing, Windows provides <strong>notification callbacks</strong>, documented functions that call a driver when:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Callback</th>
+<th>Registered with</th>
+<th>Called when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Process</td>
+<td><code>PsSetCreateProcessNotifyRoutineEx</code></td>
+<td>A process is created or exits</td>
+</tr>
+<tr>
+<td>Thread</td>
+<td><code>PsSetCreateThreadNotifyRoutine</code></td>
+<td>A thread is created or exits</td>
+</tr>
+<tr>
+<td>Image load</td>
+<td><code>PsSetLoadImageNotifyRoutine</code></td>
+<td>An executable or DLL is mapped into a process</td>
+</tr>
+</tbody></table>
+</div>
+<p>They are the supported way to observe these events. The log driver in this milestone uses the process and thread callbacks to <strong>record</strong> events into project m03&#39;s ring buffer (with one more field, <code>extra</code>: the parent&#39;s id for a process start, the thread&#39;s id for thread events), and a user-mode viewer displays them. It observes only: it does not change, block or reach into any process.</p>
+<h2>The process callback</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">XenonProcessNotify</span>(PEPROCESS process, HANDLE processId, PPS_CREATE_NOTIFY_INFO info)
+{
+    <span class="tk-f">UNREFERENCED_PARAMETER</span>(process);
+    LARGE_INTEGER now;
+    <span class="tk-f">KeQuerySystemTimePrecise</span>(&amp;now);
+    <span class="tk-k">if</span> (info)                                          <span class="tk-c">// non-null: the process is being created</span>
+        g_ring.<span class="tk-f">push</span>(now.<span class="tk-t">QuadPart</span>, <span class="tk-f">HandleToULong</span>(processId), <span class="tk-t">KindProcessStart</span>, <span class="tk-f">HandleToULong</span>(info-&gt;<span class="tk-t">ParentProcessId</span>));
+    <span class="tk-k">else</span>                                               <span class="tk-c">// null: the process is exiting</span>
+        g_ring.<span class="tk-f">push</span>(now.<span class="tk-t">QuadPart</span>, <span class="tk-f">HandleToULong</span>(processId), <span class="tk-t">KindProcessExit</span>, <span class="tk-n">0</span>);
+}
+
+<span class="tk-c">// DriverEntry:</span>
+status = <span class="tk-f">PsSetCreateProcessNotifyRoutineEx</span>(<span class="tk-t">XenonProcessNotify</span>, FALSE);   <span class="tk-c">// FALSE: register</span>
+<span class="tk-c">// Unload:</span>
+<span class="tk-f">PsSetCreateProcessNotifyRoutineEx</span>(<span class="tk-t">XenonProcessNotify</span>, TRUE);             <span class="tk-c">// TRUE: remove</span></code></pre></div>
+<p><code>PS_CREATE_NOTIFY_INFO</code> describes the new process: its parent&#39;s id, the image file name, and the command line (as <code>UNICODE_STRING</code>s that are only valid during the callback: copy what you keep). The <code>Ex</code> version requires the driver to be linked with <code>/INTEGRITYCHECK</code>, which the project settings provide.</p>
+<h2>The thread callback</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">XenonThreadNotify</span>(HANDLE processId, HANDLE threadId, BOOLEAN create)
+{
+    g_ring.<span class="tk-f">push</span>(<span class="tk-f">now</span>(), <span class="tk-f">HandleToULong</span>(processId), create ? <span class="tk-t">KindThreadStart</span> : <span class="tk-t">KindThreadExit</span>, <span class="tk-f">HandleToULong</span>(threadId));
+}</code></pre></div>
+<h2>Where callbacks run</h2>
+<ul>
+<li>Process and thread callbacks run at <code>PASSIVE_LEVEL</code> (thread callbacks sometimes at <code>APC_LEVEL</code>), <strong>synchronously</strong> in the creating or exiting thread. Every process creation on the machine waits for your callback to return.</li>
+<li>So callbacks must be <strong>fast</strong>: record a few numbers into a non-paged ring buffer under a spin lock (or interlocked operations) and return. No file writing, no waiting, no allocation if avoidable.</li>
+<li>Many callbacks run at once on different processors: the ring buffer&#39;s lock (project m03) is essential.</li>
+</ul>
+<h2>The unload rule, again</h2>
+<p>A registered callback is a pointer the kernel will keep calling. <code>Unload</code> must <strong>remove every callback</strong> before anything else is freed; if removal fails (or is forgotten), the next process creation calls into unloaded memory and the machine bug-checks. Practice 1.04 and 3.04&#39;s checkers enforce exactly this order: unregister callbacks, then flush, then free.</p>
+<h2>Process ids and times</h2>
+<p>Process and thread ids are reused once a process has exited, so the viewer identifies processes by (id, start time) rather than id alone. <code>KeQuerySystemTimePrecise</code> returns a FILETIME-style UTC time (100 ns units since 1601, the Win32 course&#39;s lesson 2.03), which the viewer converts for display.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/kernel/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/kernel/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-lists-in-the-kernel/"><span class="mono">previous</span><b>3.05 Lists in the Kernel</b></a>
+      <a class="lp-next" href="../4-02-logging-and-tracing-from-a-driver/"><span class="mono">next</span><b>4.02 Logging and Tracing from a Driver</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/kernel/4-01-process-and-thread-notifications"></script>
+</body>
+</html>

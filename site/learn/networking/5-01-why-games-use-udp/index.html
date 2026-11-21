@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Why Games Use UDP · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/5-01-why-games-use-udp/">
+  <meta name="description" content="Why real-time games build their own protocol on UDP instead of using TCP - head-of-line blocking, the newest state making old data worthless - what a game…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Why Games Use UDP · Networking · Xenon">
+  <meta property="og:description" content="Why real-time games build their own protocol on UDP instead of using TCP - head-of-line blocking, the newest state making old data worthless - what a game…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/5-01-why-games-use-udp/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Why Games Use UDP · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Why Games Use UDP · Networking · Xenon">
+  <meta name="twitter:description" content="Why real-time games build their own protocol on UDP instead of using TCP - head-of-line blocking, the newest state making old data worthless - what a game…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Reliability over UDP</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Why Games Use UDP</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Why real-time games build their own protocol on UDP instead of using TCP - head-of-line blocking, the newest state making old data worthless - what a game protocol adds on top, virtual connections with timeouts, and testing under simulated loss and delay.</p>
+      <div class="prose">
+<h2>TCP&#39;s promise is the problem</h2>
+<p>TCP delivers every byte, in order. For a web page that is exactly right. For a game sending the player positions 30 or 60 times a second, it is a trap:</p>
+<ul>
+<li>When one segment is lost, <strong>every later byte waits</strong> until the lost one is retransmitted, at least one round trip later, often more. Positions that arrived perfectly well sit in the receive buffer, unusable. This is <strong>head-of-line blocking</strong>, and it turns a single lost packet into a visible freeze.</li>
+<li>The data being waited for is already <strong>out of date</strong>. By the time the position from 100 ms ago is resent, three newer positions exist. Nobody wants the old one.</li>
+<li>TCP also slows down on loss (congestion control) and may combine small writes (Nagle&#39;s algorithm, disabled with <code>TCP_NODELAY</code>), both of which add delay a game would rather not have.</li>
+</ul>
+<p>UDP delivers each datagram independently: some are lost, some are duplicated, some arrive out of order, but nothing waits for anything else. A game takes that and adds only what it needs.</p>
+<h2>What a game protocol adds</h2>
+<p>Over the next lessons you build the usual pieces:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Purpose</th>
+<th>Lesson</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>sequence numbers</td>
+<td>tell newer from older packets, discard duplicates</td>
+<td>5.02</td>
+</tr>
+<tr>
+<td>acknowledgements</td>
+<td>learn which packets arrived, cheaply</td>
+<td>5.03</td>
+</tr>
+<tr>
+<td>round-trip time</td>
+<td>know how long to wait before resending</td>
+<td>5.04</td>
+</tr>
+<tr>
+<td>reliable messages</td>
+<td>the few things that must arrive (chat, &quot;player joined&quot;, a purchase)</td>
+<td>5.04</td>
+</tr>
+<tr>
+<td>fragmentation</td>
+<td>send a block bigger than one packet</td>
+<td>5.05</td>
+</tr>
+</tbody></table>
+</div>
+<p>The key idea: <strong>most data is unreliable and newest-wins</strong> (positions, inputs, animation state), and only <strong>some messages</strong> need to be reliable. A game protocol lets each kind travel the way it needs.</p>
+<h2>A virtual connection</h2>
+<p>UDP has no connections, so the protocol makes its own:</p>
+<ul>
+<li>Every packet starts with a <strong>protocol id</strong> (a fixed number such as a hash of the game name and version). Packets without it are dropped at once: stray traffic, port scanners, an old version of the game.</li>
+<li>A <strong>connection</strong> is just &quot;the address and port I hear from&quot;. The server keeps a table keyed by address and port.</li>
+<li>Connecting uses a small handshake, often with a random <strong>salt</strong> from each side, so a forged source address cannot create a connection. Real games add encryption and a token from a login server.</li>
+<li>Both sides send something at a steady rate (even an empty packet), and a connection that has heard <strong>nothing for a few seconds</strong> is timed out. There is no FIN: silence is how a UDP connection ends.</li>
+</ul>
+<h2>Testing on a bad network</h2>
+<p>A protocol that works on <code>127.0.0.1</code> with no loss proves nothing. Test with <strong>simulated</strong> conditions:</p>
+<ul>
+<li><strong>Latency</strong>: hold each packet for, say, 100 ms before delivering it.</li>
+<li><strong>Jitter</strong>: vary that delay, which also reorders packets.</li>
+<li><strong>Loss</strong>: drop a share of packets, 1 % to 10 % (and sometimes bursts).</li>
+<li><strong>Duplication</strong>: occasionally deliver a packet twice.</li>
+</ul>
+<p>You can put a simulator inside your own code between &quot;send&quot; and the socket, which makes the tests repeatable, or use tools such as <strong>clumsy</strong> on Windows or <code>tc netem</code> on Linux to degrade real traffic. Make the simulator deterministic (a fixed pattern or a seeded generator), so a failure can be repeated.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-reading-protocols-in-captures/"><span class="mono">previous</span><b>4.05 Reading Protocols in Captures</b></a>
+      <a class="lp-next" href="../5-02-sequence-numbers-that-wrap/"><span class="mono">next</span><b>5.02 Sequence Numbers That Wrap</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/5-01-why-games-use-udp"></script>
+</body>
+</html>

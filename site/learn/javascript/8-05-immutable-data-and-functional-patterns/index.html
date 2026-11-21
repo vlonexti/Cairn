@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Immutable Data and Functional Patterns · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/8-05-immutable-data-and-functional-patterns/">
+  <meta name="description" content="Code that does not change data behind your back - why shared mutable objects cause bugs, updating with spread instead of mutating, the non-mutating array…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Immutable Data and Functional Patterns · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Code that does not change data behind your back - why shared mutable objects cause bugs, updating with spread instead of mutating, the non-mutating array…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/8-05-immutable-data-and-functional-patterns/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Immutable Data and Functional Patterns · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Immutable Data and Functional Patterns · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Code that does not change data behind your back - why shared mutable objects cause bugs, updating with spread instead of mutating, the non-mutating array…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>JavaScript in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Immutable Data and Functional Patterns</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.05</b></span><span>5 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Code that does not change data behind your back - why shared mutable objects cause bugs, updating with spread instead of mutating, the non-mutating array methods toSorted, toReversed, toSpliced and with, deep copies with structuredClone, deep freezing, pure functions, composing functions with pipe, and currying.</p>
+      <div class="prose">
+<h2>The bug that shared objects cause</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> defaults = { theme: <span class="tk-s">&quot;light&quot;</span>, sizes: [<span class="tk-n">12</span>, <span class="tk-n">14</span>] };
+<span class="tk-k">function</span> <span class="tk-f">withLargeText</span>(settings) {
+  settings.sizes.<span class="tk-f">push</span>(<span class="tk-n">18</span>);          <span class="tk-c">// changes the caller's array!</span>
+  <span class="tk-k">return</span> settings;
+}
+<span class="tk-k">const</span> mine = <span class="tk-f">withLargeText</span>(defaults);
+console.<span class="tk-f">log</span>(defaults.sizes);        <span class="tk-c">// [ 12, 14, 18 ]: the defaults changed too</span></code></pre></div>
+<p>Objects and arrays are passed by reference, so a function that changes its argument changes it for everyone who holds it. In a small script that is manageable; in an app with state shared by many parts (lesson 6.05), it causes bugs that are hard to trace. The cure is to <strong>not change</strong> data: make a new version instead.</p>
+<h2>Updating with spread</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> state = { user: { name: <span class="tk-s">&quot;Ada&quot;</span>, level: <span class="tk-n">3</span> }, items: [<span class="tk-s">&quot;map&quot;</span>] };
+
+<span class="tk-k">const</span> next = {
+  ...state,
+  user: { ...state.user, level: state.user.level + <span class="tk-n">1</span> },
+  items: [...state.items, <span class="tk-s">&quot;sword&quot;</span>],
+};
+
+console.<span class="tk-f">log</span>(state.user.level, state.items);   <span class="tk-c">// 3 [ 'map' ]  (unchanged)</span>
+console.<span class="tk-f">log</span>(next.user.level, next.items);     <span class="tk-c">// 4 [ 'map', 'sword' ]</span>
+console.<span class="tk-f">log</span>(next.user === state.user);         <span class="tk-c">// false: changed, so copied</span></code></pre></div>
+<p>Spread copies one level. Every level on the path to the change is copied; everything else is shared, which is cheap and safe as long as nobody mutates it.</p>
+<h2>Array methods that do not mutate</h2>
+<p><code>sort</code>, <code>reverse</code> and <code>splice</code> change the array in place. Their newer twins return a changed copy:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> scores = [<span class="tk-n">30</span>, <span class="tk-n">10</span>, <span class="tk-n">20</span>];
+console.<span class="tk-f">log</span>(scores.<span class="tk-f">toSorted</span>((a, b) =&gt; a - b));   <span class="tk-c">// [ 10, 20, 30 ]</span>
+console.<span class="tk-f">log</span>(scores.<span class="tk-f">toReversed</span>());                <span class="tk-c">// [ 20, 10, 30 ]</span>
+console.<span class="tk-f">log</span>(scores.<span class="tk-f">toSpliced</span>(<span class="tk-n">1</span>, <span class="tk-n">1</span>));             <span class="tk-c">// [ 30, 20 ]</span>
+console.<span class="tk-f">log</span>(scores.<span class="tk-k">with</span>(<span class="tk-n">0</span>, <span class="tk-n">99</span>));                 <span class="tk-c">// [ 99, 10, 20 ]</span>
+console.<span class="tk-f">log</span>(scores);                             <span class="tk-c">// [ 30, 10, 20 ]: unchanged</span></code></pre></div>
+<p><code>map</code>, <code>filter</code>, <code>slice</code>, <code>concat</code> and <code>reduce</code> never mutated, which is why lesson 2.02&#39;s array style already works well with immutable data.</p>
+<h2>Deep copies</h2>
+<p><code>structuredClone</code> copies a value all the way down, including nested objects, arrays, <code>Map</code>, <code>Set</code> and <code>Date</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> original = { when: <span class="tk-k">new</span> <span class="tk-f">Date</span>(<span class="tk-n">0</span>), tags: <span class="tk-k">new</span> <span class="tk-f">Set</span>([<span class="tk-s">&quot;a&quot;</span>]), deep: { list: [<span class="tk-n">1</span>, <span class="tk-n">2</span>] } };
+<span class="tk-k">const</span> copy = <span class="tk-f">structuredClone</span>(original);
+copy.deep.list.<span class="tk-f">push</span>(<span class="tk-n">3</span>);
+console.<span class="tk-f">log</span>(original.deep.list, copy.deep.list, copy.when <span class="tk-k">instanceof</span> Date, copy.tags.<span class="tk-f">has</span>(<span class="tk-s">&quot;a&quot;</span>));</code></pre></div>
+<p>It cannot copy functions or class instances&#39; methods (a class instance comes back as a plain object). <code>JSON.parse(JSON.stringify(x))</code> also copies, but loses dates, <code>undefined</code>, <code>Map</code> and <code>Set</code>.</p>
+<h2>Freezing</h2>
+<p><code>Object.freeze</code> stops changes to an object, but only one level deep. A small recursive function freezes everything:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">deepFreeze</span>(value) {
+  <span class="tk-k">if</span> (value &amp;&amp; <span class="tk-k">typeof</span> value === <span class="tk-s">&quot;object&quot;</span> &amp;&amp; !Object.<span class="tk-f">isFrozen</span>(value)) {
+    Object.<span class="tk-f">freeze</span>(value);
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> key <span class="tk-k">of</span> Reflect.<span class="tk-f">ownKeys</span>(value)) <span class="tk-f">deepFreeze</span>(value[key]);
+  }
+  <span class="tk-k">return</span> value;
+}
+
+<span class="tk-k">const</span> config = <span class="tk-f">deepFreeze</span>({ server: { port: <span class="tk-n">8080</span> }, flags: [<span class="tk-s">&quot;a&quot;</span>] });
+config.server.port = <span class="tk-n">1</span>;        <span class="tk-c">// ignored here; in strict mode it throws a TypeError</span>
+console.<span class="tk-f">log</span>(config.server.port, Object.<span class="tk-f">isFrozen</span>(config.flags));   <span class="tk-c">// 8080 true</span></code></pre></div>
+<p>In strict mode (every module, lesson 3.05) writing to a frozen object throws; outside it, the write is silently ignored. Freezing in development builds catches accidental mutation early.</p>
+<h2>Pure functions</h2>
+<p>A <strong>pure</strong> function&#39;s result depends only on its arguments, and it changes nothing outside itself. Pure functions are easy to test (no set-up), easy to reuse, and safe to call twice.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// impure: reads and changes outside state</span>
+<span class="tk-k">let</span> total = <span class="tk-n">0</span>;
+<span class="tk-k">function</span> <span class="tk-f">addToTotal</span>(price) { total += price; <span class="tk-k">return</span> total; }
+
+<span class="tk-c">// pure: everything comes in, the answer goes out</span>
+<span class="tk-k">const</span> addPrice = (total, price) =&gt; total + price;
+console.<span class="tk-f">log</span>([<span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>].<span class="tk-f">reduce</span>(addPrice, <span class="tk-n">0</span>));</code></pre></div>
+<p>Programs still need side effects (saving, drawing, sending). The pattern is to keep them at the edges and the logic in the middle pure, as the update function in lesson 6.05 did.</p>
+<h2>Building functions from functions</h2>
+<p><code>pipe</code> runs functions one after another, each getting the result of the last:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> pipe = (...fns) =&gt; input =&gt; fns.<span class="tk-f">reduce</span>((value, fn) =&gt; <span class="tk-f">fn</span>(value), input);
+
+<span class="tk-k">const</span> slug = <span class="tk-f">pipe</span>(
+  s =&gt; s.<span class="tk-f">trim</span>(),
+  s =&gt; s.<span class="tk-f">toLowerCase</span>(),
+  s =&gt; s.<span class="tk-f">replace</span>(/[^a-z0-<span class="tk-n">9</span>]+/g, <span class="tk-s">&quot;-&quot;</span>),
+  s =&gt; s.<span class="tk-f">replace</span>(/^-|-$/g, <span class="tk-s">&quot;&quot;</span>),
+);
+console.<span class="tk-f">log</span>(<span class="tk-f">slug</span>(<span class="tk-s">&quot;  Hello, World! 2026 &quot;</span>));   <span class="tk-c">// hello-world-2026</span></code></pre></div>
+<p><strong>Currying</strong> turns a function of several arguments into functions of one, so you can fix some arguments now and give the rest later:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> multiply = a =&gt; b =&gt; a * b;
+<span class="tk-k">const</span> double = <span class="tk-f">multiply</span>(<span class="tk-n">2</span>);
+console.<span class="tk-f">log</span>([<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>].<span class="tk-f">map</span>(double));            <span class="tk-c">// [ 2, 4, 6 ]</span>
+<span class="tk-k">const</span> hasTag = tag =&gt; item =&gt; item.tags.<span class="tk-f">includes</span>(tag);
+console.<span class="tk-f">log</span>([{ tags: [<span class="tk-s">&quot;red&quot;</span>] }, { tags: [<span class="tk-s">&quot;blue&quot;</span>] }].<span class="tk-f">filter</span>(<span class="tk-f">hasTag</span>(<span class="tk-s">&quot;red&quot;</span>)).length);</code></pre></div>
+<h2>When to mutate anyway</h2>
+<p>Immutability costs copies. Inside one function, building a local array with <code>push</code> is fine: nobody else can see it until you return it. Mutate freely what you just created; do not mutate what you were given.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/8.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/8.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-04-testing-javascript/"><span class="mono">previous</span><b>8.04 Testing JavaScript</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/8-05-immutable-data-and-functional-patterns"></script>
+</body>
+</html>

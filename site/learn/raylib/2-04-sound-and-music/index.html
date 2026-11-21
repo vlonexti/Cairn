@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Sound and Music · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/2-04-sound-and-music/">
+  <meta name="description" content="Playing sound effects and streaming music with raylib's audio module - the audio device, Sound versus Music, volume and pitch, playing the same sound many…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Sound and Music · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="Playing sound effects and streaming music with raylib's audio module - the audio device, Sound versus Music, volume and pitch, playing the same sound many…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/2-04-sound-and-music/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Sound and Music · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sound and Music · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="Playing sound effects and streaming music with raylib's audio module - the audio device, Sound versus Music, volume and pitch, playing the same sound many…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>Sprites, Sound and Screens</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Sound and Music</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Playing sound effects and streaming music with raylib&#39;s audio module - the audio device, Sound versus Music, volume and pitch, playing the same sound many times at once, a little random variation, and volume settings in decibels and percentages.</p>
+      <div class="prose">
+<h2>The audio device</h2>
+<p>Audio has its own start and end, like the window:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">InitWindow</span>(<span class="tk-n">800</span>, <span class="tk-n">450</span>, <span class="tk-s">&quot;Sound&quot;</span>);
+<span class="tk-f">InitAudioDevice</span>();
+<span class="tk-c">// load sounds and music, run the game ...</span>
+<span class="tk-f">CloseAudioDevice</span>();
+<span class="tk-f">CloseWindow</span>();</code></pre></div>
+<h2>Sound and Music</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Loaded</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Sound</code></td>
+<td>Completely into memory</td>
+<td>Short effects: jumps, hits, coins. Starts instantly</td>
+</tr>
+<tr>
+<td><code>Music</code></td>
+<td>Streamed from the file in small pieces</td>
+<td>Long tracks and ambience. Little memory</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Sound</span> jump = <span class="tk-f">LoadSound</span>(<span class="tk-s">&quot;assets/jump.wav&quot;</span>);
+<span class="tk-t">Music</span> theme = <span class="tk-f">LoadMusicStream</span>(<span class="tk-s">&quot;assets/theme.ogg&quot;</span>);
+<span class="tk-f">PlayMusicStream</span>(theme);
+
+<span class="tk-k">while</span> (!<span class="tk-f">WindowShouldClose</span>())
+{
+    <span class="tk-f">UpdateMusicStream</span>(theme);              <span class="tk-c">// every frame, or the music stutters and stops</span>
+    <span class="tk-k">if</span> (<span class="tk-f">IsKeyPressed</span>(KEY_SPACE)) <span class="tk-f">PlaySound</span>(jump);
+    <span class="tk-c">// ...</span>
+}
+<span class="tk-f">UnloadSound</span>(jump);
+<span class="tk-f">UnloadMusicStream</span>(theme);</code></pre></div>
+<p><code>UpdateMusicStream</code> refills the stream&#39;s buffer. Forget it and the music plays a fraction of a second and stops: the most common audio bug in raylib games. WAV and OGG are the usual formats; OGG is much smaller for music.</p>
+<h2>Volume and pitch</h2>
+<p><code>SetSoundVolume(s, 0.5f)</code>, <code>SetSoundPitch(s, 1.2f)</code> and <code>SetMusicVolume(m, v)</code> change one sound; <code>SetMasterVolume(v)</code> changes everything. Pitch 2.0 is an octave up and plays twice as fast.</p>
+<p><strong>Variation</strong>: hearing exactly the same footstep fifty times sounds mechanical. Vary the pitch a little each time:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">SetSoundPitch</span>(step, <span class="tk-n">0.9f</span> + <span class="tk-f">GetRandomValue</span>(<span class="tk-n">0</span>, <span class="tk-n">20</span>) / <span class="tk-n">100.0f</span>);   <span class="tk-c">// 0.9 .. 1.1</span>
+<span class="tk-f">PlaySound</span>(step);</code></pre></div>
+<h2>The same sound many times</h2>
+<p><code>PlaySound</code> on a <code>Sound</code> that is already playing <strong>restarts</strong> it. For rapid gunfire or many coins collected at once, that cuts each sound off. Make a few <strong>aliases</strong> that share the same sample data and play them in turn:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Sound</span> coin = <span class="tk-f">LoadSound</span>(<span class="tk-s">&quot;assets/coin.wav&quot;</span>);
+<span class="tk-t">Sound</span> coinVoices[<span class="tk-n">4</span>];
+<span class="tk-k">for</span> (<span class="tk-t">Sound</span>&amp; v : coinVoices) v = <span class="tk-f">LoadSoundAlias</span>(coin);
+<span class="tk-k">int</span> next = <span class="tk-n">0</span>;
+<span class="tk-c">// to play:</span>
+<span class="tk-f">PlaySound</span>(coinVoices[next]); next = (next + <span class="tk-n">1</span>) % <span class="tk-n">4</span>;
+<span class="tk-c">// at the end: UnloadSoundAlias for each, then UnloadSound(coin)</span></code></pre></div>
+<h2>Volume settings players understand</h2>
+<p>Loudness is heard roughly logarithmically: halving the amplitude (<code>0.5</code>) sounds only a little quieter, about -6 decibels. A volume slider that maps 0-100 % straight to amplitude feels like it does nothing for most of its range and then drops suddenly at the bottom. A better mapping is through decibels, for example 0 % = silent and 1-100 % spread over -40 dB to 0 dB:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">float</span> <span class="tk-f">sliderToAmplitude</span>(<span class="tk-k">int</span> percent)
+{
+    <span class="tk-k">if</span> (percent &lt;= <span class="tk-n">0</span>) <span class="tk-k">return</span> <span class="tk-n">0.0f</span>;
+    <span class="tk-k">const</span> <span class="tk-k">float</span> db = -<span class="tk-n">40.0f</span> * (<span class="tk-n">1.0f</span> - percent / <span class="tk-n">100.0f</span>);
+    <span class="tk-k">return</span> std::<span class="tk-f">pow</span>(<span class="tk-n">10.0f</span>, db / <span class="tk-n">20.0f</span>);
+}</code></pre></div>
+<p>Keep separate <strong>music</strong> and <strong>effects</strong> volumes (and multiply each by a master volume) so players can turn the music down without losing the effects.</p>
+<h2>Sound and gameplay</h2>
+<p>Sound is feedback. Each important event deserves one: jumping, landing, hitting, being hit, collecting, a menu choice, a level complete. Playing them from the place in the code where the event happens, not from the drawing code, keeps them in time with the game even when frames are dropped.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-text-fonts-and-a-simple-interface/"><span class="mono">previous</span><b>2.03 Text, Fonts and a Simple Interface</b></a>
+      <a class="lp-next" href="../2-05-screens-and-game-states/"><span class="mono">next</span><b>2.05 Screens and Game States</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/2-04-sound-and-music"></script>
+</body>
+</html>

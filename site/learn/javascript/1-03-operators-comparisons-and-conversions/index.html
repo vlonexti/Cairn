@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Operators, Comparisons and Conversions · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/1-03-operators-comparisons-and-conversions/">
+  <meta name="description" content="Arithmetic and assignment operators, strict versus loose equality, truthiness, the logical operators and the nullish operators ?? and ?., and converting…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Operators, Comparisons and Conversions · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Arithmetic and assignment operators, strict versus loose equality, truthiness, the logical operators and the nullish operators ?? and ?., and converting…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/1-03-operators-comparisons-and-conversions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Operators, Comparisons and Conversions · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Operators, Comparisons and Conversions · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Arithmetic and assignment operators, strict versus loose equality, truthiness, the logical operators and the nullish operators ?? and ?., and converting…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Operators, Comparisons and Conversions</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.03</b></span><span>3 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Arithmetic and assignment operators, strict versus loose equality, truthiness, the logical operators and the nullish operators ?? and ?., and converting between strings and numbers without surprises.</p>
+      <div class="prose">
+<h2>Arithmetic</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>+ - * /</code></td>
+<td>Add, subtract, multiply, divide</td>
+<td><code>7 / 2</code> is <code>3.5</code></td>
+</tr>
+<tr>
+<td><code>%</code></td>
+<td>Remainder (keeps the sign of the left side)</td>
+<td><code>-7 % 3</code> is <code>-1</code></td>
+</tr>
+<tr>
+<td><code>**</code></td>
+<td>Power</td>
+<td><code>2 ** 10</code> is <code>1024</code></td>
+</tr>
+<tr>
+<td><code>++</code>, <code>--</code></td>
+<td>Add or subtract 1</td>
+<td><code>count++</code></td>
+</tr>
+<tr>
+<td><code>+=</code>, <code>-=</code>, <code>*=</code>, ...</td>
+<td>Update</td>
+<td><code>total += price</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Whole-number division is <code>Math.trunc(a / b)</code> (towards zero) or <code>Math.floor(a / b)</code> (down). Note <code>%</code> differs from Python for negative numbers.</p>
+<h2>Strict equality</h2>
+<p>Always compare with <strong><code>===</code></strong> and <strong><code>!==</code></strong>: equal value <strong>and</strong> type.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code>console.<span class="tk-f">log</span>(<span class="tk-n">1</span> === <span class="tk-n">1</span>, <span class="tk-n">1</span> === <span class="tk-s">&quot;1&quot;</span>, <span class="tk-s">&quot;a&quot;</span> === <span class="tk-s">&quot;a&quot;</span>);      <span class="tk-c">// true false true</span>
+console.<span class="tk-f">log</span>(<span class="tk-n">1</span> == <span class="tk-s">&quot;1&quot;</span>, <span class="tk-n">0</span> == <span class="tk-s">&quot;&quot;</span>, <span class="tk-k">null</span> == <span class="tk-k">undefined</span>);  <span class="tk-c">// true true true: loose equality converts types</span></code></pre></div>
+<p>Loose <code>==</code> converts its operands with complicated rules (<code>[] == false</code> is true). The one common use is <code>x == null</code>, which is true for both <code>null</code> and <code>undefined</code>. Objects (including arrays) are equal only if they are the <strong>same</strong> object: <code>[1] === [1]</code> is <code>false</code>.</p>
+<h2>Truthiness</h2>
+<p>In conditions, these values are <strong>falsy</strong>: <code>false</code>, <code>0</code>, <code>-0</code>, <code>0n</code>, <code>&quot;&quot;</code>, <code>null</code>, <code>undefined</code>, <code>NaN</code>. Everything else is truthy, including <code>&quot;0&quot;</code>, <code>&quot;false&quot;</code>, <code>[]</code> and <code>{}</code>.</p>
+<h2>Logical operators</h2>
+<p><code>&amp;&amp;</code> and <code>||</code> return one of their <strong>operands</strong>, not necessarily <code>true</code> or <code>false</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code>console.<span class="tk-f">log</span>(<span class="tk-s">&quot;&quot;</span> || <span class="tk-s">&quot;default&quot;</span>);      <span class="tk-c">// &quot;default&quot;: the first truthy value</span>
+console.<span class="tk-f">log</span>(<span class="tk-s">&quot;Ada&quot;</span> &amp;&amp; <span class="tk-s">&quot;admin&quot;</span>);     <span class="tk-c">// &quot;admin&quot;: the first falsy value, or the last</span>
+console.<span class="tk-f">log</span>(!<span class="tk-n">0</span>, !!<span class="tk-s">&quot;text&quot;</span>);         <span class="tk-c">// true true: !! converts to a boolean</span></code></pre></div>
+<p><code>a || b</code> is often used for defaults, but it replaces <strong>every</strong> falsy value, including <code>0</code> and <code>&quot;&quot;</code>. The <strong>nullish</strong> operators only react to <code>null</code> and <code>undefined</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> volume = <span class="tk-n">0</span>;
+console.<span class="tk-f">log</span>(volume || <span class="tk-n">50</span>);   <span class="tk-c">// 50: wrong, 0 was a real value</span>
+console.<span class="tk-f">log</span>(volume ?? <span class="tk-n">50</span>);   <span class="tk-c">// 0: ?? only replaces null and undefined</span>
+
+<span class="tk-k">const</span> user = { profile: <span class="tk-k">null</span> };
+console.<span class="tk-f">log</span>(user.profile?.email);          <span class="tk-c">// undefined instead of a TypeError</span>
+console.<span class="tk-f">log</span>(user.settings?.theme ?? <span class="tk-s">&quot;light&quot;</span>);</code></pre></div>
+<p><code>?.</code> (optional chaining) stops and gives <code>undefined</code> if the left side is <code>null</code> or <code>undefined</code>.</p>
+<h2>Converting</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Want</th>
+<th>Use</th>
+<th>Watch out</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Number from text</td>
+<td><code>Number(&quot;42&quot;)</code></td>
+<td><code>Number(&quot;&quot;)</code> is <code>0</code>; <code>Number(&quot;4x&quot;)</code> is <code>NaN</code></td>
+</tr>
+<tr>
+<td>Whole number from text</td>
+<td><code>parseInt(&quot;42px&quot;, 10)</code></td>
+<td>Reads until the first non-digit: <code>42</code>; always pass the base 10</td>
+</tr>
+<tr>
+<td>Decimal from text</td>
+<td><code>parseFloat(&quot;3.5kg&quot;)</code></td>
+<td><code>3.5</code></td>
+</tr>
+<tr>
+<td>Text from a number</td>
+<td><code>String(42)</code>, <code>`${42}`</code>, <code>(3.14159).toFixed(2)</code></td>
+<td><code>toFixed</code> returns a string</td>
+</tr>
+<tr>
+<td>Boolean</td>
+<td><code>Boolean(x)</code> or <code>!!x</code></td>
+<td>Truthiness rules above</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>+</code> with a string <strong>concatenates</strong>: <code>&quot;5&quot; + 3</code> is <code>&quot;53&quot;</code>, while <code>&quot;5&quot; - 3</code> is <code>2</code>. Convert explicitly before doing arithmetic on text from forms or files.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/1.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/1.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-02-values-variables-and-types/"><span class="mono">previous</span><b>1.02 Values, Variables and Types</b></a>
+      <a class="lp-next" href="../1-04-strings-and-template-literals/"><span class="mono">next</span><b>1.04 Strings and Template Literals</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/1-03-operators-comparisons-and-conversions"></script>
+</body>
+</html>

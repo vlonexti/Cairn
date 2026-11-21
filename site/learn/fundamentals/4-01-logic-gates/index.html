@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Logic Gates · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/4-01-logic-gates/">
+  <meta name="description" content="A logic gate takes one or two bits in and gives one bit out - NOT, AND, OR, XOR, NAND. Each is a few transistors. Truth tables list every input and output.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Logic Gates · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="A logic gate takes one or two bits in and gives one bit out - NOT, AND, OR, XOR, NAND. Each is a few transistors. Truth tables list every input and output.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/4-01-logic-gates/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Logic Gates · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Logic Gates · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="A logic gate takes one or two bits in and gives one bit out - NOT, AND, OR, XOR, NAND. Each is a few transistors. Truth tables list every input and output.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Inside the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Logic Gates</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A logic gate takes one or two bits in and gives one bit out - NOT, AND, OR, XOR, NAND. Each is a few transistors. Truth tables list every input and output. Every circuit in a computer, including the CPU, is built from gates, and NAND alone is enough to build all of them.</p>
+      <div class="prose">
+<h2>From switches to logic</h2>
+<p>Lesson 1.04 described a transistor as a switch controlled by electricity. Put a few transistors together and you get a <strong>logic gate</strong>: a tiny circuit that takes bits in and gives a bit out, following one of Boole&#39;s rules (1.02). Lesson 2.01 said high voltage is 1 and low is 0; a gate turns input voltages into an output voltage.</p>
+<p>These are the basic gates:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Output is 1 when...</th>
+<th>Symbol in code</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>NOT</strong></td>
+<td>the input is 0 (it flips the bit)</td>
+<td><code>not a</code>, <code>!a</code>, <code>~a</code></td>
+</tr>
+<tr>
+<td><strong>AND</strong></td>
+<td>both inputs are 1</td>
+<td><code>a and b</code>, <code>a &amp; b</code></td>
+</tr>
+<tr>
+<td><strong>OR</strong></td>
+<td>at least one input is 1</td>
+<td><code>a or b</code>, <code>a | b</code></td>
+</tr>
+<tr>
+<td><strong>XOR</strong> (exclusive or)</td>
+<td>exactly one input is 1</td>
+<td><code>a ^ b</code></td>
+</tr>
+<tr>
+<td><strong>NAND</strong> (not and)</td>
+<td>not both inputs are 1</td>
+<td><code>not (a and b)</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/4.01">Try it in Xenon</a></div>
+<p>Click A and B in the demo and watch each gate&#39;s output. Try all four combinations.</p>
+<h2>Truth tables</h2>
+<p>A <strong>truth table</strong> lists the output for every possible input. With two inputs there are four rows:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>A AND B</th>
+<th>A OR B</th>
+<th>A XOR B</th>
+<th>A NAND B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody></table>
+</div>
+<p>With <em>n</em> inputs there are 2ⁿ rows: every input pattern once. The table is the gate: two circuits with the same truth table do the same job, however they are built.</p>
+<h2>Gates in everyday code</h2>
+<p>You use these rules all the time in programs without calling them gates:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>age = <span class="tk-n">15</span>
+has_ticket = <span class="tk-k">True</span>
+<span class="tk-k">if</span> age &gt;= <span class="tk-n">12</span> <span class="tk-k">and</span> has_ticket:
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;Come in&quot;</span>)
+
+<span class="tk-f">print</span>(<span class="tk-n">6</span> &amp; <span class="tk-n">3</span>)    <span class="tk-c"># 2: AND on each pair of bits: 110 &amp; 011 = 010</span>
+<span class="tk-f">print</span>(<span class="tk-n">6</span> | <span class="tk-n">3</span>)    <span class="tk-c"># 7: OR on each bit: 110 | 011 = 111</span>
+<span class="tk-f">print</span>(<span class="tk-n">6</span> ^ <span class="tk-n">3</span>)    <span class="tk-c"># 5: XOR on each bit: 110 ^ 011 = 101</span></code></pre></div>
+<p>The <code>&amp;</code>, <code>|</code> and <code>^</code> operators apply a gate to <strong>every pair of bits</strong> in two numbers at once. Inside the CPU that is exactly what happens: 64 AND gates side by side handle a 64-bit <code>&amp;</code> in one step.</p>
+<h2>Building gates from other gates</h2>
+<p>Gates combine. XOR, for example, is &quot;A OR B, but not both&quot;:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;A&quot;] --&gt; OR[&quot;OR&quot;]
+    B[&quot;B&quot;] --&gt; OR
+    A --&gt; NAND[&quot;NAND&quot;]
+    B --&gt; NAND
+    OR --&gt; AND[&quot;AND&quot;]
+    NAND --&gt; AND
+    AND --&gt; X[&quot;A XOR B&quot;]</pre></div>
+<p>Check it with the truth table: for A = 1, B = 1, OR gives 1, NAND gives 0, and AND of those gives 0. ✓</p>
+<p>The surprising fact is that <strong>NAND alone is enough</strong> to build every other gate, and so every circuit:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Built from NANDs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>NOT A</td>
+<td>A NAND A</td>
+</tr>
+<tr>
+<td>A AND B</td>
+<td>NOT (A NAND B)</td>
+</tr>
+<tr>
+<td>A OR B</td>
+<td>(NOT A) NAND (NOT B)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Chips are not literally built only from NANDs, but it means a whole computer can, in principle, be built from one kind of part, copied billions of times. A NAND gate in modern chips takes just <strong>4 transistors</strong>.</p>
+<div class="callout tip"><div class="callout-title"><span>Build a computer from NAND</span></div><div class="callout-body"><p>The free course <em>From NAND to Tetris</em> (nand2tetris.org) does exactly that: starting from NAND, you build gates, an adder, memory, a CPU, an assembler, a compiler and finally a game. This milestone is a short walk along the same road.</p>
+</div></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does A XOR B give when both inputs are 1?</div><ul><li>1</li><li>0</li></ul><details><summary>Show the answer</summary><p><b>0</b> XOR is 1 when exactly one input is 1. Both 1 is not &quot;exactly one&quot;.</p></details></li><li><div class="q">How many rows does the truth table of a 3-input gate have?</div><ul><li>3</li><li>6</li><li>8</li></ul><details><summary>Show the answer</summary><p><b>8</b> 2³ = 8: every input pattern once.</p></details></li><li><div class="q">What is 12 &amp; 10 in Python?</div><ul><li>8</li><li>14</li><li>6</li></ul><details><summary>Show the answer</summary><p><b>8</b> 1100 &amp; 1010 = 1000, which is 8. (12 | 10 would be 14, and 12 ^ 10 would be 6.)</p></details></li><li><div class="q">How do you make NOT A from a NAND gate?</div><ul><li>Connect A to both inputs: A NAND A</li><li>Connect one input to 1 and leave the other empty</li><li>It cannot be done</li></ul><details><summary>Show the answer</summary><p><b>Connect A to both inputs: A NAND A</b> A NAND A is NOT (A AND A), which is NOT A.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-files-and-file-formats/"><span class="mono">previous</span><b>3.05 Files and File Formats</b></a>
+      <a class="lp-next" href="../4-02-adding-with-gates/"><span class="mono">next</span><b>4.02 Adding with Gates</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/4-01-logic-gates"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

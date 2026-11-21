@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>What Assembly Is · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/1-01-what-assembly-is/">
+  <meta name="description" content="A processor runs machine code - numbers that each mean one small instruction. Assembly gives every instruction a name, and an assembler turns the names back…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What Assembly Is · Assembly · Xenon">
+  <meta property="og:description" content="A processor runs machine code - numbers that each mean one small instruction. Assembly gives every instruction a name, and an assembler turns the names back…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/1-01-what-assembly-is/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="What Assembly Is · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What Assembly Is · Assembly · Xenon">
+  <meta name="twitter:description" content="A processor runs machine code - numbers that each mean one small instruction. Assembly gives every instruction a name, and an assembler turns the names back…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Hello, Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">What Assembly Is</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 6 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A processor runs machine code - numbers that each mean one small instruction. Assembly gives every instruction a name, and an assembler turns the names back into the numbers. This course writes x86-64 assembly in Intel syntax with NASM, for Linux. A program has sections for data and code, labels that name addresses, and starts at _start.</p>
+      <div class="prose">
+<h2>The processor&#39;s own language</h2>
+<p>A processor does not understand C or Python. It runs <strong>machine code</strong>: bytes in memory, each group of them one small instruction such as &quot;add these two registers&quot; or &quot;jump to that address&quot;. The bytes <code>48 01 d8</code>, for example, tell an x86-64 processor to add <code>rbx</code> to <code>rax</code>.</p>
+<p>Nobody wants to write bytes by hand, so each instruction has a short name, a <strong>mnemonic</strong>, and a program called an <strong>assembler</strong> translates the names into bytes:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Assembly</th>
+<th>Machine code</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mov eax, 1</code></td>
+<td><code>b8 01 00 00 00</code></td>
+<td>put 1 in the register eax</td>
+</tr>
+<tr>
+<td><code>add rax, rbx</code></td>
+<td><code>48 01 d8</code></td>
+<td>rax = rax + rbx</td>
+</tr>
+<tr>
+<td><code>ret</code></td>
+<td><code>c3</code></td>
+<td>return from a function</td>
+</tr>
+</tbody></table>
+</div>
+<p>One line of assembly is one instruction. There is no <code>if</code>, no <code>for</code>, no variables with types: only what the hardware does. Every language you have used is turned into these instructions in the end, by a compiler (C, Rust), or by an interpreter that is itself made of them (Python).</p>
+<h2>Which assembly?</h2>
+<p>Every processor family has its own instruction set, so there are many assembly languages:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Found in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>x86-64</strong> (also called x64, AMD64)</td>
+<td>most PCs, laptops and servers</td>
+</tr>
+<tr>
+<td>ARM64 (AArch64)</td>
+<td>phones, tablets, Apple-chip Macs, many servers</td>
+</tr>
+<tr>
+<td>RISC-V</td>
+<td>a newer open design, in microcontrollers and growing</td>
+</tr>
+</tbody></table>
+</div>
+<p>This course teaches <strong>x86-64</strong>, written in <strong>Intel syntax</strong> (<code>mov eax, 1</code>: destination first), with the <strong>NASM</strong> assembler, for <strong>Linux</strong>. Lesson 6.05 compares ARM64. The ideas carry over to all of them.</p>
+<div class="callout note"><div class="callout-title"><span>Why learn assembly?</span></div><div class="callout-body"><p>Few programs are written in assembly today, but reading it is a superpower: you see what your C, C++ or Rust really does, how fast it can be, why a crash happened, and how operating systems, debuggers, compilers and security exploits work. It also makes pointers, the stack and memory obvious forever.</p>
+</div></div>
+<h2>A whole program</h2>
+<p>Here is a complete program. Press <strong>Run</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .data
+<span class="tk-f">message:</span> <span class="tk-k">db</span>     <span class="tk-s">&quot;Hello from assembly!&quot;</span>, <span class="tk-n">10</span>
+length  <span class="tk-k">equ</span>     $ - message
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>              <span class="tk-c">; system call 1: write</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>              <span class="tk-c">; to file 1: standard output</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> message]  <span class="tk-c">; the address of the bytes</span>
+        mov     <span class="tk-t">edx</span>, length         <span class="tk-c">; how many bytes</span>
+        syscall                     <span class="tk-c">; ask Linux to do it</span>
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>             <span class="tk-c">; system call 60: exit</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>            <span class="tk-c">; with exit code 0</span>
+        syscall</code></pre></div>
+<p>Every part is explained in the next lessons, but you can read the shape already:</p>
+<ul>
+<li><code>;</code> starts a <strong>comment</strong>, to the end of the line.</li>
+<li><code>section .data</code> holds data; <code>section .text</code> holds the instructions (the &quot;text&quot; of the program).</li>
+<li>A name followed by a colon, like <code>message:</code> or <code>_start:</code>, is a <strong>label</strong>: a name for the address where the next byte goes.</li>
+<li><code>db</code> (&quot;define bytes&quot;) puts bytes into the program: the letters of the message, then 10, the new line character.</li>
+<li><code>_start</code> is where the program begins, and <code>global _start</code> makes that name visible to the <strong>linker</strong>, which builds the final program file and needs to know where it starts.</li>
+<li>The instructions are indented by convention; labels are not.</li>
+</ul>
+<h2>No safety net</h2>
+<p>A C program that reaches the end of <code>main</code> returns to the C library, which exits for you. An assembly program has no one to return to. If you leave out the exit system call at the end, the processor keeps running whatever bytes come next in memory, and the program crashes with a segmentation fault. Try it: delete the last three lines and run.</p>
+<h2>How the website runs it</h2>
+<p>The website sends your program to Compiler Explorer, which assembles it with NASM into an object file, links it with <code>ld</code>, and runs it on a 64-bit Linux machine, exactly like these commands:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>nasm -f elf64 hello.asm -o hello.o
+ld hello.o -o hello
+./hello</code></pre></div>
+<p><code>elf64</code> is the format Linux uses for programs: ELF, the Executable and Linkable Format.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does an assembler do?</div><ul><li>Turns assembly mnemonics into machine code bytes</li><li>Runs assembly one line at a time</li><li>Turns C into assembly</li></ul><details><summary>Show the answer</summary><p><b>Turns assembly mnemonics into machine code bytes</b> A compiler goes from C to assembly; the assembler goes from assembly to bytes.</p></details></li><li><div class="q">Which syntax does mov eax, 1 use, and what does it do?</div><ul><li>Intel syntax: puts 1 into eax (the destination comes first)</li><li>AT&amp;T syntax: copies eax into 1</li><li>It is not valid assembly</li></ul><details><summary>Show the answer</summary><p><b>Intel syntax: puts 1 into eax (the destination comes first)</b> AT&amp;T syntax, used by GNU tools by default, writes movl $1, %eax.</p></details></li><li><div class="q">What is _start?</div><ul><li>The label where the program begins</li><li>A system call</li><li>A C function</li></ul><details><summary>Show the answer</summary><p><b>The label where the program begins</b> global _start tells the linker about it.</p></details></li><li><div class="q">What happens if an assembly program has no exit system call at the end?</div><ul><li>The processor runs whatever bytes follow, and the program crashes</li><li>It exits normally</li><li>The assembler adds one</li></ul><details><summary>Show the answer</summary><p><b>The processor runs whatever bytes follow, and the program crashes</b> There is nothing to return to.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-registers/"><span class="mono">next</span><b>1.02 Registers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/1-01-what-assembly-is"></script>
+</body>
+</html>

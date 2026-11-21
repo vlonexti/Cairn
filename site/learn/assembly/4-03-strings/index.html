@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Strings · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/4-03-strings/">
+  <meta name="description" content="A string is bytes in memory, ending with a 0 byte by C's convention. Loops over strings read one byte at a time with movzx and stop at the 0. Length, copy,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Strings · Assembly · Xenon">
+  <meta property="og:description" content="A string is bytes in memory, ending with a 0 byte by C's convention. Loops over strings read one byte at a time with movzx and stop at the 0. Length, copy,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/4-03-strings/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Strings · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Strings · Assembly · Xenon">
+  <meta name="twitter:description" content="A string is bytes in memory, ending with a 0 byte by C's convention. Loops over strings read one byte at a time with movzx and stop at the 0. Length, copy,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Strings</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.03</b></span><span>3 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A string is bytes in memory, ending with a 0 byte by C&#39;s convention. Loops over strings read one byte at a time with movzx and stop at the 0. Length, copy, compare and case changes are all short loops. The string instructions rep movsb and rep stosb copy and fill whole blocks in one instruction.</p>
+      <div class="prose">
+<h2>Bytes with a zero at the end</h2>
+<p>Text is bytes: one per ASCII character (or several per character in UTF-8). Assembly has no string type, so programs follow a convention. The C convention, used by <code>print_str</code> and by every C library function, is a <strong>zero byte</strong> at the end.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/assembly/l/4.03">Try it in Xenon</a></div>
+<h2>Length</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; rdi = a zero-terminated string. Returns its length.</span>
+<span class="tk-f">length:</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+<span class="tk-f">.loop:</span>  cmp     <span class="tk-k">byte</span> [<span class="tk-t">rdi</span> + <span class="tk-t">rax</span>], <span class="tk-n">0</span>
+        je      .done
+        inc     <span class="tk-t">rax</span>
+        jmp     .loop
+<span class="tk-f">.done:</span>  ret</code></pre></div>
+<p><code>cmp byte [rdi + rax], 0</code> compares one byte of memory with 0 directly: no register needed.</p>
+<h2>Reading characters</h2>
+<p>To work on a character, read it with <code>movzx</code> so the rest of the register is clean, then compare and change the low byte:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">text:</span>   <span class="tk-k">db</span>      <span class="tk-s">&quot;Hello, assembly world!&quot;</span>, <span class="tk-n">0</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        lea     <span class="tk-t">rbx</span>, [<span class="tk-k">rel</span> text]
+        mov     <span class="tk-t">rsi</span>, <span class="tk-t">rbx</span>
+<span class="tk-f">.loop:</span>
+        movzx   <span class="tk-t">eax</span>, <span class="tk-k">byte</span> [<span class="tk-t">rsi</span>]
+        test    <span class="tk-t">al</span>, <span class="tk-t">al</span>
+        jz      .done                   <span class="tk-c">; the 0 at the end</span>
+        cmp     <span class="tk-t">al</span>, <span class="tk-s">'a'</span>
+        jb      .next
+        cmp     <span class="tk-t">al</span>, <span class="tk-s">'z'</span>
+        ja      .next
+        sub     <span class="tk-t">al</span>, <span class="tk-n">32</span>                  <span class="tk-c">; 'a' to 'z' become 'A' to 'Z'</span>
+        mov     [<span class="tk-t">rsi</span>], <span class="tk-t">al</span>               <span class="tk-c">; write it back</span>
+<span class="tk-f">.next:</span>
+        inc     <span class="tk-t">rsi</span>
+        jmp     .loop
+<span class="tk-f">.done:</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_str
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>This changes the string where it is, which works because it is in <code>.data</code>. Text in <code>.rodata</code> would crash when written.</p>
+<h2>Copying and comparing</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; rdi = destination, rsi = source. Copies the string with its 0.</span>
+<span class="tk-f">copy:</span>
+<span class="tk-f">.loop:</span>  movzx   <span class="tk-t">eax</span>, <span class="tk-k">byte</span> [<span class="tk-t">rsi</span>]
+        mov     [<span class="tk-t">rdi</span>], <span class="tk-t">al</span>
+        inc     <span class="tk-t">rsi</span>
+        inc     <span class="tk-t">rdi</span>
+        test    <span class="tk-t">al</span>, <span class="tk-t">al</span>
+        jnz     .loop                   <span class="tk-c">; the 0 was copied too: stop</span>
+        ret
+
+<span class="tk-c">; rdi, rsi = two strings. Returns 1 if they are equal.</span>
+<span class="tk-f">equal:</span>
+<span class="tk-f">.loop:</span>  movzx   <span class="tk-t">eax</span>, <span class="tk-k">byte</span> [<span class="tk-t">rdi</span>]
+        cmp     <span class="tk-t">al</span>, [<span class="tk-t">rsi</span>]
+        jne     .no                     <span class="tk-c">; a difference</span>
+        test    <span class="tk-t">al</span>, <span class="tk-t">al</span>
+        jz      .yes                    <span class="tk-c">; both ended together</span>
+        inc     <span class="tk-t">rdi</span>
+        inc     <span class="tk-t">rsi</span>
+        jmp     .loop
+<span class="tk-f">.yes:</span>   mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+        ret
+<span class="tk-f">.no:</span>    xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+        ret</code></pre></div>
+<p>The destination must have room: copying a long string into a short buffer overwrites whatever follows, the buffer overflow of C, with no warning at all here.</p>
+<h2>The string instructions</h2>
+<p>x86 has instructions made for blocks of memory. With a <strong><code>rep</code></strong> prefix they repeat <code>rcx</code> times:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Does, each time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rep movsb</code></td>
+<td>copy the byte at <code>[rsi]</code> to <code>[rdi]</code>, then move both on</td>
+</tr>
+<tr>
+<td><code>rep stosb</code></td>
+<td>store <code>al</code> at <code>[rdi]</code>, then move it on</td>
+</tr>
+<tr>
+<td><code>repne scasb</code></td>
+<td>compare <code>al</code> with <code>[rdi]</code>, move on, stop at a match</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; fill 64 bytes at buffer with '-'</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> buffer]
+        mov     <span class="tk-t">al</span>, <span class="tk-s">'-'</span>
+        mov     <span class="tk-t">ecx</span>, <span class="tk-n">64</span>
+        rep stosb
+
+<span class="tk-c">; copy rcx bytes from rsi to rdi</span>
+        rep movsb</code></pre></div>
+<p>They move forwards as long as the <strong>direction flag</strong> is clear, which the calling convention guarantees. Modern processors run <code>rep movsb</code> very fast for large blocks, and C&#39;s <code>memcpy</code> and <code>memset</code> often use it.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">How does a C-style string mark its end?</div><ul><li>With a zero byte</li><li>With its length stored first</li><li>With a new line</li></ul><details><summary>Show the answer</summary><p><b>With a zero byte</b> print_str and the C library both rely on it.</p></details></li><li><div class="q">Why read characters with movzx eax, byte [rsi]?</div><ul><li>It reads one byte and clears the rest of the register</li><li>It reads the whole string</li><li>mov cannot read bytes</li></ul><details><summary>Show the answer</summary><p><b>It reads one byte and clears the rest of the register</b> mov al, [rsi] would leave the old upper bits.</p></details></li><li><div class="q">Which instruction copies rcx bytes from [rsi] to [rdi]?</div><ul><li>rep movsb</li><li>rep stosb</li><li>mov [rdi], [rsi]</li></ul><details><summary>Show the answer</summary><p><b>rep movsb</b> Memory-to-memory mov does not exist.</p></details></li><li><div class="q">What happens when copy is given a destination that is too small?</div><ul><li>It writes past the end, over whatever follows</li><li>It stops at the end of the buffer</li><li>It crashes at once, every time</li></ul><details><summary>Show the answer</summary><p><b>It writes past the end, over whatever follows</b> The function cannot know the buffer&#39;s size.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/4.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/4.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-02-arrays/"><span class="mono">previous</span><b>4.02 Arrays</b></a>
+      <a class="lp-next" href="../4-04-the-stack-push-and-pop/"><span class="mono">next</span><b>4.04 The Stack push and pop</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/4-03-strings"></script>
+</body>
+</html>

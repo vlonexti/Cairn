@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Deref, AsRef, Borrow and Cow · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/7-02-deref-asref-borrow-and-cow/">
+  <meta name="description" content="The traits behind smart pointers and flexible APIs - Deref and deref coercion, implementing Deref for your own wrapper, the newtype pattern, AsRef for…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Deref, AsRef, Borrow and Cow · Rust · Xenon">
+  <meta property="og:description" content="The traits behind smart pointers and flexible APIs - Deref and deref coercion, implementing Deref for your own wrapper, the newtype pattern, AsRef for…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/7-02-deref-asref-borrow-and-cow/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Deref, AsRef, Borrow and Cow · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Deref, AsRef, Borrow and Cow · Rust · Xenon">
+  <meta name="twitter:description" content="The traits behind smart pointers and flexible APIs - Deref and deref coercion, implementing Deref for your own wrapper, the newtype pattern, AsRef for…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Advanced Rust</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Deref, AsRef, Borrow and Cow</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.02</b></span><span>2 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">The traits behind smart pointers and flexible APIs - Deref and deref coercion, implementing Deref for your own wrapper, the newtype pattern, AsRef for functions that accept many kinds of input, Borrow for map lookups, and Cow for data that is borrowed until it has to be changed.</p>
+      <div class="prose">
+<h2>Deref and deref coercion</h2>
+<p><code>Box&lt;T&gt;</code>, <code>Rc&lt;T&gt;</code>, <code>String</code> and <code>Vec&lt;T&gt;</code> all implement <strong><code>Deref</code></strong>: they can be treated as a reference to what is inside. <code>*b</code> on a <code>Box&lt;i32&gt;</code> gives the <code>i32</code>, and method calls look through automatically:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">shout</span>(text: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">String</span> {
+    text.<span class="tk-f">to_uppercase</span>()
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> owned = <span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;hello&quot;</span>);
+    <span class="tk-k">let</span> boxed = <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;boxed&quot;</span>));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">shout</span>(&amp;owned));   <span class="tk-c">// &amp;String becomes &amp;str</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">shout</span>(&amp;boxed));   <span class="tk-c">// &amp;Box&lt;String&gt; becomes &amp;String becomes &amp;str</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, boxed.<span class="tk-f">len</span>());     <span class="tk-c">// the method is found through Box</span>
+}</code></pre></div>
+<p>This automatic conversion from <code>&amp;Wrapper</code> to <code>&amp;Inner</code> is <strong>deref coercion</strong>. It is why functions should take <code>&amp;str</code> instead of <code>&amp;String</code>, and <code>&amp;[T]</code> instead of <code>&amp;Vec&lt;T&gt;</code>: they then accept every kind of string or slice.</p>
+<h2>The newtype pattern</h2>
+<p>A <strong>newtype</strong> wraps one value in a struct of its own: <code>struct Email(String)</code>. It gives the value a distinct type (so an <code>Email</code> cannot be passed where a <code>Username</code> is expected), lets you implement traits for it, and lets you control which operations exist:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::fmt;
+
+<span class="tk-p">#[derive(Debug, Clone, PartialEq)]</span>
+<span class="tk-k">struct</span> <span class="tk-f">Email</span>(<span class="tk-t">String</span>);
+
+<span class="tk-k">impl</span> <span class="tk-t">Email</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">parse</span>(text: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">Result</span>&lt;<span class="tk-t">Email</span>, <span class="tk-t">String</span>&gt; {
+        <span class="tk-k">match</span> text.<span class="tk-f">split_once</span>(<span class="tk-s">'@'</span>) {
+            <span class="tk-f">Some</span>((user, domain)) <span class="tk-k">if</span> !user.<span class="tk-f">is_empty</span>() &amp;&amp; domain.<span class="tk-f">contains</span>(<span class="tk-s">'.'</span>) =&gt; <span class="tk-f">Ok</span>(<span class="tk-f">Email</span>(text.<span class="tk-f">to_lowercase</span>())),
+            _ =&gt; <span class="tk-f">Err</span>(<span class="tk-p">format!</span>(<span class="tk-s">&quot;not an email address: {text}&quot;</span>)),
+        }
+    }
+
+    <span class="tk-k">fn</span> <span class="tk-f">domain</span>(&amp;<span class="tk-k">self</span>) -&gt; &amp;<span class="tk-k">str</span> {
+        <span class="tk-k">self</span>.<span class="tk-n">0</span>.<span class="tk-f">split_once</span>(<span class="tk-s">'@'</span>).<span class="tk-f">map</span>(|(_, d)| d).<span class="tk-f">unwrap_or</span>(<span class="tk-s">&quot;&quot;</span>)
+    }
+}
+
+<span class="tk-k">impl</span> fmt::<span class="tk-t">Display</span> <span class="tk-k">for</span> <span class="tk-t">Email</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">fmt</span>(&amp;<span class="tk-k">self</span>, f: &amp;<span class="tk-k">mut</span> fmt::<span class="tk-t">Formatter</span>) -&gt; fmt::<span class="tk-t">Result</span> {
+        <span class="tk-p">write!</span>(f, <span class="tk-s">&quot;&lt;{}&gt;&quot;</span>, <span class="tk-k">self</span>.<span class="tk-n">0</span>)
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> e = <span class="tk-t">Email</span>::<span class="tk-f">parse</span>(<span class="tk-s">&quot;Ada@Example.com&quot;</span>).<span class="tk-f">unwrap</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{e} at {}&quot;</span>, e.<span class="tk-f">domain</span>());
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, <span class="tk-t">Email</span>::<span class="tk-f">parse</span>(<span class="tk-s">&quot;nobody&quot;</span>));
+}</code></pre></div>
+<p>Once created, an <code>Email</code> is known to be valid everywhere: the check is in one place.</p>
+<h2>Implementing Deref, carefully</h2>
+<p>Implementing <code>Deref</code> for a newtype makes all of the inner type&#39;s <code>&amp;self</code> methods available on it. That is right for smart pointers and wrappers that really <em>are</em> the inner thing; it is wrong when the wrapper exists to <em>restrict</em> what can be done (it would let every method through).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::ops::<span class="tk-t">Deref</span>;
+
+<span class="tk-k">struct</span> <span class="tk-f">Sorted</span>(<span class="tk-t">Vec</span>&lt;<span class="tk-k">i32</span>&gt;);          <span class="tk-c">// always sorted: only read access is given out</span>
+
+<span class="tk-k">impl</span> <span class="tk-t">Sorted</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">new</span>(<span class="tk-k">mut</span> v: <span class="tk-t">Vec</span>&lt;<span class="tk-k">i32</span>&gt;) -&gt; <span class="tk-t">Sorted</span> {
+        v.<span class="tk-f">sort</span>();
+        <span class="tk-f">Sorted</span>(v)
+    }
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Deref</span> <span class="tk-k">for</span> <span class="tk-t">Sorted</span> {
+    <span class="tk-k">type</span> <span class="tk-t">Target</span> = [<span class="tk-k">i32</span>];
+    <span class="tk-k">fn</span> <span class="tk-f">deref</span>(&amp;<span class="tk-k">self</span>) -&gt; &amp;[<span class="tk-k">i32</span>] {
+        &amp;<span class="tk-k">self</span>.<span class="tk-n">0</span>
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> s = <span class="tk-t">Sorted</span>::<span class="tk-f">new</span>(<span class="tk-p">vec!</span>[<span class="tk-n">5</span>, <span class="tk-n">1</span>, <span class="tk-n">4</span>]);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} min {} has 4: {}&quot;</span>, &amp;s[..], s[<span class="tk-n">0</span>], s.<span class="tk-f">binary_search</span>(&amp;<span class="tk-n">4</span>).<span class="tk-f">is_ok</span>());
+}</code></pre></div>
+<p>Only <code>Deref</code> (not <code>DerefMut</code>) is implemented, so callers can read the slice but never unsort it.</p>
+<h2>AsRef: accept anything that can give a reference</h2>
+<p><code>AsRef&lt;T&gt;</code> means &quot;can cheaply give a <code>&amp;T</code>&quot;. Taking <code>impl AsRef&lt;Path&gt;</code> lets a function accept <code>&amp;str</code>, <code>String</code>, <code>&amp;Path</code> and <code>PathBuf</code> alike; that is how <code>std::fs::read_to_string</code> is declared:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> count_words&lt;S: <span class="tk-t">AsRef</span>&lt;<span class="tk-k">str</span>&gt;&gt;(texts: &amp;[S]) -&gt; <span class="tk-k">usize</span> {
+    texts.<span class="tk-f">iter</span>().<span class="tk-f">map</span>(|t| t.<span class="tk-f">as_ref</span>().<span class="tk-f">split_whitespace</span>().<span class="tk-f">count</span>()).<span class="tk-f">sum</span>()
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> borrowed = [<span class="tk-s">&quot;a b&quot;</span>, <span class="tk-s">&quot;c&quot;</span>];
+    <span class="tk-k">let</span> owned = <span class="tk-p">vec!</span>[<span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;one two three&quot;</span>)];
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {}&quot;</span>, <span class="tk-f">count_words</span>(&amp;borrowed), <span class="tk-f">count_words</span>(&amp;owned));
+}</code></pre></div>
+<h2>Borrow: looking up owned keys with borrowed values</h2>
+<p>A <code>HashMap&lt;String, V&gt;</code> can be searched with a <code>&amp;str</code>, without making a <code>String</code>, because <code>String: Borrow&lt;str&gt;</code>. The rule behind <code>Borrow</code> is stricter than <code>AsRef</code>: the borrowed form must hash and compare exactly like the owned one. You rarely implement it; you rely on it every time you call <code>map.get(&quot;key&quot;)</code>.</p>
+<h2>Cow: borrow until you must own</h2>
+<p><code>Cow&lt;&#39;a, T&gt;</code> (&quot;clone on write&quot;) holds <strong>either</strong> a borrowed <code>&amp;&#39;a T</code> or an owned value. A function that usually returns its input unchanged, but sometimes has to build a new value, can avoid allocating in the common case:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::borrow::<span class="tk-t">Cow</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">normalise_spaces</span>(text: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">Cow</span>&lt;'_, <span class="tk-k">str</span>&gt; {
+    <span class="tk-k">if</span> !text.<span class="tk-f">contains</span>(<span class="tk-s">&quot;  &quot;</span>) {
+        <span class="tk-k">return</span> <span class="tk-t">Cow</span>::<span class="tk-f">Borrowed</span>(text);          <span class="tk-c">// nothing to do: no allocation</span>
+    }
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> out = <span class="tk-t">String</span>::<span class="tk-f">with_capacity</span>(text.<span class="tk-f">len</span>());
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> last_space = <span class="tk-k">false</span>;
+    <span class="tk-k">for</span> c <span class="tk-k">in</span> text.<span class="tk-f">chars</span>() {
+        <span class="tk-k">if</span> c == <span class="tk-s">' '</span> &amp;&amp; last_space { <span class="tk-k">continue</span>; }
+        last_space = c == <span class="tk-s">' '</span>;
+        out.<span class="tk-f">push</span>(c);
+    }
+    <span class="tk-t">Cow</span>::<span class="tk-f">Owned</span>(out)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">for</span> t <span class="tk-k">in</span> [<span class="tk-s">&quot;already fine&quot;</span>, <span class="tk-s">&quot;too   many  spaces&quot;</span>] {
+        <span class="tk-k">let</span> n = <span class="tk-f">normalise_spaces</span>(t);
+        <span class="tk-k">let</span> kind = <span class="tk-k">if</span> <span class="tk-p">matches!</span>(n, <span class="tk-t">Cow</span>::<span class="tk-f">Borrowed</span>(_)) { <span class="tk-s">&quot;borrowed&quot;</span> } <span class="tk-k">else</span> { <span class="tk-s">&quot;owned&quot;</span> };
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{n:?} ({kind})&quot;</span>);
+    }
+}</code></pre></div>
+<p>A <code>Cow&lt;str&gt;</code> derefs to <code>&amp;str</code>, so callers use it like any string; <code>.into_owned()</code> gives a <code>String</code> when they need one.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/7.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/7.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-01-macros/"><span class="mono">previous</span><b>7.01 Macros</b></a>
+      <a class="lp-next" href="../7-03-unsafe-rust-and-ffi/"><span class="mono">next</span><b>7.03 Unsafe Rust and FFI</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/7-02-deref-asref-borrow-and-cow"></script>
+</body>
+</html>

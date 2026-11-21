@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Timers, Debouncing and Concurrency · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/4-05-timers-debouncing-and-concurrency/">
+  <meta name="description" content="setTimeout, setInterval and clearing them, a sleep helper, debounce and throttle for noisy events, timeouts for promises, retrying with backoff, and running…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Timers, Debouncing and Concurrency · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="setTimeout, setInterval and clearing them, a sleep helper, debounce and throttle for noisy events, timeouts for promises, retrying with backoff, and running…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/4-05-timers-debouncing-and-concurrency/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Timers, Debouncing and Concurrency · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Timers, Debouncing and Concurrency · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="setTimeout, setInterval and clearing them, a sleep helper, debounce and throttle for noisy events, timeouts for promises, retrying with backoff, and running…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Asynchronous JavaScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Timers, Debouncing and Concurrency</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">setTimeout, setInterval and clearing them, a sleep helper, debounce and throttle for noisy events, timeouts for promises, retrying with backoff, and running async work with a concurrency limit.</p>
+      <div class="prose">
+<h2>Timers</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> id = <span class="tk-f">setTimeout</span>(() =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;never runs&quot;</span>), <span class="tk-n">100</span>);
+<span class="tk-f">clearTimeout</span>(id);
+
+<span class="tk-k">let</span> ticks = <span class="tk-n">0</span>;
+<span class="tk-k">const</span> timer = <span class="tk-f">setInterval</span>(() =&gt; {
+  ticks++;
+  console.<span class="tk-f">log</span>(<span class="tk-s">&quot;tick&quot;</span>, ticks);
+  <span class="tk-k">if</span> (ticks === <span class="tk-n">3</span>) <span class="tk-f">clearInterval</span>(timer);
+}, <span class="tk-n">20</span>);</code></pre></div>
+<p>Delays are minimums, not exact: a timer runs when its time has passed <strong>and</strong> the event loop is free. Browsers slow timers down in background tabs.</p>
+<p>A promise-based sleep is a one-liner:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> sleep = ms =&gt; <span class="tk-k">new</span> <span class="tk-f">Promise</span>(resolve =&gt; <span class="tk-f">setTimeout</span>(resolve, ms));
+(<span class="tk-k">async</span> () =&gt; { console.<span class="tk-f">log</span>(<span class="tk-s">&quot;waiting&quot;</span>); <span class="tk-k">await</span> <span class="tk-f">sleep</span>(<span class="tk-n">30</span>); console.<span class="tk-f">log</span>(<span class="tk-s">&quot;done&quot;</span>); })();</code></pre></div>
+<h2>Debounce</h2>
+<p>Some events fire many times a second: typing, scrolling, resizing. <strong>Debouncing</strong> waits until the events <strong>stop</strong> for a while, then runs once. A search box that queries a server should debounce, or it sends a request per key press.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">debounce</span>(f, ms) {
+  <span class="tk-k">let</span> timer;
+  <span class="tk-k">return</span> (...args) =&gt; {
+    <span class="tk-f">clearTimeout</span>(timer);
+    timer = <span class="tk-f">setTimeout</span>(() =&gt; <span class="tk-f">f</span>(...args), ms);
+  };
+}
+
+<span class="tk-k">const</span> search = <span class="tk-f">debounce</span>(q =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;searching for&quot;</span>, q), <span class="tk-n">30</span>);
+<span class="tk-f">search</span>(<span class="tk-s">&quot;c&quot;</span>); <span class="tk-f">search</span>(<span class="tk-s">&quot;ca&quot;</span>); <span class="tk-f">search</span>(<span class="tk-s">&quot;cat&quot;</span>);        <span class="tk-c">// only &quot;cat&quot; is searched</span></code></pre></div>
+<h2>Throttle</h2>
+<p><strong>Throttling</strong> runs at most once per period, ignoring calls in between. It suits continuous updates, such as saving the position while dragging:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">throttle</span>(f, ms) {
+  <span class="tk-k">let</span> last = -Infinity;
+  <span class="tk-k">return</span> (...args) =&gt; {
+    <span class="tk-k">const</span> now = Date.<span class="tk-f">now</span>();
+    <span class="tk-k">if</span> (now - last &gt;= ms) { last = now; <span class="tk-f">f</span>(...args); }
+  };
+}
+<span class="tk-k">const</span> log = <span class="tk-f">throttle</span>(x =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;ran with&quot;</span>, x), <span class="tk-n">1000</span>);
+<span class="tk-f">log</span>(<span class="tk-n">1</span>); <span class="tk-f">log</span>(<span class="tk-n">2</span>); <span class="tk-f">log</span>(<span class="tk-n">3</span>);                         <span class="tk-c">// only 1 runs</span></code></pre></div>
+<h2>Timeouts for promises</h2>
+<p><code>Promise.race</code> with a timer gives any operation a time limit:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">withTimeout</span>(promise, ms) {
+  <span class="tk-k">let</span> timer;
+  <span class="tk-k">const</span> timeout = <span class="tk-k">new</span> <span class="tk-f">Promise</span>((_, reject) =&gt; {
+    timer = <span class="tk-f">setTimeout</span>(() =&gt; <span class="tk-f">reject</span>(<span class="tk-k">new</span> <span class="tk-f">Error</span>(<span class="tk-s">`timed out after ${ms} ms`</span>)), ms);
+  });
+  <span class="tk-k">return</span> Promise.<span class="tk-f">race</span>([promise, timeout]).<span class="tk-k">finally</span>(() =&gt; <span class="tk-f">clearTimeout</span>(timer));
+}
+
+<span class="tk-k">const</span> slow = <span class="tk-k">new</span> <span class="tk-f">Promise</span>(r =&gt; <span class="tk-f">setTimeout</span>(() =&gt; <span class="tk-f">r</span>(<span class="tk-s">&quot;slow result&quot;</span>), <span class="tk-n">100</span>));
+<span class="tk-f">withTimeout</span>(slow, <span class="tk-n">20</span>).<span class="tk-f">then</span>(console.log, err =&gt; console.<span class="tk-f">log</span>(err.message));</code></pre></div>
+<p>The <code>finally</code> clears the timer so it does not keep the program alive after the work is done.</p>
+<h2>Retrying</h2>
+<p>Network calls fail now and then. Retry a few times with a growing wait (<strong>exponential backoff</strong>), and only for errors where retrying can help:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">retry</span>(task, { attempts = <span class="tk-n">3</span>, delay = <span class="tk-n">100</span> } = {}) {
+  <span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-n">1</span>; ; i++) {
+    <span class="tk-k">try</span> {
+      <span class="tk-k">return</span> <span class="tk-k">await</span> <span class="tk-f">task</span>();
+    } <span class="tk-k">catch</span> (err) {
+      <span class="tk-k">if</span> (i &gt;= attempts) <span class="tk-k">throw</span> err;
+      <span class="tk-k">await</span> <span class="tk-f">sleep</span>(delay * <span class="tk-n">2</span> ** (i - <span class="tk-n">1</span>));     <span class="tk-c">// 100, 200, 400 ms...</span>
+    }
+  }
+}</code></pre></div>
+<h2>A concurrency limit</h2>
+<p><code>Promise.all(items.map(work))</code> starts everything at once. With 1000 items, that is 1000 requests at the same moment, which servers may refuse. A pool keeps at most <code>limit</code> running:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">mapLimit</span>(items, limit, work) {
+  <span class="tk-k">const</span> results = <span class="tk-k">new</span> <span class="tk-f">Array</span>(items.length);
+  <span class="tk-k">let</span> next = <span class="tk-n">0</span>;
+  <span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">worker</span>() {
+    <span class="tk-k">while</span> (next &lt; items.length) {
+      <span class="tk-k">const</span> i = next++;                       <span class="tk-c">// safe: only one piece of code runs at a time</span>
+      results[i] = <span class="tk-k">await</span> <span class="tk-f">work</span>(items[i], i);
+    }
+  }
+  <span class="tk-k">await</span> Promise.<span class="tk-f">all</span>(Array.<span class="tk-k">from</span>({ length: Math.<span class="tk-f">min</span>(limit, items.length) }, worker));
+  <span class="tk-k">return</span> results;
+}
+
+<span class="tk-k">let</span> running = <span class="tk-n">0</span>, peak = <span class="tk-n">0</span>;
+<span class="tk-k">const</span> job = <span class="tk-k">async</span> n =&gt; { running++; peak = Math.<span class="tk-f">max</span>(peak, running); <span class="tk-k">await</span> <span class="tk-k">new</span> <span class="tk-f">Promise</span>(r =&gt; <span class="tk-f">setTimeout</span>(r, <span class="tk-n">10</span>)); running--; <span class="tk-k">return</span> n * <span class="tk-n">2</span>; };
+<span class="tk-f">mapLimit</span>([<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>, <span class="tk-n">6</span>, <span class="tk-n">7</span>], <span class="tk-n">3</span>, job).<span class="tk-f">then</span>(r =&gt; console.<span class="tk-f">log</span>(r, <span class="tk-s">&quot;peak&quot;</span>, peak));</code></pre></div>
+<p>Results stay in input order, because each is stored at its own index.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-fetching-data/"><span class="mono">previous</span><b>4.04 Fetching Data</b></a>
+      <a class="lp-next" href="../5-01-why-typescript-and-basic-types/"><span class="mono">next</span><b>5.01 Why TypeScript and Basic Types</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/4-05-timers-debouncing-and-concurrency"></script>
+</body>
+</html>

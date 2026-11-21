@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Flags · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/2-04-the-flags/">
+  <meta name="description" content="Arithmetic and logic instructions record facts about their result in rflags - ZF when it is zero, SF when it is negative, CF when an unsigned result wrapped,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Flags · Assembly · Xenon">
+  <meta property="og:description" content="Arithmetic and logic instructions record facts about their result in rflags - ZF when it is zero, SF when it is negative, CF when an unsigned result wrapped,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/2-04-the-flags/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Flags · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Flags · Assembly · Xenon">
+  <meta name="twitter:description" content="Arithmetic and logic instructions record facts about their result in rflags - ZF when it is zero, SF when it is negative, CF when an unsigned result wrapped,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Arithmetic and Logic</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Flags</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Arithmetic and logic instructions record facts about their result in rflags - ZF when it is zero, SF when it is negative, CF when an unsigned result wrapped, OF when a signed result overflowed. cmp and test set flags without keeping a result. adc and sbb use the carry to work on numbers bigger than a register.</p>
+      <div class="prose">
+<h2>Notes about the last result</h2>
+<p>Most arithmetic and logic instructions leave notes about their result in the <strong>rflags</strong> register. Four of the single-bit flags matter most:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Name</th>
+<th>Set when the result...</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ZF</strong></td>
+<td>zero</td>
+<td>is 0</td>
+</tr>
+<tr>
+<td><strong>SF</strong></td>
+<td>sign</td>
+<td>has its top bit set: negative, read as signed</td>
+</tr>
+<tr>
+<td><strong>CF</strong></td>
+<td>carry</td>
+<td>wrapped past the top or below 0, read as <strong>unsigned</strong></td>
+</tr>
+<tr>
+<td><strong>OF</strong></td>
+<td>overflow</td>
+<td>is wrong, read as <strong>signed</strong>: two positives gave a negative, or two negatives a positive</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>mov</code>, <code>lea</code>, <code>push</code> and <code>pop</code> do <strong>not</strong> change the flags; <code>add</code>, <code>sub</code>, <code>and</code>, <code>or</code>, <code>xor</code>, <code>neg</code>, <code>cmp</code>, <code>test</code> and shifts do. (<code>inc</code> and <code>dec</code> change all but CF.)</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/assembly/l/2.04">Try it in Xenon</a></div>
+<p>Step through and read the flags after each line:</p>
+<ol>
+<li><code>5 - 5</code> is 0: <strong>ZF</strong>.</li>
+<li><code>0 - 1</code> is −1 (all 1s): <strong>SF</strong>, and <strong>CF</strong>, because as unsigned numbers 0 − 1 went below zero.</li>
+<li><code>0x7FFFFFFF + 1</code>: the biggest signed 32-bit number plus one becomes the most negative one: <strong>OF</strong> and SF. As unsigned it is fine (2,147,483,648), so no CF.</li>
+<li><code>0xFFFFFFFF + 1</code> wraps to 0: <strong>CF</strong> and ZF. As signed it is −1 + 1 = 0, perfectly fine, so no OF.</li>
+</ol>
+<p>The processor doesn&#39;t know whether you meant signed or unsigned, so it records both: CF for unsigned, OF for signed.</p>
+<h2>cmp and test</h2>
+<p>The next module&#39;s jumps read the flags. To set them without changing anything:</p>
+<ul>
+<li><code>cmp a, b</code> subtracts b from a, sets the flags, and throws the answer away. After <code>cmp rax, rbx</code>, ZF means they were equal, and CF means <code>rax &lt; rbx</code> as unsigned numbers.</li>
+<li><code>test a, b</code> does an <code>and</code>, sets the flags and throws the answer away. <code>test rax, rax</code> sets ZF if rax is 0 and SF if it is negative.</li>
+</ul>
+<h2>Bigger than 64 bits: adc and sbb</h2>
+<p>The carry flag is the &quot;carry the one&quot; of long addition. <code>adc</code> (add with carry) adds the operand <strong>and</strong> CF, so you can add numbers of any size, 64 bits at a time:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; a 128-bit number in rdx:rax plus another in rcx:rbx</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-t">rbx</span>        <span class="tk-c">; the low halves; CF = the carry out</span>
+        adc     <span class="tk-t">rdx</span>, <span class="tk-t">rcx</span>        <span class="tk-c">; the high halves, plus that carry</span></code></pre></div>
+<p><code>sbb</code> (subtract with borrow) does the same for subtraction. A neat trick: after <code>cmp a, b</code>, <code>sbb eax, eax</code> gives −1 if <code>a &lt; b</code> as unsigned numbers and 0 otherwise, without any jump.</p>
+<h2>Keeping a flag as a number</h2>
+<p><code>adc</code> with zero turns the carry into a number:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">rax</span>, -<span class="tk-n">1</span>                 <span class="tk-c">; the largest unsigned 64-bit number</span>
+        xor     <span class="tk-t">ebx</span>, <span class="tk-t">ebx</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-n">1</span>                  <span class="tk-c">; wraps: CF = 1</span>
+        adc     <span class="tk-t">rbx</span>, <span class="tk-n">0</span>                  <span class="tk-c">; rbx = 0 + 0 + CF = 1</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_int
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>Lesson 3.05 shows <code>setc</code>, <code>setz</code> and friends, which do this for any flag.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which flag says an unsigned result wrapped around?</div><ul><li>CF, carry</li><li>OF, overflow</li><li>ZF, zero</li></ul><details><summary>Show the answer</summary><p><b>CF, carry</b> OF is the signed version.</p></details></li><li><div class="q">0x7FFFFFFF + 1 in a 32-bit register sets which flag that 0xFFFFFFFF + 1 does not?</div><ul><li>OF</li><li>CF</li><li>ZF</li></ul><details><summary>Show the answer</summary><p><b>OF</b> As signed numbers, the first overflowed and the second did not.</p></details></li><li><div class="q">What does cmp rax, rbx change?</div><ul><li>Only the flags</li><li>rax</li><li>rbx</li></ul><details><summary>Show the answer</summary><p><b>Only the flags</b> It subtracts and throws the result away.</p></details></li><li><div class="q">What is adc for?</div><ul><li>Adding with the carry from the previous addition, for numbers bigger than a register</li><li>Adding two characters</li><li>Adding to the address</li></ul><details><summary>Show the answer</summary><p><b>Adding with the carry from the previous addition, for numbers bigger than a register</b> Long addition, 64 bits at a time.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-bit-instructions-and-shifts/"><span class="mono">previous</span><b>2.03 Bit Instructions and Shifts</b></a>
+      <a class="lp-next" href="../2-05-printing-digits-yourself/"><span class="mono">next</span><b>2.05 Printing Digits Yourself</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/2-04-the-flags"></script>
+</body>
+</html>

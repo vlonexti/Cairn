@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Child Windows and Scrolling · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/3-02-child-windows-and-scrolling/">
+  <meta name="description" content="A child window is a scrolling region inside a window - a list that scrolls while the buttons below it stay put, or a two-pane layout. This lesson covers…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Child Windows and Scrolling · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="A child window is a scrolling region inside a window - a list that scrolls while the buttons below it stay put, or a two-pane layout. This lesson covers…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/3-02-child-windows-and-scrolling/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Child Windows and Scrolling · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Child Windows and Scrolling · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="A child window is a scrolling region inside a window - a list that scrolls while the buttons below it stay put, or a two-pane layout. This lesson covers…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Layout and Structure</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Child Windows and Scrolling</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A child window is a scrolling region inside a window - a list that scrolls while the buttons below it stay put, or a two-pane layout. This lesson covers <code>BeginChild</code>, sizing children to fill space, scrolling from code, auto-scrolling logs, and <strong>clipping</strong> so a list of a hundred thousand items costs nothing.</p>
+      <div class="prose">
+<h2>BeginChild</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">BeginChild</span>(<span class="tk-s">&quot;stones&quot;</span>, <span class="tk-f">ImVec2</span>(<span class="tk-n">0</span>, <span class="tk-n">200</span>), <span class="tk-t">ImGuiChildFlags_Borders</span>);   <span class="tk-c">// full width, 200 high, with a border</span>
+<span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-t">Stone</span>&amp; s : stones) <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%s&quot;</span>, s.name.<span class="tk-f">c_str</span>());
+<span class="tk-t">ImGui</span>::<span class="tk-f">EndChild</span>();                                                       <span class="tk-c">// ALWAYS, like End</span>
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Add&quot;</span>)) <span class="tk-f">addStone</span>();                                    <span class="tk-c">// stays below, not scrolled</span></code></pre></div>
+<p><code>BeginChild</code>/<code>EndChild</code> follow the <strong>window</strong> rule: <code>EndChild</code> is always called, whatever <code>BeginChild</code> returned.</p>
+<p>Sizes: <code>0</code> means &quot;fill what is available&quot;, a positive number is a fixed size, a <strong>negative</strong> number means &quot;fill, minus this much&quot;. So &quot;a list that fills the window except for one row of buttons below it&quot; is:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">float</span> footer = <span class="tk-t">ImGui</span>::<span class="tk-f">GetFrameHeightWithSpacing</span>();      <span class="tk-c">// the height of one row of buttons</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">BeginChild</span>(<span class="tk-s">&quot;list&quot;</span>, <span class="tk-f">ImVec2</span>(<span class="tk-n">0</span>, -footer), <span class="tk-t">ImGuiChildFlags_Borders</span>);
+<span class="tk-c">// ...</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">EndChild</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Add&quot;</span>);</code></pre></div>
+<h2>Two panes side by side</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">BeginChild</span>(<span class="tk-s">&quot;left&quot;</span>, <span class="tk-f">ImVec2</span>(<span class="tk-n">200</span>, <span class="tk-n">0</span>), <span class="tk-t">ImGuiChildFlags_Borders</span> | <span class="tk-t">ImGuiChildFlags_ResizeX</span>);  <span class="tk-c">// resizable</span>
+<span class="tk-f">drawLevelList</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">EndChild</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">BeginChild</span>(<span class="tk-s">&quot;right&quot;</span>);                      <span class="tk-c">// takes the rest</span>
+<span class="tk-f">drawLevelDetails</span>();
+<span class="tk-t">ImGui</span>::<span class="tk-f">EndChild</span>();</code></pre></div>
+<p><code>ImGuiChildFlags_ResizeX</code> adds a handle on the child&#39;s right edge the user can drag. (Before version 1.90 the second argument of <code>BeginChild</code> was a <code>bool border</code>; the flags replaced it.)</p>
+<h2>Scrolling from code</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">SetScrollHereY</span>(<span class="tk-n">0.5f</span>);           <span class="tk-c">// scroll so the current cursor position is in the middle</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">SetScrollY</span>(<span class="tk-n">0.0f</span>);               <span class="tk-c">// to the top</span>
+<span class="tk-k">float</span> y = <span class="tk-t">ImGui</span>::<span class="tk-f">GetScrollY</span>(), maxY = <span class="tk-t">ImGui</span>::<span class="tk-f">GetScrollMaxY</span>();</code></pre></div>
+<p>A log window wants to <strong>follow</strong> new lines, but only if the user has not scrolled up to read something:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">bool</span> atBottom = <span class="tk-t">ImGui</span>::<span class="tk-f">GetScrollY</span>() &gt;= <span class="tk-t">ImGui</span>::<span class="tk-f">GetScrollMaxY</span>();   <span class="tk-c">// measure BEFORE adding lines</span>
+<span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; line : log) <span class="tk-t">ImGui</span>::<span class="tk-f">TextUnformatted</span>(line.<span class="tk-f">c_str</span>());
+<span class="tk-k">if</span> (atBottom) <span class="tk-t">ImGui</span>::<span class="tk-f">SetScrollHereY</span>(<span class="tk-n">1.0f</span>);                              <span class="tk-c">// keep following</span></code></pre></div>
+<h2>Clipping long lists</h2>
+<p>Drawing 100,000 lines every frame is slow even if only 30 are visible. <strong><code>ImGuiListClipper</code></strong> works out which items are on screen, so you only draw those, while the scroll bar still behaves as if all of them were there:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGuiListClipper</span> clipper;
+clipper.<span class="tk-f">Begin</span>((<span class="tk-k">int</span>)lines.<span class="tk-f">size</span>());                  <span class="tk-c">// all items have the same height</span>
+<span class="tk-k">while</span> (clipper.<span class="tk-f">Step</span>())
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = clipper.<span class="tk-t">DisplayStart</span>; i &lt; clipper.<span class="tk-t">DisplayEnd</span>; ++i)
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TextUnformatted</span>(lines[i].<span class="tk-f">c_str</span>());</code></pre></div>
+<p>The idea is simple arithmetic: with each item <code>h</code> pixels high, the scroll position <code>y</code> and the visible height <code>H</code>, the first visible item is <code>floor(y / h)</code> and the last is <code>ceil((y + H) / h)</code>. The clipper reserves empty space for the items above and below so the scroll bar is right. The practice writes this calculation.</p>
+<p>Clipping needs every item to have the <strong>same height</strong>. For variable heights, keep a prefix sum of heights and binary-search it, or group items into rows of equal height.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Calling EndChild only when BeginChild returned true</span></div><div class="callout-body"><p>Like End, EndChild is always called.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Auto-scroll that fights the user</span></div><div class="callout-body"><p>Check whether you were at the bottom before adding lines, and only follow then.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Drawing every line of a huge log</span></div><div class="callout-body"><p>Use ImGuiListClipper; the cost then depends on the window height, not the log length.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A child should fill the window except for 40 pixels of buttons below it. What height do you pass?</div><ul><li>-40</li><li>40</li><li>0</li></ul><details><summary>Show the answer</summary><p><b>-40</b> Negative sizes mean &quot;fill, minus this much&quot;.</p></details></li><li><div class="q">What must be true of the items for ImGuiListClipper to work?</div><ul><li>They all have the same height</li><li>They are sorted</li><li>There are fewer than 1000</li></ul><details><summary>Show the answer</summary><p><b>They all have the same height</b> It computes the visible range from a fixed item height.</p></details></li><li><div class="q">With items 20 pixels high, scrolled to y = 1000, what is the first visible item?</div><ul><li>50</li><li>20</li><li>1000</li></ul><details><summary>Show the answer</summary><p><b>50</b> floor(1000 / 20) = 50.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-sizes-sameline-spacing-and-groups/"><span class="mono">previous</span><b>3.01 Sizes, SameLine, Spacing and Groups</b></a>
+      <a class="lp-next" href="../3-03-tables/"><span class="mono">next</span><b>3.03 Tables</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/3-02-child-windows-and-scrolling"></script>
+</body>
+</html>

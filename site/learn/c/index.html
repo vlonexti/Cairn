@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>C course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/">
+  <meta name="description" content="The language close to the machine. C is the language of operating systems, embedded chips and the interpreters of other languages: small, fast, and close to…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="C course · Xenon">
+  <meta property="og:description" content="The language close to the machine. C is the language of operating systems, embedded chips and the interpreters of other languages: small, fast, and close to…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="C course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="C course · Xenon">
+  <meta name="twitter:description" content="The language close to the machine. C is the language of operating systems, embedded chips and the interpreters of other languages: small, fast, and close to…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>C</span></div>
+    <h1 class="display">C</h1>
+    <div class="readout lp-readout"><span><b>8</b> milestones</span><span><b>43</b> lessons</span><span><b>58</b> practice tasks</span><span><b>40</b> projects</span></div>
+    <p class="lp-lede">C is the language of operating systems, embedded chips and the interpreters of other languages: small, fast, and close to the hardware. Starting from the first program, the course covers types, input and output, decisions, loops, functions and arrays, strings, pointers, memory you allocate and free yourself, structures and linked lists, the bugs C lets you make and how to catch them, bit operations, binary data and files, the preprocessor and programs in several files, function pointers, undefined behaviour, how C turns into assembly, a hash table of your own, and finally the advanced language: variadic functions, struct layout and bit fields, modern C from C11 to C23, error-handling patterns, and threads with atomics, then the practice of real C: dynamic strings, generic containers, dates, command-line tools, safe integer arithmetic and random numbers. Every lesson has checked practice compiled with GCC, and every milestone ends with five projects, from small to large.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-c-and-how-it-builds/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/c">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> First Steps</h2>
+      <p class="lp-ms-blurb">How C builds, variables and types, printf and scanf, operators, and decisions.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-c-and-how-it-builds/"><span class="mono">1.01</span><span class="t">C and How It Builds</span><span class="n">2 tasks</span></a></li>
+        <li><a href="1-02-variables-and-types/"><span class="mono">1.02</span><span class="t">Variables and Types</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-printf-and-scanf/"><span class="mono">1.03</span><span class="t">printf and scanf</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-operators-and-expressions/"><span class="mono">1.04</span><span class="t">Operators and Expressions</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-making-decisions/"><span class="mono">1.05</span><span class="t">Making Decisions</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Loops, Functions and Arrays</h2>
+      <p class="lp-ms-blurb">Loops, functions and prototypes, scope and static, arrays, strings as char arrays, and the string library.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-loops/"><span class="mono">2.01</span><span class="t">Loops</span><span class="n">2 tasks</span></a></li>
+        <li><a href="2-02-functions/"><span class="mono">2.02</span><span class="t">Functions</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-scope-lifetime-and-static/"><span class="mono">2.03</span><span class="t">Scope, Lifetime and static</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-arrays/"><span class="mono">2.04</span><span class="t">Arrays</span><span class="n">2 tasks</span></a></li>
+        <li><a href="2-05-strings/"><span class="mono">2.05</span><span class="t">Strings</span><span class="n">1 task</span></a></li>
+        <li><a href="2-06-the-string-library/"><span class="mono">2.06</span><span class="t">The String Library</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Pointers</h2>
+      <p class="lp-ms-blurb">Addresses and pointers, pointers and arrays, pointers as parameters, const, and pointers to pointers.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-addresses-and-pointers/"><span class="mono">3.01</span><span class="t">Addresses and Pointers</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-pointers-and-arrays/"><span class="mono">3.02</span><span class="t">Pointers and Arrays</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-pointers-as-parameters/"><span class="mono">3.03</span><span class="t">Pointers as Parameters</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-const-and-pointers/"><span class="mono">3.04</span><span class="t">const and Pointers</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-pointers-to-pointers-and-argv/"><span class="mono">3.05</span><span class="t">Pointers to Pointers and argv</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Memory and Structures</h2>
+      <p class="lp-ms-blurb">malloc and free, growing arrays, structures, typedef, enum and union, linked lists, and the memory bugs to avoid.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-malloc-and-free/"><span class="mono">4.01</span><span class="t">malloc and free</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-growing-arrays-with-realloc/"><span class="mono">4.02</span><span class="t">Growing Arrays with realloc</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-structures/"><span class="mono">4.03</span><span class="t">Structures</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-typedef-enum-and-union/"><span class="mono">4.04</span><span class="t">typedef, enum and union</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-linked-lists/"><span class="mono">4.05</span><span class="t">Linked Lists</span><span class="n">1 task</span></a></li>
+        <li><a href="4-06-memory-bugs/"><span class="mono">4.06</span><span class="t">Memory Bugs</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Bits, Files and the Preprocessor</h2>
+      <p class="lp-ms-blurb">Bitwise operators, fixed-width integers and binary data, files, the preprocessor, and programs in several files.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-bitwise-operators/"><span class="mono">5.01</span><span class="t">Bitwise Operators</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-fixed-width-integers-and-binary-data/"><span class="mono">5.02</span><span class="t">Fixed-Width Integers and Binary Data</span><span class="n">2 tasks</span></a></li>
+        <li><a href="5-03-files/"><span class="mono">5.03</span><span class="t">Files</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-the-preprocessor/"><span class="mono">5.04</span><span class="t">The Preprocessor</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-programs-in-several-files/"><span class="mono">5.05</span><span class="t">Programs in Several Files</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> C Close to the Machine</h2>
+      <p class="lp-ms-blurb">Function pointers and qsort, undefined behaviour, how C becomes assembly, the standard library, and a hash table.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-function-pointers-and-qsort/"><span class="mono">6.01</span><span class="t">Function Pointers and qsort</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-undefined-behaviour/"><span class="mono">6.02</span><span class="t">Undefined Behaviour</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-how-c-becomes-assembly/"><span class="mono">6.03</span><span class="t">How C Becomes Assembly</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-the-standard-library-tour/"><span class="mono">6.04</span><span class="t">The Standard Library Tour</span><span class="n">1 task</span></a></li>
+        <li><a href="6-05-building-a-hash-table/"><span class="mono">6.05</span><span class="t">Building a Hash Table</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">07</span> Advanced C</h2>
+      <p class="lp-ms-blurb">Variadic functions, struct layout and bit fields, modern C from C11 to C23, error-handling patterns, and threads with atomics.</p>
+      <ol class="lp-lessons">
+        <li><a href="7-01-variadic-functions/"><span class="mono">7.01</span><span class="t">Variadic Functions</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-02-struct-layout-alignment-and-bit-fields/"><span class="mono">7.02</span><span class="t">Struct Layout, Alignment and Bit Fields</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-03-modern-c-c11-c17-and-c23/"><span class="mono">7.03</span><span class="t">&quot;Modern C: C11, C17 and C23&quot;</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-04-error-handling-patterns/"><span class="mono">7.04</span><span class="t">Error Handling Patterns</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-05-threads-and-atomics/"><span class="mono">7.05</span><span class="t">Threads and Atomics</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">08</span> C in Practice</h2>
+      <p class="lp-ms-blurb">Dynamic strings, generic code with void pointers, time and dates, command-line tools, safe integer arithmetic, and random numbers for simulations.</p>
+      <ol class="lp-lessons">
+        <li><a href="8-01-dynamic-strings/"><span class="mono">8.01</span><span class="t">Dynamic Strings</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-02-generic-code-with-void-pointers/"><span class="mono">8.02</span><span class="t">Generic Code with void Pointers</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-03-time-and-dates/"><span class="mono">8.03</span><span class="t">Time and Dates</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-04-command-line-programs/"><span class="mono">8.04</span><span class="t">Command-Line Programs</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-05-safe-integer-arithmetic/"><span class="mono">8.05</span><span class="t">Safe Integer Arithmetic</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-06-random-numbers-and-simulation/"><span class="mono">8.06</span><span class="t">Random Numbers and Simulation</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c"></script>
+</body>
+</html>

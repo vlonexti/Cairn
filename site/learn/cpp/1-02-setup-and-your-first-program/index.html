@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Setup and Your First Program · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/1-02-setup-and-your-first-program/">
+  <meta name="description" content="There is nothing to install. Type the program, press Run , read what comes back. Then break it on purpose to see what errors look like.">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Setup and Your First Program · C++ · Xenon">
+  <meta property="og:description" content="There is nothing to install. Type the program, press Run , read what comes back. Then break it on purpose to see what errors look like.">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/1-02-setup-and-your-first-program/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Setup and Your First Program · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Setup and Your First Program · C++ · Xenon">
+  <meta name="twitter:description" content="There is nothing to install. Type the program, press Run , read what comes back. Then break it on purpose to see what errors look like.">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Setup and Your First Program</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.02</b></span><span>2 of 10 in milestone 1</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">There is nothing to install. Type the program, press <strong>Run</strong>, read what comes back. Then break it on purpose to see what errors look like.</p>
+      <div class="prose">
+<h2>You are already set up</h2>
+<p>Xenon has an editor and a real C++ compiler built in. Anywhere you see code with a <strong>Run</strong> button, you can change it and run it.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You want to</th>
+<th>Do this</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Run the code in the editor</td>
+<td><strong>Run</strong>, or <code>Ctrl + Enter</code></td>
+</tr>
+<tr>
+<td>Have your answer to a task checked</td>
+<td><strong>Check</strong></td>
+</tr>
+<tr>
+<td>Try something of your own</td>
+<td>Open the <strong>Playground</strong> in the sidebar</td>
+</tr>
+<tr>
+<td>See what the compiler complained about</td>
+<td>The <strong>Problems</strong> tab under the editor</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Hello, World!</h2>
+<p>This is the traditional first program. It puts one line of text on the screen. Press <strong>Run</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-s">&quot;Hello, World!\n&quot;</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Output:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Hello, World!</code></pre></div>
+<p>Do not worry about what each line means yet. That is the next lesson. For now, notice two things:</p>
+<ul>
+<li>The text between the double quotes is what appears on the screen.</li>
+<li>The <code>\n</code> at the end did not appear. It means &quot;start a new line&quot;.</li>
+</ul>
+<h2>The loop you will repeat for the rest of your life</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    W[&quot;Write&quot;] --&gt; B[&quot;Build&quot;]
+    B --&gt;|&quot;errors&quot;| F[&quot;Read the first error&lt;br/&gt;and fix it&quot;]
+    F --&gt; B
+    B --&gt;|&quot;built&quot;| R[&quot;Run&quot;]
+    R --&gt;|&quot;wrong result&quot;| D[&quot;Work out why&quot;]
+    D --&gt; W
+    R --&gt;|&quot;right result&quot;| Done[&quot;Done&quot;]</pre></div>
+<p>Nobody writes a program correctly in one go. Programming <strong>is</strong> this loop: write a little, run it, fix it, repeat. Small steps make it fast, because when something breaks you know it was the last thing you changed.</p>
+<h2>Break it on purpose</h2>
+<p>The quickest way to stop fearing error messages is to cause a few. In the program above:</p>
+<ol>
+<li>Delete the <code>;</code> at the end of the <code>std::cout</code> line and press <strong>Run</strong>.</li>
+<li>Open the <strong>Problems</strong> tab. It names the line and explains the error in plain English.</li>
+<li>Put the <code>;</code> back and run again.</li>
+</ol>
+<p>Now try misspelling <code>cout</code> as <code>cuot</code>, and deleting the last <code>}</code>.</p>
+<blockquote><p>[!warning] Always read the <strong>first</strong> error first
+One mistake can confuse the compiler so badly that it reports twenty errors below it. Fix the top one, build again, and most of the rest usually vanish.</p>
+</blockquote>
+<div class="callout tip"><div class="callout-title"><span>Type the code, do not paste it</span></div><div class="callout-body"><p>Typing is slower, and that is the point. Your fingers learn where the brackets and semicolons go, and you make the small mistakes now, while they are cheap.</p>
+</div></div>
+<h2>Later: on your own computer</h2>
+<p>Xenon is all you need for this course. When you start building bigger projects of your own, you will want a full development environment. On Windows the usual choice is <strong>Visual Studio Community</strong> (free) with the &quot;Desktop development with C++&quot; option. There is no hurry.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/1.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/1.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-01-how-cpp-works/"><span class="mono">previous</span><b>1.01 How C++ Works</b></a>
+      <a class="lp-next" href="../1-03-anatomy-of-a-program/"><span class="mono">next</span><b>1.03 Anatomy of a Program</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/1-02-setup-and-your-first-program"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Recursion · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/5-09-recursion/">
+  <meta name="description" content="A recursive function calls itself on a smaller version of the same problem. It needs a base case that stops, and a recursive case that moves towards it.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Recursion · C++ · Xenon">
+  <meta property="og:description" content="A recursive function calls itself on a smaller version of the same problem. It needs a base case that stops, and a recursive case that moves towards it.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/5-09-recursion/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Recursion · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Recursion · C++ · Xenon">
+  <meta name="twitter:description" content="A recursive function calls itself on a smaller version of the same problem. It needs a base case that stops, and a recursive case that moves towards it.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Containers and Algorithms</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Recursion</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.09</b></span><span>9 of 11 in milestone 5</span><span>5 min</span><span><b>5</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>recursive</strong> function calls itself on a smaller version of the same problem. It needs a <strong>base case</strong> that stops, and a <strong>recursive case</strong> that moves towards it. Every call gets its own set of local variables.</p>
+      <div class="prose">
+<h2>A function that calls itself</h2>
+<p>Some problems contain smaller copies of themselves. The factorial of 4 is 4 times the factorial of 3. A folder contains files and more folders. For problems like that, a function may call <strong>itself</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">factorial</span>(<span class="tk-k">int</span> n)
+{
+    <span class="tk-k">if</span> (n &lt;= <span class="tk-n">1</span>)
+    {
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;                    <span class="tk-c">// base case: answer directly</span>
+    }
+    <span class="tk-k">return</span> n * <span class="tk-f">factorial</span>(n - <span class="tk-n">1</span>);     <span class="tk-c">// recursive case: a smaller problem</span>
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-f">factorial</span>(<span class="tk-n">4</span>) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 24</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Job</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Base case</strong></td>
+<td>A version of the problem simple enough to answer without recursing</td>
+</tr>
+<tr>
+<td><strong>Recursive case</strong></td>
+<td>Reduce the problem and call again, so that the base case is eventually reached</td>
+</tr>
+</tbody></table>
+</div>
+<h2>What happens during the calls</h2>
+<p>Each call is a separate activation of the function, with its own <code>n</code>. The calls stack up until the base case, then return one by one.</p>
+<div class="codeblock diagram plain"><pre><code>factorial(4)
+│ 4 * factorial(3)
+│     │ 3 * factorial(2)
+│     │     │ 2 * factorial(1)
+│     │     │     └─ returns 1            the base case
+│     │     └─ returns 2 * 1 = 2
+│     └─ returns 3 * 2 = 6
+└─ returns 4 * 6 = 24</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant M as main
+    participant F4 as factorial(4)
+    participant F3 as factorial(3)
+    participant F2 as factorial(2)
+    participant F1 as factorial(1)
+    M-&gt;&gt;F4: call
+    F4-&gt;&gt;F3: call
+    F3-&gt;&gt;F2: call
+    F2-&gt;&gt;F1: call
+    F1--&gt;&gt;F2: 1
+    F2--&gt;&gt;F3: 2
+    F3--&gt;&gt;F4: 6
+    F4--&gt;&gt;M: 24</pre></div>
+<p>The memory that records each unfinished call, with its parameters and local variables, is one <strong>stack frame</strong>. The frames live on the <strong>call stack</strong>, which is a stack in exactly the sense of <a href="../5-03-vector-as-a-stack-and-capacity/">5.03 Vector as a Stack, and Capacity</a>.</p>
+<div class="callout danger"><div class="callout-title"><span>No base case means stack overflow</span></div><div class="callout-body"><p>The call stack has a limited size. Recursion that never stops fills it and the program crashes with a <strong>stack overflow</strong>. Even correct recursion can overflow if it goes very deep, for example a million levels.</p>
+</div></div>
+<h2>How to think recursively</h2>
+<p>Do not try to follow every call in your head. Ask two questions:</p>
+<ol>
+<li>What is the simplest input, and what is its answer?</li>
+<li>Assuming the function already works for a <strong>smaller</strong> input, how do I use that result to answer this one?</li>
+</ol>
+<p>If both answers are right, the function is right. Trusting step 2 is called the <strong>recursive leap of faith</strong>.</p>
+<h2>Three classic examples</h2>
+<h3>Sum of the digits</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">digitSum</span>(<span class="tk-k">int</span> n)
+{
+    <span class="tk-k">return</span> n &lt; <span class="tk-n">10</span> ? n : n % <span class="tk-n">10</span> + <span class="tk-f">digitSum</span>(n / <span class="tk-n">10</span>);
+}</code></pre></div>
+<p>The last digit, plus the digit sum of everything before it.</p>
+<h3>Fast power</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">long</span> <span class="tk-k">long</span> <span class="tk-f">power</span>(<span class="tk-k">long</span> <span class="tk-k">long</span> base, <span class="tk-k">int</span> exponent)
+{
+    <span class="tk-k">if</span> (exponent == <span class="tk-n">0</span>)
+    {
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    }
+    <span class="tk-k">const</span> <span class="tk-k">long</span> <span class="tk-k">long</span> half{ <span class="tk-f">power</span>(base, exponent / <span class="tk-n">2</span>) };
+    <span class="tk-k">return</span> exponent % <span class="tk-n">2</span> == <span class="tk-n">0</span> ? half * half : half * half * base;
+}</code></pre></div>
+<p>This halves the problem on each call. Computing the millionth power takes about 20 calls, not a million.</p>
+<h3>Binary search</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">binarySearch</span>(<span class="tk-k">const</span> std::vector&lt;<span class="tk-k">int</span>&gt;&amp; v, <span class="tk-k">int</span> target, <span class="tk-k">int</span> low, <span class="tk-k">int</span> high)
+{
+    <span class="tk-k">if</span> (low &gt; high)
+    {
+        <span class="tk-k">return</span> -<span class="tk-n">1</span>;    <span class="tk-c">// not found</span>
+    }
+    <span class="tk-k">const</span> <span class="tk-k">int</span> mid{ low + (high - low) / <span class="tk-n">2</span> };
+    <span class="tk-k">const</span> <span class="tk-k">int</span> value{ v[<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(mid)] };
+    <span class="tk-k">if</span> (value == target)
+    {
+        <span class="tk-k">return</span> mid;
+    }
+    <span class="tk-k">return</span> value &lt; target ? <span class="tk-f">binarySearch</span>(v, target, mid + <span class="tk-n">1</span>, high)
+                          : <span class="tk-f">binarySearch</span>(v, target, low, mid - <span class="tk-n">1</span>);
+}</code></pre></div>
+<p>Look at the middle of a sorted range and discard the half that cannot contain the target.</p>
+<h2>Fibonacci: a trap and its fix</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">fib</span>(<span class="tk-k">int</span> n)
+{
+    <span class="tk-k">return</span> n &lt; <span class="tk-n">2</span> ? n : <span class="tk-f">fib</span>(n - <span class="tk-n">1</span>) + <span class="tk-f">fib</span>(n - <span class="tk-n">2</span>);
+}</code></pre></div>
+<p>Elegant, and disastrously slow:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>                 fib(5)
+            /             \
+        fib(4)            fib(3)          fib(3) is computed twice,
+        /    \            /    \          fib(2) three times,
+    fib(3)  fib(2)    fib(2)  fib(1)      and it doubles with each level</code></pre></div>
+<p>The same subproblems are recomputed again and again. <code>fib(40)</code> makes over 300 million calls.</p>
+<p>The fix is to remember each answer the first time it is computed. That technique is <strong>memoization</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">long</span> <span class="tk-k">long</span> <span class="tk-f">fibMemo</span>(<span class="tk-k">int</span> n)
+{
+    <span class="tk-k">static</span> std::vector&lt;<span class="tk-k">long</span> <span class="tk-k">long</span>&gt; cache{ <span class="tk-n">0</span>, <span class="tk-n">1</span> };
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> index{ <span class="tk-k">static_cast</span>&lt;std::size_t&gt;(n) };
+    <span class="tk-k">if</span> (index &lt; cache.<span class="tk-f">size</span>())
+    {
+        <span class="tk-k">return</span> cache[index];
+    }
+    <span class="tk-k">const</span> <span class="tk-k">long</span> <span class="tk-k">long</span> result{ <span class="tk-f">fibMemo</span>(n - <span class="tk-n">1</span>) + <span class="tk-f">fibMemo</span>(n - <span class="tk-n">2</span>) };
+    cache.<span class="tk-f">push_back</span>(result);
+    <span class="tk-k">return</span> result;
+}</code></pre></div>
+<p>The <code>static</code> local (<a href="../3-06-global-variables-static-and-linkage/">3.06 Global Variables, static and Linkage</a>) keeps the cache between calls. Each value is now computed once.</p>
+<h2>Recursion or a loop?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Recursion</th>
+<th>Loop</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Natural for</td>
+<td>Trees, nested structures, divide and conquer, backtracking</td>
+<td>Plain repetition</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>One stack frame per call</td>
+<td>Constant</td>
+</tr>
+<tr>
+<td>Failure mode</td>
+<td>Stack overflow</td>
+<td>Infinite loop</td>
+</tr>
+</tbody></table>
+</div>
+<p>Anything recursive can be rewritten as a loop, and the reverse. Choose recursion when the problem is recursive by nature: folders inside folders, mazes, permutations, tree structures. Choose a loop for simple counting.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>5 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/5.09">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/5.09">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-08-2d-arrays-and-grids/"><span class="mono">previous</span><b>5.08 2D Arrays and Grids</b></a>
+      <a class="lp-next" href="../5-10-function-pointers-callbacks-and-command-line-arguments/"><span class="mono">next</span><b>5.10 Function Pointers, Callbacks and Command-Line Arguments</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/5-09-recursion"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

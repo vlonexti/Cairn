@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Virtual Memory and Pages · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/6-04-virtual-memory-and-pages/">
+  <meta name="description" content="Every address a program uses is virtual. The processor translates it, one 4 KB page at a time, through page tables the operating system maintains. Pages that…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Virtual Memory and Pages · Pointers and Memory · Xenon">
+  <meta property="og:description" content="Every address a program uses is virtual. The processor translates it, one 4 KB page at a time, through page tables the operating system maintains. Pages that…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/6-04-virtual-memory-and-pages/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Virtual Memory and Pages · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Virtual Memory and Pages · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="Every address a program uses is virtual. The processor translates it, one 4 KB page at a time, through page tables the operating system maintains. Pages that…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Allocators and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Virtual Memory and Pages</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Every address a program uses is virtual. The processor translates it, one 4 KB page at a time, through page tables the operating system maintains. Pages that are reserved, committed or free, page protection, page faults, guard pages, and what an access violation really is.</p>
+      <div class="prose">
+<h2>Addresses are not where the bytes are</h2>
+<p>Every address in this course so far has been a <strong>virtual address</strong>. When your program reads <code>0x000001C4B2E8F0A0</code>, there is no memory chip at that number. The processor translates the virtual address into a <strong>physical address</strong> in RAM, using tables that the operating system maintains for each process.</p>
+<p>This is why two programs can both use address <code>0x140001000</code> without clashing: each process has its own translation, its own <strong>address space</strong>. And it is why one program cannot read another&#39;s memory by accident: there is simply no translation from its addresses to the other&#39;s RAM.</p>
+<h2>Pages</h2>
+<p>Translating every byte separately would need impossibly large tables, so memory is managed in <strong>pages</strong>: blocks of 4096 bytes (4 KB) on x86 and ARM Windows. A virtual address splits into a <strong>page number</strong> and an <strong>offset</strong> within the page:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>virtual address 0x0000_0001_C4B2_E8F0
+                ^^^^^^^^^^^^^^^^^^^ ^^^
+                page number         offset (low 12 bits, 0 to 4095)
+
+page  = address &gt;&gt; 12      (address / 4096)
+offset = address &amp; 0xFFF   (address % 4096)</code></pre></div>
+<p>The <strong>page table</strong> maps each virtual page number to a physical <strong>frame</strong> number. The physical address is the frame&#39;s start plus the same offset. The bytes within a page stay in the same order; only whole pages are moved around.</p>
+<p>Translations are cached in the processor&#39;s <strong>TLB</strong> (translation lookaside buffer), so most accesses cost nothing extra. Code that jumps around huge areas of memory pays for TLB misses, another reason scattered linked structures are slow.</p>
+<h2>Reserved, committed, free</h2>
+<p>In Windows each page of an address space is in one of three states:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>State</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>free</strong></td>
+<td>nothing there; any access faults</td>
+</tr>
+<tr>
+<td><strong>reserved</strong></td>
+<td>the address range is set aside so nothing else will use it, but it has no memory behind it; any access faults</td>
+</tr>
+<tr>
+<td><strong>committed</strong></td>
+<td>backed by memory (RAM or the page file); accessible according to its protection</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>VirtualAlloc</code> does both steps:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// Reserve 1 GB of addresses: costs no memory, just address space.</span>
+<span class="tk-k">void</span>* base{ <span class="tk-f">VirtualAlloc</span>(<span class="tk-k">nullptr</span>, <span class="tk-n">1ull</span> &lt;&lt; <span class="tk-n">30</span>, MEM_RESERVE, PAGE_NOACCESS) };
+<span class="tk-c">// Commit the first 64 KB of it when you actually need it.</span>
+<span class="tk-f">VirtualAlloc</span>(base, <span class="tk-n">64</span> * <span class="tk-n">1024</span>, MEM_COMMIT, PAGE_READWRITE);</code></pre></div>
+<p>This is how a growable array can be built that <strong>never moves</strong>: reserve a huge range once, commit pages at the end as it grows. Thread stacks work this way too: 1 MB reserved, a little committed, more committed as the stack grows.</p>
+<p>Committed memory is also only given real RAM when first touched. Committing guarantees it can be provided; the operating system supplies a zero-filled page at the first access.</p>
+<h2>Protection</h2>
+<p>Each committed page has a <strong>protection</strong>: <code>PAGE_READONLY</code>, <code>PAGE_READWRITE</code>, <code>PAGE_EXECUTE_READ</code>, <code>PAGE_NOACCESS</code>, and a few more. The program image is mapped with its code read+execute and its constants read-only, which is why writing to a string literal crashes. <code>VirtualProtect</code> changes a page&#39;s protection, and <code>VirtualQuery</code> reports the state and protection of any address (the Game Development course explores your own process with it).</p>
+<h2>Page faults and access violations</h2>
+<p>When the processor cannot translate an address, or the access breaks the page&#39;s protection, it raises a <strong>page fault</strong> and hands control to the operating system, which decides what it means:</p>
+<ul>
+<li>The page is committed but not in RAM yet (first touch, or it was paged out to disk): the OS loads it and the program continues, never knowing. This is a normal, <strong>soft</strong> or <strong>hard</strong> page fault.</li>
+<li>The page is free or reserved, or the access breaks the protection: the OS raises an <strong>access violation</strong> (<code>0xC0000005</code>) in the program. Unhandled, that ends it.</li>
+</ul>
+<p>So &quot;access violation reading location 0x0000000000000018&quot; is the processor saying: page 0 is not committed, so this address has no translation. Windows deliberately never maps the first 64 KB of the address space, so every null pointer access, plus a small offset, faults immediately.</p>
+<h2>Guard pages</h2>
+<p>A page committed with <code>PAGE_GUARD</code> faults once on first access, and the OS then removes the guard. The stack uses one to grow: touching the guard page below the committed stack commits another page and moves the guard down. Debugging tools use the same idea to catch overruns: <strong>page heap</strong> (enabled with the <code>gflags</code> tool) places each allocation at the end of a page followed by an inaccessible page, so the first byte written past the end faults at that exact instruction.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-pool-allocators/"><span class="mono">previous</span><b>6.03 Pool Allocators</b></a>
+      <a class="lp-next" href="../6-05-a-field-guide-to-memory-bugs/"><span class="mono">next</span><b>6.05 A Field Guide to Memory Bugs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/6-04-virtual-memory-and-pages"></script>
+</body>
+</html>

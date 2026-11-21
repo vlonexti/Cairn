@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Encapsulation, Constructors and static · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/3-02-encapsulation-constructors-and-static/">
+  <meta name="description" content="Access modifiers and why fields should be private, getters and setters with validation, constructor overloading and this(...), immutable classes with final…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Encapsulation, Constructors and static · Java · Xenon">
+  <meta property="og:description" content="Access modifiers and why fields should be private, getters and setters with validation, constructor overloading and this(...), immutable classes with final…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/3-02-encapsulation-constructors-and-static/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Encapsulation, Constructors and static · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Encapsulation, Constructors and static · Java · Xenon">
+  <meta name="twitter:description" content="Access modifiers and why fields should be private, getters and setters with validation, constructor overloading and this(...), immutable classes with final…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Object-Oriented Programming</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Encapsulation, Constructors and static</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Access modifiers and why fields should be private, getters and setters with validation, constructor overloading and this(...), immutable classes with final fields, static fields and methods, static factory methods, constants, and when a class should be a utility class.</p>
+      <div class="prose">
+<h2>Encapsulation</h2>
+<p><strong>Encapsulation</strong> means an object guards its own data: fields are <code>private</code>, and the only way to change them is through methods that keep them valid.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">BankAccount</span> acc = <span class="tk-k">new</span> <span class="tk-f">BankAccount</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">100</span>);
+        acc.<span class="tk-f">deposit</span>(<span class="tk-n">50</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(acc.<span class="tk-f">withdraw</span>(<span class="tk-n">500</span>));       <span class="tk-c">// false: refused</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(acc.<span class="tk-f">getBalance</span>());
+        <span class="tk-k">try</span> {
+            acc.<span class="tk-f">deposit</span>(-<span class="tk-n">10</span>);
+        } <span class="tk-k">catch</span> (<span class="tk-t">IllegalArgumentException</span> e) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;refused: &quot;</span> + e.<span class="tk-f">getMessage</span>());
+        }
+        <span class="tk-c">// acc.balance = -1000;                      // error: balance has private access</span>
+    }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">BankAccount</span> {
+    <span class="tk-k">private</span> <span class="tk-k">final</span> <span class="tk-t">String</span> owner;
+    <span class="tk-k">private</span> <span class="tk-k">long</span> balance;          <span class="tk-c">// in cents would be safer for money; whole euros keep the example short</span>
+
+    <span class="tk-f">BankAccount</span>(<span class="tk-t">String</span> owner, <span class="tk-k">long</span> opening) {
+        <span class="tk-k">this</span>.owner = owner;
+        <span class="tk-f">deposit</span>(opening);
+    }
+
+    <span class="tk-f">BankAccount</span>(<span class="tk-t">String</span> owner) {
+        <span class="tk-k">this</span>(owner, <span class="tk-n">0</span>);            <span class="tk-c">// calls the other constructor</span>
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">deposit</span>(<span class="tk-k">long</span> amount) {
+        <span class="tk-k">if</span> (amount &lt; <span class="tk-n">0</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">IllegalArgumentException</span>(<span class="tk-s">&quot;negative deposit&quot;</span>);
+        balance += amount;
+    }
+
+    <span class="tk-k">boolean</span> <span class="tk-f">withdraw</span>(<span class="tk-k">long</span> amount) {
+        <span class="tk-k">if</span> (amount &lt; <span class="tk-n">0</span> || amount &gt; balance) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+        balance -= amount;
+        <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+
+    <span class="tk-k">long</span> <span class="tk-f">getBalance</span>() { <span class="tk-k">return</span> balance; }
+    <span class="tk-t">String</span> <span class="tk-f">getOwner</span>() { <span class="tk-k">return</span> owner; }
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Modifier</th>
+<th>Visible to</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>private</code></td>
+<td>Only this class</td>
+</tr>
+<tr>
+<td>(none)</td>
+<td>Classes in the same package</td>
+</tr>
+<tr>
+<td><code>protected</code></td>
+<td>The same package and subclasses</td>
+</tr>
+<tr>
+<td><code>public</code></td>
+<td>Everyone</td>
+</tr>
+</tbody></table>
+</div>
+<p>Make fields <code>private</code>, offer methods for what callers need, and only add a <strong>setter</strong> when changing a field is really part of the class&#39;s job; then validate in the setter.</p>
+<h2>Constructors</h2>
+<p>A class can have several constructors (overloading). One can call another with <code>this(...)</code> as its first statement, so the setup logic lives in one place. If you write no constructor, Java provides an empty one; as soon as you write any constructor, that free one disappears.</p>
+<h2>Immutable classes</h2>
+<p>A class whose fields are all <code>final</code> and set only in the constructor is <strong>immutable</strong>. Immutable objects cannot be changed by accident, are safe to share between parts of a program and between threads, and make good map keys. <code>String</code>, <code>Integer</code> and <code>LocalDate</code> are immutable; records (lesson 3.05) are the short way to write your own.</p>
+<h2>static</h2>
+<p>A <strong>static</strong> field belongs to the class, not to any object: there is exactly one, shared by all instances. A <strong>static</strong> method has no <code>this</code> and can use only static fields and its parameters.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Ticket</span> a = <span class="tk-k">new</span> <span class="tk-f">Ticket</span>();
+        <span class="tk-t">Ticket</span> b = <span class="tk-k">new</span> <span class="tk-f">Ticket</span>();
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a.<span class="tk-f">getNumber</span>() + <span class="tk-s">&quot; &quot;</span> + b.<span class="tk-f">getNumber</span>() + <span class="tk-s">&quot; issued: &quot;</span> + <span class="tk-t">Ticket</span>.<span class="tk-f">issued</span>());
+        <span class="tk-t">Temperature</span> t = <span class="tk-t">Temperature</span>.<span class="tk-f">fromFahrenheit</span>(<span class="tk-n">212</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(t.<span class="tk-f">celsius</span>() + <span class="tk-s">&quot; &quot;</span> + <span class="tk-t">Temperature</span>.ABSOLUTE_ZERO);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">MathUtil</span>.<span class="tk-f">clamp</span>(<span class="tk-n">15</span>, <span class="tk-n">0</span>, <span class="tk-n">10</span>));
+    }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">Ticket</span> {
+    <span class="tk-k">private</span> <span class="tk-k">static</span> <span class="tk-k">int</span> next = <span class="tk-n">1</span>;           <span class="tk-c">// shared by all tickets</span>
+    <span class="tk-k">private</span> <span class="tk-k">final</span> <span class="tk-k">int</span> number;
+
+    <span class="tk-f">Ticket</span>() { number = next++; }
+    <span class="tk-k">int</span> <span class="tk-f">getNumber</span>() { <span class="tk-k">return</span> number; }
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">issued</span>() { <span class="tk-k">return</span> next - <span class="tk-n">1</span>; }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">Temperature</span> {
+    <span class="tk-k">static</span> <span class="tk-k">final</span> <span class="tk-k">double</span> ABSOLUTE_ZERO = -<span class="tk-n">273.15</span>;     <span class="tk-c">// a constant: static final, UPPER_CASE</span>
+    <span class="tk-k">private</span> <span class="tk-k">final</span> <span class="tk-k">double</span> celsius;
+
+    <span class="tk-k">private</span> <span class="tk-f">Temperature</span>(<span class="tk-k">double</span> celsius) { <span class="tk-k">this</span>.celsius = celsius; }   <span class="tk-c">// private: use the factory methods</span>
+
+    <span class="tk-k">static</span> <span class="tk-t">Temperature</span> <span class="tk-f">fromCelsius</span>(<span class="tk-k">double</span> c) { <span class="tk-k">return</span> <span class="tk-k">new</span> <span class="tk-f">Temperature</span>(c); }
+    <span class="tk-k">static</span> <span class="tk-t">Temperature</span> <span class="tk-f">fromFahrenheit</span>(<span class="tk-k">double</span> f) { <span class="tk-k">return</span> <span class="tk-k">new</span> <span class="tk-f">Temperature</span>((f - <span class="tk-n">32</span>) * <span class="tk-n">5</span> / <span class="tk-n">9</span>); }
+
+    <span class="tk-k">double</span> <span class="tk-f">celsius</span>() { <span class="tk-k">return</span> celsius; }
+}
+
+<span class="tk-k">final</span> <span class="tk-k">class</span> <span class="tk-t">MathUtil</span> {
+    <span class="tk-k">private</span> <span class="tk-f">MathUtil</span>() { }                             <span class="tk-c">// a utility class: no instances</span>
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">clamp</span>(<span class="tk-k">int</span> v, <span class="tk-k">int</span> lo, <span class="tk-k">int</span> hi) { <span class="tk-k">return</span> <span class="tk-t">Math</span>.<span class="tk-f">max</span>(lo, <span class="tk-t">Math</span>.<span class="tk-f">min</span>(hi, v)); }
+}</code></pre></div>
+<ul>
+<li><strong>Static factory methods</strong> like <code>Temperature.fromFahrenheit</code> have descriptive names, unlike constructors, and can validate or reuse objects. <code>List.of</code>, <code>Integer.valueOf</code> and <code>LocalDate.of</code> are examples.</li>
+<li><code>static final</code> fields are <strong>constants</strong>.</li>
+<li>A <strong>utility class</strong> (<code>Math</code>, <code>Arrays</code>, <code>Collections</code>) has only static methods and a private constructor.</li>
+<li>Avoid mutable static fields outside of small cases like counters: shared state makes programs hard to test and reason about.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-classes-and-objects/"><span class="mono">previous</span><b>3.01 Classes and Objects</b></a>
+      <a class="lp-next" href="../3-03-inheritance-and-polymorphism/"><span class="mono">next</span><b>3.03 Inheritance and Polymorphism</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/3-02-encapsulation-constructors-and-static"></script>
+</body>
+</html>

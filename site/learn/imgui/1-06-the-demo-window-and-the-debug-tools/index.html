@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Demo Window and the Debug Tools · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/1-06-the-demo-window-and-the-debug-tools/">
+  <meta name="description" content="Dear ImGui ships its best documentation as a program - ShowDemoWindow shows every widget with the code beside it. It also ships tools for finding your own…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Demo Window and the Debug Tools · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Dear ImGui ships its best documentation as a program - ShowDemoWindow shows every widget with the code beside it. It also ships tools for finding your own…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/1-06-the-demo-window-and-the-debug-tools/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Demo Window and the Debug Tools · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Demo Window and the Debug Tools · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Dear ImGui ships its best documentation as a program - ShowDemoWindow shows every widget with the code beside it. It also ships tools for finding your own…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Immediate-Mode Foundations</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Demo Window and the Debug Tools</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.06</b></span><span>6 of 6 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Dear ImGui ships its best documentation as a program - <code>ShowDemoWindow</code> shows every widget with the code beside it. It also ships tools for finding your own bugs - the Metrics window, the ID Stack tool, the Item Picker and debug logs. This lesson shows how to use them all.</p>
+      <div class="prose">
+<h2>ShowDemoWindow</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">ShowDemoWindow</span>();</code></pre></div>
+<p>One call opens a window that demonstrates almost every feature of ImGui: widgets, layout, tables, popups, drag and drop, styling, fonts. It is the <strong>real documentation</strong>: when you want to know how to do something, find it in the demo window, then open <code>imgui_demo.cpp</code> and search for the label you saw. The code you need is right there.</p>
+<p>The demo&#39;s <strong>&quot;Tools&quot;</strong> menu (top of the window) opens the other tools below.</p>
+<p>Keep <code>imgui_demo.cpp</code> in every project during development; it costs nothing until called. Leave the call out of shipping builds (lesson 6.03).</p>
+<h2>The style editor</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">ShowStyleEditor</span>();</code></pre></div>
+<p>Every size, rounding and colour of the current style, editable live. Tune a style here, then click &quot;Export&quot; to copy the C++ code that sets it (lesson 4.05).</p>
+<h2>The Metrics/Debugger window</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">ShowMetricsWindow</span>();</code></pre></div>
+<p>It shows ImGui&#39;s own state: every window with its position, size and draw list (how many vertices, how many draw commands), the active and hovered widget IDs, the ID stack, the font atlas, tables&#39; internal state, and more. Hover a draw command and it highlights what it draws. Use it when:</p>
+<ul>
+<li>the interface is slow (which window has thousands of vertices?);</li>
+<li>something is drawn but you cannot see why (where is its clip rectangle?);</li>
+<li>a window behaves oddly (what are its flags and size constraints?).</li>
+</ul>
+<h2>The ID Stack tool</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">ShowIDStackToolWindow</span>();</code></pre></div>
+<p>Hover any widget: it shows the ID stack for it, level by level - the window&#39;s seed, every <code>PushID</code>, the label - and the final ID. The fastest way to understand why two widgets clash (lesson 1.05).</p>
+<h2>The Item Picker</h2>
+<p>In the Metrics window, <strong>Tools, Item Picker</strong>: click any widget in your program, and ImGui stops in the debugger <strong>inside the code that drew it</strong>. When you have a complex tool and cannot find which of fifty functions draws a misbehaving checkbox, this finds it in one click.</p>
+<h2>Debug log</h2>
+<p>The Metrics window has a <strong>Debug Log</strong> section that records what ImGui does in categories you choose: focus changes, popups, navigation, I/O events, docking. Turn on &quot;I/O&quot; and you see every mouse and keyboard event the back end feeds in, which answers &quot;is ImGui even receiving my input?&quot;.</p>
+<h2>Assertions are your friends</h2>
+<p>ImGui uses <code>IM_ASSERT</code> heavily: unmatched <code>Begin</code>/<code>End</code>, <code>PushID</code>/<code>PopID</code>, calls outside a frame, bad parameters. In a Debug build the debugger stops on the exact line, with a comment in the source explaining the rule you broke. Read the comment above the assert; it nearly always says what to do. You can route assertions to your own handler by defining <code>IM_ASSERT</code> in <code>imconfig.h</code>.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Guessing instead of looking</span></div><div class="callout-body"><p>When a widget misbehaves, the ID Stack tool, the Metrics window and the Item Picker usually find the cause in seconds.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Disabling assertions to make a crash go away</span></div><div class="callout-body"><p>The assert is reporting a real mistake that will cause worse problems later. Fix the pairing or the call order instead.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the quickest way to find example code for a widget you saw in ShowDemoWindow?</div><ul><li>Search imgui_demo.cpp for the label shown in the demo</li><li>Read imgui.cpp from the top</li><li>Ask the Metrics window</li></ul><details><summary>Show the answer</summary><p><b>Search imgui_demo.cpp for the label shown in the demo</b> The demo is the documentation, with its source beside it.</p></details></li><li><div class="q">Which tool tells you why two widgets share an ID?</div><ul><li>The ID Stack tool</li><li>The style editor</li><li>The font atlas viewer</li></ul><details><summary>Show the answer</summary><p><b>The ID Stack tool</b> It shows each level of the stack for the hovered widget.</p></details></li><li><div class="q">You cannot find which function draws a misbehaving widget. What helps?</div><ul><li>The Item Picker, which breaks into the debugger in the code that drew the clicked widget</li><li>Increasing the font size</li><li>Removing PushID calls</li></ul><details><summary>Show the answer</summary><p><b>The Item Picker, which breaks into the debugger in the code that drew the clicked widget</b> It is in the Metrics window&#39;s Tools.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/1.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/1.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-05-how-imgui-identifies-widgets/"><span class="mono">previous</span><b>1.05 How ImGui Identifies Widgets</b></a>
+      <a class="lp-next" href="../2-01-sliders-drags-and-checkboxes/"><span class="mono">next</span><b>2.01 Sliders, Drags and Checkboxes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/1-06-the-demo-window-and-the-debug-tools"></script>
+</body>
+</html>

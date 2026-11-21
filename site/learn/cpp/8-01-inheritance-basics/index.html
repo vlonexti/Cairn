@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Inheritance Basics · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/8-01-inheritance-basics/">
+  <meta name="description" content="Inheritance defines a new class (the derived class) from an existing one (the base class), reusing its members and adding more. It models is-a : a Dog is an…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Inheritance Basics · C++ · Xenon">
+  <meta property="og:description" content="Inheritance defines a new class (the derived class) from an existing one (the base class), reusing its members and adding more. It models is-a : a Dog is an…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/8-01-inheritance-basics/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Inheritance Basics · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Inheritance Basics · C++ · Xenon">
+  <meta name="twitter:description" content="Inheritance defines a new class (the derived class) from an existing one (the base class), reusing its members and adding more. It models is-a : a Dog is an…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Inheritance and Polymorphism</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Inheritance Basics</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.01</b></span><span>1 of 7 in milestone 8</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary"><strong>Inheritance</strong> defines a new class (the derived class) from an existing one (the base class), reusing its members and adding more. It models <strong>is-a</strong>: a <code>Dog</code> <em>is an</em> <code>Animal</code>. The base part is constructed first and destroyed last.</p>
+      <div class="prose">
+<h2>Modelling &quot;is-a&quot;</h2>
+<p>Composition says one thing <em>has</em> another. <strong>Inheritance</strong> says one thing <em>is a kind of</em> another. A derived class contains everything its base class has, and can be used wherever the base is expected.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">classDiagram
+    Animal &lt;|-- Dog
+    Animal &lt;|-- Cat
+    Animal &lt;|-- Bird
+    Bird &lt;|-- Penguin
+    class Animal {
+        +std::string name
+        +int age
+        +eat()
+    }
+    class Dog {
+        +fetch()
+    }
+    class Cat {
+        +purr()
+    }
+    class Bird {
+        +double wingspan
+    }</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Also called</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Base class</strong></td>
+<td>Parent, superclass</td>
+<td>The class being inherited from</td>
+</tr>
+<tr>
+<td><strong>Derived class</strong></td>
+<td>Child, subclass</td>
+<td>The class that inherits</td>
+</tr>
+<tr>
+<td><strong>Hierarchy</strong></td>
+<td></td>
+<td>The tree formed by the classes</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Syntax</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    std::string name{};
+    <span class="tk-k">int</span> age{};
+
+    <span class="tk-k">void</span> <span class="tk-f">eat</span>() <span class="tk-k">const</span> { std::cout &lt;&lt; name &lt;&lt; <span class="tk-s">&quot; eats\n&quot;</span>; }
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Dog</span> : <span class="tk-k">public</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">fetch</span>() <span class="tk-k">const</span> { std::cout &lt;&lt; name &lt;&lt; <span class="tk-s">&quot; fetches\n&quot;</span>; }
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Dog</span> rex{};
+    rex.name = <span class="tk-s">&quot;Rex&quot;</span>;
+    rex.<span class="tk-f">eat</span>();      <span class="tk-c">// inherited from Animal</span>
+    rex.<span class="tk-f">fetch</span>();    <span class="tk-c">// Dog's own</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>: public Animal</code> makes <code>Dog</code> a derived class of <code>Animal</code>. A <code>Dog</code> object physically contains an <code>Animal</code>, called its <strong>base subobject</strong>, followed by whatever <code>Dog</code> adds.</p>
+<div class="codeblock diagram plain"><pre><code> a Dog object
+ ┌─────────────────────────────┐
+ │ ┌── Animal subobject ─────┐ │
+ │ │ name          age       │ │     the base part comes first
+ │ └─────────────────────────┘ │
+ │   Dog's own members         │
+ └─────────────────────────────┘</code></pre></div>
+<h2>Construction and destruction order</h2>
+<p>A derived object is built from the inside out.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;string_view&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">Animal</span>(std::string_view name) : m_name{ name } { std::cout &lt;&lt; <span class="tk-s">&quot;Animal constructed\n&quot;</span>; }
+    ~<span class="tk-f">Animal</span>() { std::cout &lt;&lt; <span class="tk-s">&quot;Animal destroyed\n&quot;</span>; }
+
+<span class="tk-k">protected</span>:
+    std::string m_name{};
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Dog</span> : <span class="tk-k">public</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Dog</span>(std::string_view name, std::string_view breed)
+        : <span class="tk-t">Animal</span>{ name }, m_breed{ breed }
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;Dog constructed\n&quot;</span>;
+    }
+
+    ~<span class="tk-f">Dog</span>() { std::cout &lt;&lt; <span class="tk-s">&quot;Dog destroyed\n&quot;</span>; }
+
+<span class="tk-k">private</span>:
+    std::string m_breed{};
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Dog</span> d{ <span class="tk-s">&quot;Rex&quot;</span>, <span class="tk-s">&quot;Collie&quot;</span> };
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Animal constructed
+Dog constructed
+Dog destroyed
+Animal destroyed</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph Build[&quot;Construction&quot;]
+        direction LR
+        A1[&quot;Animal&quot;] --&gt; D1[&quot;Dog&quot;] --&gt; P1[&quot;Puppy&quot;]
+    end
+    subgraph Destroy[&quot;Destruction&quot;]
+        direction LR
+        P2[&quot;Puppy&quot;] --&gt; D2[&quot;Dog&quot;] --&gt; A2[&quot;Animal&quot;]
+    end</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Order</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Construction</td>
+<td>Base class, then the derived class&#39;s members, then the derived constructor&#39;s body</td>
+</tr>
+<tr>
+<td>Destruction</td>
+<td>Exactly the reverse</td>
+</tr>
+</tbody></table>
+</div>
+<p>The reasoning is the one from <a href="../6-03-destructors-and-object-lifetime/">6.03 Destructors and Object Lifetime</a>: the derived part may depend on the base part, so the base must exist first and outlast it.</p>
+<div class="callout note"><div class="callout-title"><span>A derived class initializes its base through a base constructor</span></div><div class="callout-body"><p><code>Dog</code> cannot write <code>m_name{ name }</code> in its own initializer list, because <code>m_name</code> is not <code>Dog</code>&#39;s member to initialize. It names a base constructor instead: <code>Animal{ name }</code>. If none is named, the base&#39;s default constructor is used, and if there is none the code does not compile.</p>
+</div></div>
+<h2>Inheriting constructors</h2>
+<p>Constructors are not inherited by default. When a derived class adds no data that needs initializing, it can adopt the base&#39;s constructors wholesale:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Dog</span> : <span class="tk-k">public</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">using</span> <span class="tk-t">Animal</span>::<span class="tk-t">Animal</span>;
+};</code></pre></div>
+<h2>The is-a test</h2>
+<p>Inheritance is a strong commitment. Before using it, ask whether <strong>every</strong> derived object can stand in for a base object <strong>everywhere</strong> a base is used. This is the idea of <em>substitutability</em>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Proposed</th>
+<th>Verdict</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Circle</code> is a <code>Shape</code></td>
+<td>Yes</td>
+<td>Anything valid for a shape is valid for a circle</td>
+</tr>
+<tr>
+<td><code>Stack</code> is a <code>Vector</code></td>
+<td>No</td>
+<td>A vector allows insertion anywhere; a stack must not. Use composition.</td>
+</tr>
+<tr>
+<td><code>Square</code> is a <code>Rectangle</code></td>
+<td>Usually no</td>
+<td>Code that sets a rectangle&#39;s width and height independently breaks a square</td>
+</tr>
+</tbody></table>
+</div>
+<p>When the test fails, the relationship is &quot;is implemented using&quot;, and that is composition: <a href="../7-07-object-relationships/">7.07 Object Relationships</a>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/8.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/8.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-08-container-classes-and-std-initializer-list/"><span class="mono">previous</span><b>7.08 Container Classes and std::initializer_list</b></a>
+      <a class="lp-next" href="../8-02-inheritance-and-access/"><span class="mono">next</span><b>8.02 Inheritance and Access</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/8-01-inheritance-basics"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

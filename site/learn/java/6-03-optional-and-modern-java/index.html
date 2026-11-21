@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Optional and Modern Java · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/6-03-optional-and-modern-java/">
+  <meta name="description" content="Representing maybe-missing values with Optional and its methods (map, filter, orElse, orElseGet, orElseThrow, ifPresent), when not to use it, and a tour of…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Optional and Modern Java · Java · Xenon">
+  <meta property="og:description" content="Representing maybe-missing values with Optional and its methods (map, filter, orElse, orElseGet, orElseThrow, ifPresent), when not to use it, and a tour of…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/6-03-optional-and-modern-java/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Optional and Modern Java · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Optional and Modern Java · Java · Xenon">
+  <meta name="twitter:description" content="Representing maybe-missing values with Optional and its methods (map, filter, orElse, orElseGet, orElseThrow, ifPresent), when not to use it, and a tour of…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Streams, Threads and Projects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Optional and Modern Java</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Representing maybe-missing values with Optional and its methods (map, filter, orElse, orElseGet, orElseThrow, ifPresent), when not to use it, and a tour of modern Java features - var, text blocks, switch expressions and pattern matching, records and sealed types together, the java.time date API, and immutable collections.</p>
+      <div class="prose">
+<h2>Optional</h2>
+<p><code>null</code> as &quot;no value&quot; causes <code>NullPointerException</code>s far from where the <code>null</code> came from. <code>Optional&lt;T&gt;</code> makes &quot;maybe missing&quot; part of a method&#39;s type, so callers must decide what to do:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">static</span> <span class="tk-k">final</span> <span class="tk-t">Map</span>&lt;<span class="tk-t">String</span>, <span class="tk-t">String</span>&gt; EMAILS = <span class="tk-t">Map</span>.<span class="tk-f">of</span>(<span class="tk-s">&quot;ada&quot;</span>, <span class="tk-s">&quot;ada@example.com&quot;</span>, <span class="tk-s">&quot;bob&quot;</span>, <span class="tk-s">&quot;&quot;</span>);
+
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">findEmail</span>(<span class="tk-s">&quot;ada&quot;</span>).<span class="tk-f">orElse</span>(<span class="tk-s">&quot;no email&quot;</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">findEmail</span>(<span class="tk-s">&quot;zed&quot;</span>).<span class="tk-f">orElse</span>(<span class="tk-s">&quot;no email&quot;</span>));
+
+        <span class="tk-t">String</span> domain = <span class="tk-f">findEmail</span>(<span class="tk-s">&quot;ada&quot;</span>)
+            .<span class="tk-f">map</span>(e -&gt; e.<span class="tk-f">substring</span>(e.<span class="tk-f">indexOf</span>(<span class="tk-s">'@'</span>) + <span class="tk-n">1</span>))      <span class="tk-c">// transform if present</span>
+            .<span class="tk-f">orElse</span>(<span class="tk-s">&quot;unknown&quot;</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(domain);
+
+        <span class="tk-f">findEmail</span>(<span class="tk-s">&quot;bob&quot;</span>).<span class="tk-f">ifPresentOrElse</span>(e -&gt; <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;send to &quot;</span> + e), () -&gt; <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;bob has none&quot;</span>));
+
+        <span class="tk-k">try</span> {
+            <span class="tk-t">String</span> e = <span class="tk-f">findEmail</span>(<span class="tk-s">&quot;zed&quot;</span>).<span class="tk-f">orElseThrow</span>(() -&gt; <span class="tk-k">new</span> <span class="tk-f">NoSuchElementException</span>(<span class="tk-s">&quot;no email for zed&quot;</span>));
+        } <span class="tk-k">catch</span> (<span class="tk-t">NoSuchElementException</span> ex) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(ex.<span class="tk-f">getMessage</span>());
+        }
+    }
+
+    <span class="tk-k">static</span> <span class="tk-t">Optional</span>&lt;<span class="tk-t">String</span>&gt; <span class="tk-f">findEmail</span>(<span class="tk-t">String</span> user) {
+        <span class="tk-k">return</span> <span class="tk-t">Optional</span>.<span class="tk-f">ofNullable</span>(EMAILS.<span class="tk-f">get</span>(user)).<span class="tk-f">filter</span>(e -&gt; !e.<span class="tk-f">isBlank</span>());
+    }
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Optional.of(x)</code>, <code>ofNullable(x)</code>, <code>empty()</code></td>
+<td>Create (of throws for null)</td>
+</tr>
+<tr>
+<td><code>isPresent()</code>, <code>isEmpty()</code></td>
+<td>Test</td>
+</tr>
+<tr>
+<td><code>map(f)</code>, <code>flatMap(f)</code>, <code>filter(p)</code></td>
+<td>Transform, keeping &quot;missing&quot; missing</td>
+</tr>
+<tr>
+<td><code>orElse(v)</code>, <code>orElseGet(supplier)</code></td>
+<td>A default (<code>orElseGet</code> computes it only when needed)</td>
+</tr>
+<tr>
+<td><code>orElseThrow()</code>, <code>orElseThrow(supplier)</code></td>
+<td>The value, or an exception</td>
+</tr>
+<tr>
+<td><code>ifPresent(f)</code>, <code>ifPresentOrElse(f, g)</code></td>
+<td>Act on it</td>
+</tr>
+</tbody></table>
+</div>
+<p>Streams return <code>Optional</code> from <code>findFirst</code>, <code>min</code> and <code>max</code>.</p>
+<p>Use <code>Optional</code> as a <strong>return type</strong> for &quot;maybe nothing&quot;. Do not use it for fields or parameters, do not call <code>get()</code> without checking (use <code>orElseThrow()</code> to make the intent clear), and never return <code>null</code> from a method declared to return an <code>Optional</code>.</p>
+<h2>Modern Java in one place</h2>
+<p>Java has changed a lot since Java 8. Code written today looks like this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.time.*;
+<span class="tk-k">import</span> java.time.format.<span class="tk-t">DateTimeFormatter</span>;
+<span class="tk-k">import</span> java.time.temporal.<span class="tk-t">ChronoUnit</span>;
+<span class="tk-k">import</span> java.util.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">var</span> orders = <span class="tk-t">List</span>.<span class="tk-f">of</span>(                                         <span class="tk-c">// var: inferred local types</span>
+            <span class="tk-k">new</span> <span class="tk-f">Order</span>(<span class="tk-s">&quot;A-1&quot;</span>, <span class="tk-k">new</span> <span class="tk-f">Paid</span>(<span class="tk-t">LocalDate</span>.<span class="tk-f">of</span>(<span class="tk-n">2026</span>, <span class="tk-n">3</span>, <span class="tk-n">1</span>), <span class="tk-n">4999</span>)),
+            <span class="tk-k">new</span> <span class="tk-f">Order</span>(<span class="tk-s">&quot;A-2&quot;</span>, <span class="tk-k">new</span> <span class="tk-f">Pending</span>()),
+            <span class="tk-k">new</span> <span class="tk-f">Order</span>(<span class="tk-s">&quot;A-3&quot;</span>, <span class="tk-k">new</span> <span class="tk-f">Refunded</span>(<span class="tk-s">&quot;damaged&quot;</span>, <span class="tk-n">1250</span>)));
+
+        <span class="tk-k">for</span> (<span class="tk-k">var</span> order : orders) <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(order.<span class="tk-f">id</span>() + <span class="tk-s">&quot;: &quot;</span> + <span class="tk-f">describe</span>(order.<span class="tk-f">status</span>()));
+
+        <span class="tk-t">String</span> report = <span class="tk-s">&quot;&quot;&quot;
+            Orders: %d
+            Generated: %s
+            &quot;&quot;&quot;</span>.<span class="tk-f">formatted</span>(orders.<span class="tk-f">size</span>(), <span class="tk-t">LocalDate</span>.<span class="tk-f">of</span>(<span class="tk-n">2026</span>, <span class="tk-n">3</span>, <span class="tk-n">14</span>).<span class="tk-f">format</span>(<span class="tk-t">DateTimeFormatter</span>.ISO_DATE));   <span class="tk-c">// a text block</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">print</span>(report);
+
+        <span class="tk-t">LocalDate</span> due = <span class="tk-t">LocalDate</span>.<span class="tk-f">of</span>(<span class="tk-n">2026</span>, <span class="tk-n">1</span>, <span class="tk-n">31</span>).<span class="tk-f">plusMonths</span>(<span class="tk-n">1</span>);       <span class="tk-c">// java.time: immutable dates</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(due + <span class="tk-s">&quot; &quot;</span> + due.<span class="tk-f">getDayOfWeek</span>() + <span class="tk-s">&quot; &quot;</span> + <span class="tk-t">ChronoUnit</span>.DAYS.<span class="tk-f">between</span>(<span class="tk-t">LocalDate</span>.<span class="tk-f">of</span>(<span class="tk-n">2026</span>, <span class="tk-n">1</span>, <span class="tk-n">1</span>), due));
+        <span class="tk-t">Duration</span> d = <span class="tk-t">Duration</span>.<span class="tk-f">ofMinutes</span>(<span class="tk-n">135</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(d.<span class="tk-f">toHours</span>() + <span class="tk-s">&quot;h &quot;</span> + d.<span class="tk-f">toMinutesPart</span>() + <span class="tk-s">&quot;m&quot;</span>);
+    }
+
+    <span class="tk-k">static</span> <span class="tk-t">String</span> <span class="tk-f">describe</span>(<span class="tk-t">Status</span> s) {
+        <span class="tk-k">return</span> <span class="tk-k">switch</span> (s) {                                            <span class="tk-c">// pattern matching over a sealed type</span>
+            <span class="tk-k">case</span> <span class="tk-f">Paid</span>(<span class="tk-t">LocalDate</span> on, <span class="tk-k">long</span> cents) when cents &gt; <span class="tk-n">10_000</span> -&gt; <span class="tk-s">&quot;large payment on &quot;</span> + on;
+            <span class="tk-k">case</span> <span class="tk-f">Paid</span>(<span class="tk-t">LocalDate</span> on, <span class="tk-k">long</span> cents) -&gt; <span class="tk-s">&quot;paid %d.%02d on %s&quot;</span>.<span class="tk-f">formatted</span>(cents / <span class="tk-n">100</span>, cents % <span class="tk-n">100</span>, on);
+            <span class="tk-k">case</span> <span class="tk-t">Pending</span> p -&gt; <span class="tk-s">&quot;waiting for payment&quot;</span>;
+            <span class="tk-k">case</span> <span class="tk-f">Refunded</span>(<span class="tk-t">String</span> reason, <span class="tk-k">long</span> cents) -&gt; <span class="tk-s">&quot;refunded (&quot;</span> + reason + <span class="tk-s">&quot;)&quot;</span>;
+        };
+    }
+}
+
+<span class="tk-k">sealed</span> <span class="tk-k">interface</span> <span class="tk-t">Status</span> <span class="tk-k">permits</span> <span class="tk-t">Paid</span>, <span class="tk-t">Pending</span>, <span class="tk-t">Refunded</span> { }
+<span class="tk-k">record</span> <span class="tk-f">Paid</span>(<span class="tk-t">LocalDate</span> on, <span class="tk-k">long</span> cents) <span class="tk-k">implements</span> <span class="tk-t">Status</span> { }
+<span class="tk-k">record</span> <span class="tk-f">Pending</span>() <span class="tk-k">implements</span> <span class="tk-t">Status</span> { }
+<span class="tk-k">record</span> <span class="tk-f">Refunded</span>(<span class="tk-t">String</span> reason, <span class="tk-k">long</span> cents) <span class="tk-k">implements</span> <span class="tk-t">Status</span> { }
+<span class="tk-k">record</span> <span class="tk-f">Order</span>(<span class="tk-t">String</span> id, <span class="tk-t">Status</span> status) { }</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Since</th>
+<th>Lesson</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Lambdas, streams, <code>Optional</code>, <code>java.time</code></td>
+<td>8</td>
+<td>6.01, 6.02, here</td>
+</tr>
+<tr>
+<td><code>var</code> for local variables</td>
+<td>10</td>
+<td>here</td>
+</tr>
+<tr>
+<td><code>List.of</code>, <code>Map.of</code>, <code>Set.of</code></td>
+<td>9</td>
+<td>2.03</td>
+</tr>
+<tr>
+<td>Switch expressions with <code>-&gt;</code></td>
+<td>14</td>
+<td>1.05</td>
+</tr>
+<tr>
+<td>Text blocks <code>&quot;&quot;&quot;</code></td>
+<td>15</td>
+<td>1.04</td>
+</tr>
+<tr>
+<td>Records, <code>instanceof</code> patterns</td>
+<td>16</td>
+<td>3.05, 3.03</td>
+</tr>
+<tr>
+<td>Sealed types</td>
+<td>17</td>
+<td>3.05</td>
+</tr>
+<tr>
+<td>Pattern matching for switch, record patterns</td>
+<td>21</td>
+<td>3.05</td>
+</tr>
+<tr>
+<td>Virtual threads</td>
+<td>21</td>
+<td>6.04</td>
+</tr>
+<tr>
+<td>Unnamed variables <code>_</code>, compact source files</td>
+<td>22, 25</td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<h2>java.time</h2>
+<p>Use <code>java.time</code> for dates and times (never the old <code>Date</code> and <code>Calendar</code>):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LocalDate</code>, <code>LocalTime</code>, <code>LocalDateTime</code></td>
+<td>A date / time / both, without a time zone</td>
+</tr>
+<tr>
+<td><code>ZonedDateTime</code>, <code>Instant</code></td>
+<td>A moment in time, with a zone / in UTC</td>
+</tr>
+<tr>
+<td><code>Duration</code>, <code>Period</code></td>
+<td>An amount of time / of days, months, years</td>
+</tr>
+<tr>
+<td><code>DateTimeFormatter</code></td>
+<td>Formatting and parsing</td>
+</tr>
+</tbody></table>
+</div>
+<p>All are immutable: <code>date.plusDays(1)</code> returns a new date.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-the-stream-api/"><span class="mono">previous</span><b>6.02 The Stream API</b></a>
+      <a class="lp-next" href="../6-04-threads-and-concurrency/"><span class="mono">next</span><b>6.04 Threads and Concurrency</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/6-03-optional-and-modern-java"></script>
+</body>
+</html>

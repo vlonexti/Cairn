@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Dynamic Arrays · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/1-03-dynamic-arrays/">
+  <meta name="description" content="How std::vector works inside - a contiguous block with a size and a capacity, growth by doubling and why it gives amortised O(1) push back, the cost of…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dynamic Arrays · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="How std::vector works inside - a contiguous block with a size and a capacity, growth by doubling and why it gives amortised O(1) push back, the cost of…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/1-03-dynamic-arrays/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Dynamic Arrays · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dynamic Arrays · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="How std::vector works inside - a contiguous block with a size and a capacity, growth by doubling and why it gives amortised O(1) push back, the cost of…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Complexity and Linear Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Dynamic Arrays</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.03</b></span><span>3 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How std::vector works inside - a contiguous block with a size and a capacity, growth by doubling and why it gives amortised O(1) push_back, the cost of inserting and erasing in the middle, building a small vector class with a rule-of-five, and what invalidates iterators.</p>
+      <div class="prose">
+<h2>An array that grows</h2>
+<p>A plain array has a fixed size. A <strong>dynamic array</strong> keeps its elements in one contiguous block like an array, but can grow. It tracks three things:</p>
+<ul>
+<li>a pointer to the block,</li>
+<li>its <strong>size</strong>, the number of elements in use,</li>
+<li>its <strong>capacity</strong>, the number of elements the block can hold.</li>
+</ul>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph block[&quot;capacity 8&quot;]
+        direction LR
+        a[&quot;7&quot;] --- b[&quot;3&quot;] --- c[&quot;9&quot;] --- d[&quot;4&quot;] --- e[&quot;5&quot;] --- f[&quot; &quot;] --- g[&quot; &quot;] --- h[&quot; &quot;]
+    end
+    s[&quot;size 5&quot;] -.-&gt; e</pre></div>
+<p>Reading or writing <code>v[i]</code> is O(1): the address is <code>start + i × sizeof(T)</code>. Appending is O(1) while there is spare capacity. When the block is full, the array must:</p>
+<ol>
+<li>allocate a bigger block,</li>
+<li>move every element across,</li>
+<li>free the old block.</li>
+</ol>
+<p>That step is O(n). The trick is how much bigger to make the new block.</p>
+<h2>Why doubling gives amortised O(1)</h2>
+<p>If the capacity grew by a fixed amount, say 10, every tenth push would copy everything: about n²/20 copies for n pushes, O(n) per push on average. If instead it <strong>doubles</strong>, the copies happen at sizes 1, 2, 4, 8, ..., and their total is less than 2n. Spread over n pushes, that is fewer than 2 copies each: <strong>amortised O(1)</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; v;
+    std::size_t lastCapacity = v.<span class="tk-f">capacity</span>();
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">1000</span>; ++i)
+    {
+        v.<span class="tk-f">push_back</span>(i);
+        <span class="tk-k">if</span> (v.<span class="tk-f">capacity</span>() != lastCapacity)
+        {
+            std::cout &lt;&lt; <span class="tk-s">&quot;size &quot;</span> &lt;&lt; v.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot;: capacity &quot;</span> &lt;&lt; lastCapacity &lt;&lt; <span class="tk-s">&quot; -&gt; &quot;</span> &lt;&lt; v.<span class="tk-f">capacity</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+            lastCapacity = v.<span class="tk-f">capacity</span>();
+        }
+    }
+}</code></pre></div>
+<p>Microsoft&#39;s library grows by 1.5×, GCC&#39;s and Clang&#39;s by 2×. Any constant factor greater than 1 gives amortised O(1); smaller factors waste less memory but copy a little more often.</p>
+<p>If you know the final size, <code>v.reserve(n)</code> allocates once up front and no reallocation happens at all.</p>
+<h2>Inserting and erasing in the middle</h2>
+<p>To insert at position <code>i</code>, every element from <code>i</code> onward must shift one place right; erasing shifts them left. That is O(n − i): cheap at the end, expensive at the front.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>v[i]</code>, <code>v.back()</code></td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td><code>push_back</code>, <code>pop_back</code></td>
+<td>amortised O(1), O(1)</td>
+</tr>
+<tr>
+<td><code>insert(v.begin() + i, x)</code>, <code>erase(v.begin() + i)</code></td>
+<td>O(n − i)</td>
+</tr>
+<tr>
+<td><code>insert(v.begin(), x)</code></td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>find a value (unsorted)</td>
+<td>O(n)</td>
+</tr>
+</tbody></table>
+</div>
+<p>If you only need to remove an element and do not care about order, <strong>swap it with the last element and pop</strong>: O(1).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">unorderedErase</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; v, std::size_t i)
+{
+    v[i] = v.<span class="tk-f">back</span>();
+    v.<span class="tk-f">pop_back</span>();
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; v{ <span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">40</span>, <span class="tk-n">50</span> };
+    <span class="tk-f">unorderedErase</span>(v, <span class="tk-n">1</span>);
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : v) std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<h2>Building one</h2>
+<p>Here is a minimal dynamic array of <code>int</code>s. It owns raw memory, so it follows the <strong>rule of five</strong>: a destructor, copy constructor, copy assignment, move constructor and move assignment.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;cstddef&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;stdexcept&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">IntVector</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">IntVector</span>() = <span class="tk-k">default</span>;
+    ~<span class="tk-f">IntVector</span>() { <span class="tk-k">delete</span>[] data_; }
+
+    <span class="tk-f">IntVector</span>(<span class="tk-k">const</span> <span class="tk-t">IntVector</span>&amp; other) : <span class="tk-f">data_</span>(<span class="tk-k">new</span> <span class="tk-k">int</span>[other.capacity_]), <span class="tk-f">size_</span>(other.size_), <span class="tk-f">capacity_</span>(other.capacity_)
+    {
+        std::<span class="tk-f">copy</span>(other.data_, other.data_ + size_, data_);
+    }
+    <span class="tk-t">IntVector</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-t">IntVector</span> other) <span class="tk-k">noexcept</span>      <span class="tk-c">// copy-and-swap handles both copy and move assignment</span>
+    {
+        <span class="tk-f">swap</span>(other);
+        <span class="tk-k">return</span> *<span class="tk-k">this</span>;
+    }
+    <span class="tk-f">IntVector</span>(<span class="tk-t">IntVector</span>&amp;&amp; other) <span class="tk-k">noexcept</span>
+        : <span class="tk-f">data_</span>(std::<span class="tk-f">exchange</span>(other.data_, <span class="tk-k">nullptr</span>)), <span class="tk-f">size_</span>(std::<span class="tk-f">exchange</span>(other.size_, <span class="tk-n">0</span>)), <span class="tk-f">capacity_</span>(std::<span class="tk-f">exchange</span>(other.capacity_, <span class="tk-n">0</span>)) {}
+
+    <span class="tk-k">void</span> <span class="tk-f">push_back</span>(<span class="tk-k">int</span> value)
+    {
+        <span class="tk-k">if</span> (size_ == capacity_) <span class="tk-f">grow</span>(capacity_ == <span class="tk-n">0</span> ? <span class="tk-n">1</span> : capacity_ * <span class="tk-n">2</span>);
+        data_[size_++] = value;
+    }
+    <span class="tk-k">void</span> <span class="tk-f">pop_back</span>() { <span class="tk-k">if</span> (size_ == <span class="tk-n">0</span>) <span class="tk-k">throw</span> std::<span class="tk-f">out_of_range</span>(<span class="tk-s">&quot;pop_back on empty&quot;</span>); --size_; }
+
+    <span class="tk-k">int</span>&amp; <span class="tk-k">operator</span>[](std::size_t i) { <span class="tk-k">return</span> data_[i]; }
+    <span class="tk-k">int</span>&amp; <span class="tk-f">at</span>(std::size_t i) { <span class="tk-k">if</span> (i &gt;= size_) <span class="tk-k">throw</span> std::<span class="tk-f">out_of_range</span>(<span class="tk-s">&quot;index&quot;</span>); <span class="tk-k">return</span> data_[i]; }
+    std::size_t <span class="tk-f">size</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> size_; }
+    std::size_t <span class="tk-f">capacity</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> capacity_; }
+
+    <span class="tk-k">void</span> <span class="tk-f">swap</span>(<span class="tk-t">IntVector</span>&amp; other) <span class="tk-k">noexcept</span>
+    {
+        std::<span class="tk-f">swap</span>(data_, other.data_);
+        std::<span class="tk-f">swap</span>(size_, other.size_);
+        std::<span class="tk-f">swap</span>(capacity_, other.capacity_);
+    }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">void</span> <span class="tk-f">grow</span>(std::size_t newCapacity)
+    {
+        <span class="tk-k">int</span>* bigger = <span class="tk-k">new</span> <span class="tk-k">int</span>[newCapacity];
+        std::<span class="tk-f">copy</span>(data_, data_ + size_, bigger);
+        <span class="tk-k">delete</span>[] data_;
+        data_ = bigger;
+        capacity_ = newCapacity;
+    }
+
+    <span class="tk-k">int</span>* data_ = <span class="tk-k">nullptr</span>;
+    std::size_t size_ = <span class="tk-n">0</span>;
+    std::size_t capacity_ = <span class="tk-n">0</span>;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">IntVector</span> v;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt;= <span class="tk-n">10</span>; ++i) v.<span class="tk-f">push_back</span>(i * i);
+    <span class="tk-t">IntVector</span> copy = v;
+    copy[<span class="tk-n">0</span>] = -<span class="tk-n">1</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;size &quot;</span> &lt;&lt; v.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">&quot;, capacity &quot;</span> &lt;&lt; v.<span class="tk-f">capacity</span>() &lt;&lt; <span class="tk-s">&quot;, v[0] &quot;</span> &lt;&lt; v[<span class="tk-n">0</span>] &lt;&lt; <span class="tk-s">&quot;, copy[0] &quot;</span> &lt;&lt; copy[<span class="tk-n">0</span>] &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">try</span> { v.<span class="tk-f">at</span>(<span class="tk-n">10</span>); } <span class="tk-k">catch</span> (<span class="tk-k">const</span> std::out_of_range&amp; e) { std::cout &lt;&lt; <span class="tk-s">&quot;at(10): &quot;</span> &lt;&lt; e.<span class="tk-f">what</span>() &lt;&lt; <span class="tk-s">'\n'</span>; }
+}</code></pre></div>
+<p>The real <code>std::vector</code> adds a lot on top: it is a template, it constructs elements only when they are pushed (so it works for types without a default constructor), it moves rather than copies elements when it grows (if their move constructor is <code>noexcept</code>), and it gives iterators. The practice for this lesson builds a template version.</p>
+<h2>Iterator invalidation</h2>
+<p>Because a dynamic array <strong>moves its elements</strong> when it grows, any pointer, reference or iterator into it may dangle after a <code>push_back</code>, <code>insert</code> or <code>reserve</code> that reallocates. Erasing invalidates everything after the erased position.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::vector&lt;<span class="tk-k">int</span>&gt; v{ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> };
+<span class="tk-k">int</span>&amp; first = v[<span class="tk-n">0</span>];
+v.<span class="tk-f">push_back</span>(<span class="tk-n">4</span>);          <span class="tk-c">// may reallocate</span>
+std::cout &lt;&lt; first;      <span class="tk-c">// undefined behaviour if it did</span></code></pre></div>
+<p>Keep <strong>indexes</strong> instead of pointers when the vector may grow, or <code>reserve</code> enough first.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A dynamic array grows its capacity by 1.5× when full. What is the amortised cost of push_back?</div><ul><li>O(1)</li><li>O(log n)</li><li>O(n)</li><li>O(1.5ⁿ)</li></ul><details><summary>Show the answer</summary><p><b>O(1)</b> Any constant growth factor above 1 keeps the total copying proportional to n.</p></details></li><li><div class="q">Why does erasing the first element of a std::vector take O(n)?</div><ul><li>The vector has to reallocate</li><li>Every other element shifts one place to the left</li><li>The vector searches for the element first</li><li>It has to update the capacity</li></ul><details><summary>Show the answer</summary><p><b>Every other element shifts one place to the left</b> The elements must stay contiguous, so they all move down by one.</p></details></li><li><div class="q">You hold a reference to v[2] and then call v.push_back(x). Is the reference still safe to use?</div><ul><li>Yes, always</li><li>Yes, if x is not equal to v[2]</li><li>Only if the push did not reallocate, for example because capacity was reserved first</li><li>No, push_back always invalidates everything</li></ul><details><summary>Show the answer</summary><p><b>Only if the push did not reallocate, for example because capacity was reserved first</b> Reallocation moves the elements to a new block, leaving old references dangling.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>A dynamic array is a contiguous block with a size and a capacity.</li>
+<li>Growing by a constant factor makes <code>push_back</code> amortised O(1); <code>reserve</code> avoids growing at all.</li>
+<li>Inserting and erasing cost O(n − i) because elements shift; swap-and-pop removes in O(1) when order does not matter.</li>
+<li>Reallocation invalidates pointers, references and iterators.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/1.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/1.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-02-measuring-real-performance/"><span class="mono">previous</span><b>1.02 Measuring Real Performance</b></a>
+      <a class="lp-next" href="../1-04-linked-lists/"><span class="mono">next</span><b>1.04 Linked Lists</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/1-03-dynamic-arrays"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

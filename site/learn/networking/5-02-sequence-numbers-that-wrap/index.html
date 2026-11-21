@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Sequence Numbers That Wrap · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/5-02-sequence-numbers-that-wrap/">
+  <meta name="description" content="Numbering packets with a small counter that wraps around - comparing sequence numbers correctly across the wrap with half-range arithmetic, the signed…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Sequence Numbers That Wrap · Networking · Xenon">
+  <meta property="og:description" content="Numbering packets with a small counter that wraps around - comparing sequence numbers correctly across the wrap with half-range arithmetic, the signed…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/5-02-sequence-numbers-that-wrap/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Sequence Numbers That Wrap · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sequence Numbers That Wrap · Networking · Xenon">
+  <meta name="twitter:description" content="Numbering packets with a small counter that wraps around - comparing sequence numbers correctly across the wrap with half-range arithmetic, the signed…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Reliability over UDP</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Sequence Numbers That Wrap</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Numbering packets with a small counter that wraps around - comparing sequence numbers correctly across the wrap with half-range arithmetic, the signed difference between two numbers, and discarding duplicates and stale packets with a sliding window.</p>
+      <div class="prose">
+<h2>A number on every packet</h2>
+<p>Every packet carries a <strong>sequence number</strong> that the sender increments each time. Receivers use it to tell which packet is newer, to drop duplicates, and (next lesson) to say which ones arrived.</p>
+<p>Bytes on the wire are precious, so the number is usually <strong>16 bits</strong>. At 60 packets a second it wraps from 65 535 back to 0 every 18 minutes. Comparing with a plain <code>a &gt; b</code> fails at the wrap: packet 2 is newer than packet 65 534, though 2 &lt; 65 534.</p>
+<h2>Half-range comparison</h2>
+<p>Treat the numbers as points on a circle. <code>a</code> is newer than <code>b</code> if going forward from <code>b</code> to <code>a</code> is <strong>less than half way round</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">sequenceGreater</span>(std::uint16_t a, std::uint16_t b)
+{
+    <span class="tk-k">return</span> (a &gt; b &amp;&amp; a - b &lt; <span class="tk-n">32768</span>) || (a &lt; b &amp;&amp; b - a &gt; <span class="tk-n">32768</span>);
+}</code></pre></div>
+<p>An equivalent and shorter form uses the signed difference: subtract in 16-bit unsigned arithmetic and reinterpret as a signed 16-bit number.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">sequenceDifference</span>(std::uint16_t a, std::uint16_t b)
+{
+    <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;std::int16_t&gt;(<span class="tk-k">static_cast</span>&lt;std::uint16_t&gt;(a - b));
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">sequenceDifference</span>(<span class="tk-n">5</span>, <span class="tk-n">3</span>)         <span class="tk-c">//  2: 5 is two packets newer</span>
+<span class="tk-f">sequenceDifference</span>(<span class="tk-n">2</span>, <span class="tk-n">65534</span>)     <span class="tk-c">//  4: across the wrap</span>
+<span class="tk-f">sequenceDifference</span>(<span class="tk-n">65534</span>, <span class="tk-n">2</span>)     <span class="tk-c">// -4</span></code></pre></div>
+<p>Exactly half way round (a difference of 32 768) is ambiguous; it never matters in practice because no protocol keeps that many packets in flight. This is the same &quot;serial number arithmetic&quot; TCP uses for its 32-bit sequence numbers (RFC 1982).</p>
+<h2>Duplicates and stale packets</h2>
+<p>Because UDP may duplicate and reorder, a receiver keeps a little history:</p>
+<ul>
+<li>the <strong>latest</strong> sequence number seen so far;</li>
+<li>which of the recent numbers before it have also been seen, usually as a bit per number for the last 32 to 256.</li>
+</ul>
+<p>When a packet arrives:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Difference from latest</th>
+<th>Meaning</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>positive</td>
+<td>newer than anything seen</td>
+<td>accept; slide the window forward</td>
+</tr>
+<tr>
+<td>zero, or already marked</td>
+<td>duplicate</td>
+<td>drop</td>
+</tr>
+<tr>
+<td>negative, inside the window</td>
+<td>late but new</td>
+<td>accept, mark it seen</td>
+</tr>
+<tr>
+<td>negative, beyond the window</td>
+<td>too old to judge</td>
+<td>drop</td>
+</tr>
+</tbody></table>
+</div>
+<p>For newest-wins data (positions), you can go further and <strong>ignore any packet older than the latest</strong>, since its state is stale anyway; reliable messages inside it must still be processed, which is why the decision belongs to each kind of data, not to the packet.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-why-games-use-udp/"><span class="mono">previous</span><b>5.01 Why Games Use UDP</b></a>
+      <a class="lp-next" href="../5-03-acknowledgement-bitfields/"><span class="mono">next</span><b>5.03 Acknowledgement Bitfields</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/5-02-sequence-numbers-that-wrap"></script>
+</body>
+</html>

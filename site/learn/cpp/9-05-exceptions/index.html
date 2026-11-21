@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Exceptions · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/9-05-exceptions/">
+  <meta name="description" content="When a function cannot do its job, it throws an exception. Control leaves the function and travels up the call stack, running destructors on the way ( stack…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Exceptions · C++ · Xenon">
+  <meta property="og:description" content="When a function cannot do its job, it throws an exception. Control leaves the function and travels up the call stack, running destructors on the way ( stack…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/9-05-exceptions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Exceptions · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Exceptions · C++ · Xenon">
+  <meta name="twitter:description" content="When a function cannot do its job, it throws an exception. Control leaves the function and travels up the call stack, running destructors on the way ( stack…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Templates and Exceptions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Exceptions</h1>
+      <div class="readout lp-readout"><span>lesson <b>9.05</b></span><span>5 of 6 in milestone 9</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">When a function cannot do its job, it <strong>throws</strong> an exception. Control leaves the function and travels up the call stack, running destructors on the way (<strong>stack unwinding</strong>), to the nearest matching <strong>catch</strong>. Throw by value, catch by <code>const&amp;</code>, and derive your exception types from <code>std::exception</code>.</p>
+      <div class="prose">
+<h2>Why exceptions?</h2>
+<p>A function that cannot fulfil its purpose must tell its caller. The traditional way is a special return value.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> result{ <span class="tk-f">parse</span>(text) };
+<span class="tk-k">if</span> (result == -<span class="tk-n">1</span>)
+{
+    <span class="tk-c">// an error? or is -1 a legitimate result?</span>
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Return codes</th>
+<th>Exceptions</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Easy to ignore: forgetting the check compiles</td>
+<td>Cannot be ignored: unhandled, the program stops</td>
+</tr>
+<tr>
+<td>Every caller at every level must check and pass it on</td>
+<td>Intermediate functions need no error-handling code</td>
+</tr>
+<tr>
+<td>Compete with the real return value</td>
+<td>Travel on a separate channel</td>
+</tr>
+<tr>
+<td>Impossible in constructors, which return nothing</td>
+<td>Work in constructors</td>
+</tr>
+</tbody></table>
+</div>
+<h2><code>throw</code>, <code>try</code>, <code>catch</code></h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;stdexcept&gt;</span>
+
+<span class="tk-k">double</span> <span class="tk-f">safeDivide</span>(<span class="tk-k">double</span> a, <span class="tk-k">double</span> b)
+{
+    <span class="tk-k">if</span> (b == <span class="tk-n">0.0</span>)
+    {
+        <span class="tk-k">throw</span> std::invalid_argument{ <span class="tk-s">&quot;division by zero&quot;</span> };
+    }
+    <span class="tk-k">return</span> a / b;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">try</span>
+    {
+        std::cout &lt;&lt; <span class="tk-f">safeDivide</span>(<span class="tk-n">10</span>, <span class="tk-n">2</span>) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 5</span>
+        std::cout &lt;&lt; <span class="tk-f">safeDivide</span>(<span class="tk-n">1</span>, <span class="tk-n">0</span>) &lt;&lt; <span class="tk-s">'\n'</span>;     <span class="tk-c">// throws</span>
+        std::cout &lt;&lt; <span class="tk-s">&quot;never printed\n&quot;</span>;
+    }
+    <span class="tk-k">catch</span> (<span class="tk-k">const</span> std::invalid_argument&amp; e)
+    {
+        std::cerr &lt;&lt; <span class="tk-s">&quot;Error: &quot;</span> &lt;&lt; e.<span class="tk-f">what</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+    std::cout &lt;&lt; <span class="tk-s">&quot;the program continues\n&quot;</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Keyword</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>throw expression;</code></td>
+<td>Raises an exception. The current function stops immediately.</td>
+</tr>
+<tr>
+<td><code>try { }</code></td>
+<td>Marks a block whose exceptions the following handlers may catch</td>
+</tr>
+<tr>
+<td><code>catch (type) { }</code></td>
+<td>A handler: runs if an exception of a matching type arrives</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Stack unwinding</h2>
+<p>After a <code>throw</code>, the runtime searches outwards through the active function calls for a matching handler. Each scope it leaves is cleaned up properly.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant main
+    participant load as loadLevel
+    participant parse as parseFile
+    main-&gt;&gt;load: call (inside a try block)
+    load-&gt;&gt;parse: call
+    parse--xparse: throw ParseError
+    Note over parse: its local objects are destroyed
+    parse--xload: no handler here
+    Note over load: its local objects are destroyed
+    load--xmain: caught by catch (const ParseError&amp;)</pre></div>
+<p>This is <strong>stack unwinding</strong>. The destructor of every fully constructed local object runs, in reverse order, exactly as if each scope had ended normally. It is the reason RAII (<a href="../7-04-raii-and-the-rule-of-three/">7.04 RAII and the Rule of Three</a>) makes code safe in the presence of exceptions without any extra effort: resources held by objects are released on the way out.</p>
+<h2>The standard hierarchy</h2>
+<div class="codeblock diagram plain"><pre><code> std::exception
+ ├── std::logic_error                 errors in the program's logic
+ │    ├── std::invalid_argument
+ │    ├── std::out_of_range           v.at(i), std::stoi
+ │    └── std::domain_error, std::length_error
+ ├── std::runtime_error               failures detectable only while running
+ │    ├── std::range_error, std::overflow_error
+ │    └── std::system_error
+ │         └── std::filesystem::filesystem_error
+ ├── std::bad_alloc                   new could not obtain memory
+ ├── std::bad_cast                    dynamic_cast to a reference failed
+ └── std::bad_optional_access, std::bad_variant_access</code></pre></div>
+<p>A handler for a base class also catches every class derived from it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">try</span>
+{
+    <span class="tk-f">process</span>();
+}
+<span class="tk-k">catch</span> (<span class="tk-k">const</span> std::out_of_range&amp; e)    <span class="tk-c">// most specific first</span>
+{
+}
+<span class="tk-k">catch</span> (<span class="tk-k">const</span> std::logic_error&amp; e)
+{
+}
+<span class="tk-k">catch</span> (<span class="tk-k">const</span> std::exception&amp; e)       <span class="tk-c">// any standard exception</span>
+{
+    std::cerr &lt;&lt; e.<span class="tk-f">what</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+}
+<span class="tk-k">catch</span> (...)                           <span class="tk-c">// anything at all</span>
+{
+    std::cerr &lt;&lt; <span class="tk-s">&quot;unknown error\n&quot;</span>;
+}</code></pre></div>
+<div class="callout warning"><div class="callout-title"><span>Order and reference</span></div><div class="callout-body"><p>Handlers are tried from top to bottom and the <strong>first</strong> match wins, so derived types must come before their bases. And catch by <code>const&amp;</code>: catching by value copies the exception and <strong>slices</strong> it to the handler&#39;s type (<a href="../8-06-object-slicing-casting-and-composition/">8.06 Object Slicing, Casting and Composition</a>).</p>
+</div></div>
+<h2>Your own exception types</h2>
+<p>Derive from a standard exception so that existing handlers for <code>std::exception</code> still work.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">ParseError</span> : <span class="tk-k">public</span> std::runtime_error
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">ParseError</span>(<span class="tk-k">const</span> std::string&amp; message, <span class="tk-k">int</span> line)
+        : std::runtime_error{ message + <span class="tk-s">&quot; (line &quot;</span> + std::<span class="tk-f">to_string</span>(line) + <span class="tk-s">&quot;)&quot;</span> }, m_line{ line }
+    {
+    }
+
+    <span class="tk-k">int</span> <span class="tk-f">line</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_line; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_line{};
+};
+
+<span class="tk-k">throw</span> <span class="tk-t">ParseError</span>{ <span class="tk-s">&quot;unexpected '}'&quot;</span>, <span class="tk-n">42</span> };</code></pre></div>
+<p>A dedicated type lets callers handle that failure specifically, and carry structured data such as the line number.</p>
+<h2>Rethrowing</h2>
+<p>A handler that cannot fully deal with an exception can pass it on.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">catch</span> (<span class="tk-k">const</span> std::exception&amp; e)
+{
+    <span class="tk-f">log</span>(e.<span class="tk-f">what</span>());
+    <span class="tk-k">throw</span>;         <span class="tk-c">// rethrows the original exception, with its real type</span>
+}</code></pre></div>
+<p>Write <code>throw;</code> with no operand. <code>throw e;</code> would throw a <strong>copy</strong> of <code>e</code> with the handler&#39;s declared type, slicing a derived exception down to <code>std::exception</code>.</p>
+<h2>Exceptions from constructors</h2>
+<p>A constructor that throws means the object never came into existence. Its destructor does <strong>not</strong> run. Members and base classes that were already constructed <strong>are</strong> destroyed.</p>
+<p>To catch exceptions thrown by the member initializer list, use a <strong>function try block</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Widget</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Widget</span>() <span class="tk-k">try</span> : m_resource{ <span class="tk-s">&quot;config.txt&quot;</span> }
+    {
+    }
+    <span class="tk-k">catch</span> (<span class="tk-k">const</span> std::exception&amp; e)
+    {
+        std::cerr &lt;&lt; <span class="tk-s">&quot;Widget failed: &quot;</span> &lt;&lt; e.<span class="tk-f">what</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+        <span class="tk-c">// the exception is rethrown automatically: a half-built object cannot be rescued</span>
+    }
+
+<span class="tk-k">private</span>:
+    <span class="tk-t">Resource</span> m_resource;
+};</code></pre></div>
+<h2>Uncaught exceptions</h2>
+<p>If no handler matches anywhere, <code>std::terminate</code> is called and the program ends, possibly without unwinding. A top-level handler in <code>main</code> guarantees a clean exit and a readable message.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;stdexcept&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">run</span>()
+{
+    <span class="tk-k">throw</span> std::runtime_error{ <span class="tk-s">&quot;the settings file is missing&quot;</span> };
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">try</span>
+    {
+        <span class="tk-f">run</span>();
+    }
+    <span class="tk-k">catch</span> (<span class="tk-k">const</span> std::exception&amp; e)
+    {
+        std::cerr &lt;&lt; <span class="tk-s">&quot;Fatal: &quot;</span> &lt;&lt; e.<span class="tk-f">what</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<h2>When to use exceptions</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Use them for</th>
+<th>Do not use them for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Failures that are rare: a missing file, malformed data, no memory</td>
+<td>Ordinary control flow, such as leaving a loop</td>
+</tr>
+<tr>
+<td>Failures in constructors</td>
+<td>Outcomes that are expected: bad user input is asked for again</td>
+</tr>
+<tr>
+<td>Errors detected far from the code able to handle them</td>
+<td>Bugs. Use <code>assert</code>: <a href="../3-07-input-validation-and-assert/">3.07 Input Validation and assert</a></td>
+</tr>
+</tbody></table>
+</div>
+<p>Throwing is slow, on the order of microseconds, while the non-throwing path costs essentially nothing. Exceptions suit failures that are rare. For failures that are a normal outcome, return a <code>std::optional</code> or <code>std::expected</code>: <a href="../9-06-exception-safety-noexcept-and-std-expected/">9.06 Exception Safety, noexcept and std::expected</a>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/9.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/9.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../9-04-concepts-cpp20/"><span class="mono">previous</span><b>9.04 Concepts (C++20)</b></a>
+      <a class="lp-next" href="../9-06-exception-safety-noexcept-and-std-expected/"><span class="mono">next</span><b>9.06 Exception Safety, noexcept and std::expected</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/9-05-exceptions"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

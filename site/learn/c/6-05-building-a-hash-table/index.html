@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Building a Hash Table · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/6-05-building-a-hash-table/">
+  <meta name="description" content="A hash table finds a value by its key in about constant time. A hash function turns the key into a number, which picks a bucket in an array; keys that land…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Building a Hash Table · C · Xenon">
+  <meta property="og:description" content="A hash table finds a value by its key in about constant time. A hash function turns the key into a number, which picks a bucket in an array; keys that land…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/6-05-building-a-hash-table/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Building a Hash Table · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Building a Hash Table · C · Xenon">
+  <meta name="twitter:description" content="A hash table finds a value by its key in about constant time. A hash function turns the key into a number, which picks a bucket in an array; keys that land…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C Close to the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Building a Hash Table</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A hash table finds a value by its key in about constant time. A hash function turns the key into a number, which picks a bucket in an array; keys that land in the same bucket are chained in a short linked list. When the table gets too full it grows and every entry moves to its new bucket. It is the structure behind Python&#39;s dict.</p>
+      <div class="prose">
+<h2>Looking things up fast</h2>
+<p>Finding a word in an unsorted array means checking every element: with a million words, a million comparisons. A sorted array with binary search needs about 20. A <strong>hash table</strong> needs about <strong>one</strong>.</p>
+<p>The idea: turn the key into a number with a <strong>hash function</strong>, and use that number (modulo the table size) as an index into an array of <strong>buckets</strong>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">graph LR
+  K1[&quot;'cat'&quot;] --&gt;|hash 5| B5
+  K2[&quot;'dog'&quot;] --&gt;|hash 2| B2
+  K3[&quot;'emu'&quot;] --&gt;|hash 5| B5
+  subgraph buckets
+  B0[0]
+  B1[1]
+  B2[&quot;2: dog&quot;]
+  B3[3]
+  B4[4]
+  B5[&quot;5: cat -&gt; emu&quot;]
+  end</pre></div>
+<h2>A hash function</h2>
+<p>A good hash function spreads keys evenly, so similar keys land far apart. FNV-1a is short and decent:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdint.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+uint32_t <span class="tk-f">hash_fnv1a</span>(<span class="tk-k">const</span> <span class="tk-k">char</span> *key)
+{
+    uint32_t h = <span class="tk-n">2166136261u</span>;            <span class="tk-c">// the FNV offset basis</span>
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span> *p = (<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span> *)key; *p; p++) {
+        h ^= *p;
+        h *= <span class="tk-n">16777619u</span>;                  <span class="tk-c">// the FNV prime; unsigned, so overflow wraps safely</span>
+    }
+    <span class="tk-k">return</span> h;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">const</span> <span class="tk-k">char</span> *words[] = {<span class="tk-s">&quot;cat&quot;</span>, <span class="tk-s">&quot;cats&quot;</span>, <span class="tk-s">&quot;act&quot;</span>, <span class="tk-s">&quot;dog&quot;</span>};
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">4</span>; i++) {
+        uint32_t h = <span class="tk-f">hash_fnv1a</span>(words[i]);
+        <span class="tk-f">printf</span>(<span class="tk-s">&quot;%-5s %10u  bucket %u of 8\n&quot;</span>, words[i], h, h % <span class="tk-n">8</span>);
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>cat</code> and <code>cats</code> differ by one letter but get completely different hashes. That is what a good hash function does.</p>
+<h2>Collisions: chaining</h2>
+<p>Two keys can land in the same bucket: a <strong>collision</strong>. The simplest fix is <strong>separate chaining</strong>: each bucket holds a linked list (lesson 4.05) of the entries that landed there.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">struct</span> entry {
+    <span class="tk-k">char</span> *key;              <span class="tk-c">// our own copy of the text</span>
+    <span class="tk-k">int</span> value;
+    <span class="tk-k">struct</span> entry *next;     <span class="tk-c">// the next entry in the same bucket</span>
+};
+
+<span class="tk-k">struct</span> table {
+    <span class="tk-k">struct</span> entry **buckets; <span class="tk-c">// an array of list heads</span>
+    size_t bucket_count;
+    size_t size;            <span class="tk-c">// entries stored</span>
+};</code></pre></div>
+<ul>
+<li><strong>Find</strong>: hash the key, walk that bucket&#39;s list comparing keys with <code>strcmp</code>.</li>
+<li><strong>Insert</strong>: find first; if the key exists, update its value; otherwise push a new entry on the front of the bucket&#39;s list.</li>
+<li><strong>Remove</strong>: unlink from the bucket&#39;s list, with the pointer-to-link trick from lesson 4.05, and free the key and the entry.</li>
+</ul>
+<h2>Keeping it fast: the load factor</h2>
+<p>The <strong>load factor</strong> is entries ÷ buckets. While it stays below about 1, each list is short and every operation is about one step. When it passes a limit (often 0.75 or 1), the table <strong>grows</strong>: allocate twice as many buckets and move every entry to <code>hash % new_count</code>. Each entry moves only now and then, so on average insertion stays constant time, the same argument as the doubling array in lesson 4.02.</p>
+<h2>Ownership</h2>
+<p>The table should copy the keys it stores, because the caller&#39;s text may be a buffer that gets reused for the next line of input. That means the table also frees them: one <code>table_free</code> walks every bucket, frees each key and entry, then frees the bucket array.</p>
+<h2>Where they are</h2>
+<p>Python&#39;s <code>dict</code> and <code>set</code>, JavaScript objects and <code>Map</code>, C++&#39;s <code>unordered_map</code>, Rust&#39;s <code>HashMap</code>, database indexes, compiler symbol tables, caches: hash tables everywhere. Many use <strong>open addressing</strong> instead of chaining (a collision tries the next free slot in the array itself), which keeps everything in one block of memory and suits caches better. The project at the end of this module is a word counter built on your own table.</p>
+<div class="callout note"><div class="callout-title"><span>Attacks on hash tables</span></div><div class="callout-body"><p>If an attacker can choose keys that all hash to the same bucket, every lookup becomes a long list walk and a server slows to a crawl. Languages defend against this with <strong>seeded</strong> hash functions (SipHash in Python and Rust) whose results depend on a random secret chosen at startup.</p>
+</div></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is a collision in a hash table?</div><ul><li>Two different keys landing in the same bucket</li><li>Two equal keys being inserted</li><li>The table running out of memory</li></ul><details><summary>Show the answer</summary><p><b>Two different keys landing in the same bucket</b> Chaining keeps both in that bucket&#39;s list.</p></details></li><li><div class="q">What is the load factor?</div><ul><li>Entries divided by buckets</li><li>Buckets divided by entries</li><li>The size of the hash</li></ul><details><summary>Show the answer</summary><p><b>Entries divided by buckets</b> Keep it low by growing the table.</p></details></li><li><div class="q">Why must a hash table store its own copy of each key string?</div><ul><li>The caller&#39;s buffer may be changed or reused after inserting</li><li>strcmp needs a copy</li><li>To make hashing faster</li></ul><details><summary>Show the answer</summary><p><b>The caller&#39;s buffer may be changed or reused after inserting</b> And then the table must free those copies.</p></details></li><li><div class="q">Why use unsigned arithmetic inside a hash function?</div><ul><li>Unsigned overflow wraps around and is well defined</li><li>It is faster than signed</li><li>Hash values must be positive</li></ul><details><summary>Show the answer</summary><p><b>Unsigned overflow wraps around and is well defined</b> Signed overflow would be undefined behaviour.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-the-standard-library-tour/"><span class="mono">previous</span><b>6.04 The Standard Library Tour</b></a>
+      <a class="lp-next" href="../7-01-variadic-functions/"><span class="mono">next</span><b>7.01 Variadic Functions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/6-05-building-a-hash-table"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

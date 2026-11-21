@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Regular Expressions · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/8-01-regular-expressions/">
+  <meta name="description" content="Finding and taking apart text with java.util.regex - Pattern and Matcher, matches versus find, groups and named groups, looping over every match, replacing…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Regular Expressions · Java · Xenon">
+  <meta property="og:description" content="Finding and taking apart text with java.util.regex - Pattern and Matcher, matches versus find, groups and named groups, looping over every match, replacing…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/8-01-regular-expressions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Regular Expressions · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Regular Expressions · Java · Xenon">
+  <meta name="twitter:description" content="Finding and taking apart text with java.util.regex - Pattern and Matcher, matches versus find, groups and named groups, looping over every match, replacing…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Java in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Regular Expressions</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.01</b></span><span>1 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Finding and taking apart text with java.util.regex - Pattern and Matcher, matches versus find, groups and named groups, looping over every match, replacing with a function, splitting, flags such as CASE_INSENSITIVE, the escaping rules in Java strings, and when a regular expression is the wrong tool.</p>
+      <div class="prose">
+<h2>Patterns in Java</h2>
+<p>A regular expression describes a shape of text: &quot;one or more digits&quot;, &quot;a word followed by @&quot;. Java&#39;s support lives in <code>java.util.regex</code>: a <code>Pattern</code> is the compiled expression and a <code>Matcher</code> applies it to one piece of text.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.regex.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Pattern</span> date = <span class="tk-t">Pattern</span>.<span class="tk-f">compile</span>(<span class="tk-s">&quot;(\\d{4})-(\\d{2})-(\\d{2})&quot;</span>);
+        <span class="tk-t">Matcher</span> m = date.<span class="tk-f">matcher</span>(<span class="tk-s">&quot;due 2026-11-20, paid 2026-12-01&quot;</span>);
+        <span class="tk-k">while</span> (m.<span class="tk-f">find</span>()) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(m.<span class="tk-f">group</span>() + <span class="tk-s">&quot; -&gt; year &quot;</span> + m.<span class="tk-f">group</span>(<span class="tk-n">1</span>) + <span class="tk-s">&quot;, month &quot;</span> + m.<span class="tk-f">group</span>(<span class="tk-n">2</span>));
+        }
+    }
+}</code></pre></div>
+<p>Backslashes must be doubled inside Java strings: the regex <code>\d</code> is written <code>&quot;\\d&quot;</code>. Text blocks and <code>Pattern.quote</code> help, but the doubling is the most common stumbling block.</p>
+<h2>The pattern language in brief</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>piece</th>
+<th>matches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.</code></td>
+<td>any character except a new line</td>
+</tr>
+<tr>
+<td><code>\d</code>, <code>\w</code>, <code>\s</code></td>
+<td>a digit, a word character (letter, digit, <code>_</code>), a space</td>
+</tr>
+<tr>
+<td><code>[abc]</code>, <code>[a-z]</code>, <code>[^0-9]</code></td>
+<td>one of, a range, anything except</td>
+</tr>
+<tr>
+<td><code>*</code>, <code>+</code>, <code>?</code>, <code>{2,5}</code></td>
+<td>0 or more, 1 or more, 0 or 1, 2 to 5 times</td>
+</tr>
+<tr>
+<td><code>*?</code>, <code>+?</code></td>
+<td>the same, but as few as possible (lazy)</td>
+</tr>
+<tr>
+<td><code>^</code>, <code>$</code></td>
+<td>the start and end of the text (or line, with <code>MULTILINE</code>)</td>
+</tr>
+<tr>
+<td><code>\b</code></td>
+<td>a word boundary</td>
+</tr>
+<tr>
+<td><code>(...)</code>, <code>(?&lt;name&gt;...)</code>, <code>(?:...)</code></td>
+<td>a group, a named group, a group that is not captured</td>
+</tr>
+<tr>
+<td>`a</td>
+<td>b`</td>
+</tr>
+</tbody></table>
+</div>
+<h2>matches, find and lookingAt</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.regex.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Pattern</span> number = <span class="tk-t">Pattern</span>.<span class="tk-f">compile</span>(<span class="tk-s">&quot;\\d+&quot;</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(number.<span class="tk-f">matcher</span>(<span class="tk-s">&quot;123&quot;</span>).<span class="tk-f">matches</span>());        <span class="tk-c">// true: the whole text</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(number.<span class="tk-f">matcher</span>(<span class="tk-s">&quot;abc 123&quot;</span>).<span class="tk-f">matches</span>());    <span class="tk-c">// false</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(number.<span class="tk-f">matcher</span>(<span class="tk-s">&quot;abc 123&quot;</span>).<span class="tk-f">find</span>());       <span class="tk-c">// true: somewhere inside</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(number.<span class="tk-f">matcher</span>(<span class="tk-s">&quot;123abc&quot;</span>).<span class="tk-f">lookingAt</span>());   <span class="tk-c">// true: at the start</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;2026&quot;</span>.<span class="tk-f">matches</span>(<span class="tk-s">&quot;\\d{4}&quot;</span>));               <span class="tk-c">// String.matches = whole text</span>
+    }
+}</code></pre></div>
+<p>Use <code>matches</code> for validation (&quot;is this a postcode?&quot;) and <code>find</code> for searching.</p>
+<h2>Named groups</h2>
+<p>Names make complex patterns readable and survive changes in the number of groups:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.regex.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Pattern</span> line = <span class="tk-t">Pattern</span>.<span class="tk-f">compile</span>(<span class="tk-s">&quot;(?&lt;time&gt;\\d{2}:\\d{2}) (?&lt;level&gt;INFO|WARN|ERROR) (?&lt;msg&gt;.*)&quot;</span>);
+        <span class="tk-t">Matcher</span> m = line.<span class="tk-f">matcher</span>(<span class="tk-s">&quot;14:03 ERROR disk full&quot;</span>);
+        <span class="tk-k">if</span> (m.<span class="tk-f">matches</span>()) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(m.<span class="tk-f">group</span>(<span class="tk-s">&quot;level&quot;</span>) + <span class="tk-s">&quot; at &quot;</span> + m.<span class="tk-f">group</span>(<span class="tk-s">&quot;time&quot;</span>) + <span class="tk-s">&quot;: &quot;</span> + m.<span class="tk-f">group</span>(<span class="tk-s">&quot;msg&quot;</span>));
+        }
+    }
+}</code></pre></div>
+<h2>Every match as a stream</h2>
+<p><code>Matcher.results()</code> gives a <code>Stream&lt;MatchResult&gt;</code>, which fits the stream style of lesson 6.02:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.regex.*;
+<span class="tk-k">import</span> java.util.stream.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">String</span> text = <span class="tk-s">&quot;Contact ada@example.com or bob@mail.example.org today.&quot;</span>;
+        <span class="tk-k">var</span> emails = <span class="tk-t">Pattern</span>.<span class="tk-f">compile</span>(<span class="tk-s">&quot;[\\w.]+@[\\w-]+(?:\\.[\\w-]+)+&quot;</span>)
+                .<span class="tk-f">matcher</span>(text)
+                .<span class="tk-f">results</span>()
+                .<span class="tk-f">map</span>(<span class="tk-t">MatchResult</span>::group)
+                .<span class="tk-f">collect</span>(<span class="tk-t">Collectors</span>.<span class="tk-f">toList</span>());
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(emails);
+    }
+}</code></pre></div>
+<h2>Replacing</h2>
+<p><code>replaceAll</code> with a replacement string can refer to groups with <code>$1</code> or <code>${name}</code>. With a function, each match can be replaced by anything you compute:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.regex.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">String</span> date = <span class="tk-s">&quot;2026-11-20&quot;</span>;
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(date.<span class="tk-f">replaceAll</span>(<span class="tk-s">&quot;(\\d{4})-(\\d{2})-(\\d{2})&quot;</span>, <span class="tk-s">&quot;$3/$2/$1&quot;</span>));
+
+        <span class="tk-t">Matcher</span> m = <span class="tk-t">Pattern</span>.<span class="tk-f">compile</span>(<span class="tk-s">&quot;\\$(\\d+(?:\\.\\d+)?)&quot;</span>).<span class="tk-f">matcher</span>(<span class="tk-s">&quot;tea $2.50, cake $4&quot;</span>);
+        <span class="tk-t">String</span> doubled = m.<span class="tk-f">replaceAll</span>(r -&gt; <span class="tk-s">&quot;\\$&quot;</span> + <span class="tk-t">String</span>.<span class="tk-f">format</span>(<span class="tk-s">&quot;%.2f&quot;</span>, <span class="tk-t">Double</span>.<span class="tk-f">parseDouble</span>(r.<span class="tk-f">group</span>(<span class="tk-n">1</span>)) * <span class="tk-n">2</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(doubled);
+
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;a.b.c&quot;</span>.<span class="tk-f">replace</span>(<span class="tk-s">&quot;.&quot;</span>, <span class="tk-s">&quot;/&quot;</span>));          <span class="tk-c">// replace (not replaceAll) takes plain text</span>
+    }
+}</code></pre></div>
+<p>In a replacement string, <code>$</code> and <code>\</code> are special; <code>Matcher.quoteReplacement(text)</code> makes any text safe to use there.</p>
+<h2>Splitting</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Arrays</span>.<span class="tk-f">toString</span>(<span class="tk-s">&quot;a, b,,  c&quot;</span>.<span class="tk-f">split</span>(<span class="tk-s">&quot;\\s*,\\s*&quot;</span>)));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Arrays</span>.<span class="tk-f">toString</span>(<span class="tk-s">&quot;one  two\tthree&quot;</span>.<span class="tk-f">split</span>(<span class="tk-s">&quot;\\s+&quot;</span>)));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Arrays</span>.<span class="tk-f">toString</span>(<span class="tk-s">&quot;1.2.3&quot;</span>.<span class="tk-f">split</span>(<span class="tk-s">&quot;\\.&quot;</span>)));        <span class="tk-c">// . must be escaped</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Arrays</span>.<span class="tk-f">toString</span>(<span class="tk-s">&quot;a,b,,&quot;</span>.<span class="tk-f">split</span>(<span class="tk-s">&quot;,&quot;</span>)));          <span class="tk-c">// trailing empty parts dropped</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Arrays</span>.<span class="tk-f">toString</span>(<span class="tk-s">&quot;a,b,,&quot;</span>.<span class="tk-f">split</span>(<span class="tk-s">&quot;,&quot;</span>, -<span class="tk-n">1</span>)));      <span class="tk-c">// kept with a negative limit</span>
+    }
+}</code></pre></div>
+<h2>Flags</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.regex.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Pattern</span> hello = <span class="tk-t">Pattern</span>.<span class="tk-f">compile</span>(<span class="tk-s">&quot;^hello$&quot;</span>, <span class="tk-t">Pattern</span>.CASE_INSENSITIVE | <span class="tk-t">Pattern</span>.MULTILINE);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(hello.<span class="tk-f">matcher</span>(<span class="tk-s">&quot;Hi\nHELLO\nbye&quot;</span>).<span class="tk-f">find</span>());
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;HeLLo&quot;</span>.<span class="tk-f">matches</span>(<span class="tk-s">&quot;(?i)hello&quot;</span>));            <span class="tk-c">// a flag inside the pattern</span>
+    }
+}</code></pre></div>
+<p><code>COMMENTS</code> (<code>(?x)</code>) allows spaces and <code>#</code> comments in a pattern, which helps with long ones.</p>
+<h2>Compile once</h2>
+<p><code>String.matches</code>, <code>split</code> and <code>replaceAll</code> compile the pattern on every call. In a loop, keep a <code>private static final Pattern</code> and reuse it.</p>
+<h2>When not to use a regex</h2>
+<p>Regular expressions are great for tokens, simple formats and searching. They are the wrong tool for nested structures (HTML, JSON, arithmetic with brackets): use a parser. And a pattern like <code>(a+)+$</code> on a long string of <code>a</code>s can take exponential time; keep patterns simple, and limit input length when the pattern comes from users.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/8.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/8.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-05-byte-streams-and-binary-data/"><span class="mono">previous</span><b>7.05 Byte Streams and Binary Data</b></a>
+      <a class="lp-next" href="../8-02-completablefuture-and-virtual-threads/"><span class="mono">next</span><b>8.02 CompletableFuture and Virtual Threads</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/8-01-regular-expressions"></script>
+</body>
+</html>

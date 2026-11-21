@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Test Signing · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/16-09-test-signing/">
+  <meta name="description" content="64-bit Windows loads only kernel drivers with a trusted digital signature: driver signature enforcement . During development, drivers are signed with a test…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Test Signing · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="64-bit Windows loads only kernel drivers with a trusted digital signature: driver signature enforcement . During development, drivers are signed with a test…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/16-09-test-signing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Test Signing · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Test Signing · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="64-bit Windows loads only kernel drivers with a trusted digital signature: driver signature enforcement . During development, drivers are signed with a test…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Educational Driver Development</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Test Signing</h1>
+      <div class="readout lp-readout"><span>lesson <b>16.09</b></span><span>9 of 10 in milestone 16</span><span>6 min</span></div>
+      <p class="lp-summary">64-bit Windows loads only kernel drivers with a trusted digital signature: <strong>driver signature enforcement</strong>. During development, drivers are signed with a <strong>test certificate</strong> and loaded on machines in <strong>test mode</strong>, which is why the lab VM has it on. This lesson explains how signing works, sets up test signing, explains how real drivers are signed for release, and why test mode belongs only in a lab.</p>
+      <div class="prose">
+<h2>Why Windows requires signatures</h2>
+<p>A kernel driver can do anything (lesson 15.01). If any program could load any driver, malware would simply load its own and take full control of the machine. So 64-bit Windows enforces <strong>driver signature enforcement</strong> (DSE): a driver is loaded only if it carries a valid signature chaining to a certificate Windows trusts for kernel code, and for current Windows releases that means a signature from <strong>Microsoft</strong> itself, obtained through Microsoft&#39;s signing service after the driver&#39;s author has been verified.</p>
+<p>A signature does two things: it proves <strong>who</strong> published the driver (accountability), and that the file has <strong>not been changed</strong> since it was signed (integrity). Microsoft can also revoke signatures and <strong>block</strong> known-vulnerable drivers (lesson 16.07), and features such as Hypervisor-protected Code Integrity (memory integrity) enforce these rules even against kernel-level tampering.</p>
+<h2>How a signature works, briefly</h2>
+<ol>
+<li>A hash of the driver file is computed.</li>
+<li>The hash is signed with the publisher&#39;s <strong>private key</strong>; the signature and the publisher&#39;s <strong>certificate</strong> are embedded in the file (or in a catalog <code>.cat</code> file for installed driver packages).</li>
+<li>When loading, Windows recomputes the hash, checks the signature with the certificate&#39;s public key, and checks the certificate chains to a root it trusts for kernel drivers, and that it has not been revoked.</li>
+</ol>
+<p>Change one byte of a signed driver and the hash no longer matches: it will not load.</p>
+<h2>Test signing for development</h2>
+<p>Getting every development build signed by Microsoft would be impossible, so Windows has a <strong>test mode</strong> for development machines:</p>
+<ul>
+<li>On the test machine (the lab VM): <code>bcdedit /set testsigning on</code>, then restart (lesson 15.08). The desktop shows &quot;Test Mode&quot;.</li>
+<li>The driver is signed with a <strong>test certificate</strong> that the developer creates. Visual Studio&#39;s driver projects do this automatically: with <strong>Driver Signing → Sign Mode: Test Sign</strong>, the build creates a test certificate (<code>XenonEcho.cer</code>) and signs <code>XenonEcho.sys</code> with it.</li>
+<li>In test mode, Windows accepts drivers signed with test certificates, provided the certificate is trusted on that machine. For drivers loaded as services with <code>sc</code>, test mode with a test-signed driver is usually enough; installing the test certificate into the VM&#39;s <strong>Trusted Root</strong> and <strong>Trusted Publishers</strong> stores (with <code>certmgr</code> or the Certificates console) covers the remaining cases.</li>
+</ul>
+<p>You can check a signature with <code>signtool verify /v /kp XenonEcho.sys</code> (kernel-mode policy), or in the file&#39;s Properties → Digital Signatures tab.</p>
+<h2>Why test mode stays in the lab</h2>
+<p>Test mode weakens a fundamental protection: it lets the machine load drivers signed by anyone who can make a test certificate, which is anyone at all. That is fine in a disposable VM that holds nothing of value, and unacceptable on a computer you use for anything else. <strong>Never</strong> turn on test signing (or disable signature enforcement in any other way) on your everyday machine, and be suspicious of any software that asks you to.</p>
+<h2>Signing for release</h2>
+<p>Drivers distributed to other people go through Microsoft&#39;s <strong>Partner Center</strong> (Hardware Dev Center):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>An <strong>extended validation (EV) code-signing certificate</strong> for the company</td>
+<td>Proves the publisher&#39;s identity to Microsoft</td>
+</tr>
+<tr>
+<td><strong>Attestation signing</strong> (for testing and limited release), or full <strong>Windows Hardware Compatibility Program</strong> certification with the <strong>HLK</strong> test suite</td>
+<td>Microsoft checks and tests the driver</td>
+</tr>
+<tr>
+<td>Microsoft signs the driver</td>
+<td>Windows then trusts it on every machine</td>
+</tr>
+</tbody></table>
+</div>
+<p>That process is deliberate: it is why Windows users can trust that a driver came from an accountable publisher, and it is far outside an individual learner&#39;s needs. For this course, test signing in the lab VM is all you need.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Disabling signature checks on your main PC &quot;to make it work&quot;</span></div><div class="callout-body"><p>Use the lab VM. Test mode on an everyday machine weakens its security for everything.</p>
+</div></div>
+<blockquote><p>[!warning] Changing the <code>.sys</code> after signing
+Any change breaks the signature. Sign as the last build step (Visual Studio does).</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Assuming a signed driver is safe</span></div><div class="callout-body"><p>A signature proves who published it and that it is unchanged, not that it has no bugs; vulnerable signed drivers exist, which is why Windows blocks known ones.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does driver signature enforcement do?</div><ul><li>Loads only kernel drivers with a valid signature trusted for kernel code</li><li>Scans drivers for viruses</li><li>Makes drivers run faster</li></ul><details><summary>Show the answer</summary><p><b>Loads only kernel drivers with a valid signature trusted for kernel code</b> Without it, any program could load code into the kernel.</p></details></li><li><div class="q">What does test mode (<code>bcdedit /set testsigning on</code>) allow?</div><ul><li>Loading drivers signed with test certificates, for development</li><li>Loading any unsigned file</li><li>Running user programs as administrator</li></ul><details><summary>Show the answer</summary><p><b>Loading drivers signed with test certificates, for development</b> Only ever in a lab machine.</p></details></li><li><div class="q">What does a valid signature prove?</div><ul><li>Who published the driver and that the file has not changed since signing</li><li>That the driver has no bugs</li><li>That the driver is fast</li></ul><details><summary>Show the answer</summary><p><b>Who published the driver and that the file has not changed since signing</b> Signed drivers can still be vulnerable.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/16.09">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/16.09">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../16-08-kernel-debugging-with-windbg/"><span class="mono">previous</span><b>16.08 Kernel Debugging with WinDbg</b></a>
+      <a class="lp-next" href="../16-10-project-an-echo-driver-in-a-virtual-machine/"><span class="mono">next</span><b>16.10 Project: An Echo Driver in a Virtual Machine</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/16-09-test-signing"></script>
+</body>
+</html>

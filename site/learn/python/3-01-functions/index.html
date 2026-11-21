@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Functions · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/3-01-functions/">
+  <meta name="description" content="Packaging code under a name - def, parameters and return values, returning several values, functions without a return, docstrings, and why small functions…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Functions · Python · Xenon">
+  <meta property="og:description" content="Packaging code under a name - def, parameters and return values, returning several values, functions without a return, docstrings, and why small functions…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/3-01-functions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Functions · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Functions · Python · Xenon">
+  <meta name="twitter:description" content="Packaging code under a name - def, parameters and return values, returning several values, functions without a return, docstrings, and why small functions…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Functions, Modules and Files</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Functions</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Packaging code under a name - def, parameters and return values, returning several values, functions without a return, docstrings, and why small functions with one job make programs easier to change and test.</p>
+      <div class="prose">
+<h2>Defining a function</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">area</span>(width, height):
+    <span class="tk-s">&quot;&quot;&quot;Return the area of a width x height rectangle.&quot;&quot;&quot;</span>
+    <span class="tk-k">return</span> width * height
+
+<span class="tk-f">print</span>(<span class="tk-f">area</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>))       <span class="tk-c"># 12</span>
+<span class="tk-f">print</span>(<span class="tk-f">area</span>(<span class="tk-n">2.5</span>, <span class="tk-n">2</span>))     <span class="tk-c"># 5.0</span></code></pre></div>
+<ul>
+<li><code>def</code> names the function and its <strong>parameters</strong>.</li>
+<li>The indented body runs each time the function is <strong>called</strong>.</li>
+<li><code>return</code> sends a value back and ends the function at once.</li>
+<li>The string right after the <code>def</code> line is the <strong>docstring</strong>: <code>help(area)</code> shows it, and editors display it.</li>
+</ul>
+<p>A function must be defined before the line that calls it runs, but it can call functions defined later in the file, as long as they exist by the time the call happens.</p>
+<h2>Return values</h2>
+<p>A function without <code>return</code> (or with a bare <code>return</code>) returns <code>None</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">greet</span>(name):
+    <span class="tk-f">print</span>(<span class="tk-s">f&quot;Hello, {name}!&quot;</span>)
+
+result = <span class="tk-f">greet</span>(<span class="tk-s">&quot;Ada&quot;</span>)
+<span class="tk-f">print</span>(result)           <span class="tk-c"># None</span></code></pre></div>
+<p>Mixing up &quot;prints&quot; and &quot;returns&quot; is a classic mistake: a function that prints its answer cannot be used in a calculation. Prefer functions that <strong>return</strong> values and leave printing to the code that calls them.</p>
+<p>Return several values as a tuple and unpack them (lesson 2.04):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">stats</span>(values):
+    <span class="tk-k">return</span> <span class="tk-f">min</span>(values), <span class="tk-f">max</span>(values), <span class="tk-f">sum</span>(values) / <span class="tk-f">len</span>(values)
+
+low, high, mean = <span class="tk-f">stats</span>([<span class="tk-n">4</span>, <span class="tk-n">8</span>, <span class="tk-n">6</span>])
+<span class="tk-f">print</span>(low, high, mean)</code></pre></div>
+<h2>Early returns</h2>
+<p>Returning early keeps the main path of a function unindented:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">describe</span>(age):
+    <span class="tk-k">if</span> age &lt; <span class="tk-n">0</span>:
+        <span class="tk-k">return</span> <span class="tk-s">&quot;invalid&quot;</span>
+    <span class="tk-k">if</span> age &lt; <span class="tk-n">13</span>:
+        <span class="tk-k">return</span> <span class="tk-s">&quot;child&quot;</span>
+    <span class="tk-k">if</span> age &lt; <span class="tk-n">18</span>:
+        <span class="tk-k">return</span> <span class="tk-s">&quot;teenager&quot;</span>
+    <span class="tk-k">return</span> <span class="tk-s">&quot;adult&quot;</span></code></pre></div>
+<h2>Why functions</h2>
+<ul>
+<li><strong>Name</strong> a piece of logic, so the code reads as a series of steps.</li>
+<li><strong>Reuse</strong> it instead of copying it.</li>
+<li><strong>Test</strong> it on its own: every unit test in this course calls functions.</li>
+<li><strong>Change</strong> it in one place.</li>
+</ul>
+<p>A good function does one thing, has a name that says what (a verb: <code>load_scores</code>, <code>is_valid</code>), and is short enough to read at a glance. If you need &quot;and&quot; to describe it, it may be two functions.</p>
+<h2>Functions are values</h2>
+<p>A function is an object like any other: it can be stored in a variable, put in a list, or passed to another function:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">shout</span>(text):
+    <span class="tk-k">return</span> text.<span class="tk-f">upper</span>() + <span class="tk-s">&quot;!&quot;</span>
+
+<span class="tk-k">def</span> <span class="tk-f">whisper</span>(text):
+    <span class="tk-k">return</span> text.<span class="tk-f">lower</span>() + <span class="tk-s">&quot;...&quot;</span>
+
+<span class="tk-k">for</span> style <span class="tk-k">in</span> [shout, whisper]:
+    <span class="tk-f">print</span>(<span class="tk-f">style</span>(<span class="tk-s">&quot;Hello&quot;</span>))</code></pre></div>
+<p>Lesson 5.03 uses this for sorting with key functions.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-dictionaries-and-sets/"><span class="mono">previous</span><b>2.05 Dictionaries and Sets</b></a>
+      <a class="lp-next" href="../3-02-parameters-and-arguments/"><span class="mono">next</span><b>3.02 Parameters and Arguments</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/3-01-functions"></script>
+</body>
+</html>

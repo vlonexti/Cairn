@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Networks and the Internet · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/6-06-networks-and-the-internet/">
+  <meta name="description" content="Computers send data to each other in small packets, each with an address. IP addresses say where a packet goes, TCP makes delivery reliable and in order, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Networks and the Internet · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="Computers send data to each other in small packets, each with an address. IP addresses say where a packet goes, TCP makes delivery reliable and in order, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/6-06-networks-and-the-internet/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Networks and the Internet · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Networks and the Internet · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="Computers send data to each other in small packets, each with an address. IP addresses say where a packet goes, TCP makes delivery reliable and in order, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Operating Systems and Modern Computers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Networks and the Internet</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.06</b></span><span>6 of 6 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Computers send data to each other in small packets, each with an address. IP addresses say where a packet goes, TCP makes delivery reliable and in order, and DNS turns names like example.com into addresses. The web is built on top - HTTP requests and responses carried by those packets - and every layer is still bits on wires and radio waves.</p>
+      <div class="prose">
+<h2>Bits between computers</h2>
+<p>A network sends bits from one computer to another: as voltages on copper wire, flashes of light in fibre-optic cable, or radio waves (Wi-Fi, 4G, 5G). Everything else is agreement about what those bits mean - <strong>protocols</strong> - in layers, like the rest of the computer.</p>
+<h2>Packets</h2>
+<p>Data is not sent as one long stream. It is cut into <strong>packets</strong>, usually up to about 1,500 bytes, and each packet travels on its own, with a header saying where it is going:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;Your computer&quot;] --&gt;|packets| R1[&quot;Home router&quot;] --&gt; ISP[&quot;Internet provider&quot;] --&gt; R2[&quot;Routers in between&quot;] --&gt; S[&quot;Server&quot;]</pre></div>
+<p>Packets from one message may take different routes and arrive out of order; the receiving computer puts them back together. If one link fails, packets go around it. This design, from the US <strong>ARPANET</strong> of 1969, is why the internet keeps working when parts of it break.</p>
+<h2>The layers</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Protocol</th>
+<th>Job</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Link</td>
+<td>Ethernet, Wi-Fi</td>
+<td>Get bits to the next device on the same network</td>
+</tr>
+<tr>
+<td>Internet</td>
+<td><strong>IP</strong> (Internet Protocol)</td>
+<td>Get a packet from one computer to another anywhere, using <strong>IP addresses</strong></td>
+</tr>
+<tr>
+<td>Transport</td>
+<td><strong>TCP</strong>, or UDP</td>
+<td>TCP: deliver everything, in order, resending what is lost. UDP: fast, no guarantees (games, video calls)</td>
+</tr>
+<tr>
+<td>Application</td>
+<td><strong>HTTP</strong>, HTTPS, DNS, email...</td>
+<td>What the data means</td>
+</tr>
+</tbody></table>
+</div>
+<p>Each layer wraps the one above, like an envelope inside an envelope: an HTTP request goes inside TCP segments, inside IP packets, inside Wi-Fi frames.</p>
+<h2>Addresses</h2>
+<ul>
+<li>An <strong>IPv4 address</strong> is a 32-bit number, written as four bytes in decimal: <code>93.184.215.14</code>. 32 bits is only about 4.3 billion addresses (2.06!) - not enough for every device on Earth, which is why home routers share one public address between all the devices behind them.</li>
+<li>An <strong>IPv6 address</strong> is a <strong>128-bit</strong> number, written in hex: <code>2606:2800:21f:cb07:6820:80da:af6b:8b2c</code>. 2¹²⁸ is about 3.4 × 10³⁸, enough to never run out.</li>
+<li>A <strong>port</strong> number (16 bits, 0 to 65,535) says which program on the computer the data is for: 443 for HTTPS, 80 for HTTP, 22 for SSH.</li>
+</ul>
+<h2>DNS: names to numbers</h2>
+<p>People remember names, computers need numbers. The <strong>Domain Name System</strong> (DNS) is the internet&#39;s phone book: your computer asks a DNS server &quot;what is the address of <code>example.com</code>?&quot; and gets back an IP address. Then it connects to that address.</p>
+<h2>The web</h2>
+<p>When you open a web page:</p>
+<ol>
+<li><strong>DNS</strong> turns the name into an IP address.</li>
+<li>Your browser opens a <strong>TCP</strong> connection to that address, port 443, and sets up <strong>TLS</strong> encryption (the S in HTTPS: nobody in between can read or change the data).</li>
+<li>It sends an <strong>HTTP request</strong>: plain text like <code>GET /index.html HTTP/1.1</code> plus some headers.</li>
+<li>The server sends an <strong>HTTP response</strong>: a status (<code>200 OK</code>, or <code>404 Not Found</code>), headers, and the bytes of the page.</li>
+<li>The browser reads the HTML, asks for each picture, style sheet and script the same way, and draws the page.</li>
+</ol>
+<p>The <strong>World Wide Web</strong> - pages, links and HTTP - was invented by <strong>Tim Berners-Lee</strong> at CERN in 1989-91, on top of an internet that had existed for twenty years.</p>
+<h2>How it all fits</h2>
+<p>That web page is text (3.01) and pictures (3.04), in files (3.05), sent by a server&#39;s operating system (6.01) through system calls (6.04), cut into packets of bits (2.01), carried by electricity, light and radio, reassembled by your kernel, handed to your browser - a process (6.02) in its own virtual memory (6.03) - whose code, compiled from C++ (5.05) into machine code (4.05), runs fetch, decode, execute (4.04) on gates (4.01) made from transistors (1.04).</p>
+<p>That is the whole computer, from the first switch to the internet. Where next? The <strong>C</strong> course on this site writes programs close to the machine you now understand; the <strong>Assembly</strong> course writes the machine code itself.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why is data sent as packets?</div><ul><li>Small packets can travel separately, take different routes around failures, and be resent individually if lost</li><li>Wires can only carry 1,500 bytes at once</li><li>It makes the data encrypted</li></ul><details><summary>Show the answer</summary><p><b>Small packets can travel separately, take different routes around failures, and be resent individually if lost</b> The packet design makes the internet robust.</p></details></li><li><div class="q">What does DNS do?</div><ul><li>Turns names like example.com into IP addresses</li><li>Encrypts web pages</li><li>Sends packets</li></ul><details><summary>Show the answer</summary><p><b>Turns names like example.com into IP addresses</b> The internet&#39;s phone book.</p></details></li><li><div class="q">How many bits is an IPv4 address?</div><ul><li>8</li><li>32</li><li>128</li></ul><details><summary>Show the answer</summary><p><b>32</b> Four bytes, which is why there are only about 4.3 billion. IPv6 uses 128 bits.</p></details></li><li><div class="q">What does TCP add on top of IP?</div><ul><li>Reliable, in-order delivery, resending lost packets</li><li>Names for computers</li><li>Faster speed than UDP</li></ul><details><summary>Show the answer</summary><p><b>Reliable, in-order delivery, resending lost packets</b> UDP skips those guarantees to be quicker.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/6.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/6.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-05-booting-from-power-button-to-desktop/"><span class="mono">previous</span><b>6.05 Booting: From Power Button to Desktop</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/6-06-networks-and-the-internet"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Overlapped I/O · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/7-03-overlapped-i-o/">
+  <meta name="description" content="Reading and writing without waiting - opening files with FILE FLAG OVERLAPPED, the OVERLAPPED structure and its 64-bit offset, ERROR IO PENDING and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Overlapped I/O · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="Reading and writing without waiting - opening files with FILE FLAG OVERLAPPED, the OVERLAPPED structure and its 64-bit offset, ERROR IO PENDING and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/7-03-overlapped-i-o/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Overlapped I/O · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Overlapped I/O · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="Reading and writing without waiting - opening files with FILE FLAG OVERLAPPED, the OVERLAPPED structure and its 64-bit offset, ERROR IO PENDING and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Deeper into the System</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Overlapped I/O</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.03</b></span><span>3 of 6 in milestone 7</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Reading and writing without waiting - opening files with FILE_FLAG_OVERLAPPED, the OVERLAPPED structure and its 64-bit offset, ERROR_IO_PENDING and operations that finish at once, waiting with events and GetOverlappedResult, I/O completion ports for many operations, cancellation, and keeping buffers alive.</p>
+      <div class="prose">
+<h2>Why not just use a thread?</h2>
+<p>A blocking <code>ReadFile</code> stops its thread until the data arrives. For one file, a worker thread (lesson 5.04) is fine. A program with hundreds of files or sockets in flight cannot have a thread each. <strong>Overlapped I/O</strong> starts an operation, returns at once, and tells you later when it finished, so a few threads can keep many operations going. It is how high-performance Windows servers, and the pipes of the Processes and Communication course, work.</p>
+<h2>Starting an operation</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE file{ <span class="tk-f">CreateFileW</span>(path, GENERIC_READ, FILE_SHARE_READ, <span class="tk-k">nullptr</span>, OPEN_EXISTING,
+                         FILE_FLAG_OVERLAPPED, <span class="tk-k">nullptr</span>) };
+
+OVERLAPPED ov{};                                  <span class="tk-c">// must be zeroed</span>
+ov.<span class="tk-t">Offset</span>     = <span class="tk-k">static_cast</span>&lt;DWORD&gt;(position);     <span class="tk-c">// low 32 bits of the file position</span>
+ov.<span class="tk-t">OffsetHigh</span> = <span class="tk-k">static_cast</span>&lt;DWORD&gt;(position &gt;&gt; <span class="tk-n">32</span>);
+ov.hEvent     = <span class="tk-f">CreateEventW</span>(<span class="tk-k">nullptr</span>, TRUE, FALSE, <span class="tk-k">nullptr</span>);
+
+<span class="tk-k">if</span> (!<span class="tk-f">ReadFile</span>(file, buffer, size, <span class="tk-k">nullptr</span>, &amp;ov))
+{
+    <span class="tk-k">if</span> (<span class="tk-f">GetLastError</span>() != ERROR_IO_PENDING) { <span class="tk-c">/* a real failure */</span> }
+    <span class="tk-c">// otherwise: it is running; buffer and ov must stay alive until it finishes</span>
+}</code></pre></div>
+<ul>
+<li>With an overlapped handle there is <strong>no current file position</strong>: every operation states its offset in the <code>OVERLAPPED</code>, split into two 32-bit halves.</li>
+<li><code>ReadFile</code> returning <code>FALSE</code> with <code>ERROR_IO_PENDING</code> means <strong>started</strong>, not failed.</li>
+<li>It may also return <code>TRUE</code>: the operation <strong>completed at once</strong> (cached data). Your code must handle both paths.</li>
+<li>Reading at or past the end of the file fails with <code>ERROR_HANDLE_EOF</code>.</li>
+</ul>
+<h2>Waiting for one: GetOverlappedResult</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>DWORD transferred{ <span class="tk-n">0</span> };
+<span class="tk-k">if</span> (<span class="tk-f">GetOverlappedResult</span>(file, &amp;ov, &amp;transferred, TRUE))      <span class="tk-c">// TRUE: wait for it</span>
+    <span class="tk-f">process</span>(buffer, transferred);</code></pre></div>
+<p>Each operation can have its own event in <code>hEvent</code>, and <code>WaitForMultipleObjects</code> can wait for up to 64 of them. Beyond that, use a completion port.</p>
+<h2>Many at once: I/O completion ports</h2>
+<p>An <strong>I/O completion port</strong> is a queue the system puts a <strong>completion packet</strong> on whenever an operation on an associated handle finishes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE port{ <span class="tk-f">CreateIoCompletionPort</span>(INVALID_HANDLE_VALUE, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>) };   <span class="tk-c">// make the port</span>
+<span class="tk-f">CreateIoCompletionPort</span>(file, port, <span class="tk-c">/*key*/</span> <span class="tk-n">1</span>, <span class="tk-n">0</span>);                              <span class="tk-c">// associate a handle</span>
+
+<span class="tk-c">// start several reads at different offsets ...</span>
+
+<span class="tk-k">for</span> (;;)
+{
+    DWORD bytes{ <span class="tk-n">0</span> };
+    ULONG_PTR key{ <span class="tk-n">0</span> };
+    OVERLAPPED* done{ <span class="tk-k">nullptr</span> };
+    BOOL ok{ <span class="tk-f">GetQueuedCompletionStatus</span>(port, &amp;bytes, &amp;key, &amp;done, INFINITE) };
+    <span class="tk-c">// 'done' tells you which operation finished (put OVERLAPPED inside your own struct to find its data);</span>
+    <span class="tk-c">// ok == FALSE with done != nullptr: that operation failed (GetLastError says why)</span>
+}</code></pre></div>
+<ul>
+<li>Completions arrive in the order operations <strong>finish</strong>, not the order they started. Reads of chunks 3, 1 and 2 may complete as 2, 3, 1: keep track by offset (practice 7.03 does this).</li>
+<li>A few worker threads calling <code>GetQueuedCompletionStatus</code> on one port share the work; the port limits how many run at once.</li>
+<li><code>PostQueuedCompletionStatus</code> puts your own packet in the queue, the usual way to tell workers to stop.</li>
+<li>An operation that completes at once still queues a packet, unless you opt out with <code>SetFileCompletionNotificationModes(file, FILE_SKIP_COMPLETION_PORT_ON_SUCCESS)</code> and handle the <code>TRUE</code> return yourself.</li>
+</ul>
+<h2>Cancelling and lifetimes</h2>
+<p><code>CancelIoEx(file, &amp;ov)</code> cancels one operation (or all of the handle&#39;s with <code>nullptr</code>). A cancelled operation still <strong>completes</strong>, with <code>ERROR_OPERATION_ABORTED</code>. Until its completion arrives, the operation may still write into its buffer and <code>OVERLAPPED</code>: freeing them earlier, for example by letting a stack variable go out of scope, corrupts memory. Track every operation in flight, and free its memory only when its completion has been seen.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/7.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/7.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-02-the-console/"><span class="mono">previous</span><b>7.02 The Console</b></a>
+      <a class="lp-next" href="../7-04-services/"><span class="mono">next</span><b>7.04 Services</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/7-03-overlapped-i-o"></script>
+</body>
+</html>

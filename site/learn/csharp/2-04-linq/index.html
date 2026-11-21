@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>LINQ · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/2-04-linq/">
+  <meta name="description" content="Language Integrated Query - filtering, projecting and ordering with Where, Select, OrderBy and ThenBy, aggregates like Count, Sum, Average, Min and Max,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LINQ · C# · Xenon">
+  <meta property="og:description" content="Language Integrated Query - filtering, projecting and ordering with Where, Select, OrderBy and ThenBy, aggregates like Count, Sum, Average, Min and Max,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/2-04-linq/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="LINQ · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LINQ · C# · Xenon">
+  <meta name="twitter:description" content="Language Integrated Query - filtering, projecting and ordering with Where, Select, OrderBy and ThenBy, aggregates like Count, Sum, Average, Min and Max,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Methods and Collections</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">LINQ</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Language Integrated Query - filtering, projecting and ordering with Where, Select, OrderBy and ThenBy, aggregates like Count, Sum, Average, Min and Max, First, Any and All, grouping with GroupBy and CountBy, ToDictionary, SelectMany, Distinct, Zip, deferred execution and query syntax.</p>
+      <div class="prose">
+<h2>Queries over collections</h2>
+<p><strong>LINQ</strong> adds methods to every collection (anything that is an <code>IEnumerable&lt;T&gt;</code>) for filtering, transforming and summarising. Each takes a <strong>lambda</strong>, a small inline function written <code>x =&gt; expression</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span>[] numbers = [<span class="tk-n">5</span>, <span class="tk-n">3</span>, <span class="tk-n">8</span>, <span class="tk-n">1</span>, <span class="tk-n">9</span>, <span class="tk-n">2</span>];
+<span class="tk-k">var</span> evensSquared = numbers.<span class="tk-f">Where</span>(n =&gt; n % <span class="tk-n">2</span> == <span class="tk-n">0</span>).<span class="tk-f">Select</span>(n =&gt; n * n);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, evensSquared));          <span class="tk-c">// 64 4</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, numbers.<span class="tk-f">OrderBy</span>(n =&gt; n)));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{numbers.Sum()} {numbers.Average():F2} {numbers.Max()} {numbers.Count(n =&gt; n &gt; 4)}&quot;</span>);</code></pre></div>
+<p><code>using System.Linq;</code> is needed in a project; the practice editor and new projects add it automatically.</p>
+<h2>The common methods</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Gives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Where(x =&gt; cond)</code></td>
+<td>The items that match</td>
+</tr>
+<tr>
+<td><code>Select(x =&gt; value)</code></td>
+<td>Each item transformed</td>
+</tr>
+<tr>
+<td><code>OrderBy(x =&gt; key)</code>, <code>OrderByDescending</code>, <code>ThenBy</code></td>
+<td>Sorted (stable)</td>
+</tr>
+<tr>
+<td><code>First()</code>, <code>FirstOrDefault()</code>, <code>Single()</code>, <code>Last()</code></td>
+<td>One item (First throws if none)</td>
+</tr>
+<tr>
+<td><code>Any(x =&gt; cond)</code>, <code>All(x =&gt; cond)</code>, <code>Contains(v)</code></td>
+<td>Tests</td>
+</tr>
+<tr>
+<td><code>Count()</code>, <code>Sum()</code>, <code>Average()</code>, <code>Min()</code>, <code>Max()</code></td>
+<td>Aggregates</td>
+</tr>
+<tr>
+<td><code>MinBy(x =&gt; key)</code>, <code>MaxBy(x =&gt; key)</code></td>
+<td>The item with the smallest / largest key</td>
+</tr>
+<tr>
+<td><code>Distinct()</code>, <code>DistinctBy(x =&gt; key)</code></td>
+<td>Without repeats</td>
+</tr>
+<tr>
+<td><code>Take(n)</code>, <code>Skip(n)</code>, <code>TakeWhile</code>, <code>Chunk(n)</code></td>
+<td>Parts</td>
+</tr>
+<tr>
+<td><code>GroupBy(x =&gt; key)</code>, <code>CountBy(x =&gt; key)</code></td>
+<td>Groups / counts per key</td>
+</tr>
+<tr>
+<td><code>ToList()</code>, <code>ToArray()</code>, <code>ToDictionary(k, v)</code>, <code>ToHashSet()</code></td>
+<td>Collected results</td>
+</tr>
+<tr>
+<td><code>SelectMany(x =&gt; many)</code></td>
+<td>Flattened</td>
+</tr>
+<tr>
+<td><code>Zip(other)</code></td>
+<td>Pairs</td>
+</tr>
+<tr>
+<td><code>Aggregate(seed, (acc, x) =&gt; ...)</code></td>
+<td>A general fold</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Working with records</h2>
+<p>LINQ shines on lists of objects. Here, <strong>records</strong> (lesson 3.02) are short data classes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> people = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-t">Person</span>&gt;
+{
+    <span class="tk-k">new</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;London&quot;</span>, <span class="tk-n">36</span>), <span class="tk-k">new</span>(<span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-s">&quot;New York&quot;</span>, <span class="tk-n">85</span>),
+    <span class="tk-k">new</span>(<span class="tk-s">&quot;Linus&quot;</span>, <span class="tk-s">&quot;Helsinki&quot;</span>, <span class="tk-n">55</span>), <span class="tk-k">new</span>(<span class="tk-s">&quot;Alan&quot;</span>, <span class="tk-s">&quot;London&quot;</span>, <span class="tk-n">41</span>),
+};
+
+<span class="tk-k">var</span> londoners = people.<span class="tk-f">Where</span>(p =&gt; p.<span class="tk-t">City</span> == <span class="tk-s">&quot;London&quot;</span>).<span class="tk-f">OrderBy</span>(p =&gt; p.<span class="tk-t">Name</span>).<span class="tk-f">Select</span>(p =&gt; p.<span class="tk-t">Name</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;, &quot;</span>, londoners));
+
+<span class="tk-k">var</span> oldest = people.<span class="tk-f">MaxBy</span>(p =&gt; p.<span class="tk-t">Age</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(oldest!.<span class="tk-t">Name</span>);
+
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> group <span class="tk-k">in</span> people.<span class="tk-f">GroupBy</span>(p =&gt; p.<span class="tk-t">City</span>).<span class="tk-f">OrderByDescending</span>(g =&gt; g.<span class="tk-f">Count</span>()))
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{group.Key}: {group.Count()} ({string.Join(&quot;</span>, <span class="tk-s">&quot;, group.Select(p =&gt; p.Name))})&quot;</span>);
+}
+
+<span class="tk-k">var</span> ageByName = people.<span class="tk-f">ToDictionary</span>(p =&gt; p.<span class="tk-t">Name</span>, p =&gt; p.<span class="tk-t">Age</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(ageByName[<span class="tk-s">&quot;Linus&quot;</span>]);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(people.<span class="tk-f">Any</span>(p =&gt; p.<span class="tk-t">Age</span> &gt; <span class="tk-n">80</span>) + <span class="tk-s">&quot; &quot;</span> + people.<span class="tk-f">All</span>(p =&gt; p.<span class="tk-t">Age</span> &gt; <span class="tk-n">30</span>));
+
+<span class="tk-k">record</span> <span class="tk-f">Person</span>(<span class="tk-k">string</span> <span class="tk-t">Name</span>, <span class="tk-k">string</span> <span class="tk-t">City</span>, <span class="tk-k">int</span> <span class="tk-t">Age</span>);</code></pre></div>
+<p><code>GroupBy</code> gives groups, each with a <code>Key</code> and its items. <code>ToDictionary</code> throws if two items have the same key.</p>
+<h2>Flattening and pairing</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> orders = <span class="tk-k">new</span>[] { <span class="tk-k">new</span>[] { <span class="tk-s">&quot;tea&quot;</span>, <span class="tk-s">&quot;cake&quot;</span> }, <span class="tk-k">new</span>[] { <span class="tk-s">&quot;tea&quot;</span> }, <span class="tk-k">new</span> <span class="tk-k">string</span>[<span class="tk-n">0</span>] };
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, orders.<span class="tk-f">SelectMany</span>(o =&gt; o).<span class="tk-f">Distinct</span>()));
+
+<span class="tk-k">string</span>[] names = [<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;Grace&quot;</span>];
+<span class="tk-k">int</span>[] scores = [<span class="tk-n">91</span>, <span class="tk-n">88</span>];
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> (name, score) <span class="tk-k">in</span> names.<span class="tk-f">Zip</span>(scores)) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{name} {score}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, <span class="tk-t">Enumerable</span>.<span class="tk-f">Range</span>(<span class="tk-n">1</span>, <span class="tk-n">5</span>).<span class="tk-f">Select</span>(i =&gt; i * i)));</code></pre></div>
+<h2>Deferred execution</h2>
+<p><code>Where</code>, <code>Select</code>, <code>OrderBy</code> and most other methods do not run when called: they build a <strong>query</strong> that runs each time you iterate over it. <code>ToList()</code>, <code>Count()</code>, <code>Sum()</code> and <code>First()</code> run it immediately.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> source = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">int</span>&gt; { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> };
+<span class="tk-k">var</span> big = source.<span class="tk-f">Where</span>(n =&gt; n &gt; <span class="tk-n">1</span>);      <span class="tk-c">// nothing has run yet</span>
+source.<span class="tk-f">Add</span>(<span class="tk-n">10</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, big)); <span class="tk-c">// 2 3 10: the query sees the new item</span>
+<span class="tk-k">var</span> snapshot = big.<span class="tk-f">ToList</span>();              <span class="tk-c">// run once and keep the results</span></code></pre></div>
+<p>If you iterate a query several times, or it is expensive, call <code>ToList()</code> once and reuse the list.</p>
+<h2>Query syntax</h2>
+<p>LINQ also has a SQL-like syntax, which the compiler turns into the same method calls:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span>[] nums = [<span class="tk-n">4</span>, <span class="tk-n">9</span>, <span class="tk-n">1</span>, <span class="tk-n">7</span>];
+<span class="tk-k">var</span> result = from n <span class="tk-k">in</span> nums
+             <span class="tk-k">where</span> n &gt; <span class="tk-n">3</span>
+             orderby n descending
+             select n * <span class="tk-n">10</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, result));</code></pre></div>
+<p>Most C# code uses the method syntax; query syntax is sometimes clearer for joins and several <code>from</code> clauses.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-dictionaries-and-sets/"><span class="mono">previous</span><b>2.03 Dictionaries and Sets</b></a>
+      <a class="lp-next" href="../2-05-nullable-types-and-pattern-matching/"><span class="mono">next</span><b>2.05 Nullable Types and Pattern Matching</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/2-04-linq"></script>
+</body>
+</html>

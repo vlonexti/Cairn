@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Destructors and Object Lifetime · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/6-03-destructors-and-object-lifetime/">
+  <meta name="description" content="A destructor , ~ClassName(), runs automatically when an object's life ends. Use it to release what the object holds: files, memory, locks. Objects are…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Destructors and Object Lifetime · C++ · Xenon">
+  <meta property="og:description" content="A destructor , ~ClassName(), runs automatically when an object's life ends. Use it to release what the object holds: files, memory, locks. Objects are…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/6-03-destructors-and-object-lifetime/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Destructors and Object Lifetime · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Destructors and Object Lifetime · C++ · Xenon">
+  <meta name="twitter:description" content="A destructor , ~ClassName(), runs automatically when an object's life ends. Use it to release what the object holds: files, memory, locks. Objects are…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Classes and Objects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Destructors and Object Lifetime</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 9 in milestone 6</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>destructor</strong>, <code>~ClassName()</code>, runs automatically when an object&#39;s life ends. Use it to release what the object holds: files, memory, locks. Objects are destroyed in the <strong>reverse</strong> order of their creation.</p>
+      <div class="prose">
+<h2>The other end of an object&#39;s life</h2>
+<p>A constructor runs when an object is created. A <strong>destructor</strong> runs when it is destroyed. Its name is the class name with a <code>~</code> in front; it takes no parameters and returns nothing.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;string_view&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">Noisy</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">Noisy</span>(std::string_view name) : m_name{ name }
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;+ &quot;</span> &lt;&lt; m_name &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+
+    ~<span class="tk-f">Noisy</span>()
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;- &quot;</span> &lt;&lt; m_name &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+
+<span class="tk-k">private</span>:
+    std::string m_name{};
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Noisy</span> a{ <span class="tk-s">&quot;A&quot;</span> };
+    {
+        <span class="tk-t">Noisy</span> b{ <span class="tk-s">&quot;B&quot;</span> };
+        <span class="tk-t">Noisy</span> c{ <span class="tk-s">&quot;C&quot;</span> };
+    }
+    <span class="tk-t">Noisy</span> d{ <span class="tk-s">&quot;D&quot;</span> };
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>+ A
++ B
++ C
+- C
+- B
++ D
+- D
+- A</code></pre></div>
+<p>You never call a destructor. The compiler inserts the call at the exact point where the object&#39;s lifetime ends.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;memory reserved&quot;] --&gt; B[&quot;constructor runs&quot;] --&gt; C[&quot;object in use&quot;] --&gt; D[&quot;destructor runs&quot;] --&gt; E[&quot;memory released&quot;]</pre></div>
+<h2>Reverse order</h2>
+<p>Objects are destroyed in the opposite order to their construction: last built, first destroyed.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> built:      A, then B, then C
+ destroyed:  C, then B, then A</code></pre></div>
+<p>The reason is dependency. Something built later may rely on something built earlier, so the later one has to go first.</p>
+<p>The same holds inside an object. Members are constructed in declaration order and destroyed in reverse. The destructor&#39;s own body runs <strong>before</strong> the members are destroyed, so they are all still usable inside it.</p>
+<h2>What destructors are for</h2>
+<p>Releasing things. A resource is anything that must be given back after use.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdio&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">LogFile</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">LogFile</span>(<span class="tk-k">const</span> <span class="tk-k">char</span>* path) : m_file{ std::<span class="tk-f">fopen</span>(path, <span class="tk-s">&quot;w&quot;</span>) } {}
+
+    ~<span class="tk-f">LogFile</span>()
+    {
+        <span class="tk-k">if</span> (m_file)
+        {
+            std::<span class="tk-f">fclose</span>(m_file);
+        }
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">write</span>(<span class="tk-k">const</span> <span class="tk-k">char</span>* text)
+    {
+        <span class="tk-k">if</span> (m_file)
+        {
+            std::<span class="tk-f">fputs</span>(text, m_file);
+        }
+    }
+
+<span class="tk-k">private</span>:
+    std::FILE* m_file{};
+};</code></pre></div>
+<p>Whoever uses a <code>LogFile</code> cannot forget to close the file, on any path out of the scope, including early returns. The pattern &quot;acquire in the constructor, release in the destructor&quot; is called <strong>RAII</strong>. It is the most important idiom in C++, and it gets a full lesson: <a href="../7-04-raii-and-the-rule-of-three/">7.04 RAII and the Rule of Three</a>.</p>
+<p>If a class holds no resources, it needs no destructor. The compiler supplies one that destroys the members, and that is enough.</p>
+<h2>When each kind of object dies</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind of object</th>
+<th>Created</th>
+<th>Destroyed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Local variable</td>
+<td>At its definition</td>
+<td>At the closing brace of its scope</td>
+</tr>
+<tr>
+<td>Global or <code>static</code></td>
+<td>Before <code>main</code>, or on first use for a <code>static</code> local</td>
+<td>After <code>main</code> returns</td>
+</tr>
+<tr>
+<td>Dynamic (made with <code>new</code>)</td>
+<td>At <code>new</code></td>
+<td>At <code>delete</code>, when you decide: <a href="../7-02-new-and-delete-dynamic-memory/">7.02 new and delete — Dynamic Memory</a></td>
+</tr>
+<tr>
+<td>Temporary</td>
+<td>Within an expression</td>
+<td>At the end of the full statement</td>
+</tr>
+</tbody></table>
+</div>
+<p>For the first two, the language guarantees the destructor call. That guarantee is what makes RAII dependable.</p>
+<div class="callout warning"><div class="callout-title"><span>Three rules</span></div><div class="callout-body">
+<ul>
+<li>Do not call a destructor explicitly. Outside very specialised code it leads to the object being destroyed twice.</li>
+<li>A destructor should never let an exception escape: <a href="../9-06-exception-safety-noexcept-and-std-expected/">9.06 Exception Safety, noexcept and std::expected</a>.</li>
+<li><code>std::exit</code> does not run the destructors of local objects, which is one more reason to prefer returning from <code>main</code>.</li>
+</ul>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-constructors/"><span class="mono">previous</span><b>6.02 Constructors</b></a>
+      <a class="lp-next" href="../6-04-this-const-member-functions-and-chaining/"><span class="mono">next</span><b>6.04 this, const Member Functions and Chaining</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/6-03-destructors-and-object-lifetime"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

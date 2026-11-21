@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Scope and Closures · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/2-04-scope-and-closures/">
+  <meta name="description" content="Where variables live - block scope with let and const, function scope, the scope chain, closures that remember variables, private state with closures, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Scope and Closures · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Where variables live - block scope with let and const, function scope, the scope chain, closures that remember variables, private state with closures, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/2-04-scope-and-closures/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scope and Closures · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Scope and Closures · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Where variables live - block scope with let and const, function scope, the scope chain, closures that remember variables, private state with closures, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Functions and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Scope and Closures</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Where variables live - block scope with let and const, function scope, the scope chain, closures that remember variables, private state with closures, and the classic closure-in-a-loop bug that let fixes.</p>
+      <div class="prose">
+<h2>Block scope</h2>
+<p><code>let</code> and <code>const</code> are visible only inside the <strong>block</strong> (the braces) where they are declared:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> x = <span class="tk-s">&quot;outer&quot;</span>;
+{
+  <span class="tk-k">const</span> x = <span class="tk-s">&quot;inner&quot;</span>;        <span class="tk-c">// a different variable, hiding the outer one inside this block</span>
+  console.<span class="tk-f">log</span>(x);
+}
+console.<span class="tk-f">log</span>(x);
+
+<span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">2</span>; i++) { }
+<span class="tk-c">// console.log(i);          // ReferenceError: i only exists inside the loop</span></code></pre></div>
+<p>When a name is used, JavaScript looks in the current block, then the enclosing ones, then the function, then the module and global scope: the <strong>scope chain</strong>.</p>
+<h2>Closures</h2>
+<p>A function remembers the variables of the scope where it was <strong>created</strong>, even after that scope has finished. A function together with those variables is a <strong>closure</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">makeCounter</span>() {
+  <span class="tk-k">let</span> count = <span class="tk-n">0</span>;
+  <span class="tk-k">return</span> () =&gt; ++count;
+}
+<span class="tk-k">const</span> a = <span class="tk-f">makeCounter</span>();
+<span class="tk-k">const</span> b = <span class="tk-f">makeCounter</span>();
+console.<span class="tk-f">log</span>(<span class="tk-f">a</span>(), <span class="tk-f">a</span>(), <span class="tk-f">a</span>(), <span class="tk-f">b</span>());     <span class="tk-c">// 1 2 3 1: separate counts</span></code></pre></div>
+<p><code>count</code> cannot be reached from outside except through the returned function: closures give <strong>private state</strong>.</p>
+<h2>Modules of functions</h2>
+<p>Closures can bundle several functions around shared private data:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">createStack</span>() {
+  <span class="tk-k">const</span> items = [];
+  <span class="tk-k">return</span> {
+    <span class="tk-f">push</span>(x) { items.<span class="tk-f">push</span>(x); },
+    <span class="tk-f">pop</span>() { <span class="tk-k">return</span> items.<span class="tk-f">pop</span>(); },
+    <span class="tk-k">get</span> <span class="tk-f">size</span>() { <span class="tk-k">return</span> items.length; },
+  };
+}
+<span class="tk-k">const</span> s = <span class="tk-f">createStack</span>();
+s.<span class="tk-f">push</span>(<span class="tk-n">1</span>); s.<span class="tk-f">push</span>(<span class="tk-n">2</span>);
+console.<span class="tk-f">log</span>(s.<span class="tk-f">pop</span>(), s.size);       <span class="tk-c">// 2 1: items itself is unreachable</span></code></pre></div>
+<p>Classes (lesson 3.01) with private <code>#fields</code> do the same job; both styles are common.</p>
+<h2>The loop bug</h2>
+<p>With <code>var</code>, there is one variable for the whole loop, so every callback sees its final value. <code>let</code> creates a new binding for each iteration:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> fns = [];
+<span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">3</span>; i++) fns.<span class="tk-f">push</span>(() =&gt; i);
+console.<span class="tk-f">log</span>(fns.<span class="tk-f">map</span>(f =&gt; <span class="tk-f">f</span>()));     <span class="tk-c">// [0, 1, 2]; with var it would be [3, 3, 3]</span></code></pre></div>
+<h2>Functions that make functions</h2>
+<p>Closures let you configure a function once and use it many times:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> multiplier = n =&gt; x =&gt; x * n;
+<span class="tk-k">const</span> double = <span class="tk-f">multiplier</span>(<span class="tk-n">2</span>);
+<span class="tk-k">const</span> triple = <span class="tk-f">multiplier</span>(<span class="tk-n">3</span>);
+console.<span class="tk-f">log</span>(<span class="tk-f">double</span>(<span class="tk-n">5</span>), <span class="tk-f">triple</span>(<span class="tk-n">5</span>));
+
+<span class="tk-k">function</span> <span class="tk-f">once</span>(fn) {
+  <span class="tk-k">let</span> done = <span class="tk-k">false</span>, result;
+  <span class="tk-k">return</span> (...args) =&gt; {
+    <span class="tk-k">if</span> (!done) { done = <span class="tk-k">true</span>; result = <span class="tk-f">fn</span>(...args); }
+    <span class="tk-k">return</span> result;
+  };
+}
+<span class="tk-k">const</span> init = <span class="tk-f">once</span>(() =&gt; { console.<span class="tk-f">log</span>(<span class="tk-s">&quot;initialising&quot;</span>); <span class="tk-k">return</span> <span class="tk-n">42</span>; });
+console.<span class="tk-f">log</span>(<span class="tk-f">init</span>(), <span class="tk-f">init</span>());        <span class="tk-c">// prints &quot;initialising&quot; only once</span></code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-objects-and-destructuring/"><span class="mono">previous</span><b>2.03 Objects and Destructuring</b></a>
+      <a class="lp-next" href="../2-05-maps-sets-and-json/"><span class="mono">next</span><b>2.05 Maps, Sets and JSON</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/2-04-scope-and-closures"></script>
+</body>
+</html>

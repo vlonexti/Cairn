@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A First Win32 Application · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/5-06-a-first-win32-application/">
+  <meta name="description" content="Put the last lesson together into a complete windowed program: wWinMain, registering a class, creating a window, a game-style loop, and drawing a moving…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A First Win32 Application · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Put the last lesson together into a complete windowed program: wWinMain, registering a class, creating a window, a game-style loop, and drawing a moving…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/5-06-a-first-win32-application/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A First Win32 Application · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A First Win32 Application · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Put the last lesson together into a complete windowed program: wWinMain, registering a class, creating a window, a game-style loop, and drawing a moving…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>The Windows API</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A First Win32 Application</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.06</b></span><span>6 of 9 in milestone 5</span><span>5 min</span></div>
+      <p class="lp-summary">Put the last lesson together into a complete windowed program: <code>wWinMain</code>, registering a class, creating a window, a game-style loop, and drawing a moving square with GDI using a back buffer so it does not flicker. About 120 lines of plain Windows API, and every one explained.</p>
+      <div class="prose">
+<h2>The project</h2>
+<p>In Visual Studio, create a new <strong>Windows Desktop Application</strong> project (not Console App), or change an existing project&#39;s <strong>Linker → System → SubSystem</strong> to <strong>Windows (/SUBSYSTEM:WINDOWS)</strong>. A Windows-subsystem program has no console, and starts at <code>wWinMain</code> instead of <code>main</code>.</p>
+<p>This program cannot run on the course website, which runs console programs only. Build it in Visual Studio.</p>
+<h2>The whole program</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+
+<span class="tk-c">// ---------- the game state ----------</span>
+<span class="tk-k">struct</span> <span class="tk-t">Game</span>
+{
+    <span class="tk-k">float</span> x{ <span class="tk-n">100.0f</span> }, y{ <span class="tk-n">100.0f</span> };   <span class="tk-c">// square position, in pixels</span>
+    <span class="tk-k">float</span> vx{ <span class="tk-n">180.0f</span> }, vy{ <span class="tk-n">120.0f</span> }; <span class="tk-c">// velocity, in pixels per second</span>
+    <span class="tk-k">int</span> width{ <span class="tk-n">640</span> }, height{ <span class="tk-n">360</span> };  <span class="tk-c">// client area size</span>
+};
+<span class="tk-k">static</span> <span class="tk-t">Game</span> g_game;
+
+<span class="tk-c">// ---------- drawing ----------</span>
+<span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">render</span>(HWND hwnd)
+{
+    HDC screen{ <span class="tk-f">GetDC</span>(hwnd) };
+
+    <span class="tk-c">// Draw into an off-screen bitmap first, then copy it to the window in one go: no flicker.</span>
+    HDC back{ <span class="tk-f">CreateCompatibleDC</span>(screen) };
+    HBITMAP bitmap{ <span class="tk-f">CreateCompatibleBitmap</span>(screen, g_game.width, g_game.height) };
+    HGDIOBJ oldBitmap{ <span class="tk-f">SelectObject</span>(back, bitmap) };
+
+    RECT all{ <span class="tk-n">0</span>, <span class="tk-n">0</span>, g_game.width, g_game.height };
+    HBRUSH background{ <span class="tk-f">CreateSolidBrush</span>(<span class="tk-f">RGB</span>(<span class="tk-n">18</span>, <span class="tk-n">20</span>, <span class="tk-n">26</span>)) };
+    <span class="tk-f">FillRect</span>(back, &amp;all, background);
+    <span class="tk-f">DeleteObject</span>(background);
+
+    RECT square{ <span class="tk-k">static_cast</span>&lt;LONG&gt;(g_game.x), <span class="tk-k">static_cast</span>&lt;LONG&gt;(g_game.y), <span class="tk-k">static_cast</span>&lt;LONG&gt;(g_game.x) + <span class="tk-n">40</span>, <span class="tk-k">static_cast</span>&lt;LONG&gt;(g_game.y) + <span class="tk-n">40</span> };
+    HBRUSH teal{ <span class="tk-f">CreateSolidBrush</span>(<span class="tk-f">RGB</span>(<span class="tk-n">95</span>, <span class="tk-n">211</span>, <span class="tk-n">196</span>)) };
+    <span class="tk-f">FillRect</span>(back, &amp;square, teal);
+    <span class="tk-f">DeleteObject</span>(teal);
+
+    <span class="tk-f">BitBlt</span>(screen, <span class="tk-n">0</span>, <span class="tk-n">0</span>, g_game.width, g_game.height, back, <span class="tk-n">0</span>, <span class="tk-n">0</span>, SRCCOPY);
+
+    <span class="tk-f">SelectObject</span>(back, oldBitmap);    <span class="tk-c">// put the original back before deleting</span>
+    <span class="tk-f">DeleteObject</span>(bitmap);
+    <span class="tk-f">DeleteDC</span>(back);
+    <span class="tk-f">ReleaseDC</span>(hwnd, screen);
+}
+
+<span class="tk-c">// ---------- updating ----------</span>
+<span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">update</span>(<span class="tk-k">float</span> dt)
+{
+    g_game.x += g_game.vx * dt;
+    g_game.y += g_game.vy * dt;
+    <span class="tk-k">if</span> (g_game.x &lt; <span class="tk-n">0</span> || g_game.x + <span class="tk-n">40</span> &gt; g_game.width) g_game.vx = -g_game.vx;     <span class="tk-c">// bounce</span>
+    <span class="tk-k">if</span> (g_game.y &lt; <span class="tk-n">0</span> || g_game.y + <span class="tk-n">40</span> &gt; g_game.height) g_game.vy = -g_game.vy;
+}
+
+<span class="tk-c">// ---------- messages ----------</span>
+<span class="tk-k">static</span> LRESULT CALLBACK <span class="tk-f">WindowProc</span>(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    <span class="tk-k">switch</span> (message)
+    {
+    <span class="tk-k">case</span> WM_SIZE:
+        g_game.width = <span class="tk-f">LOWORD</span>(lParam);
+        g_game.height = <span class="tk-f">HIWORD</span>(lParam);
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    <span class="tk-k">case</span> WM_KEYDOWN:
+        <span class="tk-k">if</span> (wParam == VK_ESCAPE) <span class="tk-f">DestroyWindow</span>(hwnd);
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    <span class="tk-k">case</span> WM_ERASEBKGND:
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;                     <span class="tk-c">// we paint everything ourselves: skip the default erase (less flicker)</span>
+    <span class="tk-k">case</span> WM_DESTROY:
+        <span class="tk-f">PostQuitMessage</span>(<span class="tk-n">0</span>);
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-f">DefWindowProcW</span>(hwnd, message, wParam, lParam);
+}
+
+<span class="tk-c">// ---------- start-up and the loop ----------</span>
+<span class="tk-k">int</span> WINAPI <span class="tk-f">wWinMain</span>(HINSTANCE instance, HINSTANCE, PWSTR, <span class="tk-k">int</span> showCommand)
+{
+    WNDCLASSEXW wc{};
+    wc.cbSize = <span class="tk-k">sizeof</span>(wc);
+    wc.lpfnWndProc = <span class="tk-t">WindowProc</span>;                       <span class="tk-c">// the callback</span>
+    wc.hInstance = instance;                           <span class="tk-c">// this program's module</span>
+    wc.hCursor = <span class="tk-f">LoadCursorW</span>(<span class="tk-k">nullptr</span>, IDC_ARROW);
+    wc.lpszClassName = <span class="tk-s">L&quot;XenonWindow&quot;</span>;
+    <span class="tk-k">if</span> (!<span class="tk-f">RegisterClassExW</span>(&amp;wc)) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+
+    RECT size{ <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">640</span>, <span class="tk-n">360</span> };                       <span class="tk-c">// the client area we want...</span>
+    <span class="tk-f">AdjustWindowRect</span>(&amp;size, WS_OVERLAPPEDWINDOW, FALSE); <span class="tk-c">// ...grown to include borders and title bar</span>
+    HWND hwnd{ <span class="tk-f">CreateWindowExW</span>(<span class="tk-n">0</span>, wc.lpszClassName, <span class="tk-s">L&quot;Bouncing square&quot;</span>, WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, size.right - size.left, size.bottom - size.top,
+        <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>, instance, <span class="tk-k">nullptr</span>) };
+    <span class="tk-k">if</span> (!hwnd) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    <span class="tk-f">ShowWindow</span>(hwnd, showCommand);
+
+    LARGE_INTEGER frequency{}, previous{}, now{};
+    <span class="tk-f">QueryPerformanceFrequency</span>(&amp;frequency);             <span class="tk-c">// ticks per second of the high-resolution clock</span>
+    <span class="tk-f">QueryPerformanceCounter</span>(&amp;previous);
+
+    <span class="tk-k">bool</span> running{ <span class="tk-k">true</span> };
+    <span class="tk-k">while</span> (running)
+    {
+        MSG msg{};
+        <span class="tk-k">while</span> (<span class="tk-f">PeekMessageW</span>(&amp;msg, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, PM_REMOVE))
+        {
+            <span class="tk-k">if</span> (msg.message == WM_QUIT) running = <span class="tk-k">false</span>;
+            <span class="tk-f">TranslateMessage</span>(&amp;msg);
+            <span class="tk-f">DispatchMessageW</span>(&amp;msg);
+        }
+        <span class="tk-k">if</span> (!running) <span class="tk-k">break</span>;
+
+        <span class="tk-f">QueryPerformanceCounter</span>(&amp;now);
+        <span class="tk-k">const</span> <span class="tk-k">float</span> dt{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">float</span>&gt;(now.<span class="tk-t">QuadPart</span> - previous.<span class="tk-t">QuadPart</span>) / <span class="tk-k">static_cast</span>&lt;<span class="tk-k">float</span>&gt;(frequency.<span class="tk-t">QuadPart</span>) };
+        previous = now;
+
+        <span class="tk-f">update</span>(dt);
+        <span class="tk-f">render</span>(hwnd);
+        <span class="tk-f">Sleep</span>(<span class="tk-n">1</span>);                                       <span class="tk-c">// be polite to the CPU; chapter 10 does timing properly</span>
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<h2>Walking through it</h2>
+<p><strong>Start-up.</strong> <code>wWinMain</code> receives the program&#39;s <code>HINSTANCE</code> (the address its <code>.exe</code> was loaded at, lesson 4.05&#39;s <code>HMODULE</code>) and how the window should first appear. It fills in a <code>WNDCLASSEXW</code>, registers it, and creates one window of that class. <code>AdjustWindowRect</code> matters: the size passed to <code>CreateWindowExW</code> includes the title bar and borders, so without it the drawable <strong>client area</strong> would be smaller than 640 by 360.</p>
+<p><strong>Time.</strong> <code>QueryPerformanceCounter</code> reads a high-resolution clock, typically ticking 10 million times a second. The difference between two readings, divided by the frequency, is the elapsed time in seconds. Moving by <code>velocity × dt</code> makes the square move at the same speed on a fast PC and a slow one, a theme chapter 10 develops.</p>
+<p><strong>Drawing.</strong> GDI (the Graphics Device Interface) is Windows&#39; original 2D drawing API. It is slow by modern standards but simple and always available. Every GDI object you create (<code>CreateSolidBrush</code>, <code>CreateCompatibleBitmap</code>, <code>CreateCompatibleDC</code>) must be deleted, and an object selected into a device context must be deselected before it is deleted: that is the <code>oldBitmap</code> dance. Handle leaks here show up in Task Manager&#39;s <strong>GDI objects</strong> column and eventually stop the program drawing at all.</p>
+<p><strong>Double buffering.</strong> Drawing the background and then the square directly onto the window would briefly show the empty background each frame: flicker. Drawing both into an off-screen bitmap and copying it to the window with one <code>BitBlt</code> means the window only ever shows complete frames.</p>
+<h2>What a real game does differently</h2>
+<p>This program is the skeleton every Windows game has underneath. Real games replace the GDI drawing with a GPU API (Direct3D, Vulkan or OpenGL) and usually use a library such as SDL to create the window and read input, which chapter 11 does. But the window class, the message loop and the timing are the same ideas, and when something goes wrong at that level (a window that will not close, input that stops, a frame-rate collapse when the window is dragged) this is the code you will be debugging.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Building as a console application</span></div><div class="callout-body"><p>The linker complains that <code>main</code> is missing. Set SubSystem to Windows, or create the project from the Windows Desktop Application template.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Creating GDI objects every frame without deleting them</span></div><div class="callout-body"><p>The program runs out of GDI handles (10,000 per process by default) and stops drawing. Delete each one, or create them once at start-up.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Sizing the window instead of the client area</span></div><div class="callout-body"><p>Use <code>AdjustWindowRect</code> so the drawable area is the size you intended.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does the program call <code>AdjustWindowRect</code> before <code>CreateWindowExW</code>?</div><ul><li>The size given to <code>CreateWindowExW</code> includes the borders and title bar, so it must be enlarged to leave a 640 by 360 client area</li><li>To centre the window on the screen</li><li>To make the window resizable</li></ul><details><summary>Show the answer</summary><p><b>The size given to <code>CreateWindowExW</code> includes the borders and title bar, so it must be enlarged to leave a 640 by 360 client area</b> The client area is the drawable part inside the frame.</p></details></li><li><div class="q">What does drawing into an off-screen bitmap and copying it with <code>BitBlt</code> prevent?</div><ul><li>Flicker, because the window never shows a half-drawn frame</li><li>Memory leaks</li><li>The window becoming unresponsive</li></ul><details><summary>Show the answer</summary><p><b>Flicker, because the window never shows a half-drawn frame</b> This technique is called double buffering.</p></details></li><li><div class="q">Why does the square move by <code>velocity * dt</code>?</div><ul><li>So it moves at the same speed in seconds whatever the frame rate</li><li>Because GDI requires it</li><li>To make it bounce</li></ul><details><summary>Show the answer</summary><p><b>So it moves at the same speed in seconds whatever the frame rate</b> A fixed step per frame would make it faster on faster computers.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/5.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/5.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-windows-and-the-message-loop/"><span class="mono">previous</span><b>5.05 Windows and the Message Loop</b></a>
+      <a class="lp-next" href="../5-07-keyboard-mouse-and-timers/"><span class="mono">next</span><b>5.07 Keyboard, Mouse and Timers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/5-06-a-first-win32-application"></script>
+</body>
+</html>

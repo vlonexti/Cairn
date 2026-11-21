@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Classes, Enums and Utility Types · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/5-05-classes-enums-and-utility-types/">
+  <meta name="description" content="Typed classes with access modifiers, parameter properties, implements and abstract classes, enums and why unions of literals are often better, as const, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Classes, Enums and Utility Types · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Typed classes with access modifiers, parameter properties, implements and abstract classes, enums and why unions of literals are often better, as const, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/5-05-classes-enums-and-utility-types/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Classes, Enums and Utility Types · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Classes, Enums and Utility Types · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Typed classes with access modifiers, parameter properties, implements and abstract classes, enums and why unions of literals are often better, as const, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>TypeScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Classes, Enums and Utility Types</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Typed classes with access modifiers, parameter properties, implements and abstract classes, enums and why unions of literals are often better, as const, and the built-in utility types Partial, Required, Pick, Omit, Readonly, Record, ReturnType and Awaited.</p>
+      <div class="prose">
+<h2>Typed classes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">interface</span> <span class="tk-t">Account</span> {
+  <span class="tk-k">readonly</span> id: <span class="tk-k">string</span>;
+  <span class="tk-f">balance</span>(): <span class="tk-k">number</span>;
+  <span class="tk-f">deposit</span>(amount: <span class="tk-k">number</span>): <span class="tk-k">void</span>;
+}
+
+<span class="tk-k">class</span> <span class="tk-t">SavingsAccount</span> <span class="tk-k">implements</span> <span class="tk-t">Account</span> {
+  #cents = <span class="tk-n">0</span>;
+  <span class="tk-f">constructor</span>(<span class="tk-k">public</span> <span class="tk-k">readonly</span> id: <span class="tk-k">string</span>, <span class="tk-k">private</span> rate: <span class="tk-k">number</span>) {}   <span class="tk-c">// parameter properties</span>
+
+  <span class="tk-f">balance</span>(): <span class="tk-k">number</span> { <span class="tk-k">return</span> <span class="tk-k">this</span>.#cents / <span class="tk-n">100</span>; }
+  <span class="tk-f">deposit</span>(amount: <span class="tk-k">number</span>): <span class="tk-k">void</span> {
+    <span class="tk-k">if</span> (amount &lt;= <span class="tk-n">0</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">RangeError</span>(<span class="tk-s">&quot;amount must be positive&quot;</span>);
+    <span class="tk-k">this</span>.#cents += <span class="tk-t">Math</span>.<span class="tk-f">round</span>(amount * <span class="tk-n">100</span>);
+  }
+  <span class="tk-f">addInterest</span>(): <span class="tk-k">void</span> { <span class="tk-k">this</span>.#cents += <span class="tk-t">Math</span>.<span class="tk-f">round</span>(<span class="tk-k">this</span>.#cents * <span class="tk-k">this</span>.rate); }
+}
+
+<span class="tk-k">const</span> acc = <span class="tk-k">new</span> <span class="tk-f">SavingsAccount</span>(<span class="tk-s">&quot;S-1&quot;</span>, <span class="tk-n">0.02</span>);
+acc.<span class="tk-f">deposit</span>(<span class="tk-n">100</span>);
+acc.<span class="tk-f">addInterest</span>();
+console.<span class="tk-f">log</span>(acc.id, acc.<span class="tk-f">balance</span>());</code></pre></div>
+<ul>
+<li><code>public readonly id: string</code> in the constructor&#39;s parameters declares <strong>and</strong> assigns the property: a <strong>parameter property</strong>.</li>
+<li><code>private</code> and <code>protected</code> are checked only by the compiler; <code>#private</code> fields are private at run time too. Prefer <code>#</code> for real privacy.</li>
+<li><code>implements Account</code> makes the compiler check that the class has everything the interface promises.</li>
+</ul>
+<h2>Abstract classes</h2>
+<p>An <strong>abstract</strong> class cannot be created with <code>new</code>; it provides shared code and declares methods that subclasses must write:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">abstract</span> <span class="tk-k">class</span> <span class="tk-t">Report</span> {
+  <span class="tk-k">abstract</span> <span class="tk-f">rows</span>(): <span class="tk-k">string</span>[][];
+  <span class="tk-f">render</span>(): <span class="tk-k">string</span> { <span class="tk-k">return</span> <span class="tk-k">this</span>.<span class="tk-f">rows</span>().<span class="tk-f">map</span>(r =&gt; r.<span class="tk-f">join</span>(<span class="tk-s">&quot; | &quot;</span>)).<span class="tk-f">join</span>(<span class="tk-s">&quot;\n&quot;</span>); }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">SalesReport</span> <span class="tk-k">extends</span> <span class="tk-t">Report</span> {
+  <span class="tk-f">rows</span>() { <span class="tk-k">return</span> [[<span class="tk-s">&quot;tea&quot;</span>, <span class="tk-s">&quot;12&quot;</span>], [<span class="tk-s">&quot;cake&quot;</span>, <span class="tk-s">&quot;7&quot;</span>]]; }
+}
+console.<span class="tk-f">log</span>(<span class="tk-k">new</span> <span class="tk-f">SalesReport</span>().<span class="tk-f">render</span>());</code></pre></div>
+<h2>Enums, or unions of literals</h2>
+<p>An <strong>enum</strong> names a set of constants and, unlike most TypeScript, produces real JavaScript:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">enum</span> <span class="tk-t">Level</span> { <span class="tk-t">Debug</span>, <span class="tk-t">Info</span>, <span class="tk-t">Warn</span>, <span class="tk-t">Error</span> }
+console.<span class="tk-f">log</span>(<span class="tk-t">Level</span>.<span class="tk-t">Warn</span>, <span class="tk-t">Level</span>[<span class="tk-t">Level</span>.<span class="tk-t">Warn</span>]);     <span class="tk-c">// 2 &quot;Warn&quot;</span>
+
+<span class="tk-k">enum</span> <span class="tk-t">Color</span> { <span class="tk-t">Red</span> = <span class="tk-s">&quot;red&quot;</span>, <span class="tk-t">Green</span> = <span class="tk-s">&quot;green&quot;</span> }
+console.<span class="tk-f">log</span>(<span class="tk-t">Color</span>.<span class="tk-t">Red</span>);</code></pre></div>
+<p>Many codebases prefer a <strong>union of string literals</strong>, which is plain JavaScript values, needs no import, and reads clearly in JSON and logs:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">const</span> LEVELS = [<span class="tk-s">&quot;debug&quot;</span>, <span class="tk-s">&quot;info&quot;</span>, <span class="tk-s">&quot;warn&quot;</span>, <span class="tk-s">&quot;error&quot;</span>] <span class="tk-k">as</span> <span class="tk-k">const</span>;
+<span class="tk-k">type</span> <span class="tk-t">LevelName</span> = <span class="tk-k">typeof</span> LEVELS[<span class="tk-k">number</span>];          <span class="tk-c">// &quot;debug&quot; | &quot;info&quot; | &quot;warn&quot; | &quot;error&quot;</span>
+
+<span class="tk-k">function</span> <span class="tk-f">atLeast</span>(level: <span class="tk-t">LevelName</span>, min: <span class="tk-t">LevelName</span>): <span class="tk-k">boolean</span> {
+  <span class="tk-k">return</span> LEVELS.<span class="tk-f">indexOf</span>(level) &gt;= LEVELS.<span class="tk-f">indexOf</span>(min);
+}
+console.<span class="tk-f">log</span>(<span class="tk-f">atLeast</span>(<span class="tk-s">&quot;error&quot;</span>, <span class="tk-s">&quot;warn&quot;</span>), <span class="tk-f">atLeast</span>(<span class="tk-s">&quot;debug&quot;</span>, <span class="tk-s">&quot;info&quot;</span>));</code></pre></div>
+<p><code>as const</code> makes the array <code>readonly</code> with literal element types, so the list of values and the type come from one place.</p>
+<h2>Utility types</h2>
+<p>TypeScript includes generic types that transform other types:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Utility</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Partial&lt;T&gt;</code></td>
+<td>All properties optional: for updates</td>
+</tr>
+<tr>
+<td><code>Required&lt;T&gt;</code></td>
+<td>All properties required</td>
+</tr>
+<tr>
+<td><code>Readonly&lt;T&gt;</code></td>
+<td>All properties readonly</td>
+</tr>
+<tr>
+<td><code>Pick&lt;T, &quot;a&quot; | &quot;b&quot;&gt;</code></td>
+<td>Only those properties</td>
+</tr>
+<tr>
+<td><code>Omit&lt;T, &quot;a&quot;&gt;</code></td>
+<td>All but those properties</td>
+</tr>
+<tr>
+<td><code>Record&lt;K, V&gt;</code></td>
+<td>An object with keys K and values V</td>
+</tr>
+<tr>
+<td><code>ReturnType&lt;typeof f&gt;</code></td>
+<td>What function f returns</td>
+</tr>
+<tr>
+<td><code>Awaited&lt;P&gt;</code></td>
+<td>What a promise resolves to</td>
+</tr>
+<tr>
+<td><code>NonNullable&lt;T&gt;</code></td>
+<td>T without null and undefined</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">interface</span> <span class="tk-t">Todo</span> { id: <span class="tk-k">number</span>; title: <span class="tk-k">string</span>; done: <span class="tk-k">boolean</span>; notes?: <span class="tk-k">string</span> }
+
+<span class="tk-k">type</span> <span class="tk-t">NewTodo</span> = <span class="tk-t">Omit</span>&lt;<span class="tk-t">Todo</span>, <span class="tk-s">&quot;id&quot;</span>&gt;;                  <span class="tk-c">// what a client sends</span>
+<span class="tk-k">type</span> <span class="tk-t">TodoUpdate</span> = <span class="tk-t">Partial</span>&lt;<span class="tk-t">Omit</span>&lt;<span class="tk-t">Todo</span>, <span class="tk-s">&quot;id&quot;</span>&gt;&gt;;      <span class="tk-c">// any subset of fields</span>
+<span class="tk-k">type</span> <span class="tk-t">TodoSummary</span> = <span class="tk-t">Pick</span>&lt;<span class="tk-t">Todo</span>, <span class="tk-s">&quot;id&quot;</span> | <span class="tk-s">&quot;title&quot;</span>&gt;;
+
+<span class="tk-k">function</span> <span class="tk-f">update</span>(todo: <span class="tk-t">Todo</span>, changes: <span class="tk-t">TodoUpdate</span>): <span class="tk-t">Todo</span> {
+  <span class="tk-k">return</span> { ...todo, ...changes };
+}
+
+<span class="tk-k">const</span> t: <span class="tk-t">Todo</span> = { id: <span class="tk-n">1</span>, title: <span class="tk-s">&quot;Learn TS&quot;</span>, done: <span class="tk-k">false</span> };
+<span class="tk-k">const</span> summary: <span class="tk-t">TodoSummary</span> = { id: t.id, title: t.title };
+console.<span class="tk-f">log</span>(<span class="tk-f">update</span>(t, { done: <span class="tk-k">true</span> }), summary);</code></pre></div>
+<p>Deriving types from one source (<code>Todo</code>) means a change to it flows everywhere automatically.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-generics/"><span class="mono">previous</span><b>5.04 Generics</b></a>
+      <a class="lp-next" href="../6-01-the-dom/"><span class="mono">next</span><b>6.01 The DOM</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/5-05-classes-enums-and-utility-types"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Modules · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/3-05-modules/">
+  <meta name="description" content="Splitting a program into files with ES modules - named and default exports, import forms, renaming and namespace imports, module scope and strict mode, live…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Modules · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Splitting a program into files with ES modules - named and default exports, import forms, renaming and namespace imports, module scope and strict mode, live…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/3-05-modules/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Modules · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Modules · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Splitting a program into files with ES modules - named and default exports, import forms, renaming and namespace imports, module scope and strict mode, live…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Objects, Errors and Modules</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Modules</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Splitting a program into files with ES modules - named and default exports, import forms, renaming and namespace imports, module scope and strict mode, live bindings, side effects, CommonJS require in older Node code, and how to organise modules.</p>
+      <div class="prose">
+<h2>Why modules</h2>
+<p>A <strong>module</strong> is one file with its own scope: nothing inside it is visible to other files unless it is <strong>exported</strong>, and nothing from other files is visible unless it is <strong>imported</strong>. That keeps names from clashing and makes the dependencies of each file explicit.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// money.js</span>
+<span class="tk-k">export</span> <span class="tk-k">const</span> CURRENCY = <span class="tk-s">&quot;EUR&quot;</span>;
+
+<span class="tk-k">export</span> <span class="tk-k">function</span> <span class="tk-f">format</span>(cents) {
+  <span class="tk-k">return</span> <span class="tk-s">`${(cents / 100).toFixed(2)} ${CURRENCY}`</span>;
+}
+
+<span class="tk-k">function</span> <span class="tk-f">round</span>(x) { <span class="tk-k">return</span> Math.<span class="tk-f">round</span>(x); }   <span class="tk-c">// not exported: private to this file</span>
+<span class="tk-k">export</span> { round <span class="tk-k">as</span> roundCents };               <span class="tk-c">// export under another name</span></code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// main.js</span>
+<span class="tk-k">import</span> { format, CURRENCY } <span class="tk-k">from</span> <span class="tk-s">&quot;./money.js&quot;</span>;
+<span class="tk-k">import</span> { roundCents <span class="tk-k">as</span> round } <span class="tk-k">from</span> <span class="tk-s">&quot;./money.js&quot;</span>;
+<span class="tk-k">import</span> * <span class="tk-k">as</span> money <span class="tk-k">from</span> <span class="tk-s">&quot;./money.js&quot;</span>;           <span class="tk-c">// namespace: money.format, money.CURRENCY</span>
+
+console.<span class="tk-f">log</span>(<span class="tk-f">format</span>(<span class="tk-n">1250</span>), CURRENCY, money.<span class="tk-f">format</span>(<span class="tk-f">round</span>(<span class="tk-n">99.6</span>)));</code></pre></div>
+<p>Relative imports start with <code>./</code> or <code>../</code>. In browsers and Node, the file extension is required.</p>
+<h2>Default exports</h2>
+<p>A module may have one <strong>default</strong> export, imported without braces under any name:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// cart.js</span>
+<span class="tk-k">export</span> <span class="tk-k">default</span> <span class="tk-k">class</span> Cart { <span class="tk-c">/* ... */</span> }
+<span class="tk-k">export</span> <span class="tk-k">const</span> MAX_ITEMS = <span class="tk-n">50</span>;
+
+<span class="tk-c">// main.js</span>
+<span class="tk-k">import</span> Cart, { MAX_ITEMS } <span class="tk-k">from</span> <span class="tk-s">&quot;./cart.js&quot;</span>;</code></pre></div>
+<p>Many teams prefer named exports only: names stay the same everywhere, editors can auto-import them, and renaming finds every use.</p>
+<h2>How modules behave</h2>
+<ul>
+<li>Modules always run in <strong>strict mode</strong> and top-level <code>this</code> is <code>undefined</code>.</li>
+<li>Each module runs <strong>once</strong>, the first time it is imported; later imports share the same instance. A module-level <code>let count</code> is shared by every importer.</li>
+<li>Imports are <strong>live, read-only bindings</strong>: if the exporting module changes an exported <code>let</code>, importers see the new value, but they cannot assign to it themselves.</li>
+<li><code>import</code> statements are hoisted and resolved before any code runs. To load a module only when needed, use <strong>dynamic import</strong>: <code>const { chart } = await import(&quot;./chart.js&quot;);</code></li>
+<li>In modules, top-level <code>await</code> is allowed.</li>
+</ul>
+<p>Code that runs at the top level of a module (connecting, printing, changing globals) is a <strong>side effect</strong> of importing it. Keep modules mostly to declarations so that importing them is safe.</p>
+<h2>CommonJS</h2>
+<p>Older Node code uses <strong>CommonJS</strong>, which you will meet in many packages:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// math.cjs</span>
+<span class="tk-k">function</span> <span class="tk-f">add</span>(a, b) { <span class="tk-k">return</span> a + b; }
+module.exports = { add };
+
+<span class="tk-c">// main.cjs</span>
+<span class="tk-k">const</span> { add } = <span class="tk-f">require</span>(<span class="tk-s">&quot;./math.cjs&quot;</span>);</code></pre></div>
+<p>Node treats <code>.mjs</code> files, and <code>.js</code> files in a package whose <code>package.json</code> says <code>&quot;type&quot;: &quot;module&quot;</code>, as ES modules; <code>.cjs</code> files and other <code>.js</code> files as CommonJS. New code should use ES modules.</p>
+<h2>Organising modules</h2>
+<ul>
+<li>One module per idea: <code>money.js</code>, <code>cart.js</code>, <code>storage.js</code>, not <code>utils.js</code> with everything.</li>
+<li>Keep pure logic in modules without side effects, and wire them together in one entry file (<code>main.js</code>).</li>
+<li>Avoid circular imports (a imports b, b imports a): move the shared part into a third module.</li>
+</ul>
+<p>In this course&#39;s practice tasks, files of a project can import each other with <code>./name.js</code>, just like in Node.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-iterators-and-generators/"><span class="mono">previous</span><b>3.04 Iterators and Generators</b></a>
+      <a class="lp-next" href="../4-01-the-event-loop-and-callbacks/"><span class="mono">next</span><b>4.01 The Event Loop and Callbacks</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/3-05-modules"></script>
+</body>
+</html>

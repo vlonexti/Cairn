@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Files and the os Library · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/6-04-files-and-the-os-library/">
+  <meta name="description" content="Opening files with io.open and its modes, reading with read and lines, writing and appending, closing reliably with close variables, saving and loading data…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Files and the os Library · Lua · Xenon">
+  <meta property="og:description" content="Opening files with io.open and its modes, reading with read and lines, writing and appending, closing reliably with close variables, saving and loading data…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/6-04-files-and-the-os-library/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Files and the os Library · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Files and the os Library · Lua · Xenon">
+  <meta name="twitter:description" content="Opening files with io.open and its modes, reading with read and lines, writing and appending, closing reliably with close variables, saving and loading data…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Lua in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Files and the os Library</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Opening files with io.open and its modes, reading with read and lines, writing and appending, closing reliably with close variables, saving and loading data as Lua tables, and time, dates, clocks and the environment from os.</p>
+      <div class="prose">
+<h2>Opening a file</h2>
+<p><code>io.open(name, mode)</code> returns a <strong>file handle</strong>, or <code>nil</code> and a message when it cannot:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;r&quot;</code></td>
+<td>read (the default); the file must exist</td>
+</tr>
+<tr>
+<td><code>&quot;w&quot;</code></td>
+<td>write: creates the file, or <strong>empties</strong> an existing one</td>
+</tr>
+<tr>
+<td><code>&quot;a&quot;</code></td>
+<td>append: write at the end, creating the file if needed</td>
+</tr>
+<tr>
+<td><code>&quot;r+&quot;</code></td>
+<td>read and write an existing file</td>
+</tr>
+<tr>
+<td>add <code>&quot;b&quot;</code></td>
+<td>binary, as in <code>&quot;rb&quot;</code>: matters on Windows only</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> f = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;notes.txt&quot;</span>, <span class="tk-s">&quot;w&quot;</span>))
+f:<span class="tk-f">write</span>(<span class="tk-s">&quot;first line\n&quot;</span>, <span class="tk-s">&quot;second line\n&quot;</span>, <span class="tk-n">42</span>, <span class="tk-s">&quot;\n&quot;</span>)
+f:<span class="tk-f">close</span>()
+
+<span class="tk-k">local</span> f2 = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;notes.txt&quot;</span>, <span class="tk-s">&quot;a&quot;</span>))
+f2:<span class="tk-f">write</span>(<span class="tk-s">&quot;added later\n&quot;</span>)
+f2:<span class="tk-f">close</span>()
+
+<span class="tk-k">local</span> missing, err = io.<span class="tk-f">open</span>(<span class="tk-s">&quot;does-not-exist.txt&quot;</span>)
+<span class="tk-f">print</span>(missing, err)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>nil	does-not-exist.txt: No such file or directory</code></pre></div>
+<p>Methods on a handle use the colon: <code>f:write</code>, <code>f:read</code>, <code>f:close</code>. <code>write</code> takes strings and numbers, any number of them, and adds nothing between them.</p>
+<h2>Reading</h2>
+<p><code>f:read(format)</code> takes the same formats as <code>io.read</code> (lesson 1.04): <code>&quot;l&quot;</code> a line, <code>&quot;n&quot;</code> a number, <code>&quot;a&quot;</code> everything. <code>f:lines()</code> is an iterator over the lines:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> f = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;data.txt&quot;</span>, <span class="tk-s">&quot;w&quot;</span>))
+f:<span class="tk-f">write</span>(<span class="tk-s">&quot;10 20\n30\nlast line\n&quot;</span>)
+f:<span class="tk-f">close</span>()
+
+f = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;data.txt&quot;</span>))
+<span class="tk-k">local</span> a, b = f:<span class="tk-f">read</span>(<span class="tk-s">&quot;n&quot;</span>, <span class="tk-s">&quot;n&quot;</span>)
+<span class="tk-k">local</span> c = f:<span class="tk-f">read</span>(<span class="tk-s">&quot;n&quot;</span>)
+f:<span class="tk-f">read</span>(<span class="tk-s">&quot;l&quot;</span>)                    <span class="tk-c">-- the rest of the &quot;30&quot; line</span>
+<span class="tk-f">print</span>(a, b, c, f:<span class="tk-f">read</span>(<span class="tk-s">&quot;l&quot;</span>), f:<span class="tk-f">read</span>(<span class="tk-s">&quot;l&quot;</span>))
+f:<span class="tk-f">close</span>()
+
+<span class="tk-k">for</span> line <span class="tk-k">in</span> io.<span class="tk-f">lines</span>(<span class="tk-s">&quot;data.txt&quot;</span>) <span class="tk-k">do</span> io.<span class="tk-f">write</span>(<span class="tk-s">&quot;[&quot;</span>, line, <span class="tk-s">&quot;] &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()
+
+<span class="tk-k">local</span> whole = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;data.txt&quot;</span>)):<span class="tk-f">read</span>(<span class="tk-s">&quot;a&quot;</span>)
+<span class="tk-f">print</span>(#whole)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>10	20	30	last line	nil
+[10 20] [30] [last line] 
+19</code></pre></div>
+<p><code>io.lines(name)</code> opens the file, loops over it and closes it at the end: the shortest way to read a text file. (On the last line <code>assert(io.open(...)):read(&quot;a&quot;)</code> leaves the handle to be closed by the garbage collector; fine in a quick script, sloppy in a long-running program.)</p>
+<h2>Closing reliably</h2>
+<p>A file that is never closed may lose what was written to it. In Lua 5.4, a <code>&lt;close&gt;</code> variable closes its file when the block ends, <strong>even if an error stops the block</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">save</span>(name, lines)
+    <span class="tk-k">local</span> f &lt;close&gt; = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(name, <span class="tk-s">&quot;w&quot;</span>))
+    <span class="tk-k">for</span> _, line <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(lines) <span class="tk-k">do</span> f:<span class="tk-f">write</span>(line, <span class="tk-s">&quot;\n&quot;</span>) <span class="tk-k">end</span>
+<span class="tk-k">end</span>                                <span class="tk-c">-- f:close() happens here</span>
+
+<span class="tk-f">save</span>(<span class="tk-s">&quot;list.txt&quot;</span>, { <span class="tk-s">&quot;milk&quot;</span>, <span class="tk-s">&quot;eggs&quot;</span> })
+<span class="tk-k">for</span> line <span class="tk-k">in</span> io.<span class="tk-f">lines</span>(<span class="tk-s">&quot;list.txt&quot;</span>) <span class="tk-k">do</span> <span class="tk-f">print</span>(line) <span class="tk-k">end</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>milk
+eggs</code></pre></div>
+<h2>Saving and loading data</h2>
+<p>Lua itself is a good data format. Write a table out as Lua source with <code>%q</code> (lesson 4.04), and read it back with <code>load</code>, which turns a string of code into a function:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">serialize</span>(v, indent)
+    indent = indent <span class="tk-k">or</span> <span class="tk-s">&quot;&quot;</span>
+    <span class="tk-k">if</span> <span class="tk-f">type</span>(v) == <span class="tk-s">&quot;table&quot;</span> <span class="tk-k">then</span>
+        <span class="tk-k">local</span> lines, keys = { <span class="tk-s">&quot;{&quot;</span> }, {}
+        <span class="tk-k">for</span> k <span class="tk-k">in</span> <span class="tk-f">pairs</span>(v) <span class="tk-k">do</span> keys[#keys + <span class="tk-n">1</span>] = k <span class="tk-k">end</span>
+        table.<span class="tk-f">sort</span>(keys, <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> <span class="tk-f">tostring</span>(a) &lt; <span class="tk-f">tostring</span>(b) <span class="tk-k">end</span>)
+        <span class="tk-k">for</span> _, k <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(keys) <span class="tk-k">do</span>
+            lines[#lines + <span class="tk-n">1</span>] = string.<span class="tk-f">format</span>(<span class="tk-s">&quot;%s  [%s] = %s,&quot;</span>, indent, <span class="tk-f">serialize</span>(k), <span class="tk-f">serialize</span>(v[k], indent .. <span class="tk-s">&quot;  &quot;</span>))
+        <span class="tk-k">end</span>
+        lines[#lines + <span class="tk-n">1</span>] = indent .. <span class="tk-s">&quot;}&quot;</span>
+        <span class="tk-k">return</span> table.<span class="tk-f">concat</span>(lines, <span class="tk-s">&quot;\n&quot;</span>)
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> string.<span class="tk-f">format</span>(<span class="tk-s">&quot;%q&quot;</span>, v)
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> save = { player = <span class="tk-s">&quot;Ada&quot;</span>, level = <span class="tk-n">3</span>, items = { <span class="tk-s">&quot;map&quot;</span>, <span class="tk-s">&quot;lamp&quot;</span> } }
+<span class="tk-k">local</span> f &lt;close&gt; = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;save.lua&quot;</span>, <span class="tk-s">&quot;w&quot;</span>))
+f:<span class="tk-f">write</span>(<span class="tk-s">&quot;return &quot;</span>, <span class="tk-f">serialize</span>(save), <span class="tk-s">&quot;\n&quot;</span>)
+f:<span class="tk-f">close</span>()
+
+<span class="tk-k">local</span> loaded = <span class="tk-f">assert</span>(<span class="tk-f">loadfile</span>(<span class="tk-s">&quot;save.lua&quot;</span>))()
+<span class="tk-f">print</span>(loaded.player, loaded.level, loaded.items[<span class="tk-n">2</span>])
+<span class="tk-f">print</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;save.lua&quot;</span>):<span class="tk-f">read</span>(<span class="tk-s">&quot;a&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Ada	3	lamp
+return {
+  [&quot;items&quot;] = {
+    [1] = &quot;map&quot;,
+    [2] = &quot;lamp&quot;,
+  },
+  [&quot;level&quot;] = 3,
+  [&quot;player&quot;] = &quot;Ada&quot;,
+}</code></pre></div>
+<p><code>loadfile(name)</code> compiles a file into a function without running it; calling it runs the file, and <code>return</code> hands back the table. <code>load(text)</code> does the same for a string.</p>
+<div class="callout danger"><div class="callout-title"><span>Only load files you trust</span></div><div class="callout-body"><p>A loaded file is a program: it can do anything your program can, including deleting files. Use this for your own save files and settings, never for data from strangers. For data from elsewhere, use a format with no code in it, such as JSON with a JSON library, or <code>load(text, &quot;data&quot;, &quot;t&quot;, {})</code> with an empty environment as the fourth argument so the code cannot reach <code>os</code> or <code>io</code>.</p>
+</div></div>
+<h2>The os library</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> now = os.<span class="tk-f">time</span>()
+<span class="tk-f">print</span>(<span class="tk-f">type</span>(now), now &gt; <span class="tk-n">1700000000</span>)
+<span class="tk-f">print</span>(os.<span class="tk-f">date</span>(<span class="tk-s">&quot;%Y-%m-%d&quot;</span>, <span class="tk-n">0</span>))
+<span class="tk-f">print</span>(os.<span class="tk-f">date</span>(<span class="tk-s">&quot;!%H:%M&quot;</span>, <span class="tk-n">3600</span> * <span class="tk-n">13</span> + <span class="tk-n">60</span> * <span class="tk-n">5</span>))
+<span class="tk-k">local</span> t = os.<span class="tk-f">date</span>(<span class="tk-s">&quot;*t&quot;</span>, os.<span class="tk-f">time</span>({ year = <span class="tk-n">2026</span>, month = <span class="tk-n">11</span>, day = <span class="tk-n">16</span>, hour = <span class="tk-n">12</span> }))
+<span class="tk-f">print</span>(t.year, t.month, t.day, t.wday)
+<span class="tk-k">local</span> start = os.<span class="tk-f">clock</span>()
+<span class="tk-k">local</span> x = <span class="tk-n">0</span>
+<span class="tk-k">for</span> i = <span class="tk-n">1</span>, <span class="tk-n">1000000</span> <span class="tk-k">do</span> x = x + i <span class="tk-k">end</span>
+<span class="tk-f">print</span>(os.<span class="tk-f">clock</span>() - start &lt; <span class="tk-n">5</span>, x)
+<span class="tk-f">print</span>(os.<span class="tk-f">getenv</span>(<span class="tk-s">&quot;NO_SUCH_VARIABLE&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>number	true
+1970-01-01
+13:05
+2026	11	16	2
+true	500000500000
+nil</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Gives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>os.time()</code></td>
+<td>the current time as seconds since 1970</td>
+</tr>
+<tr>
+<td><code>os.time{year=, month=, day=, hour=}</code></td>
+<td>those seconds for a given date</td>
+</tr>
+<tr>
+<td><code>os.date(format, t)</code></td>
+<td>a formatted date; <code>&quot;*t&quot;</code> gives a table; a leading <code>!</code> uses UTC</td>
+</tr>
+<tr>
+<td><code>os.clock()</code></td>
+<td>processor time used, in seconds, for timing code</td>
+</tr>
+<tr>
+<td><code>os.difftime(t2, t1)</code></td>
+<td>the seconds between two times</td>
+</tr>
+<tr>
+<td><code>os.getenv(name)</code></td>
+<td>an environment variable, or nil</td>
+</tr>
+<tr>
+<td><code>os.remove(name)</code>, <code>os.rename(a, b)</code></td>
+<td>delete or rename a file</td>
+</tr>
+<tr>
+<td><code>os.exit(code)</code></td>
+<td>end the program</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>wday</code> counts from Sunday = 1, so 2 is a Monday. Formats follow C&#39;s <code>strftime</code>: <code>%Y</code> year, <code>%m</code> month, <code>%d</code> day, <code>%H:%M:%S</code> time, <code>%A</code> weekday name.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-coroutines/"><span class="mono">previous</span><b>6.03 Coroutines</b></a>
+      <a class="lp-next" href="../6-05-embedding-lua-and-its-dialects/"><span class="mono">next</span><b>6.05 Embedding Lua and Its Dialects</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/6-04-files-and-the-os-library"></script>
+</body>
+</html>

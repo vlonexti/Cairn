@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>API Keys and Where Secrets Belong · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/2-01-api-keys-and-where-secrets-belong/">
+  <meta name="description" content="The simplest way APIs identify a caller - the API key - how to send it, why never in the URL, where secrets live (environment variables, untracked files,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="API Keys and Where Secrets Belong · Working with APIs · Xenon">
+  <meta property="og:description" content="The simplest way APIs identify a caller - the API key - how to send it, why never in the URL, where secrets live (environment variables, untracked files,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/2-01-api-keys-and-where-secrets-belong/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="API Keys and Where Secrets Belong · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="API Keys and Where Secrets Belong · Working with APIs · Xenon">
+  <meta name="twitter:description" content="The simplest way APIs identify a caller - the API key - how to send it, why never in the URL, where secrets live (environment variables, untracked files,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Keys and Sign-in</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">API Keys and Where Secrets Belong</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.01</b></span><span>1 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The simplest way APIs identify a caller - the API key - how to send it, why never in the URL, where secrets live (environment variables, untracked files, secret managers, never in code), keeping keys narrow in what they can do, and what to do the day one leaks.</p>
+      <div class="prose">
+<h2>Who is calling?</h2>
+<p>Almost every API needs to know who is calling: to bill them, to limit them, to decide what they may see. The simplest answer is an <strong>API key</strong>: a long random string the provider gives you, which you send with every request.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>headers = {<span class="tk-s">&quot;Authorization&quot;</span>: <span class="tk-s">&quot;Bearer sk_live_51Hx...&quot;</span>, <span class="tk-s">&quot;Accept&quot;</span>: <span class="tk-s">&quot;application/json&quot;</span>}
+<span class="tk-c"># or, depending on the API:</span>
+headers = {<span class="tk-s">&quot;X-Api-Key&quot;</span>: <span class="tk-s">&quot;sk_live_51Hx...&quot;</span>}</code></pre></div>
+<p>The documentation says which header. Some old APIs accept the key in the query string (<code>?api_key=...</code>): avoid that whenever there is a choice. URLs end up in server logs, proxy logs, browser history and error reports; headers usually do not.</p>
+<h2>A key is a password</h2>
+<p>Anyone who has the key <strong>is</strong> you, as far as the API knows. So:</p>
+<ul>
+<li><strong>Never put it in code.</strong> Code is committed, shared, pasted into questions, and published. Keys pushed to a public repository are found by automated scanners within minutes.</li>
+<li><strong>Read it from the environment</strong>, or a configuration file that is <strong>not</strong> tracked by git (add it to <code>.gitignore</code>), or a <strong>secret manager</strong> (Windows Credential Manager, macOS Keychain, cloud secret stores) in production.</li>
+<li><strong>Fail clearly</strong> when it is missing, without printing it when it is present.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> os
+
+api_key = os.environ.<span class="tk-f">get</span>(<span class="tk-s">&quot;BOOKS_API_KEY&quot;</span>, <span class="tk-s">&quot;&quot;</span>).<span class="tk-f">strip</span>()
+<span class="tk-k">if</span> <span class="tk-k">not</span> api_key:
+    <span class="tk-k">raise</span> <span class="tk-f">SystemExit</span>(<span class="tk-s">&quot;Set the BOOKS_API_KEY environment variable (see README).&quot;</span>)</code></pre></div>
+<p>On Windows, set it for the current terminal with <code>set BOOKS_API_KEY=...</code> (cmd) or <code>$env:BOOKS_API_KEY=&quot;...&quot;</code> (PowerShell); <code>.env</code> files loaded by a library such as <code>python-dotenv</code> are a common convenience for development, and they too stay out of git.</p>
+<h2>Narrow keys</h2>
+<p>Most providers let you create several keys with different powers. Use that:</p>
+<ul>
+<li><strong>Test and live keys</strong> separately (<code>sk_test_...</code> and <code>sk_live_...</code> are a common naming): development never touches real data.</li>
+<li><strong>Restricted keys</strong> with only the permissions the program needs: a reporting script gets read-only access.</li>
+<li><strong>One key per program or server</strong>, so one can be revoked without breaking the others, and logs show which one did what.</li>
+</ul>
+<h2>When a key leaks</h2>
+<p>It will happen eventually: a commit, a screenshot, a log file. The response is always the same:</p>
+<ol>
+<li><strong>Revoke</strong> (or &quot;roll&quot;) the key at the provider immediately. Deleting the commit is not enough: it is already copied.</li>
+<li>Create a new key and put it where your programs read it.</li>
+<li>Check the provider&#39;s logs for use you did not make.</li>
+<li>Find how it leaked and close that path (lesson 2.05).</li>
+</ol>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/2.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/2.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-05-building-urls-and-clients-safely/"><span class="mono">previous</span><b>1.05 Building URLs and Clients Safely</b></a>
+      <a class="lp-next" href="../2-02-bearer-tokens-and-expiry/"><span class="mono">next</span><b>2.02 Bearer Tokens and Expiry</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/2-01-api-keys-and-where-secrets-belong"></script>
+</body>
+</html>

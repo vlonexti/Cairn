@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Name Lookup, ADL, Inline Namespaces and the ODR · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/13-07-name-lookup-adl-inline-namespaces-and-the-odr/">
+  <meta name="description" content="How does the compiler decide what a name refers to? Unqualified lookup searches outwards through scopes. ADL also searches the namespaces of the arguments'…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Name Lookup, ADL, Inline Namespaces and the ODR · C++ · Xenon">
+  <meta property="og:description" content="How does the compiler decide what a name refers to? Unqualified lookup searches outwards through scopes. ADL also searches the namespaces of the arguments'…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/13-07-name-lookup-adl-inline-namespaces-and-the-odr/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Name Lookup, ADL, Inline Namespaces and the ODR · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Name Lookup, ADL, Inline Namespaces and the ODR · C++ · Xenon">
+  <meta name="twitter:description" content="How does the compiler decide what a name refers to? Unqualified lookup searches outwards through scopes. ADL also searches the namespaces of the arguments'…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Expert C++</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Name Lookup, ADL, Inline Namespaces and the ODR</h1>
+      <div class="readout lp-readout"><span>lesson <b>13.07</b></span><span>7 of 10 in milestone 13</span><span>7 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">How does the compiler decide what a name refers to? <strong>Unqualified lookup</strong> searches outwards through scopes. <strong>ADL</strong> also searches the namespaces of the arguments&#39; types, which is why <code>std::cout &lt;&lt; x</code> finds <code>std::operator&lt;&lt;</code>. <strong>Inline namespaces</strong> version an interface. The <strong>One Definition Rule</strong> keeps definitions consistent across the program.</p>
+      <div class="prose">
+<h2>Lookup comes first</h2>
+<p>Before a call is resolved, three things happen in a fixed order.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;1. Name lookup&lt;br/&gt;find candidate declarations&quot;] --&gt; B[&quot;2. Overload resolution&lt;br/&gt;choose the best match&quot;] --&gt; C[&quot;3. Access check&lt;br/&gt;is it public here?&quot;]</pre></div>
+<p>A surprising amount of C++ behaviour follows from that order. A function that would be a perfect match is never considered if lookup does not find it, and a private function can win overload resolution and then be rejected.</p>
+<h2>Unqualified lookup</h2>
+<p>A name written without <code>::</code> is searched for from the innermost scope outwards.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> namespace app {
+   int x;                         searched third
+   namespace ui {
+     int x;                       searched second
+     void f() {
+       int x;                     searched first: found, so the search stops
+       use(x);
+     }
+   }
+ }</code></pre></div>
+<p>The search <strong>stops at the first scope that contains the name</strong>. It does not go on to see whether an outer scope has a better candidate. That is the mechanism behind name hiding in derived classes (<a href="../8-02-inheritance-and-access/">8.02 Inheritance and Access</a>), where one function in the derived class hides every base overload of the same name.</p>
+<p>A <strong>qualified</strong> name, such as <code>app::x</code> or <code>::x</code>, is looked up only in the scope named.</p>
+<h2>Argument-dependent lookup</h2>
+<p>For an unqualified <strong>function call</strong>, there is a second search.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">namespace</span> geo
+{
+    <span class="tk-k">struct</span> <span class="tk-t">Point</span>
+    {
+        <span class="tk-k">int</span> x{};
+        <span class="tk-k">int</span> y{};
+    };
+
+    <span class="tk-k">void</span> <span class="tk-f">print</span>(<span class="tk-k">const</span> <span class="tk-t">Point</span>&amp; p)
+    {
+        std::cout &lt;&lt; p.x &lt;&lt; <span class="tk-s">','</span> &lt;&lt; p.y &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> geo::<span class="tk-t">Point</span> p{ <span class="tk-n">1</span>, <span class="tk-n">2</span> };
+    <span class="tk-f">print</span>(p);    <span class="tk-c">// found without writing geo::</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    C[&quot;print(p)&quot;] --&gt; U[&quot;ordinary lookup:&lt;br/&gt;the enclosing scopes&quot;]
+    C --&gt; A[&quot;ADL: the namespaces of&lt;br/&gt;the argument types.&lt;br/&gt;p is a geo::Point, so search geo&quot;]
+    U &amp; A --&gt; O[&quot;overload resolution over&lt;br/&gt;everything found&quot;]</pre></div>
+<p><strong>Argument-dependent lookup</strong> (ADL) adds, for each argument, the namespace in which its type is defined. The functions found both ways are combined into one set of candidates.</p>
+<p>The motivation is operators. <code>std::cout &lt;&lt; text</code> must find <code>std::operator&lt;&lt;(std::ostream&amp;, const std::string&amp;)</code>. Nobody wants to write <code>std::operator&lt;&lt;(std::cout, text)</code>. ADL makes a type&#39;s interface include the free functions in its namespace.</p>
+<h3>The two-step swap</h3>
+<p>Generic code that swaps should use a type&#39;s own <code>swap</code> if it provides one, and <code>std::swap</code> otherwise.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">void</span> <span class="tk-f">exchange</span>(T&amp; a, T&amp; b)
+{
+    <span class="tk-k">using</span> std::swap;    <span class="tk-c">// makes std::swap a candidate</span>
+    <span class="tk-f">swap</span>(a, b);         <span class="tk-c">// unqualified: ADL adds any swap in T's namespace</span>
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Written as</th>
+<th>Finds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::swap(a, b)</code></td>
+<td>Only <code>std::swap</code>. A type&#39;s optimized <code>swap</code> is ignored.</td>
+</tr>
+<tr>
+<td><code>swap(a, b)</code> alone</td>
+<td>Only what ADL finds. Fails for <code>int</code>, which has no namespace.</td>
+</tr>
+<tr>
+<td><code>using std::swap; swap(a, b);</code></td>
+<td>Both, and overload resolution prefers the more specific</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>std::ranges::swap</code> performs this dance for you.</p>
+<div class="callout warning"><div class="callout-title"><span>ADL works when you did not ask for it</span></div><div class="callout-body"><p>An unqualified call can select a function from an argument&#39;s namespace that you have never heard of. In generic code, qualify calls that you do <strong>not</strong> intend to be customisable: write <code>std::move</code>, <code>std::forward</code> and <code>std::addressof</code> in full.</p>
+</div></div>
+<h3>Hidden friends</h3>
+<p>A friend function <strong>defined inside</strong> a class is not visible to ordinary lookup at all. It can be found <strong>only</strong> by ADL, when one of the arguments has that class type.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Vec2</span>
+{
+    <span class="tk-k">double</span> x{};
+    <span class="tk-k">double</span> y{};
+
+    <span class="tk-k">friend</span> <span class="tk-t">Vec2</span> <span class="tk-k">operator</span>+(<span class="tk-t">Vec2</span> a, <span class="tk-t">Vec2</span> b) { <span class="tk-k">return</span> { a.x + b.x, a.y + b.y }; }
+};</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Benefit</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Smaller overload sets</td>
+<td>The operator is a candidate only when a <code>Vec2</code> is involved</td>
+</tr>
+<tr>
+<td>Fewer accidental conversions</td>
+<td>It cannot be selected through an implicit conversion of some unrelated type</td>
+</tr>
+<tr>
+<td>Faster compilation, clearer errors</td>
+<td>The compiler has fewer candidates to consider and report</td>
+</tr>
+</tbody></table>
+</div>
+<p>This is the recommended way to write operators, and what the examples in <a href="../6-07-operator-overloading-basics/">6.07 Operator Overloading Basics</a> were quietly doing.</p>
+<h2>Inline namespaces</h2>
+<p>The members of an <strong>inline namespace</strong> are treated as members of the enclosing namespace too.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">namespace</span> lib
+{
+    <span class="tk-k">namespace</span> v1
+    {
+        <span class="tk-k">void</span> <span class="tk-f">parse</span>();
+    }
+
+    <span class="tk-k">inline</span> <span class="tk-k">namespace</span> v2
+    {
+        <span class="tk-k">void</span> <span class="tk-f">parse</span>();
+    }
+}
+
+lib::<span class="tk-f">parse</span>();        <span class="tk-c">// v2, the current version</span>
+lib::v1::<span class="tk-f">parse</span>();    <span class="tk-c">// the old version, still reachable</span></code></pre></div>
+<p>Libraries use this for <strong>versioning</strong>. Callers write <code>lib::parse</code> and get whichever version is marked <code>inline</code>; the version name is still part of each symbol, so code built against different versions cannot be linked together by mistake. The standard library&#39;s literal suffixes live in inline namespaces, which is why <code>using namespace std::chrono_literals;</code> and <code>using namespace std::literals;</code> both work.</p>
+<h2>Unnamed namespaces</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">namespace</span>
+{
+    <span class="tk-k">int</span> <span class="tk-f">helper</span>() { <span class="tk-k">return</span> <span class="tk-n">1</span>; }
+}</code></pre></div>
+<p>Everything in an unnamed namespace has <strong>internal linkage</strong>: it is private to its source file (<a href="../3-06-global-variables-static-and-linkage/">3.06 Global Variables, static and Linkage</a>). Unlike <code>static</code>, it applies to types as well as to functions and variables, which matters for the next section.</p>
+<h2>The One Definition Rule</h2>
+<p>The <strong>One Definition Rule</strong> (ODR) has three parts.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Within one translation unit</td>
+<td>An entity is defined at most once</td>
+</tr>
+<tr>
+<td>Across the whole program</td>
+<td>A non-inline function or variable that is used is defined <strong>exactly once</strong></td>
+</tr>
+<tr>
+<td>Classes, templates, inline functions and inline variables</td>
+<td>May be defined in several translation units, but every definition must be <strong>identical</strong>, token for token and in meaning</td>
+</tr>
+</tbody></table>
+</div>
+<p>A <strong>translation unit</strong> is one source file after all its <code>#include</code>s have been pasted in.</p>
+<p>The third rule is the dangerous one.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> a.cpp:   struct Config { int width; int height; };
+ b.cpp:   struct Config { int width; int height; int depth; };
+
+ Each file compiles. The program links. No error, no warning.
+ Code in a.cpp and b.cpp now disagree about the size and layout of a Config.</code></pre></div>
+<p>A violation of this kind is &quot;ill-formed, no diagnostic required&quot;. The linker sees two things called <code>Config</code> and assumes they are the same. The result is memory corruption that appears far from its cause.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>How it happens</th>
+<th>Defence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Two source files each define a helper class with the same name</td>
+<td>Put file-local types in an unnamed namespace</td>
+</tr>
+<tr>
+<td>Two libraries define the same name in the global namespace</td>
+<td>Give every library its own namespace</td>
+</tr>
+<tr>
+<td>A header is included with different macros defined beforehand</td>
+<td>Avoid macros that alter definitions</td>
+</tr>
+<tr>
+<td>Object files built with different settings that change layouts</td>
+<td>Build everything with the same options</td>
+</tr>
+<tr>
+<td>An inline function in a header that behaves differently per file</td>
+<td>Keep headers free of dependence on file-local context</td>
+</tr>
+</tbody></table>
+</div>
+<p>Modules (<a href="../13-05-modules-cpp20-and-import-std-cpp23/">13.05 Modules (C++20) and import std (C++23)</a>) remove much of this class of problem: a module&#39;s entities are attached to that module, so same-named entities in different modules do not collide.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/13.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/13.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../13-06-preprocessor-deep-dive-attributes-and-user-defined-literals/"><span class="mono">previous</span><b>13.06 Preprocessor Deep Dive, Attributes and User-Defined Literals</b></a>
+      <a class="lp-next" href="../13-08-cpp-idioms-and-design-patterns/"><span class="mono">next</span><b>13.08 C++ Idioms and Design Patterns</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/13-07-name-lookup-adl-inline-namespaces-and-the-odr"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

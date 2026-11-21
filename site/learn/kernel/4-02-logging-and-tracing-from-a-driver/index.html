@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Logging and Tracing from a Driver · Windows Kernel Driver Development · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/kernel/4-02-logging-and-tracing-from-a-driver/">
+  <meta name="description" content="Getting information out of a driver without slowing the system down - DbgPrintEx levels and filters, rate limiting, WPP software tracing, and TraceLogging…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Logging and Tracing from a Driver · Windows Kernel Driver Development · Xenon">
+  <meta property="og:description" content="Getting information out of a driver without slowing the system down - DbgPrintEx levels and filters, rate limiting, WPP software tracing, and TraceLogging…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/kernel/4-02-logging-and-tracing-from-a-driver/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Logging and Tracing from a Driver · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Logging and Tracing from a Driver · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:description" content="Getting information out of a driver without slowing the system down - DbgPrintEx levels and filters, rate limiting, WPP software tracing, and TraceLogging…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Kernel Driver Development</a><span>/</span><span>Observing the System</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Logging and Tracing from a Driver</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 3 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Getting information out of a driver without slowing the system down - DbgPrintEx levels and filters, rate limiting, WPP software tracing, and TraceLogging with ETW, which lets tools like WPR and WPA record a driver&#39;s events alongside the rest of the system.</p>
+      <div class="prose">
+<h2>DbgPrintEx, carefully</h2>
+<p><code>DbgPrintEx</code> (lesson 1.04) is the first tool, but it has costs:</p>
+<ul>
+<li>It formats text in the kernel, which is slow compared with recording a few numbers.</li>
+<li>Output is filtered by <strong>component</strong> and <strong>level</strong>: <code>DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, ...)</code> is always shown, <code>INFO_LEVEL</code> only when the filter mask allows it.</li>
+<li>A message in a hot path (a callback called for every thread creation) can flood the debugger and slow the whole VM to a crawl.</li>
+</ul>
+<p>Use it for errors and rare events, and <strong>rate-limit</strong> anything that can repeat: at most a few messages per second, then one summary (&quot;suppressed 1 204 similar messages&quot;). The practice builds a token-bucket limiter.</p>
+<h2>Levels and keywords</h2>
+<p>Good driver logging distinguishes:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Critical / Error</td>
+<td>Something failed and the driver cannot do its job</td>
+</tr>
+<tr>
+<td>Warning</td>
+<td>Unexpected but handled (a request rejected by validation)</td>
+</tr>
+<tr>
+<td>Information</td>
+<td>Important state changes (loaded, device created)</td>
+</tr>
+<tr>
+<td>Verbose</td>
+<td>Detailed tracing for debugging, off by default</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Keywords</strong> are bit flags for areas of the driver (<code>0x1</code> I/O requests, <code>0x2</code> callbacks, <code>0x4</code> memory). A trace session enables a level and a keyword mask, and the driver checks both before formatting anything, so disabled events cost almost nothing.</p>
+<h2>WPP software tracing</h2>
+<p><strong>WPP</strong> (Windows software trace preprocessor) turns <code>DoTraceMessage(FLAG_IO, &quot;length %d&quot;, len)</code> calls into compact binary events at build time: only the arguments are recorded, and the format strings live in the <code>.pdb</code>. Tracing is enabled per driver from outside (<code>tracelog</code>, <code>TraceView</code>), and the cost when disabled is a single flag check. Many Microsoft drivers trace this way; the WDK templates set it up.</p>
+<h2>TraceLogging and ETW</h2>
+<p><strong>ETW</strong> (Event Tracing for Windows) is the system-wide, high-speed tracing infrastructure that Windows itself uses. <strong>TraceLogging</strong> is the simplest way for a driver to write ETW events, with self-describing fields:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;TraceLoggingProvider.h&gt;</span>
+<span class="tk-f">TRACELOGGING_DEFINE_PROVIDER</span>(g_provider, <span class="tk-s">&quot;Xenon.Log&quot;</span>,
+    (<span class="tk-n">0x5c1f0a8e</span>, <span class="tk-n">0x9b0a</span>, <span class="tk-n">0x4c1d</span>, <span class="tk-n">0x8f</span>, <span class="tk-n">0x3e</span>, <span class="tk-n">0x1a</span>, <span class="tk-n">0x2b</span>, <span class="tk-n">0x3c</span>, <span class="tk-n">0x4d</span>, <span class="tk-n">0x5e</span>, <span class="tk-n">0x6f</span>));   <span class="tk-c">// your own GUID</span>
+
+<span class="tk-f">TraceLoggingRegister</span>(g_provider);                 <span class="tk-c">// DriverEntry</span>
+<span class="tk-f">TraceLoggingWrite</span>(g_provider, <span class="tk-s">&quot;ProcessStart&quot;</span>,
+    <span class="tk-f">TraceLoggingLevel</span>(TRACE_LEVEL_INFORMATION),
+    <span class="tk-f">TraceLoggingKeyword</span>(<span class="tk-n">0x2</span>),
+    <span class="tk-f">TraceLoggingUInt32</span>(pid, <span class="tk-s">&quot;ProcessId&quot;</span>),
+    <span class="tk-f">TraceLoggingUInt32</span>(parentPid, <span class="tk-s">&quot;ParentId&quot;</span>));
+<span class="tk-f">TraceLoggingUnregister</span>(g_provider);               <span class="tk-c">// Unload</span></code></pre></div>
+<p>Record a session with <strong>WPR</strong> (Windows Performance Recorder) using a profile that enables <code>Xenon.Log</code>, and open the trace in <strong>WPA</strong> (Windows Performance Analyzer): your events appear on the same timeline as CPU usage, disk I/O and every other system event. That makes ETW far more powerful than a private log.</p>
+<h2>Which one when</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Errors you want to see while developing</td>
+<td><code>DbgPrintEx</code> at error level</td>
+</tr>
+<tr>
+<td>Detailed debugging traces</td>
+<td>WPP or TraceLogging at verbose level</td>
+</tr>
+<tr>
+<td>Events other tools should see, with timing</td>
+<td>TraceLogging (ETW)</td>
+</tr>
+<tr>
+<td>A product feature (the user sees the events)</td>
+<td>Your own channel: a ring buffer and an IOCTL (lesson 4.03)</td>
+</tr>
+</tbody></table>
+</div>
+<p>The course&#39;s log driver uses its own ring buffer because the viewer is part of the &quot;product&quot;; it would also be good practice to emit the same events with TraceLogging.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/kernel/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/kernel/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-process-and-thread-notifications/"><span class="mono">previous</span><b>4.01 Process and Thread Notifications</b></a>
+      <a class="lp-next" href="../4-03-designing-a-log-driver/"><span class="mono">next</span><b>4.03 Designing a Log Driver</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/kernel/4-02-logging-and-tracing-from-a-driver"></script>
+</body>
+</html>

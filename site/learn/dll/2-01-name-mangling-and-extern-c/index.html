@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Name Mangling and extern &quot;C&quot; · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/2-01-name-mangling-and-extern-c/">
+  <meta name="description" content="C++ lets two functions share a name if their parameters differ, so the compiler gives every function a decorated name that encodes its parameter types. Those…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Name Mangling and extern &quot;C&quot; · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="C++ lets two functions share a name if their parameters differ, so the compiler gives every function a decorated name that encodes its parameter types. Those…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/2-01-name-mangling-and-extern-c/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Name Mangling and extern &quot;C&quot; · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Name Mangling and extern &quot;C&quot; · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="C++ lets two functions share a name if their parameters differ, so the compiler gives every function a decorated name that encodes its parameter types. Those…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Across the Boundary</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Name Mangling and extern &quot;C&quot;</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.01</b></span><span>1 of 6 in milestone 2</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">C++ lets two functions share a name if their parameters differ, so the compiler gives every function a <strong>decorated</strong> name that encodes its parameter types. Those names are what a DLL exports by default. <code>extern &quot;C&quot;</code> turns decoration off, giving the plain names that <code>GetProcAddress</code>, <code>.def</code> files and other languages need.</p>
+      <div class="prose">
+<h2>Why names are decorated</h2>
+<p>In C++ these are three different functions:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span>    <span class="tk-f">area</span>(<span class="tk-k">int</span> side);
+<span class="tk-k">int</span>    <span class="tk-f">area</span>(<span class="tk-k">int</span> width, <span class="tk-k">int</span> height);
+<span class="tk-k">double</span> <span class="tk-f">area</span>(<span class="tk-k">double</span> radius);</code></pre></div>
+<p>The linker, though, only knows symbol names: strings. To keep the three apart, the compiler gives each a <strong>decorated name</strong> (also called a <strong>mangled</strong> name) that includes the parameter types, the return type, the namespace and class, and more. With MSVC:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Declaration</th>
+<th>Decorated name</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int area(int)</code></td>
+<td><code>?area@@YAHH@Z</code></td>
+</tr>
+<tr>
+<td><code>int area(int, int)</code></td>
+<td><code>?area@@YAHHH@Z</code></td>
+</tr>
+<tr>
+<td><code>double area(double)</code></td>
+<td><code>?area@@YANN@Z</code></td>
+</tr>
+<tr>
+<td><code>int stackHeight(int, int)</code></td>
+<td><code>?stackHeight@@YAHHH@Z</code></td>
+</tr>
+<tr>
+<td><code>void reset()</code></td>
+<td><code>?reset@@YAXXZ</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>GCC and Clang use a completely different scheme (<code>_Z4areai</code>). That alone is a good reason not to export C++ names from a DLL meant for anyone else.</p>
+<h2>Reading an MSVC name</h2>
+<p>For a plain function outside any class or namespace, the pattern is:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>?  name  @@  YA  &lt;return type&gt;  &lt;parameter types&gt;  @Z
+                                 (no parameters:   XZ)</code></pre></div>
+<ul>
+<li><code>?</code> marks a decorated C++ name.</li>
+<li><code>@@</code> ends the name and its (empty) scope.</li>
+<li><code>Y</code> means &quot;a function outside a class&quot;, <code>A</code> means the default calling convention (<code>__cdecl</code>).</li>
+<li>The type codes:</li>
+</ul>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Code</th>
+<th>Type</th>
+<th>Code</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>void</code></td>
+<td><code>X</code></td>
+<td><code>int</code></td>
+<td><code>H</code></td>
+</tr>
+<tr>
+<td><code>char</code></td>
+<td><code>D</code></td>
+<td><code>unsigned int</code></td>
+<td><code>I</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>_N</code></td>
+<td><code>long long</code></td>
+<td><code>_J</code></td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td><code>M</code></td>
+<td><code>double</code></td>
+<td><code>N</code></td>
+</tr>
+</tbody></table>
+</div>
+<ul>
+<li>After the parameters comes <code>@Z</code>. A function with no parameters has <code>X</code> (void) as its parameter list and ends <code>XZ</code> with no <code>@</code>.</li>
+</ul>
+<p>So <code>?add@@YAHHH@Z</code> is &quot;a free function <code>add</code>, returning <code>int</code> (<code>H</code>), taking <code>int, int</code> (<code>HH</code>)&quot;. You will build exactly this decorator in the practice.</p>
+<p>To decode a name you do not recognise, Visual Studio ships <code>undname</code>:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>undname ?stackHeight@@YAHHH@Z</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output (yours will differ)</span></div><pre><code>Undecoration of :- &quot;?stackHeight@@YAHHH@Z&quot;
+is :- &quot;int __cdecl stackHeight(int,int)&quot;</code></pre></div>
+<h2>extern &quot;C&quot;</h2>
+<p>Wrapping a declaration in <code>extern &quot;C&quot;</code> tells the compiler to use <strong>C linkage</strong>: no overloading, no decoration, the plain name.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// stone_math.h</span>
+<span class="tk-p">#ifdef</span> __cplusplus
+<span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> {
+<span class="tk-p">#endif</span>
+
+STONEMATH_API <span class="tk-k">int</span>    <span class="tk-f">stackHeight</span>(<span class="tk-k">int</span> stones, <span class="tk-k">int</span> stonesPerLayer);
+STONEMATH_API <span class="tk-k">double</span> <span class="tk-f">stackWeight</span>(<span class="tk-k">int</span> stones, <span class="tk-k">double</span> kilosEach);
+
+<span class="tk-p">#ifdef</span> __cplusplus
+}
+<span class="tk-p">#endif</span></code></pre></div>
+<p>Now <code>dumpbin /exports</code> lists <code>stackHeight</code> and <code>stackWeight</code>. The <code>#ifdef __cplusplus</code> lets the same header be used from C, which does not know the words <code>extern &quot;C&quot;</code>.</p>
+<p>What you give up:</p>
+<ul>
+<li><strong>No overloading.</strong> Two <code>extern &quot;C&quot;</code> functions cannot share a name. Use distinct names: <code>area_square</code>, <code>area_rect</code>.</li>
+<li><strong>No C++ types in the signature that C cannot express</strong>, if you want other languages to call it. The compiler allows <code>std::string</code> in an <code>extern &quot;C&quot;</code> function, but no other language can construct one (lesson 2.06).</li>
+</ul>
+<p>The body of an <code>extern &quot;C&quot;</code> function is still C++. You can use classes, templates and the standard library inside it; only the <strong>name and signature</strong> are C.</p>
+<h2>Which names to export</h2>
+<p>A good rule for any DLL that outlives one build of one program:</p>
+<blockquote><p>Export <code>extern &quot;C&quot;</code> functions with plain C types in their signatures. Keep C++ on the inside.</p>
+</blockquote>
+<p>Milestone 3 builds whole interfaces this way, including ones that give users objects and methods.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] <code>GetProcAddress(dll, &quot;stackHeight&quot;)</code> returns NULL
+The function was exported with its decorated name. Add <code>extern &quot;C&quot;</code>, or ask for the decorated name (fragile).</p>
+</blockquote>
+<blockquote><p>[!warning] <code>extern &quot;C&quot;</code> in the .cpp file but not the header
+Callers then look for the decorated name and the linker cannot find it. Put <code>extern &quot;C&quot;</code> on the declaration everyone sees.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does C++ decorate function names?</div><ul><li>So that overloaded functions with the same name get different linker symbols</li><li>To make the program faster</li><li>To hide the code from debuggers</li></ul><details><summary>Show the answer</summary><p><b>So that overloaded functions with the same name get different linker symbols</b> The linker only compares names, so the types have to be part of the name.</p></details></li><li><div class="q">What is the MSVC decorated name of <code>int twice(int)</code>?</div><ul><li>?twice@@YAHH@Z</li><li>_twice</li><li>?twice@@YAXXZ</li></ul><details><summary>Show the answer</summary><p><b>?twice@@YAHH@Z</b> H for the int return, H for the one int parameter, then @Z.</p></details></li><li><div class="q">What does extern &quot;C&quot; change about a function?</div><ul><li>Its linkage: the exported name is plain, and it cannot be overloaded</li><li>It must be written in C</li><li>It can no longer use C++ inside its body</li></ul><details><summary>Show the answer</summary><p><b>Its linkage: the exported name is plain, and it cannot be overloaded</b> Only the name and signature follow C rules; the body is ordinary C++.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/2.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/2.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-06-inspecting-dlls-with-dumpbin-and-dependencies/"><span class="mono">previous</span><b>1.06 Inspecting DLLs with dumpbin and Dependencies</b></a>
+      <a class="lp-next" href="../2-02-calling-conventions-at-the-boundary/"><span class="mono">next</span><b>2.02 Calling Conventions at the Boundary</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/2-01-name-mangling-and-extern-c"></script>
+</body>
+</html>

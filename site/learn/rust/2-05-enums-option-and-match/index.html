@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Enums, Option and match · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/2-05-enums-option-and-match/">
+  <meta name="description" content="Enums whose variants carry data, methods on enums, matching with destructuring and exhaustiveness, Option instead of null and its everyday methods (unwrap…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Enums, Option and match · Rust · Xenon">
+  <meta property="og:description" content="Enums whose variants carry data, methods on enums, matching with destructuring and exhaustiveness, Option instead of null and its everyday methods (unwrap…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/2-05-enums-option-and-match/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Enums, Option and match · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Enums, Option and match · Rust · Xenon">
+  <meta name="twitter:description" content="Enums whose variants carry data, methods on enums, matching with destructuring and exhaustiveness, Option instead of null and its everyday methods (unwrap…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Ownership and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Enums, Option and match</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Enums whose variants carry data, methods on enums, matching with destructuring and exhaustiveness, Option instead of null and its everyday methods (unwrap_or, map, and_then, ?), if let and let else, and modelling states so invalid ones cannot be represented.</p>
+      <div class="prose">
+<h2>Enums with data</h2>
+<p>An <strong>enum</strong> lists the possible variants of a type. Unlike enums in many languages, each Rust variant can hold its own data:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">enum</span> <span class="tk-t">Shape</span> {
+    <span class="tk-t">Circle</span> { radius: <span class="tk-k">f64</span> },
+    <span class="tk-t">Rectangle</span> { width: <span class="tk-k">f64</span>, height: <span class="tk-k">f64</span> },
+    <span class="tk-f">Triangle</span>(<span class="tk-k">f64</span>, <span class="tk-k">f64</span>, <span class="tk-k">f64</span>),
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Shape</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> {
+        <span class="tk-k">match</span> <span class="tk-k">self</span> {
+            <span class="tk-t">Shape</span>::<span class="tk-t">Circle</span> { radius } =&gt; std::<span class="tk-k">f64</span>::consts::PI * radius * radius,
+            <span class="tk-t">Shape</span>::<span class="tk-t">Rectangle</span> { width, height } =&gt; width * height,
+            <span class="tk-t">Shape</span>::<span class="tk-f">Triangle</span>(a, b, c) =&gt; {
+                <span class="tk-k">let</span> s = (a + b + c) / <span class="tk-n">2.0</span>;                     <span class="tk-c">// Heron's formula</span>
+                (s * (s - a) * (s - b) * (s - c)).<span class="tk-f">sqrt</span>()
+            }
+        }
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> shapes = <span class="tk-p">vec!</span>[
+        <span class="tk-t">Shape</span>::<span class="tk-t">Circle</span> { radius: <span class="tk-n">1.0</span> },
+        <span class="tk-t">Shape</span>::<span class="tk-t">Rectangle</span> { width: <span class="tk-n">2.0</span>, height: <span class="tk-n">3.0</span> },
+        <span class="tk-t">Shape</span>::<span class="tk-f">Triangle</span>(<span class="tk-n">3.0</span>, <span class="tk-n">4.0</span>, <span class="tk-n">5.0</span>),
+    ];
+    <span class="tk-k">for</span> s <span class="tk-k">in</span> &amp;shapes {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{s:?} has area {:.2}&quot;</span>, s.<span class="tk-f">area</span>());
+    }
+}</code></pre></div>
+<p><code>match</code> <strong>destructures</strong> each variant, binding its fields to names. The match must be <strong>exhaustive</strong>: add a variant to <code>Shape</code> and every <code>match</code> that does not handle it stops compiling, showing you exactly where to update the code.</p>
+<h2>Option instead of null</h2>
+<p>Rust has no <code>null</code>. A value that may be missing has type <code>Option&lt;T&gt;</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">enum</span> <span class="tk-t">Option</span>&lt;T&gt; {
+    <span class="tk-f">Some</span>(T),
+    <span class="tk-t">None</span>,
+}</code></pre></div>
+<p>You must handle <code>None</code> before you can use the value, so &quot;forgot to check for null&quot; bugs cannot happen:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">find_index</span>(names: &amp;[&amp;<span class="tk-k">str</span>], target: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">Option</span>&lt;<span class="tk-k">usize</span>&gt; {
+    <span class="tk-k">for</span> (i, name) <span class="tk-k">in</span> names.<span class="tk-f">iter</span>().<span class="tk-f">enumerate</span>() {
+        <span class="tk-k">if</span> *name == target {
+            <span class="tk-k">return</span> <span class="tk-f">Some</span>(i);
+        }
+    }
+    <span class="tk-t">None</span>
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> names = [<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-s">&quot;Linus&quot;</span>];
+    <span class="tk-k">match</span> <span class="tk-f">find_index</span>(&amp;names, <span class="tk-s">&quot;Grace&quot;</span>) {
+        <span class="tk-f">Some</span>(i) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;found at {i}&quot;</span>),
+        <span class="tk-t">None</span> =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;not found&quot;</span>),
+    }
+    <span class="tk-k">let</span> i = <span class="tk-f">find_index</span>(&amp;names, <span class="tk-s">&quot;Bob&quot;</span>).<span class="tk-f">unwrap_or</span>(<span class="tk-n">999</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{i}&quot;</span>);
+    <span class="tk-k">let</span> len = <span class="tk-f">find_index</span>(&amp;names, <span class="tk-s">&quot;Linus&quot;</span>).<span class="tk-f">map</span>(|i| names[i].<span class="tk-f">len</span>());     <span class="tk-c">// transform if present</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{len:?}&quot;</span>);
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Gives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>unwrap_or(default)</code>, <code>unwrap_or_default()</code></td>
+<td>The value, or a default</td>
+</tr>
+<tr>
+<td><code>map(f)</code></td>
+<td><code>Some(f(v))</code>, or <code>None</code></td>
+</tr>
+<tr>
+<td><code>and_then(f)</code></td>
+<td>Chains a step that itself returns an <code>Option</code></td>
+</tr>
+<tr>
+<td><code>filter(p)</code></td>
+<td><code>None</code> unless the value passes</td>
+</tr>
+<tr>
+<td><code>ok_or(err)</code></td>
+<td>Converts to a <code>Result</code> (lesson 3.04)</td>
+</tr>
+<tr>
+<td><code>is_some()</code>, <code>is_none()</code></td>
+<td>Tests</td>
+</tr>
+<tr>
+<td><code>unwrap()</code>, <code>expect(&quot;msg&quot;)</code></td>
+<td>The value, or a <strong>panic</strong>: use only when <code>None</code> is impossible</td>
+</tr>
+</tbody></table>
+</div>
+<p>Inside a function that returns <code>Option</code>, the <code>?</code> operator returns <code>None</code> early: <code>let first = values.first()?;</code>.</p>
+<h2>if let and let else</h2>
+<p>When only one variant matters, <code>if let</code> is shorter than a full <code>match</code>, and <code>let ... else</code> handles the &quot;otherwise bail out&quot; case:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">parse_pair</span>(text: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">Option</span>&lt;(<span class="tk-k">i32</span>, <span class="tk-k">i32</span>)&gt; {
+    <span class="tk-k">let</span> <span class="tk-f">Some</span>((a, b)) = text.<span class="tk-f">split_once</span>(<span class="tk-s">','</span>) <span class="tk-k">else</span> {
+        <span class="tk-k">return</span> <span class="tk-t">None</span>;                                   <span class="tk-c">// let-else: must leave the function</span>
+    };
+    <span class="tk-k">let</span> a = a.<span class="tk-f">trim</span>().<span class="tk-f">parse</span>().<span class="tk-f">ok</span>()?;
+    <span class="tk-k">let</span> b = b.<span class="tk-f">trim</span>().<span class="tk-f">parse</span>().<span class="tk-f">ok</span>()?;
+    <span class="tk-f">Some</span>((a, b))
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">if</span> <span class="tk-k">let</span> <span class="tk-f">Some</span>((x, y)) = <span class="tk-f">parse_pair</span>(<span class="tk-s">&quot;3, 4&quot;</span>) {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{x} + {y} = {}&quot;</span>, x + y);
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} {:?}&quot;</span>, <span class="tk-f">parse_pair</span>(<span class="tk-s">&quot;7,x&quot;</span>), <span class="tk-f">parse_pair</span>(<span class="tk-s">&quot;nothing&quot;</span>));
+}</code></pre></div>
+<h2>Make invalid states unrepresentable</h2>
+<p>Enums let the type itself rule out impossible combinations. Instead of a struct with a <code>status</code> string and optional fields that only sometimes make sense, model each state:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">enum</span> <span class="tk-t">Order</span> {
+    <span class="tk-t">Draft</span> { items: <span class="tk-t">Vec</span>&lt;<span class="tk-t">String</span>&gt; },
+    <span class="tk-t">Paid</span> { items: <span class="tk-t">Vec</span>&lt;<span class="tk-t">String</span>&gt;, amount_cents: <span class="tk-k">u64</span> },
+    <span class="tk-t">Shipped</span> { tracking: <span class="tk-t">String</span> },
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">describe</span>(order: &amp;<span class="tk-t">Order</span>) -&gt; <span class="tk-t">String</span> {
+    <span class="tk-k">match</span> order {
+        <span class="tk-t">Order</span>::<span class="tk-t">Draft</span> { items } <span class="tk-k">if</span> items.<span class="tk-f">is_empty</span>() =&gt; <span class="tk-s">&quot;an empty draft&quot;</span>.<span class="tk-f">to_string</span>(),
+        <span class="tk-t">Order</span>::<span class="tk-t">Draft</span> { items } =&gt; <span class="tk-p">format!</span>(<span class="tk-s">&quot;a draft with {} items&quot;</span>, items.<span class="tk-f">len</span>()),
+        <span class="tk-t">Order</span>::<span class="tk-t">Paid</span> { amount_cents, .. } =&gt; <span class="tk-p">format!</span>(<span class="tk-s">&quot;paid {}.{:02}&quot;</span>, amount_cents / <span class="tk-n">100</span>, amount_cents % <span class="tk-n">100</span>),
+        <span class="tk-t">Order</span>::<span class="tk-t">Shipped</span> { tracking } =&gt; <span class="tk-p">format!</span>(<span class="tk-s">&quot;shipped, tracking {tracking}&quot;</span>),
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> orders = [
+        <span class="tk-t">Order</span>::<span class="tk-t">Draft</span> { items: <span class="tk-p">vec!</span>[] },
+        <span class="tk-t">Order</span>::<span class="tk-t">Paid</span> { items: <span class="tk-p">vec!</span>[<span class="tk-s">&quot;tea&quot;</span>.<span class="tk-f">into</span>()], amount_cents: <span class="tk-n">1250</span> },
+        <span class="tk-t">Order</span>::<span class="tk-t">Shipped</span> { tracking: <span class="tk-s">&quot;ZX81&quot;</span>.<span class="tk-f">into</span>() },
+    ];
+    <span class="tk-k">for</span> o <span class="tk-k">in</span> &amp;orders { <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">describe</span>(o)); }
+}</code></pre></div>
+<p>A shipped order has a tracking number and a draft does not, by construction. <code>if</code> after a pattern is a <strong>guard</strong>; <code>..</code> ignores the remaining fields.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-structs-and-methods/"><span class="mono">previous</span><b>2.04 Structs and Methods</b></a>
+      <a class="lp-next" href="../3-01-vectors/"><span class="mono">next</span><b>3.01 Vectors</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/2-05-enums-option-and-match"></script>
+</body>
+</html>

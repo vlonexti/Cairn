@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Levels and Saving · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/11-06-levels-and-saving/">
+  <meta name="description" content="Delve gets several floors connected by stairs, and the ability to save and continue. This lesson handles level transitions (what persists between floors and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Levels and Saving · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Delve gets several floors connected by stairs, and the ability to save and continue. This lesson handles level transitions (what persists between floors and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/11-06-levels-and-saving/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Levels and Saving · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Levels and Saving · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Delve gets several floors connected by stairs, and the ability to save and continue. This lesson handles level transitions (what persists between floors and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Building a Small Game</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Levels and Saving</h1>
+      <div class="readout lp-readout"><span>lesson <b>11.06</b></span><span>6 of 8 in milestone 11</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Delve gets several floors connected by stairs, and the ability to save and continue. This lesson handles level transitions (what persists between floors and what is rebuilt), designs Delve&#39;s save format using lesson 10.07&#39;s header, version and checksum, and writes it safely, so a crash or power cut never costs the player their run.</p>
+      <div class="prose">
+<h2>Moving between floors</h2>
+<p>When the player steps onto the stairs (lesson 11.03&#39;s <code>Descend</code>), the game:</p>
+<ol>
+<li>Keeps what belongs to the <strong>player</strong>: health, inventory, experience.</li>
+<li>Discards everything belonging to the <strong>old floor</strong>: its map, monsters, items on the ground, its distance map.</li>
+<li>Loads the next level file (lesson 11.02) and spawns its monsters.</li>
+<li>Places the player at the new level&#39;s start and shows &quot;Floor 2&quot; in the message log.</li>
+</ol>
+<p>Making that split explicit (a <code>PlayerState</code> that survives levels, a <code>FloorState</code> that does not) keeps the transition simple and is exactly the line the save format follows.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">PlayerState</span>
+{
+    <span class="tk-k">int</span> health{ <span class="tk-n">20</span> }, maxHealth{ <span class="tk-n">20</span> };
+    <span class="tk-k">int</span> power{ <span class="tk-n">3</span> }, armour{ <span class="tk-n">1</span> };
+    <span class="tk-t">Inventory</span> inventory{ <span class="tk-n">10</span>, <span class="tk-f">itemStackLimits</span>() };
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">FloorState</span>
+{
+    <span class="tk-k">int</span> floor{ <span class="tk-n">1</span> };
+    <span class="tk-t">TileMap</span> map;
+    std::vector&lt;<span class="tk-t">MonsterInstance</span>&gt; monsters;      <span class="tk-c">// kind, position, health, AI state</span>
+    std::vector&lt;<span class="tk-t">ItemOnFloor</span>&gt; items;
+    std::vector&lt;<span class="tk-k">bool</span>&gt; openedDoors;
+};</code></pre></div>
+<h2>What a Delve save contains</h2>
+<p>Lesson 10.07&#39;s principle: save the minimum from which everything else can be rebuilt.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Saved</th>
+<th>Rebuilt on load</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The floor number</td>
+<td>The map: reload <code>data/levels/NN.txt</code></td>
+</tr>
+<tr>
+<td>Changes to the map: doors opened</td>
+<td>Distance maps, rendering state</td>
+</tr>
+<tr>
+<td>Each surviving monster: kind, position, health, state</td>
+<td>Monster stats: from <code>monsters.ini</code> by kind</td>
+</tr>
+<tr>
+<td>Items on the floor: id, count, position</td>
+<td>Item names and effects: from <code>items.ini</code> by id</td>
+</tr>
+<tr>
+<td>The player&#39;s position, health and inventory</td>
+<td></td>
+</tr>
+<tr>
+<td>The random generator&#39;s state</td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<p>Saving the random generator&#39;s state means a reloaded game continues exactly as it would have, which makes bugs that happen after loading reproducible.</p>
+<h2>The format</h2>
+<p>A text body inside lesson 10.07&#39;s binary header is a practical choice: easy to read while developing, protected by the checksum.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>SAVE  version 1  length 214  crc 0x9A3C11F0         (16-byte binary header)
+floor 2
+player 7 4 hp 14 20 power 4 armour 1
+inv potion 3
+inv dagger 1
+door 12 5
+monster g 9 4 hp 6 chasing
+monster g 15 2 hp 9 idle
+item gold 40 3 7
+rng 2463534242</code></pre></div>
+<p>Each line starts with a keyword, so loading is a loop over lines with a <code>switch</code> on the first word, and an old save missing a newer keyword still loads with defaults. The version in the header decides which keywords exist (lesson 10.07&#39;s migrations).</p>
+<h2>Saving safely</h2>
+<p>Following lesson 5.04:</p>
+<ol>
+<li>Build the whole save in memory as a string.</li>
+<li>Compute the CRC-32 (lesson 10.07) and write the header and body to <code>slot1.sav.tmp</code> in the Saved Games folder.</li>
+<li>Flush and close it, then replace <code>slot1.sav</code> with it atomically, keeping the previous file as <code>slot1.sav.bak</code>.</li>
+</ol>
+<p>On loading, check the magic, the version and the checksum before reading a single line; if anything fails, offer the backup.</p>
+<p>Delve saves automatically on each new floor and when quitting, so a run can always be continued, and the practice task writes the save and load of the player&#39;s part.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Saving the level map wholesale</span></div><div class="callout-body"><p>The map comes from the level file; save only what changed (opened doors).</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Forgetting the random generator&#39;s state</span></div><div class="callout-body"><p>A reloaded game then diverges from the original, and bugs after loading cannot be reproduced.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Saving during a monster&#39;s turn</span></div><div class="callout-body"><p>Save only between turns, when the state is consistent.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What survives a transition to the next floor?</div><ul><li>The player&#39;s state: health, inventory, stats</li><li>The old floor&#39;s monsters</li><li>The old floor&#39;s map</li></ul><details><summary>Show the answer</summary><p><b>The player&#39;s state: health, inventory, stats</b> Everything belonging to the floor is discarded and rebuilt from the next level file.</p></details></li><li><div class="q">Why save the random generator&#39;s state?</div><ul><li>So the game continues after loading exactly as it would have, keeping behaviour reproducible</li><li>To make saves smaller</li><li>To prevent cheating</li></ul><details><summary>Show the answer</summary><p><b>So the game continues after loading exactly as it would have, keeping behaviour reproducible</b> Without it, the reloaded game takes different random outcomes.</p></details></li><li><div class="q">Why start each line of the save body with a keyword?</div><ul><li>Loading becomes a simple loop over lines, and older saves missing new keywords still load with defaults</li><li>To make the file larger</li><li>Because the checksum needs it</li></ul><details><summary>Show the answer</summary><p><b>Loading becomes a simple loop over lines, and older saves missing new keywords still load with defaults</b> Keyword lines are easy to extend across versions.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/11.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/11.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../11-05-health-items-and-inventory/"><span class="mono">previous</span><b>11.05 Health, Items and Inventory</b></a>
+      <a class="lp-next" href="../11-07-a-debug-console/"><span class="mono">next</span><b>11.07 A Debug Console</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/11-06-levels-and-saving"></script>
+</body>
+</html>

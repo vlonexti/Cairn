@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Saving Settings and Layouts · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/4-06-saving-settings-and-layouts/">
+  <meta name="description" content="ImGui saves window positions, sizes, docking and table layouts to imgui.ini by itself. This lesson explains that file, how to move it, how to store your own…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Saving Settings and Layouts · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="ImGui saves window positions, sizes, docking and table layouts to imgui.ini by itself. This lesson explains that file, how to move it, how to store your own…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/4-06-saving-settings-and-layouts/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Saving Settings and Layouts · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Saving Settings and Layouts · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="ImGui saves window positions, sizes, docking and table layouts to imgui.ini by itself. This lesson explains that file, how to move it, how to store your own…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Menus, Popups, Docking and Style</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Saving Settings and Layouts</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.06</b></span><span>6 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">ImGui saves window positions, sizes, docking and table layouts to <code>imgui.ini</code> by itself. This lesson explains that file, how to move it, how to store your own tool&#39;s settings in the same file with a <strong>settings handler</strong>, and how to save and restore named layouts.</p>
+      <div class="prose">
+<h2>imgui.ini</h2>
+<p>By default ImGui writes <code>imgui.ini</code> in the working directory a few seconds after something changes, and reads it at start-up:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">INI</span></div><pre><code>[Window][Stones]
+Pos=60,40
+Size=320,260
+Collapsed=0
+DockId=0x00000002,0
+
+[Table][0x8A4C2B11,4]
+Column 0  Weight=1.0000 Visible=1 Order=0 Sort=0v
+Column 1  Width=60 Visible=1 Order=1
+
+[Docking][Data]
+DockSpace     ID=0x3BC79352 Window=0x4647B76E Pos=0,19 Size=1280,701 Split=X
+  DockNode    ID=0x00000001 Parent=0x3BC79352 SizeRef=256,701 Selected=0x8B1D2D3A
+  DockNode    ID=0x00000002 Parent=0x3BC79352 SizeRef=1022,701 CentralNode=1</code></pre></div>
+<p>It is a simple text format: <code>[Type][Name]</code> section headers, then <code>Key=Value</code> lines.</p>
+<h2>Where it goes</h2>
+<p>The working directory is a bad place: it changes with how the program is started. Put it in the user&#39;s settings folder:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static</span> std::string iniPath = <span class="tk-f">settingsFolder</span>() + <span class="tk-s">&quot;\\xenon_editor_imgui.ini&quot;</span>;   <span class="tk-c">// e.g. under %APPDATA%</span>
+io.<span class="tk-t">IniFilename</span> = iniPath.<span class="tk-f">c_str</span>();          <span class="tk-c">// the string must outlive ImGui: keep it static or global</span>
+io.<span class="tk-t">IniSavingRate</span> = <span class="tk-n">2.0f</span>;                   <span class="tk-c">// seconds of quiet before saving</span></code></pre></div>
+<p>Set <code>io.IniFilename = nullptr</code> to turn saving off, and save or load yourself with <code>ImGui::SaveIniSettingsToMemory()</code> and <code>ImGui::LoadIniSettingsFromMemory(text)</code>, for example to keep the layout inside your own project file.</p>
+<h2>Your own settings in the same file</h2>
+<p>A <strong>settings handler</strong> lets your tool save its own data as more sections of <code>imgui.ini</code>, so window layout and tool settings live and load together:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGuiSettingsHandler</span> handler;
+handler.<span class="tk-t">TypeName</span> = <span class="tk-s">&quot;XenonEditor&quot;</span>;
+handler.<span class="tk-t">TypeHash</span> = <span class="tk-f">ImHashStr</span>(<span class="tk-s">&quot;XenonEditor&quot;</span>);
+handler.<span class="tk-t">ReadOpenFn</span> = [](<span class="tk-t">ImGuiContext</span>*, <span class="tk-t">ImGuiSettingsHandler</span>*, <span class="tk-k">const</span> <span class="tk-k">char</span>* name) -&gt; <span class="tk-k">void</span>* {
+    <span class="tk-k">return</span> std::<span class="tk-f">strcmp</span>(name, <span class="tk-s">&quot;Options&quot;</span>) == <span class="tk-n">0</span> ? &amp;g_options : <span class="tk-k">nullptr</span>;     <span class="tk-c">// which object receives the lines</span>
+};
+handler.<span class="tk-t">ReadLineFn</span> = [](<span class="tk-t">ImGuiContext</span>*, <span class="tk-t">ImGuiSettingsHandler</span>*, <span class="tk-k">void</span>* entry, <span class="tk-k">const</span> <span class="tk-k">char</span>* line) {
+    <span class="tk-k">auto</span>* o = <span class="tk-k">static_cast</span>&lt;<span class="tk-t">Options</span>*&gt;(entry);
+    <span class="tk-k">int</span> v;
+    <span class="tk-k">if</span> (std::<span class="tk-f">sscanf</span>(line, <span class="tk-s">&quot;GridSize=%d&quot;</span>, &amp;v) == <span class="tk-n">1</span>) o-&gt;gridSize = v;
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (std::<span class="tk-f">sscanf</span>(line, <span class="tk-s">&quot;Snap=%d&quot;</span>, &amp;v) == <span class="tk-n">1</span>) o-&gt;snap = v != <span class="tk-n">0</span>;
+};
+handler.<span class="tk-t">WriteAllFn</span> = [](<span class="tk-t">ImGuiContext</span>*, <span class="tk-t">ImGuiSettingsHandler</span>* h, <span class="tk-t">ImGuiTextBuffer</span>* out) {
+    out-&gt;<span class="tk-f">appendf</span>(<span class="tk-s">&quot;[%s][Options]\n&quot;</span>, h-&gt;<span class="tk-t">TypeName</span>);
+    out-&gt;<span class="tk-f">appendf</span>(<span class="tk-s">&quot;GridSize=%d\nSnap=%d\n\n&quot;</span>, g_options.gridSize, g_options.snap ? <span class="tk-n">1</span> : <span class="tk-n">0</span>);
+};
+<span class="tk-t">ImGui</span>::<span class="tk-f">AddSettingsHandler</span>(&amp;handler);      <span class="tk-c">// before the first NewFrame (the ini is read then)</span></code></pre></div>
+<p>When your settings change, call <code>ImGui::MarkIniSettingsDirty()</code> so ImGui saves soon.</p>
+<p>Because the format is so simple, reading and writing it yourself is easy too. The practice writes a small reader that turns the file into sections of key-value pairs, and a writer that puts them back, keeping sections it does not understand untouched.</p>
+<h2>Named layouts</h2>
+<p>Editors often let users save layouts by name: &quot;Level design&quot;, &quot;Animation&quot;, &quot;Debugging&quot;. With <code>SaveIniSettingsToMemory</code> and <code>LoadIniSettingsFromMemory</code>, a layout is just a string:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>layouts[<span class="tk-s">&quot;Animation&quot;</span>] = <span class="tk-t">ImGui</span>::<span class="tk-f">SaveIniSettingsToMemory</span>();      <span class="tk-c">// save the current arrangement</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">LoadIniSettingsFromMemory</span>(layouts[<span class="tk-s">&quot;Animation&quot;</span>].<span class="tk-f">c_str</span>()); <span class="tk-c">// switch to it (at the start of a frame)</span></code></pre></div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>A temporary string for io.IniFilename</span></div><div class="callout-body"><p>ImGui keeps the pointer. A temporary dies and ImGui reads freed memory. Keep it in a static or global.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Adding a settings handler after the first frame</span></div><div class="callout-body"><p>The ini file has already been read, so your section is ignored. Add handlers before the first NewFrame.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why should imgui.ini not stay in the working directory?</div><ul><li>The working directory depends on how the program is started, so settings appear lost</li><li>ImGui cannot write there</li><li>It is slower</li></ul><details><summary>Show the answer</summary><p><b>The working directory depends on how the program is started, so settings appear lost</b> Use a fixed per-user settings folder.</p></details></li><li><div class="q">What does a settings handler let you do?</div><ul><li>Store your tool&#39;s own settings as sections of the same ini file</li><li>Change ImGui&#39;s colours</li><li>Save draw data</li></ul><details><summary>Show the answer</summary><p><b>Store your tool&#39;s own settings as sections of the same ini file</b> Your data then loads and saves together with the layout.</p></details></li><li><div class="q">How do you implement named layouts?</div><ul><li>Keep strings from SaveIniSettingsToMemory and apply one with LoadIniSettingsFromMemory</li><li>Copy imgui.ini by hand</li><li>Call the DockBuilder every frame</li></ul><details><summary>Show the answer</summary><p><b>Keep strings from SaveIniSettingsToMemory and apply one with LoadIniSettingsFromMemory</b> A layout is the ini text.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/4.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/4.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-styling-fonts-and-icons/"><span class="mono">previous</span><b>4.05 Styling, Fonts and Icons</b></a>
+      <a class="lp-next" href="../5-01-plots-and-live-graphs/"><span class="mono">next</span><b>5.01 Plots and Live Graphs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/4-06-saving-settings-and-layouts"></script>
+</body>
+</html>

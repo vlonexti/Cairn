@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Asserts and Logging That Help · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/8-03-asserts-and-logging-that-help/">
+  <meta name="description" content="The best bugs to fix are the ones the program reports itself, at the moment things go wrong. Asserts check assumptions and stop immediately when one is…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Asserts and Logging That Help · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The best bugs to fix are the ones the program reports itself, at the moment things go wrong. Asserts check assumptions and stop immediately when one is…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/8-03-asserts-and-logging-that-help/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Asserts and Logging That Help · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Asserts and Logging That Help · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The best bugs to fix are the ones the program reports itself, at the moment things go wrong. Asserts check assumptions and stop immediately when one is…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Debugging and Diagnostics</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Asserts and Logging That Help</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.03</b></span><span>3 of 8 in milestone 8</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The best bugs to fix are the ones the program reports itself, at the moment things go wrong. <strong>Asserts</strong> check assumptions and stop immediately when one is false; <strong>logs</strong> record what happened so you can reconstruct it later. This lesson shows how to write both well: <code>static_assert</code> and <code>assert</code>, a better assert macro, log levels, and a ring buffer that keeps the last moments before a crash.</p>
+      <div class="prose">
+<h2>Asserts: check your assumptions</h2>
+<p>Every piece of code assumes things: this index is in range, this pointer is not null, this list is sorted. An <strong>assert</strong> turns an assumption into a check that stops the program, in a debugger-friendly way, the moment it is violated:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cassert&gt;</span>
+
+<span class="tk-k">int</span>&amp; <span class="tk-t">Grid</span>::<span class="tk-f">at</span>(<span class="tk-k">int</span> x, <span class="tk-k">int</span> y)
+{
+    <span class="tk-f">assert</span>(x &gt;= <span class="tk-n">0</span> &amp;&amp; x &lt; width &amp;&amp; <span class="tk-s">&quot;x out of range&quot;</span>);
+    <span class="tk-f">assert</span>(y &gt;= <span class="tk-n">0</span> &amp;&amp; y &lt; height &amp;&amp; <span class="tk-s">&quot;y out of range&quot;</span>);
+    <span class="tk-k">return</span> cells[<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(y * width + x)];
+}</code></pre></div>
+<p>When an assert fails in a Debug build, the program stops with the condition, file and line; under the debugger it breaks right there, with the call stack showing who passed the bad coordinates. The string after <code>&amp;&amp;</code> is a trick: a string literal is always true, so it does not change the condition, but it appears in the failure message.</p>
+<p>Two properties to remember:</p>
+<ul>
+<li><code>assert</code> does <strong>nothing</strong> in Release builds (<code>NDEBUG</code> is defined, lesson 4.10). Never put work that must happen inside it.</li>
+<li>Asserts are for <strong>programming errors</strong> (&quot;this can never happen if the code is right&quot;), not for things that can legitimately happen at run time, such as a missing file or bad player input. Those need real error handling.</li>
+</ul>
+<h2>static_assert: checks at compile time</h2>
+<p>Some assumptions can be checked by the compiler, costing nothing at run time:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdint&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">SaveHeader</span> { <span class="tk-k">char</span> magic[<span class="tk-n">4</span>]; std::uint32_t version; std::uint32_t length; };
+
+<span class="tk-k">static_assert</span>(<span class="tk-k">sizeof</span>(<span class="tk-t">SaveHeader</span>) == <span class="tk-n">12</span>, <span class="tk-s">&quot;SaveHeader must match the file format&quot;</span>);
+<span class="tk-k">static_assert</span>(<span class="tk-k">sizeof</span>(<span class="tk-k">void</span>*) == <span class="tk-n">8</span>, <span class="tk-s">&quot;This code assumes a 64-bit build&quot;</span>);
+<span class="tk-k">static_assert</span>(<span class="tk-k">alignof</span>(<span class="tk-t">SaveHeader</span>) == <span class="tk-n">4</span>);
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>() { <span class="tk-k">return</span> <span class="tk-n">0</span>; }</code></pre></div>
+<p>If someone adds a member to <code>SaveHeader</code>, the build fails with that message instead of saves silently breaking. Use <code>static_assert</code> for layouts, sizes, and template requirements.</p>
+<h2>A better assert</h2>
+<p>The standard <code>assert</code> is minimal. Most engines write their own, adding a formatted message, a log line, a break into the debugger, and the option to keep checks on in some release builds:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdio&gt;</span>
+<span class="tk-p">#include &lt;cstdlib&gt;</span>
+<span class="tk-p">#include &lt;intrin.h&gt;</span>
+
+<span class="tk-p">#ifndef</span> GAME_ASSERTS
+<span class="tk-p">#  ifdef</span> NDEBUG
+<span class="tk-p">#    define</span> GAME_ASSERTS <span class="tk-n">0</span>
+<span class="tk-p">#  else</span>
+<span class="tk-p">#    define</span> GAME_ASSERTS <span class="tk-n">1</span>
+<span class="tk-p">#  endif</span>
+<span class="tk-p">#endif</span>
+
+<span class="tk-p">#if</span> GAME_ASSERTS
+<span class="tk-p">#  define</span> <span class="tk-f">GAME_ASSERT</span>(condition, message)                                                            \
+     <span class="tk-k">do</span> {                                                                                            \
+         <span class="tk-k">if</span> (!(condition)) {                                                                         \
+             std::<span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;Assertion failed: %s\n  %s\n  at %s:%d\n&quot;</span>, #condition, message,   \
+                          __FILE__, __LINE__);                                                       \
+             std::<span class="tk-f">fflush</span>(stderr);                                                                    \
+             <span class="tk-f">__debugbreak</span>();     <span class="tk-c">/* stops here under a debugger; crashes cleanly without one */</span>       \
+             std::<span class="tk-f">abort</span>();                                                                           \
+         }                                                                                           \
+     } <span class="tk-k">while</span> (<span class="tk-k">false</span>)
+<span class="tk-p">#else</span>
+<span class="tk-p">#  define</span> <span class="tk-f">GAME_ASSERT</span>(condition, message) <span class="tk-k">do</span> { (<span class="tk-k">void</span>)<span class="tk-k">sizeof</span>(condition); } <span class="tk-k">while</span> (<span class="tk-k">false</span>)
+<span class="tk-p">#endif</span></code></pre></div>
+<ul>
+<li><code>#condition</code> turns the condition&#39;s source text into a string for the message.</li>
+<li><code>__debugbreak()</code> is the <code>int 3</code> instruction from lesson 4.07: under a debugger it stops exactly at the failing line.</li>
+<li><code>do { ... } while (false)</code> makes the macro behave like one statement, so it is safe after an <code>if</code> without braces.</li>
+<li>The disabled version uses <code>sizeof(condition)</code> so the condition is still compiled (and type-checked) but never evaluated.</li>
+</ul>
+<h2>Logging</h2>
+<p>Logs record what the program did, so you can understand a bug after the fact, on a player&#39;s machine, or in a situation you cannot reproduce. Useful logs have:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Levels</strong>: trace, debug, info, warning, error</td>
+<td>So you can turn detail up or down without changing code</td>
+</tr>
+<tr>
+<td><strong>A time stamp and frame number</strong></td>
+<td>So you can line events up</td>
+</tr>
+<tr>
+<td><strong>A category</strong>: &quot;audio&quot;, &quot;net&quot;, &quot;save&quot;</td>
+<td>So you can filter</td>
+</tr>
+<tr>
+<td><strong>Facts, not feelings</strong></td>
+<td>&quot;loaded level 3 (forest) in 412 ms, 1,204 entities&quot;, not &quot;level loaded!!&quot;</td>
+</tr>
+<tr>
+<td><strong>Cheap when disabled</strong></td>
+<td>Messages below the current level should cost almost nothing</td>
+</tr>
+</tbody></table>
+</div>
+<p>What to log: start-up and configuration, level loads and saves, network connections, every error and warning with the values involved, and occasional performance summaries. What not to log: anything every frame at normal levels (the file becomes useless), passwords, tokens or personal data.</p>
+<h2>The last moments before a crash</h2>
+<p>Writing every debug message to a file is too slow, but the most useful messages are the ones just before a crash. A <strong>ring buffer</strong> solves this: keep the last N messages in memory, overwriting the oldest, and dump them in the crash handler (next lesson). The practice task builds one.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;message 1&quot;] --&gt; B[&quot;message 2&quot;] --&gt; C[&quot;message 3&quot;] --&gt; D[&quot;message 4&quot;]
+    D -.-&gt;|&quot;buffer full: overwrite the oldest&quot;| A</pre></div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Side effects inside asserts</span></div><div class="callout-body"><p><code>assert(file.open(path))</code> opens the file only in Debug. Do the work, then assert on its result.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Asserting on things that can really happen</span></div><div class="callout-body"><p>A missing file, bad input or a lost connection must be handled in Release too.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Logging every frame</span></div><div class="callout-body"><p>Nobody can read it, and it slows the game. Log events and summaries.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Logging secrets or personal data</span></div><div class="callout-body"><p>Logs get attached to bug reports and shared. Keep them clean.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What happens to <code>assert(x &gt; 0)</code> in a Release build?</div><ul><li>Nothing is checked: the line compiles to nothing</li><li>It still checks but only logs</li><li>It becomes a static_assert</li></ul><details><summary>Show the answer</summary><p><b>Nothing is checked: the line compiles to nothing</b> <code>NDEBUG</code> disables it.</p></details></li><li><div class="q">Which kind of check is right for &quot;this struct must be exactly 16 bytes&quot;?</div><ul><li><code>static_assert(sizeof(T) == 16)</code></li><li><code>assert(sizeof(T) == 16)</code></li><li>A log line</li></ul><details><summary>Show the answer</summary><p><b><code>static_assert(sizeof(T) == 16)</code></b> Sizes are known at compile time, so the compiler can check them.</p></details></li><li><div class="q">Why use <code>__debugbreak()</code> in a custom assert?</div><ul><li>It stops the debugger exactly at the failing line, with the call stack intact</li><li>It makes the program faster</li><li>It writes a crash dump</li></ul><details><summary>Show the answer</summary><p><b>It stops the debugger exactly at the failing line, with the call stack intact</b> It is the <code>int 3</code> breakpoint instruction.</p></details></li><li><div class="q">What is a ring buffer of log messages good for?</div><ul><li>Keeping the most recent messages cheaply in memory so they can be written out when the program crashes</li><li>Sorting messages</li><li>Sending logs over the network</li></ul><details><summary>Show the answer</summary><p><b>Keeping the most recent messages cheaply in memory so they can be written out when the program crashes</b> The oldest messages are overwritten, so memory use stays fixed.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/8.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/8.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-02-call-stacks-and-symbols/"><span class="mono">previous</span><b>8.02 Call Stacks and Symbols</b></a>
+      <a class="lp-next" href="../8-04-crash-dumps/"><span class="mono">next</span><b>8.04 Crash Dumps</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/8-03-asserts-and-logging-that-help"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

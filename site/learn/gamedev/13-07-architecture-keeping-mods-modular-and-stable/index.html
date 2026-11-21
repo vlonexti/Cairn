@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Architecture: Keeping Mods Modular and Stable · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/13-07-architecture-keeping-mods-modular-and-stable/">
+  <meta name="description" content="A game with mods is a platform other people build on. This lesson covers the architecture that keeps it stable: isolating failures so one broken mod cannot…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Architecture: Keeping Mods Modular and Stable · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A game with mods is a platform other people build on. This lesson covers the architecture that keeps it stable: isolating failures so one broken mod cannot…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/13-07-architecture-keeping-mods-modular-and-stable/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Architecture: Keeping Mods Modular and Stable · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Architecture: Keeping Mods Modular and Stable · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A game with mods is a platform other people build on. This lesson covers the architecture that keeps it stable: isolating failures so one broken mod cannot…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Modding and Runtime Instrumentation</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Architecture: Keeping Mods Modular and Stable</h1>
+      <div class="readout lp-readout"><span>lesson <b>13.07</b></span><span>7 of 8 in milestone 13</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A game with mods is a platform other people build on. This lesson covers the architecture that keeps it stable: isolating failures so one broken mod cannot take the game down, budgets for mod work, keeping saves safe, versioning everything mods touch, diagnosing problems from players&#39; reports, and the honest limits of isolating native code.</p>
+      <div class="prose">
+<h2>Failures must stay local</h2>
+<p>With twenty mods installed, something will go wrong eventually. The architecture decides whether that means &quot;mod X stopped working, the game told you why&quot; or &quot;the game crashes on start-up and nobody knows why&quot;.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind of mod</th>
+<th>How to contain a failure</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Data</td>
+<td>Validate on load; report the mod, file, line and key; skip the bad entry (lessons 10.08, 13.02)</td>
+</tr>
+<tr>
+<td>Scripts</td>
+<td>Catch script errors at each call into the script; report the mod and line; disable that mod&#39;s scripts for the session</td>
+</tr>
+<tr>
+<td>Plugins</td>
+<td>Catch C++ exceptions at the boundary; validate tables (lesson 13.03); count failures and disable a plugin that keeps failing</td>
+</tr>
+</tbody></table>
+</div>
+<p>The practice task builds the plugin guard: every call into a plugin goes through it, exceptions are caught and recorded against the plugin, and after a few failures the plugin is switched off for the rest of the session with a message to the player.</p>
+<h2>The limits of isolating native code</h2>
+<p>A plugin DLL runs <strong>inside</strong> the game&#39;s process with the same memory and rights (lesson 13.04). Catching exceptions handles the polite failures. An impolite one (a plugin writing through a dangling pointer, corrupting the heap) cannot be contained in-process: it can corrupt anything, and the crash may appear somewhere else entirely (lesson 2.09). The honest options:</p>
+<ul>
+<li><strong>Accept it and diagnose well</strong>: crash dumps (lesson 8.04) that record which plugins were loaded and which module the crash was in, so players and authors can find the culprit.</li>
+<li><strong>Offer safer layers</strong>: data and scripts (sandboxed, with only the functions the game exposes) cover most mods; native plugins are for the few that need them.</li>
+<li><strong>Out-of-process plugins</strong>: run plugins in a separate process talking through pipes or shared memory (chapter 12&#39;s channels). A crash there kills only the helper process. It costs speed and complexity, so it is used where stability matters most, such as editors and browsers.</li>
+</ul>
+<h2>Budgets</h2>
+<p>A mod that spends 20 ms per frame turns a smooth game into a slideshow, and players blame the game. Measure each plugin&#39;s and script&#39;s time per frame with lesson 13.05&#39;s scoped timers, show it in the debug menu and a mod list, and warn when one exceeds its budget. Scripting languages can also limit instruction counts per call, stopping infinite loops.</p>
+<h2>Saves and mods</h2>
+<p>Lesson 11.06&#39;s save format records the enabled mods and their versions. On loading:</p>
+<ul>
+<li>Missing mod: warn, and either refuse or load with its content removed (items from a missing mod become &quot;unknown item&quot; placeholders rather than crashing the loader).</li>
+<li>Different version: warn; the mod may provide a migration (lesson 10.07) for its own saved data.</li>
+<li>Mods store their own data in <strong>namespaced</strong> sections (<code>mod.lantern-light.fuel</code>) so they cannot collide with each other or with the game.</li>
+</ul>
+<h2>Diagnosing players&#39; problems</h2>
+<p>Most mod problems arrive as &quot;the game crashes, I have 40 mods&quot;. Make diagnosis possible:</p>
+<ol>
+<li>The log (lesson 8.03) starts with the game version and the full, ordered mod list with versions.</li>
+<li>Every warning and error names the mod responsible.</li>
+<li>Crash dumps include the module list; the crash report says which module the crash happened in (lesson 8.02).</li>
+<li>A <strong>safe mode</strong> start option disables all mods, so players can confirm whether mods are involved, and a &quot;disable half&quot; option lets them bisect (lesson 8.01) to the culprit.</li>
+</ol>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>One bad mod stops the game from starting</span></div><div class="callout-body"><p>Validate, report and skip; never let a single mod&#39;s failure become the game&#39;s failure.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Claiming plugins are &quot;sandboxed&quot;</span></div><div class="callout-body"><p>Native code in your process is not. Be honest with players and offer safer layers.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Logs that do not say which mod</span></div><div class="callout-body"><p>Every message about a problem should name its source.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A plugin&#39;s <code>update</code> throws a C++ exception every frame. What should the game do?</div><ul><li>Catch it at the boundary, record it against the plugin, and disable the plugin after a few failures, telling the player</li><li>Let it crash the game so the author notices</li><li>Ignore it forever</li></ul><details><summary>Show the answer</summary><p><b>Catch it at the boundary, record it against the plugin, and disable the plugin after a few failures, telling the player</b> Failures stay local, and are reported.</p></details></li><li><div class="q">Why can a native plugin&#39;s memory corruption not be fully contained inside the game process?</div><ul><li>It shares the game&#39;s memory, so it can damage anything, and the crash may happen far from the cause</li><li>Because exceptions are disabled</li><li>Because DLLs are read-only</li></ul><details><summary>Show the answer</summary><p><b>It shares the game&#39;s memory, so it can damage anything, and the crash may happen far from the cause</b> Isolation from memory corruption needs a separate process.</p></details></li><li><div class="q">What is safe mode for?</div><ul><li>Starting with all mods disabled, to find out whether a problem is caused by mods</li><li>Running the game faster</li><li>Protecting saves from players</li></ul><details><summary>Show the answer</summary><p><b>Starting with all mods disabled, to find out whether a problem is caused by mods</b> Then bisect the mod list to find the culprit.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/13.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/13.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../13-06-a-debug-menu-inside-the-game/"><span class="mono">previous</span><b>13.06 A Debug Menu Inside the Game</b></a>
+      <a class="lp-next" href="../13-08-working-with-a-game-s-official-modding-tools/"><span class="mono">next</span><b>13.08 Working with a Game's Official Modding Tools</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/13-07-architecture-keeping-mods-modular-and-stable"></script>
+</body>
+</html>

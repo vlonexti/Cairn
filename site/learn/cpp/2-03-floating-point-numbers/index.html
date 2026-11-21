@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Floating Point Numbers · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/2-03-floating-point-numbers/">
+  <meta name="description" content="float and double store decimals approximately . 0.1 + 0.2 is not exactly 0.3. Use double by default, never compare with ==, and never use them where every…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Floating Point Numbers · C++ · Xenon">
+  <meta property="og:description" content="float and double store decimals approximately . 0.1 + 0.2 is not exactly 0.3. Use double by default, never compare with ==, and never use them where every…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/2-03-floating-point-numbers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Floating Point Numbers · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Floating Point Numbers · C++ · Xenon">
+  <meta name="twitter:description" content="float and double store decimals approximately . 0.1 + 0.2 is not exactly 0.3. Use double by default, never compare with ==, and never use them where every…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Types and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Floating Point Numbers</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 9 in milestone 2</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary"><code>float</code> and <code>double</code> store decimals <strong>approximately</strong>. <code>0.1 + 0.2</code> is not exactly <code>0.3</code>. Use <code>double</code> by default, never compare with <code>==</code>, and never use them where every cent must be exact.</p>
+      <div class="prose">
+<h2>Decimals are approximate</h2>
+<p>Write one third as a decimal and you get 0.3333... for ever. You have to stop somewhere, so what you write down is slightly off.</p>
+<p>Computers have the same problem in binary, with different numbers. In binary, <strong>0.1 goes on for ever</strong>. The computer stores the closest value that fits.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iomanip&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">double</span> x{ <span class="tk-n">0.1</span> + <span class="tk-n">0.2</span> };
+    std::cout &lt;&lt; std::<span class="tk-f">setprecision</span>(<span class="tk-n">17</span>) &lt;&lt; x &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 0.30000000000000004</span>
+    std::cout &lt;&lt; (x == <span class="tk-n">0.3</span>) &lt;&lt; <span class="tk-s">'\n'</span>;                    <span class="tk-c">// 0, meaning false</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Types that work this way are called <strong>floating point</strong> types.</p>
+<h2>How much precision do you get?</h2>
+<p>A floating point number is stored like scientific notation: some significant digits, and a power that says where the point goes.</p>
+<div class="codeblock diagram plain"><pre><code>   6.02 × 10^23
+   ────    ────
+  digits  where the point goes
+
+  ┌──────┬───────────┬──────────────────────────────────────────────┐
+  │ sign │ exponent  │               the digits                     │
+  │ 1 bit│ 11 bits   │                52 bits                       │
+  └──────┴───────────┴──────────────────────────────────────────────┘
+                     a double: 64 bits in total</code></pre></div>
+<p>Only so many digits fit. Anything beyond that is rounded away.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Size</th>
+<th>Reliable significant digits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>float</code></td>
+<td>4 bytes</td>
+<td>about 7</td>
+</tr>
+<tr>
+<td><code>double</code></td>
+<td>8 bytes</td>
+<td>about 15</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> float   holding 123456789  prints  123456792    (ran out of digits)
+ double  holding 123456789  prints  123456789</code></pre></div>
+<blockquote><p>[!tip] Use <code>double</code>
+The extra precision is nearly always worth four more bytes. <code>float</code> is for cases where you hold millions of values and memory is tight, such as graphics.</p>
+</blockquote>
+<h2>Writing decimal literals</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">double</span> d{ <span class="tk-n">3.14</span> };        <span class="tk-c">// a literal with a point is a double</span>
+<span class="tk-k">float</span> f{ <span class="tk-n">3.14f</span> };        <span class="tk-c">// the f suffix makes it a float</span>
+<span class="tk-k">double</span> big{ <span class="tk-n">6.02e23</span> };   <span class="tk-c">// 6.02 × 10^23</span>
+<span class="tk-k">double</span> tiny{ <span class="tk-n">1.5e-9</span> };   <span class="tk-c">// 0.0000000015</span></code></pre></div>
+<h2>Controlling how they print</h2>
+<p>By default <code>std::cout</code> shows about six significant digits. The header <code>&lt;iomanip&gt;</code> lets you choose.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iomanip&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">double</span> pi{ <span class="tk-n">3.14159265</span> };
+    std::cout &lt;&lt; pi &lt;&lt; <span class="tk-s">'\n'</span>;                                        <span class="tk-c">// 3.14159</span>
+    std::cout &lt;&lt; std::<span class="tk-f">setprecision</span>(<span class="tk-n">3</span>) &lt;&lt; pi &lt;&lt; <span class="tk-s">'\n'</span>;                <span class="tk-c">// 3.14  (3 significant digits)</span>
+    std::cout &lt;&lt; std::fixed &lt;&lt; std::<span class="tk-f">setprecision</span>(<span class="tk-n">2</span>) &lt;&lt; pi &lt;&lt; <span class="tk-s">'\n'</span>;  <span class="tk-c">// 3.14  (2 digits after the point)</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::setprecision(n)</code> alone</td>
+<td><code>n</code> significant digits in total</td>
+</tr>
+<tr>
+<td><code>std::fixed</code> then <code>std::setprecision(n)</code></td>
+<td>exactly <code>n</code> digits after the point</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Comparing safely</h2>
+<p>Because of the tiny errors, asking &quot;are these exactly equal?&quot; is the wrong question. Ask &quot;are these close enough?&quot;</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cmath&gt;</span>
+
+<span class="tk-k">bool</span> <span class="tk-f">approxEqual</span>(<span class="tk-k">double</span> a, <span class="tk-k">double</span> b)
+{
+    <span class="tk-k">return</span> std::<span class="tk-f">abs</span>(a - b) &lt; <span class="tk-n">1e-9</span>;
+}</code></pre></div>
+<p><code>std::abs</code> gives the size of the difference without its sign. If that is smaller than a tiny tolerance, treat the two as equal.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;0.1 + 0.2&quot;] --&gt; C{&quot;== 0.3 ?&quot;}
+    C --&gt;|&quot;exact comparison&quot;| N[&quot;false&quot;]
+    A --&gt; D{&quot;difference&lt;br/&gt;below 0.000000001 ?&quot;}
+    D --&gt;|&quot;tolerance&quot;| Y[&quot;true&quot;]</pre></div>
+<h2>Special values</h2>
+<p>Floating point has three values that are not ordinary numbers.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Result</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>1.0 / 0.0</code></td>
+<td><code>inf</code></td>
+<td>infinity</td>
+</tr>
+<tr>
+<td><code>-1.0 / 0.0</code></td>
+<td><code>-inf</code></td>
+<td>negative infinity</td>
+</tr>
+<tr>
+<td><code>0.0 / 0.0</code></td>
+<td><code>nan</code></td>
+<td>&quot;not a number&quot;</td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout danger"><div class="callout-title"><span>Integers are different</span></div><div class="callout-body"><p>Dividing a <strong>floating point</strong> number by zero gives <code>inf</code>. Dividing an <strong>integer</strong> by zero (<code>5 / 0</code>) is undefined behaviour and usually crashes the program.</p>
+</div></div>
+<h2>Money</h2>
+<p>Do not store money in a <code>double</code>. Errors of a fraction of a cent add up, and they anger accountants. Store the amount in the smallest unit as an integer:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::int64_t priceInCents{ <span class="tk-n">1999</span> };    <span class="tk-c">// 19.99</span></code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-integers/"><span class="mono">previous</span><b>2.02 Integers</b></a>
+      <a class="lp-next" href="../2-04-bool-and-char/"><span class="mono">next</span><b>2.04 bool and char</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/2-03-floating-point-numbers"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Backtracking · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/6-05-backtracking/">
+  <meta name="description" content="Searching through every possibility, cleverly - the choose, explore, unchoose pattern, generating subsets, permutations and combinations, the N-queens puzzle…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Backtracking · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Searching through every possibility, cleverly - the choose, explore, unchoose pattern, generating subsets, permutations and combinations, the N-queens puzzle…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/6-05-backtracking/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Backtracking · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Backtracking · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Searching through every possibility, cleverly - the choose, explore, unchoose pattern, generating subsets, permutations and combinations, the N-queens puzzle…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Algorithm Design</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Backtracking</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Searching through every possibility, cleverly - the choose, explore, unchoose pattern, generating subsets, permutations and combinations, the N-queens puzzle with constant-time safety checks, solving Sudoku, pruning dead ends early, branch and bound, and a first look at NP-complete problems, where exhaustive search is the best known exact method.</p>
+      <div class="prose">
+<h2>When there is no shortcut</h2>
+<p>Some problems have no known greedy rule or dynamic-programming structure: place eight queens on a chessboard so that none attacks another, fill in a Sudoku, find a subset of numbers that sums to a target. The fallback is to <strong>search</strong>: try the options one by one. <strong>Backtracking</strong> does that systematically and efficiently. It builds a solution one decision at a time, and as soon as a partial solution cannot possibly be completed, it abandons it (<strong>backtracks</strong>) and tries the next option.</p>
+<p>Every backtracking algorithm has the same shape:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">search</span>(<span class="tk-t">State</span>&amp; state)
+{
+    <span class="tk-k">if</span> (<span class="tk-f">isComplete</span>(state)) { <span class="tk-f">record</span>(state); <span class="tk-k">return</span>; }
+    <span class="tk-k">for</span> (<span class="tk-t">Choice</span> c : <span class="tk-f">choicesFor</span>(state))
+    {
+        <span class="tk-k">if</span> (!<span class="tk-f">allowed</span>(state, c)) <span class="tk-k">continue</span>;   <span class="tk-c">// prune: this choice cannot lead to a solution</span>
+        <span class="tk-f">apply</span>(state, c);                     <span class="tk-c">// choose</span>
+        <span class="tk-f">search</span>(state);                       <span class="tk-c">// explore</span>
+        <span class="tk-f">undo</span>(state, c);                      <span class="tk-c">// unchoose</span>
+    }
+}</code></pre></div>
+<p>It is a depth-first search (lesson 5.02) of a tree of partial solutions that is never built explicitly.</p>
+<h2>Subsets and permutations</h2>
+<p>Generating all subsets of n items makes one yes/no decision per item: 2ⁿ leaves. Generating all orderings (permutations) picks an unused item for each position: n! leaves.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">subsets</span>(<span class="tk-k">const</span> std::vector&lt;<span class="tk-k">int</span>&gt;&amp; items, std::size_t i, std::vector&lt;<span class="tk-k">int</span>&gt;&amp; chosen)
+{
+    <span class="tk-k">if</span> (i == items.<span class="tk-f">size</span>())
+    {
+        std::cout &lt;&lt; <span class="tk-s">'{'</span>;
+        <span class="tk-k">for</span> (std::size_t k = <span class="tk-n">0</span>; k &lt; chosen.<span class="tk-f">size</span>(); ++k) std::cout &lt;&lt; (k ? <span class="tk-s">&quot;,&quot;</span> : <span class="tk-s">&quot;&quot;</span>) &lt;&lt; chosen[k];
+        std::cout &lt;&lt; <span class="tk-s">&quot;} &quot;</span>;
+        <span class="tk-k">return</span>;
+    }
+    <span class="tk-f">subsets</span>(items, i + <span class="tk-n">1</span>, chosen);          <span class="tk-c">// leave items[i] out</span>
+    chosen.<span class="tk-f">push_back</span>(items[i]);             <span class="tk-c">// choose it</span>
+    <span class="tk-f">subsets</span>(items, i + <span class="tk-n">1</span>, chosen);          <span class="tk-c">// explore</span>
+    chosen.<span class="tk-f">pop_back</span>();                      <span class="tk-c">// unchoose</span>
+}
+
+<span class="tk-k">void</span> <span class="tk-f">permutations</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; items, std::size_t pos)
+{
+    <span class="tk-k">if</span> (pos == items.<span class="tk-f">size</span>())
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> x : items) std::cout &lt;&lt; x;
+        std::cout &lt;&lt; <span class="tk-s">' '</span>;
+        <span class="tk-k">return</span>;
+    }
+    <span class="tk-k">for</span> (std::size_t i = pos; i &lt; items.<span class="tk-f">size</span>(); ++i)
+    {
+        std::<span class="tk-f">swap</span>(items[pos], items[i]);    <span class="tk-c">// put items[i] in position pos</span>
+        <span class="tk-f">permutations</span>(items, pos + <span class="tk-n">1</span>);
+        std::<span class="tk-f">swap</span>(items[pos], items[i]);    <span class="tk-c">// undo</span>
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; chosen;
+    <span class="tk-f">subsets</span>({ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> }, <span class="tk-n">0</span>, chosen);
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::vector&lt;<span class="tk-k">int</span>&gt; items{ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> };
+    <span class="tk-f">permutations</span>(items, <span class="tk-n">0</span>);
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>The standard library generates permutations in lexicographic order with <code>std::next_permutation</code> (start from a sorted range and loop while it returns true).</p>
+<h2>N queens</h2>
+<p>Place N queens on an N × N board so that no two share a row, a column or a diagonal. Place one queen per row; for each row, try every column that is not attacked. Tracking the used columns and the two kinds of diagonals in boolean arrays makes each safety check O(1): squares on the same &quot;/&quot; diagonal share <code>row + col</code>, and on the same &quot;&quot; diagonal share <code>row − col</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> n;
+std::vector&lt;<span class="tk-k">bool</span>&gt; column, diag1, diag2;
+<span class="tk-k">long</span> <span class="tk-k">long</span> solutions = <span class="tk-n">0</span>, nodes = <span class="tk-n">0</span>;
+
+<span class="tk-k">void</span> <span class="tk-f">place</span>(<span class="tk-k">int</span> row)
+{
+    ++nodes;
+    <span class="tk-k">if</span> (row == n) { ++solutions; <span class="tk-k">return</span>; }
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> c = <span class="tk-n">0</span>; c &lt; n; ++c)
+    {
+        <span class="tk-k">if</span> (column[c] || diag1[row + c] || diag2[row - c + n - <span class="tk-n">1</span>]) <span class="tk-k">continue</span>;    <span class="tk-c">// attacked: prune</span>
+        column[c] = diag1[row + c] = diag2[row - c + n - <span class="tk-n">1</span>] = <span class="tk-k">true</span>;
+        <span class="tk-f">place</span>(row + <span class="tk-n">1</span>);
+        column[c] = diag1[row + c] = diag2[row - c + n - <span class="tk-n">1</span>] = <span class="tk-k">false</span>;
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (n = <span class="tk-n">4</span>; n &lt;= <span class="tk-n">10</span>; ++n)
+    {
+        column.<span class="tk-f">assign</span>(n, <span class="tk-k">false</span>);
+        diag1.<span class="tk-f">assign</span>(<span class="tk-n">2</span> * n, <span class="tk-k">false</span>);
+        diag2.<span class="tk-f">assign</span>(<span class="tk-n">2</span> * n, <span class="tk-k">false</span>);
+        solutions = nodes = <span class="tk-n">0</span>;
+        <span class="tk-f">place</span>(<span class="tk-n">0</span>);
+        std::cout &lt;&lt; n &lt;&lt; <span class="tk-s">&quot; queens: &quot;</span> &lt;&lt; solutions &lt;&lt; <span class="tk-s">&quot; solutions, &quot;</span> &lt;&lt; nodes &lt;&lt; <span class="tk-s">&quot; partial boards explored\n&quot;</span>;
+    }
+}</code></pre></div>
+<p>There are 10¹⁰ ways to put one queen in each row of a 10 × 10 board, but pruning means only about 35,000 partial boards are ever explored.</p>
+<h2>Sudoku</h2>
+<p>A Sudoku solver is the same pattern: find an empty cell, try each digit that does not already appear in its row, column or 3 × 3 box, recurse, and undo if the recursion fails. A strong improvement is to choose the empty cell with the <strong>fewest</strong> possible digits first (the &quot;most constrained variable&quot; heuristic): it fails fastest when a branch is hopeless, and often has only one option. Practice 6.05 builds a solver.</p>
+<h2>Pruning and branch and bound</h2>
+<p>Backtracking is only as good as its pruning. Good pruning checks:</p>
+<ul>
+<li><strong>constraints</strong> as early as possible (the queen safety arrays),</li>
+<li><strong>feasibility</strong>: in subset sum with positive numbers, stop when the running total exceeds the target, or when even taking every remaining number cannot reach it,</li>
+<li><strong>symmetry</strong>: in N queens, the first queen only needs the left half of the first row (mirror the rest).</li>
+</ul>
+<p>For <strong>optimisation</strong> problems, <strong>branch and bound</strong> adds a bound: keep the best complete solution found so far, and abandon any partial solution whose optimistic estimate cannot beat it. This is how exact solvers for scheduling, routing and the knapsack with huge capacities work in practice.</p>
+<h2>When search is the best we know</h2>
+<p>For many important problems (the travelling salesman, Boolean satisfiability, graph colouring, subset sum, scheduling with constraints), no polynomial-time algorithm is known. They are <strong>NP-complete</strong>: a proposed solution is easy to <strong>check</strong>, and a fast algorithm for any one of them would give fast algorithms for all of them. Whether that is possible is the famous open question <strong>P vs NP</strong>.</p>
+<p>In practice, such problems are attacked with:</p>
+<ul>
+<li>backtracking with strong pruning, and branch and bound,</li>
+<li>dynamic programming when a parameter is small (subset sum with a small target, the travelling salesman on 20 cities with bitmask DP),</li>
+<li>specialised solvers (SAT solvers, integer linear programming),</li>
+<li>approximation algorithms with guarantees (the MST-based travelling-salesman tour from lesson 5.04),</li>
+<li>heuristics such as local search and simulated annealing when &quot;good enough&quot; will do.</li>
+</ul>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What are the three steps inside a backtracking loop?</div><ul><li>choose, explore, unchoose</li><li>sort, search, return</li><li>divide, conquer, combine</li><li>push, pop, peek</li></ul><details><summary>Show the answer</summary><p><b>choose, explore, unchoose</b> Apply a choice, recurse, then undo it so the next choice starts from the same state.</p></details></li><li><div class="q">How does the N-queens solver check diagonals in O(1)?</div><ul><li>by scanning the board</li><li>squares on one diagonal share row + col, and on the other row - col; boolean arrays index by those</li><li>by sorting the queens</li><li>by hashing the board</li></ul><details><summary>Show the answer</summary><p><b>squares on one diagonal share row + col, and on the other row - col; boolean arrays index by those</b> One array per diagonal direction records whether a queen already occupies it.</p></details></li><li><div class="q">What does branch and bound add to backtracking?</div><ul><li>a heap of solutions</li><li>abandoning partial solutions whose best possible outcome cannot beat the best solution found so far</li><li>dynamic programming</li><li>random restarts</li></ul><details><summary>Show the answer</summary><p><b>abandoning partial solutions whose best possible outcome cannot beat the best solution found so far</b> A good bound prunes large parts of the search tree for optimisation problems.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>Backtracking searches the tree of partial solutions depth first: choose, explore, unchoose.</li>
+<li>Subsets give 2ⁿ leaves and permutations n!; pruning is what makes search feasible.</li>
+<li>Constant-time constraint checks (N queens) and choosing the most constrained variable first (Sudoku) cut the search dramatically.</li>
+<li>Branch and bound prunes optimisation searches with bounds.</li>
+<li>NP-complete problems have no known polynomial algorithm; search, DP on small parameters, solvers, approximations and heuristics are the tools.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-tries-and-string-matching/"><span class="mono">previous</span><b>6.04 Tries and String Matching</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/6-05-backtracking"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Fixed-Width Integers and Binary Data · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/5-02-fixed-width-integers-and-binary-data/">
+  <meta name="description" content="The size of int and long depends on the system, so stdint.h gives types of exact sizes like uint8 t and int64 t, printed with the macros in inttypes.h.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Fixed-Width Integers and Binary Data · C · Xenon">
+  <meta property="og:description" content="The size of int and long depends on the system, so stdint.h gives types of exact sizes like uint8 t and int64 t, printed with the macros in inttypes.h.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/5-02-fixed-width-integers-and-binary-data/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Fixed-Width Integers and Binary Data · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Fixed-Width Integers and Binary Data · C · Xenon">
+  <meta name="twitter:description" content="The size of int and long depends on the system, so stdint.h gives types of exact sizes like uint8 t and int64 t, printed with the macros in inttypes.h.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>Bits, Files and the Preprocessor</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Fixed-Width Integers and Binary Data</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 5 in milestone 5</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">The size of int and long depends on the system, so stdint.h gives types of exact sizes like uint8_t and int64_t, printed with the macros in inttypes.h. Writing a number&#39;s bytes in a fixed order with shifts makes data that every machine reads the same way, whatever its endianness.</p>
+      <div class="prose">
+<h2>How big is an int?</h2>
+<p>The C standard only promises minimums: <code>int</code> at least 16 bits, <code>long</code> at least 32. On 64-bit Linux and Mac <code>long</code> is 64 bits; on 64-bit Windows it is 32. When the exact size matters (file formats, network messages, hardware), use <code>stdint.h</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Size</th>
+<th>Range</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int8_t</code> / <code>uint8_t</code></td>
+<td>8 bits</td>
+<td>−128 to 127 / 0 to 255</td>
+</tr>
+<tr>
+<td><code>int16_t</code> / <code>uint16_t</code></td>
+<td>16 bits</td>
+<td>−32,768 to 32,767 / 0 to 65,535</td>
+</tr>
+<tr>
+<td><code>int32_t</code> / <code>uint32_t</code></td>
+<td>32 bits</td>
+<td>about ±2.1 billion / 0 to 4.29 billion</td>
+</tr>
+<tr>
+<td><code>int64_t</code> / <code>uint64_t</code></td>
+<td>64 bits</td>
+<td>about ±9.2 × 10¹⁸ / 0 to 1.8 × 10¹⁹</td>
+</tr>
+</tbody></table>
+</div>
+<p>Also <code>size_t</code> for sizes, <code>intptr_t</code> for an integer big enough to hold a pointer, and limits such as <code>INT32_MAX</code> and <code>UINT8_MAX</code>.</p>
+<h2>Printing them</h2>
+<p><code>printf</code> has no letter for <code>uint32_t</code>, because its real type differs between systems. <code>inttypes.h</code> provides the right format as a macro that joins onto the string:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;inttypes.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    uint8_t small = <span class="tk-n">250</span>;
+    int64_t big = INT64_MAX;
+    uint32_t hex = <span class="tk-n">0xDEADBEEF</span>;
+    small += <span class="tk-n">10</span>;                                <span class="tk-c">// wraps to 4</span>
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%&quot;</span> PRIu8 <span class="tk-s">&quot; %&quot;</span> PRId64 <span class="tk-s">&quot; %&quot;</span> PRIX32 <span class="tk-s">&quot;\n&quot;</span>, small, big, hex);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;sizes: %zu %zu %zu\n&quot;</span>, <span class="tk-k">sizeof</span>(uint8_t), <span class="tk-k">sizeof</span>(int64_t), <span class="tk-k">sizeof</span>(<span class="tk-k">long</span>));
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>&quot;%&quot; PRIu8</code> becomes something like <code>&quot;%hhu&quot;</code>; adjacent strings in C are glued together by the compiler.</p>
+<h2>Bytes in memory: endianness</h2>
+<p>A <code>uint32_t</code> is 4 bytes, but which comes first? x86 and ARM computers are <strong>little-endian</strong>: the lowest byte is stored first.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/c/l/5.02">Try it in Xenon</a></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdint.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    uint32_t value = <span class="tk-n">0x11223344</span>;
+    <span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span> *bytes = (<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span> *)&amp;value;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">4</span>; i++) {
+        <span class="tk-f">printf</span>(<span class="tk-s">&quot;%02x &quot;</span>, bytes[i]);      <span class="tk-c">// 44 33 22 11 on a little-endian machine</span>
+    }
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;\n&quot;</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Looking at any object&#39;s bytes through an <code>unsigned char *</code> is always allowed in C.</p>
+<h2>Writing a fixed order with shifts</h2>
+<p>If a program writes a number&#39;s raw bytes into a file, a big-endian machine would read them back wrongly. File formats and network protocols therefore fix the order. Shifts produce it on any machine:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdint.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">put_u32_be</span>(<span class="tk-k">unsigned</span> <span class="tk-k">char</span> *out, uint32_t v)     <span class="tk-c">// big-endian: most significant first</span>
+{
+    out[<span class="tk-n">0</span>] = (<span class="tk-k">unsigned</span> <span class="tk-k">char</span>)(v &gt;&gt; <span class="tk-n">24</span>);
+    out[<span class="tk-n">1</span>] = (<span class="tk-k">unsigned</span> <span class="tk-k">char</span>)(v &gt;&gt; <span class="tk-n">16</span>);
+    out[<span class="tk-n">2</span>] = (<span class="tk-k">unsigned</span> <span class="tk-k">char</span>)(v &gt;&gt; <span class="tk-n">8</span>);
+    out[<span class="tk-n">3</span>] = (<span class="tk-k">unsigned</span> <span class="tk-k">char</span>)v;
+}
+
+uint32_t <span class="tk-f">get_u32_be</span>(<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span> *in)
+{
+    <span class="tk-k">return</span> (uint32_t)in[<span class="tk-n">0</span>] &lt;&lt; <span class="tk-n">24</span> | (uint32_t)in[<span class="tk-n">1</span>] &lt;&lt; <span class="tk-n">16</span> | (uint32_t)in[<span class="tk-n">2</span>] &lt;&lt; <span class="tk-n">8</span> | in[<span class="tk-n">3</span>];
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">unsigned</span> <span class="tk-k">char</span> buffer[<span class="tk-n">4</span>];
+    <span class="tk-f">put_u32_be</span>(buffer, <span class="tk-n">0xCAFEBABE</span>);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%02x %02x %02x %02x\n&quot;</span>, buffer[<span class="tk-n">0</span>], buffer[<span class="tk-n">1</span>], buffer[<span class="tk-n">2</span>], buffer[<span class="tk-n">3</span>]);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%08x\n&quot;</span>, <span class="tk-f">get_u32_be</span>(buffer));
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The shifts work on the <strong>value</strong>, not on memory, so this code gives the same bytes everywhere. Networks use big-endian (&quot;network byte order&quot;); most file formats today (PNG is an exception) use little-endian.</p>
+<div class="callout warning"><div class="callout-title"><span>Cast before shifting up</span></div><div class="callout-body"><p><code>in[0] &lt;&lt; 24</code> first turns <code>in[0]</code> into a signed <code>int</code>; a byte of 0x80 or more then overflows into the sign bit. <code>(uint32_t)in[0] &lt;&lt; 24</code> is safe.</p>
+</div></div>
+<h2>A hex dump</h2>
+<p>Programmers inspect binary data as hex: 16 bytes per line, with the printable characters at the side. Tools like <code>xxd</code> and <code>hexdump</code> do it, and you will write one:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>00000000  48 65 6c 6c 6f 2c 20 43 21 0a 00 ff              |Hello, C!...|</code></pre></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which type is exactly 16 bits and unsigned?</div><ul><li>uint16_t</li><li>unsigned short (always)</li><li>int16_t</li></ul><details><summary>Show the answer</summary><p><b>uint16_t</b> short is usually 16 bits, but only uint16_t promises it.</p></details></li><li><div class="q">On a little-endian computer, which byte of 0x11223344 is stored first?</div><ul><li>0x44</li><li>0x11</li><li>0x22</li></ul><details><summary>Show the answer</summary><p><b>0x44</b> The least significant byte comes first.</p></details></li><li><div class="q">Why build a file&#39;s bytes with shifts rather than writing a uint32_t&#39;s memory directly?</div><ul><li>Shifts give the same byte order on every machine</li><li>Shifts are faster</li><li>fwrite cannot write integers</li></ul><details><summary>Show the answer</summary><p><b>Shifts give the same byte order on every machine</b> The value, not the memory layout, decides the bytes.</p></details></li><li><div class="q">What does &quot;%&quot; PRIu64 do?</div><ul><li>Gives the correct printf format for a uint64_t on this system</li><li>Prints in base 64</li><li>Prints a pointer</li></ul><details><summary>Show the answer</summary><p><b>Gives the correct printf format for a uint64_t on this system</b> The macro expands to a string like &quot;lu&quot; or &quot;llu&quot;.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-bitwise-operators/"><span class="mono">previous</span><b>5.01 Bitwise Operators</b></a>
+      <a class="lp-next" href="../5-03-files/"><span class="mono">next</span><b>5.03 Files</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/5-02-fixed-width-integers-and-binary-data"></script>
+</body>
+</html>

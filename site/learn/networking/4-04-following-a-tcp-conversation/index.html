@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Following a TCP Conversation · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/4-04-following-a-tcp-conversation/">
+  <meta name="description" content="Turning a list of captured segments into the conversation they carry - identifying a connection by its addresses and ports, relative sequence numbers, the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Following a TCP Conversation · Networking · Xenon">
+  <meta property="og:description" content="Turning a list of captured segments into the conversation they carry - identifying a connection by its addresses and ports, relative sequence numbers, the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/4-04-following-a-tcp-conversation/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Following a TCP Conversation · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Following a TCP Conversation · Networking · Xenon">
+  <meta name="twitter:description" content="Turning a list of captured segments into the conversation they carry - identifying a connection by its addresses and ports, relative sequence numbers, the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Capturing and Reading Packets</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Following a TCP Conversation</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Turning a list of captured segments into the conversation they carry - identifying a connection by its addresses and ports, relative sequence numbers, the handshake, data in both directions, retransmissions and duplicates, and how connections end with FIN or RST.</p>
+      <div class="prose">
+<h2>One connection among many</h2>
+<p>A capture interleaves packets from every connection on the machine. A single TCP connection is identified by its <strong>four-tuple</strong>: the two IP addresses and the two ports. Packets in one direction have it as (A, portA, B, portB); replies have it reversed. A tracker uses a canonical key (the lower endpoint first, say) so both directions land in the same conversation.</p>
+<h2>Relative sequence numbers</h2>
+<p>Each side&#39;s initial sequence number (ISN) is random, so raw numbers like <code>3141592653</code> are hard to read. Wireshark shows <strong>relative</strong> numbers by default: the sequence number minus that side&#39;s ISN. The SYN is relative 0, the first data byte relative 1 (the SYN used up one number), and the relative number of any byte is its position in the stream plus one. Do the same in your own tools.</p>
+<h2>Reading a conversation</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code> #  direction       flags     rel seq   rel ack   len
+ 1  client-&gt;server  SYN       0                   0
+ 2  server-&gt;client  SYN,ACK   0         1         0
+ 3  client-&gt;server  ACK       1         1         0
+ 4  client-&gt;server  PSH,ACK   1         1         75     request
+ 5  server-&gt;client  ACK       1         76        1448   response, part 1
+ 6  server-&gt;client  ACK       1449      76        1448   part 2
+ 7  client-&gt;server  ACK       76        2897      0
+ 8  server-&gt;client  FIN,ACK   2897      76        0
+ 9  client-&gt;server  FIN,ACK   76        2898      0
+10  server-&gt;client  ACK       2898      77        0</code></pre></div>
+<ul>
+<li>Packets 1 to 3 are the handshake.</li>
+<li>The client sent 75 bytes (4); the server acknowledged them (ack 76 in packet 5) and sent 2 896 bytes in two segments.</li>
+<li>Each FIN takes one sequence number, so the final acknowledgements are one more than the data.</li>
+</ul>
+<h2>Retransmissions and duplicates</h2>
+<p>When a segment is lost, the sender sends the same bytes again later. In a capture this appears as a segment whose sequence range has <strong>already been seen</strong>. Wireshark flags these as <code>[TCP Retransmission]</code>; duplicate acknowledgements (the same ack number repeated, often three times before a fast retransmit) as <code>[TCP Dup ACK]</code>.</p>
+<p>To reassemble the byte stream, as &quot;Follow TCP Stream&quot; does, take each direction&#39;s segments in <strong>sequence order</strong>, keep only bytes not already placed, and stop at any gap (a segment never captured). The result is exactly what each program read with <code>recv</code>, which makes reading application protocols (next lesson) possible.</p>
+<h2>How connections end</h2>
+<ul>
+<li><strong>FIN</strong> in both directions, each acknowledged: an orderly close (lesson 2.02).</li>
+<li><strong>RST</strong>: an abort. A RST in reply to a SYN means <strong>connection refused</strong>: nothing listens on that port. A RST in the middle of a conversation usually means a program crashed or closed with unread data, or a firewall killed the connection.</li>
+<li><strong>Nothing</strong>: a connection that simply stops, often because one side vanished; it is eventually timed out by keep-alives or by the application.</li>
+</ul>
+<p>Counting how each connection in a capture ended is often the quickest diagnosis of &quot;it sometimes disconnects&quot;.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-tcp-and-udp-headers/"><span class="mono">previous</span><b>4.03 TCP and UDP Headers</b></a>
+      <a class="lp-next" href="../4-05-reading-protocols-in-captures/"><span class="mono">next</span><b>4.05 Reading Protocols in Captures</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/4-04-following-a-tcp-conversation"></script>
+</body>
+</html>

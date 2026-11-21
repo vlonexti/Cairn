@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Assembly: Machine Code with Names · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/5-01-assembly-machine-code-with-names/">
+  <meta name="description" content="Assembly language writes each machine instruction as a short name - mov, add, jmp - with labels instead of addresses. An assembler translates it, almost one…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Assembly: Machine Code with Names · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="Assembly language writes each machine instruction as a short name - mov, add, jmp - with labels instead of addresses. An assembler translates it, almost one…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/5-01-assembly-machine-code-with-names/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Assembly: Machine Code with Names · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Assembly: Machine Code with Names · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="Assembly language writes each machine instruction as a short name - mov, add, jmp - with labels instead of addresses. An assembler translates it, almost one…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>From Machine Code to Modern Languages</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Assembly: Machine Code with Names</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 6 in milestone 5</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Assembly language writes each machine instruction as a short name - mov, add, jmp - with labels instead of addresses. An assembler translates it, almost one line to one instruction, into machine code. So assembly is not binary, but it is the thinnest possible layer over it, different for every CPU family.</p>
+      <div class="prose">
+<h2>Is assembly just binary?</h2>
+<p>Not quite, but almost. <strong>Assembly language</strong> is machine code written so that people can read it:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Machine code (hex)</th>
+<th>Assembly</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>B8 2A 00 00 00</code></td>
+<td><code>mov eax, 42</code></td>
+<td>put 42 into register eax</td>
+</tr>
+<tr>
+<td><code>01 D8</code></td>
+<td><code>add eax, ebx</code></td>
+<td>eax = eax + ebx</td>
+</tr>
+<tr>
+<td><code>C3</code></td>
+<td><code>ret</code></td>
+<td>return</td>
+</tr>
+</tbody></table>
+</div>
+<p>Each line of assembly is (nearly always) <strong>exactly one machine instruction</strong>. Nothing is added, nothing is hidden: you choose every register and every instruction yourself. The names are called <strong>mnemonics</strong> (memory aids): <code>mov</code> for move, <code>jmp</code> for jump, <code>cmp</code> for compare.</p>
+<p>A program called an <strong>assembler</strong> reads the text and writes the bytes. It is a translator, but a very direct one - closer to looking words up in a dictionary than to understanding sentences.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;Assembly text&lt;br/&gt;mov eax, 42&lt;br/&gt;ret&quot;] --&gt;|assembler| M[&quot;Machine code&lt;br/&gt;B8 2A 00 00 00 C3&quot;] --&gt;|loaded into memory| C[&quot;CPU runs it&quot;]</pre></div>
+<h2>What the assembler does for you</h2>
+<p>Besides turning names into numbers, an assembler handles the jobs that make raw machine code miserable (4.05):</p>
+<ul>
+<li><strong>Labels</strong>: you write <code>loop:</code> before an instruction and <code>jmp loop</code> elsewhere; the assembler works out the address. Add an instruction in the middle and it recalculates every address for you.</li>
+<li><strong>Data</strong>: <code>message: db &quot;Hello&quot;, 10</code> puts those bytes in the program and lets you refer to them by name.</li>
+<li><strong>Constants and comments</strong>: <code>length equ 6</code>, and anything after <code>;</code> is a note for people.</li>
+</ul>
+<p>Here is the tiny computer&#39;s countdown from 4.04 in an assembly language for that machine, and the numbers an assembler would produce:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>        LOAD  counter      ; cell 0: 106
+top:    JUMPZ done         ; cell 1: 605
+        SUB   one          ; cell 2: 307
+        STORE counter      ; cell 3: 406
+        JUMP  top          ; cell 4: 501
+done:   HALT               ; cell 5: 000
+counter: 3                 ; cell 6: the number 3
+one:     1                 ; cell 7: the number 1</code></pre></div>
+<p><code>top</code>, <code>done</code>, <code>counter</code> and <code>one</code> are labels; the assembler works out which cell each one names (<code>counter</code> is cell 6, so <code>LOAD counter</code> becomes 106) and puts the data right after the code. You will write exactly this assembler in this milestone&#39;s project.</p>
+<h2>Real x86-64 assembly</h2>
+<p>A complete Linux program in x86-64 assembly (NASM syntax, as the Assembly course uses) that prints a message and exits:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">message:</span> <span class="tk-k">db</span>     <span class="tk-s">&quot;Hello from assembly&quot;</span>, <span class="tk-n">10</span>    <span class="tk-c">; the bytes of the text, then a new line</span>
+length  <span class="tk-k">equ</span>     $ - message                   <span class="tk-c">; how many bytes that was</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>              <span class="tk-c">; system call 1: write</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">1</span>              <span class="tk-c">; to standard output</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> message]  <span class="tk-c">; these bytes</span>
+        mov     <span class="tk-t">edx</span>, length         <span class="tk-c">; this many of them</span>
+        syscall                     <span class="tk-c">; ask the operating system</span>
+
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>             <span class="tk-c">; system call 60: exit</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>            <span class="tk-c">; with code 0</span>
+        syscall</code></pre></div>
+<p>Press <strong>Run</strong>: this is real assembly, assembled with NASM and run on a Linux machine. Every line under <code>_start</code> is one instruction. Notice how printing works at this level: there is no <code>print</code>. The program puts the number of the request (1 means &quot;write&quot;), where to write, the address of the bytes and their count into registers, and asks the operating system with <code>syscall</code> (lesson 6.04).</p>
+<h2>One assembly per CPU family</h2>
+<p>Because assembly is just machine code with names, there is a different assembly language for every instruction set: x86-64 assembly, ARM64 assembly, RISC-V assembly. The same &quot;add two registers&quot; is:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>CPU</th>
+<th>Assembly</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>x86-64</td>
+<td><code>add eax, ebx</code></td>
+</tr>
+<tr>
+<td>ARM64</td>
+<td><code>add w0, w0, w1</code></td>
+</tr>
+<tr>
+<td>RISC-V</td>
+<td><code>add a0, a0, a1</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>And even for one CPU there can be several spellings (NASM, GNU, MASM syntax), all producing the same bytes.</p>
+<h2>Who writes assembly today?</h2>
+<p>Almost nobody writes whole programs in it any more - compilers (5.03) produce faster code than most people would write by hand. But assembly is still essential for:</p>
+<ul>
+<li>understanding what a program really does: crashes, performance, security;</li>
+<li>the first instructions that run when a computer starts (6.05), and parts of operating systems;</li>
+<li>tight loops in video codecs, cryptography and game engines;</li>
+<li>reading what a compiler made from your code.</li>
+</ul>
+<div class="callout info"><div class="callout-title"><span>Who wrote the first assembly language?</span></div><div class="callout-body"><p><strong>Kathleen Booth</strong> designed an assembly language for the ARC computer in London around 1947. In 1949 <strong>David Wheeler</strong>&#39;s &quot;initial orders&quot; for EDSAC (1.03) let programmers write instructions as letters and decimal numbers, which the machine translated as it loaded them.</p>
+</div></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the relationship between assembly and machine code?</div><ul><li>Each assembly line is (nearly always) one machine instruction written as a name instead of numbers</li><li>Assembly is binary</li><li>Assembly is a high-level language like Python</li></ul><details><summary>Show the answer</summary><p><b>Each assembly line is (nearly always) one machine instruction written as a name instead of numbers</b> An assembler translates it almost one to one.</p></details></li><li><div class="q">What does a label like loop: give the programmer?</div><ul><li>A name for an address, which the assembler works out and keeps up to date</li><li>A comment</li><li>A new instruction</li></ul><details><summary>Show the answer</summary><p><b>A name for an address, which the assembler works out and keeps up to date</b> No more recalculating jump addresses by hand.</p></details></li><li><div class="q">Why is there no single assembly language?</div><ul><li>People never agreed on a syntax</li><li>Each CPU family has its own instructions, so each has its own assembly</li><li>Assembly is not used any more</li></ul><details><summary>Show the answer</summary><p><b>Each CPU family has its own instructions, so each has its own assembly</b> x86-64, ARM64 and RISC-V each have their own.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-06-the-memory-hierarchy/"><span class="mono">previous</span><b>4.06 The Memory Hierarchy</b></a>
+      <a class="lp-next" href="../5-02-the-first-readable-languages/"><span class="mono">next</span><b>5.02 The First Readable Languages</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/5-01-assembly-machine-code-with-names"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

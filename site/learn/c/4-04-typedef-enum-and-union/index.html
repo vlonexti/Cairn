@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>typedef, enum and union · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/4-04-typedef-enum-and-union/">
+  <meta name="description" content="typedef gives a type a new name, often used to drop the word struct. enum names a set of integer constants and makes switch statements readable. A union…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="typedef, enum and union · C · Xenon">
+  <meta property="og:description" content="typedef gives a type a new name, often used to drop the word struct. enum names a set of integer constants and makes switch statements readable. A union…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/4-04-typedef-enum-and-union/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="typedef, enum and union · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="typedef, enum and union · C · Xenon">
+  <meta name="twitter:description" content="typedef gives a type a new name, often used to drop the word struct. enum names a set of integer constants and makes switch statements readable. A union…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>Memory and Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">typedef, enum and union</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">typedef gives a type a new name, often used to drop the word struct. enum names a set of integer constants and makes switch statements readable. A union stores one of several types in the same memory, and a tagged union pairs it with an enum saying which one is there.</p>
+      <div class="prose">
+<h2>typedef</h2>
+<p><code>typedef</code> makes a new name for an existing type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> {
+    <span class="tk-k">double</span> x;
+    <span class="tk-k">double</span> y;
+} <span class="tk-t">Vec2</span>;
+
+<span class="tk-k">typedef</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span> byte;
+
+<span class="tk-t">Vec2</span> <span class="tk-f">add</span>(<span class="tk-t">Vec2</span> a, <span class="tk-t">Vec2</span> b)
+{
+    <span class="tk-k">return</span> (<span class="tk-t">Vec2</span>){a.x + b.x, a.y + b.y};     <span class="tk-c">// a compound literal: a struct value on the spot</span>
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-t">Vec2</span> v = <span class="tk-f">add</span>((<span class="tk-t">Vec2</span>){<span class="tk-n">1.5</span>, <span class="tk-n">2</span>}, (<span class="tk-t">Vec2</span>){<span class="tk-n">0.5</span>, <span class="tk-n">1</span>});
+    byte flags = <span class="tk-n">255</span>;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;(%.1f, %.1f) %d\n&quot;</span>, v.x, v.y, flags);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Styles differ: the Linux kernel avoids typedefs for structs so you always see <code>struct</code>; many other projects typedef everything. Both are fine; be consistent. A struct that points to its own type (the next lesson) needs its struct name too:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">typedef</span> <span class="tk-k">struct</span> node {
+    <span class="tk-k">int</span> value;
+    <span class="tk-k">struct</span> node *next;      <span class="tk-c">// the typedef name does not exist yet at this point</span>
+} <span class="tk-t">Node</span>;</code></pre></div>
+<h2>enum</h2>
+<p>An <code>enum</code> names a set of whole-number constants:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">enum</span> direction { NORTH, EAST, SOUTH, WEST };        <span class="tk-c">// 0, 1, 2, 3</span>
+
+<span class="tk-k">enum</span> direction <span class="tk-f">turn_right</span>(<span class="tk-k">enum</span> direction d)
+{
+    <span class="tk-k">return</span> (<span class="tk-k">enum</span> direction)((d + <span class="tk-n">1</span>) % <span class="tk-n">4</span>);
+}
+
+<span class="tk-k">const</span> <span class="tk-k">char</span> *<span class="tk-f">direction_name</span>(<span class="tk-k">enum</span> direction d)
+{
+    <span class="tk-k">switch</span> (d) {
+    <span class="tk-k">case</span> NORTH: <span class="tk-k">return</span> <span class="tk-s">&quot;north&quot;</span>;
+    <span class="tk-k">case</span> EAST: <span class="tk-k">return</span> <span class="tk-s">&quot;east&quot;</span>;
+    <span class="tk-k">case</span> SOUTH: <span class="tk-k">return</span> <span class="tk-s">&quot;south&quot;</span>;
+    <span class="tk-k">case</span> WEST: <span class="tk-k">return</span> <span class="tk-s">&quot;west&quot;</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-s">&quot;?&quot;</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">enum</span> direction facing = WEST;
+    facing = <span class="tk-f">turn_right</span>(facing);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;now facing %s (%d)\n&quot;</span>, <span class="tk-f">direction_name</span>(facing), facing);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<ul>
+<li>Values count up from 0 unless you set them: <code>enum http { OK = 200, NOT_FOUND = 404 };</code>.</li>
+<li>An enum is really an <code>int</code>; C will not stop you storing 17 in one. But <code>-Wall</code> warns when a <code>switch</code> over an enum forgets a value, which catches bugs when you add a new one.</li>
+<li>Use enums instead of &quot;magic numbers&quot; like <code>if (state == 3)</code>.</li>
+</ul>
+<h2>union</h2>
+<p>A <code>union</code> looks like a struct, but all its fields share <strong>the same memory</strong>: it holds one of them at a time, and its size is that of the biggest.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">union</span> number {
+    <span class="tk-k">int</span> i;
+    <span class="tk-k">float</span> f;
+    <span class="tk-k">unsigned</span> <span class="tk-k">char</span> bytes[<span class="tk-n">4</span>];
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">union</span> number n;
+    n.f = <span class="tk-n">1.0f</span>;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%zu bytes\n&quot;</span>, <span class="tk-k">sizeof</span> n);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;1.0f is stored as %02x %02x %02x %02x\n&quot;</span>, n.bytes[<span class="tk-n">3</span>], n.bytes[<span class="tk-n">2</span>], n.bytes[<span class="tk-n">1</span>], n.bytes[<span class="tk-n">0</span>]);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Writing one field and reading another reinterprets the bytes. Here it shows that <code>1.0f</code> is <code>3f 80 00 00</code> in IEEE 754 (the Fundamentals course explains the format).</p>
+<h2>Tagged unions</h2>
+<p>The useful pattern pairs a union with an enum saying which field is in use. It is how a value can be &quot;one of several kinds&quot;, like a number or a piece of text:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">enum</span> kind { NUMBER, TEXT };
+
+<span class="tk-k">struct</span> value {
+    <span class="tk-k">enum</span> kind kind;
+    <span class="tk-k">union</span> {
+        <span class="tk-k">double</span> number;
+        <span class="tk-k">const</span> <span class="tk-k">char</span> *text;
+    };                          <span class="tk-c">// an anonymous union (C11): fields used directly</span>
+};
+
+<span class="tk-k">void</span> <span class="tk-f">print_value</span>(<span class="tk-k">struct</span> value v)
+{
+    <span class="tk-k">switch</span> (v.kind) {
+    <span class="tk-k">case</span> NUMBER: <span class="tk-f">printf</span>(<span class="tk-s">&quot;number %g\n&quot;</span>, v.number); <span class="tk-k">break</span>;
+    <span class="tk-k">case</span> TEXT: <span class="tk-f">printf</span>(<span class="tk-s">&quot;text \&quot;%s\&quot;\n&quot;</span>, v.text); <span class="tk-k">break</span>;
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">struct</span> value list[] = {
+        {.kind = NUMBER, .number = <span class="tk-n">3.5</span>},
+        {.kind = TEXT, .text = <span class="tk-s">&quot;hello&quot;</span>},
+    };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">2</span>; i++) <span class="tk-f">print_value</span>(list[i]);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>This is exactly how interpreters for Python or JavaScript store their values, and what Rust&#39;s <code>enum</code> and C++&#39;s <code>std::variant</code> do safely for you.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does typedef struct { int x; } Point; let you write?</div><ul><li>Point p; instead of struct ... p;</li><li>A struct with a default value</li><li>A pointer type</li></ul><details><summary>Show the answer</summary><p><b>Point p; instead of struct ... p;</b> typedef only adds a name.</p></details></li><li><div class="q">enum color { RED, GREEN, BLUE }; - what is BLUE?</div><ul><li>2</li><li>3</li><li>&quot;BLUE&quot;</li></ul><details><summary>Show the answer</summary><p><b>2</b> Counting starts at 0.</p></details></li><li><div class="q">How big is a union of an int, a double and a char[3]?</div><ul><li>The size of the double: the biggest member</li><li>The sum of all three</li><li>1 byte</li></ul><details><summary>Show the answer</summary><p><b>The size of the double: the biggest member</b> All members share the same memory.</p></details></li><li><div class="q">What is the enum in a tagged union for?</div><ul><li>Saying which member currently holds the value</li><li>Making the union bigger</li><li>Numbering the members</li></ul><details><summary>Show the answer</summary><p><b>Saying which member currently holds the value</b> Without it you cannot tell what is stored.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-structures/"><span class="mono">previous</span><b>4.03 Structures</b></a>
+      <a class="lp-next" href="../4-05-linked-lists/"><span class="mono">next</span><b>4.05 Linked Lists</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/4-04-typedef-enum-and-union"></script>
+</body>
+</html>

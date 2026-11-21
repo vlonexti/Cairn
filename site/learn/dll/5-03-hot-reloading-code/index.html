@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Hot Reloading Code · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/5-03-hot-reloading-code/">
+  <meta name="description" content="Hot reloading means changing game code, rebuilding, and having the running game pick up the new code within a second, without restarting or losing your…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hot Reloading Code · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="Hot reloading means changing game code, rebuilding, and having the running game pick up the new code within a second, without restarting or losing your…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/5-03-hot-reloading-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Hot Reloading Code · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hot Reloading Code · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="Hot reloading means changing game code, rebuilding, and having the running game pick up the new code within a second, without restarting or losing your…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Plugins and Hot Reload</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Hot Reloading Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Hot reloading means changing game code, rebuilding, and having the <strong>running</strong> game pick up the new code within a second, without restarting or losing your place. The trick is to put gameplay code in a DLL and swap it. This lesson covers the loop - watch, copy, unload, load - and the problems each step solves.</p>
+      <div class="prose">
+<h2>The idea</h2>
+<p>Split the game into two parts:</p>
+<ul>
+<li><strong>The host</strong> (<code>game.exe</code>): window, main loop, memory, input, loading assets. It rarely changes and keeps running.</li>
+<li><strong>The game code</strong> (<code>gameplay.dll</code>): the rules, movement, enemy behaviour. You change it all day.</li>
+</ul>
+<p>The host calls into the DLL through a small table, exactly like a plugin:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">typedef</span> <span class="tk-k">struct</span> game_api
+{
+    uint32_t size;
+    <span class="tk-k">void</span> (*update)(game_state* state, <span class="tk-k">const</span> game_input* input, <span class="tk-k">float</span> dt);
+    <span class="tk-k">void</span> (*render)(<span class="tk-k">const</span> game_state* state, render_list* out);
+} game_api;
+
+<span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> <span class="tk-f">__declspec</span>(dllexport) <span class="tk-k">const</span> game_api* <span class="tk-f">get_game_api</span>(<span class="tk-k">void</span>);</code></pre></div>
+<p>All game state lives in memory the <strong>host</strong> owns and passes in (lesson 5.04 explains why). The DLL is just functions.</p>
+<h2>The reload loop</h2>
+<p>Every frame, before calling <code>update</code>, the host checks whether the DLL file has changed:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>FILETIME <span class="tk-f">lastWrite</span>(<span class="tk-k">const</span> <span class="tk-k">wchar_t</span>* path);
+
+<span class="tk-k">void</span> <span class="tk-t">Host</span>::<span class="tk-f">reloadIfChanged</span>()
+{
+    <span class="tk-k">const</span> FILETIME now{ <span class="tk-f">lastWrite</span>(<span class="tk-s">L&quot;gameplay.dll&quot;</span>) };
+    <span class="tk-k">if</span> (<span class="tk-f">CompareFileTime</span>(&amp;now, &amp;m_loadedWriteTime) == <span class="tk-n">0</span>) <span class="tk-k">return</span>;   <span class="tk-c">// unchanged</span>
+
+    <span class="tk-c">// 1. Copy the new DLL to a fresh name and load the copy.</span>
+    <span class="tk-k">const</span> std::wstring copy{ <span class="tk-s">L&quot;gameplay_&quot;</span> + std::<span class="tk-f">to_wstring</span>(++m_generation) + <span class="tk-s">L&quot;.dll&quot;</span> };
+    <span class="tk-k">if</span> (!<span class="tk-f">CopyFileW</span>(<span class="tk-s">L&quot;gameplay.dll&quot;</span>, copy.<span class="tk-f">c_str</span>(), FALSE)) <span class="tk-k">return</span>;  <span class="tk-c">// the compiler may still be writing it: try next frame</span>
+    HMODULE fresh{ <span class="tk-f">LoadLibraryW</span>(copy.<span class="tk-f">c_str</span>()) };
+    <span class="tk-k">auto</span> get{ fresh ? <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> game_api* (*)()&gt;(<span class="tk-f">GetProcAddress</span>(fresh, <span class="tk-s">&quot;get_game_api&quot;</span>)) : <span class="tk-k">nullptr</span> };
+    <span class="tk-k">if</span> (!get) { <span class="tk-k">if</span> (fresh) <span class="tk-f">FreeLibrary</span>(fresh); <span class="tk-k">return</span>; }               <span class="tk-c">// keep running the old code</span>
+
+    <span class="tk-c">// 2. Swap: drop every pointer into the old DLL, then unload it.</span>
+    m_api = <span class="tk-f">get</span>();
+    <span class="tk-k">if</span> (m_module) <span class="tk-f">FreeLibrary</span>(m_module);
+    m_module = fresh;
+    m_loadedWriteTime = now;
+}</code></pre></div>
+<h2>Why copy before loading?</h2>
+<p>A loaded DLL&#39;s file is <strong>locked</strong>: Windows maps it into memory and will not let anyone overwrite it. If the game loaded <code>gameplay.dll</code> itself, the next build would fail with &quot;cannot open file for writing&quot;. Loading a <strong>copy</strong> leaves the original free for the compiler. Each reload uses a new name (<code>gameplay_7.dll</code>) because the previous copy may still be loaded at the moment you copy.</p>
+<h2>Why only after the build has finished?</h2>
+<p>The linker writes the DLL over several hundred milliseconds. If the host notices the new time stamp half-way through, it may copy a half-written file. Two common fixes:</p>
+<ul>
+<li>Wait until the time stamp has been <strong>stable</strong> for a few checks (say 200 ms) before reloading.</li>
+<li>Have the build write a small &quot;lock&quot; file first and delete it when done; reload only when the lock file is gone.</li>
+</ul>
+<p>The practice builds the &quot;stable for several polls&quot; watcher.</p>
+<h2>The PDB problem</h2>
+<p>The debugger also locks the DLL&#39;s <strong>PDB</strong> (debug symbols) while the DLL is loaded, so the next link fails to write <code>gameplay.pdb</code>. Give each build&#39;s PDB a unique name in <strong>Linker, Debugging, Generate Program Database File</strong>, for example <code>$(OutDir)gameplay_$([System.DateTime]::Now.Ticks).pdb</code>. Old PDB files pile up; delete them on start-up.</p>
+<h2>What must not survive a reload</h2>
+<p>After <code>FreeLibrary</code> on the old DLL, everything that pointed into it is invalid:</p>
+<ul>
+<li>function pointers (the old <code>game_api</code> table, callbacks stored anywhere);</li>
+<li><strong>string literals</strong> from the old DLL;</li>
+<li><strong>vtables</strong>: any C++ object created by the old DLL&#39;s code has a vptr into the old DLL;</li>
+<li>static and global variables inside the DLL, which are reset to their initial values in the new one.</li>
+</ul>
+<p>That is why state lives in host memory, and why the state is plain data without virtual functions. Lesson 5.04 handles state whose layout changes between builds.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Loading the DLL itself instead of a copy</span></div><div class="callout-body"><p>The next build cannot overwrite the locked file.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Keeping the old table after unloading</span></div><div class="callout-body"><p>Read the new table before freeing the old module, and never keep pointers to the old one.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does the host load a copy of the DLL instead of the DLL itself?</div><ul><li>A loaded DLL&#39;s file is locked, so the compiler could not write the next build</li><li>Copies load faster</li><li>So the debugger can find the PDB</li></ul><details><summary>Show the answer</summary><p><b>A loaded DLL&#39;s file is locked, so the compiler could not write the next build</b> The original must stay writable for the next build.</p></details></li><li><div class="q">The host sees a new time stamp on gameplay.dll. Why might reloading straight away fail?</div><ul><li>The linker may still be writing the file</li><li>Time stamps are always wrong</li><li>FreeLibrary must be called first</li></ul><details><summary>Show the answer</summary><p><b>The linker may still be writing the file</b> Wait until it has been stable, or until a lock file disappears.</p></details></li><li><div class="q">Which of these survives a hot reload?</div><ul><li>Game state stored in memory the host owns</li><li>A static variable inside the DLL</li><li>A C++ object with virtual functions created by the old DLL</li></ul><details><summary>Show the answer</summary><p><b>Game state stored in memory the host owns</b> Everything inside the old DLL&#39;s image is gone after FreeLibrary.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-a-plugin-registry-and-capabilities/"><span class="mono">previous</span><b>5.02 A Plugin Registry and Capabilities</b></a>
+      <a class="lp-next" href="../5-04-keeping-state-across-a-reload/"><span class="mono">next</span><b>5.04 Keeping State Across a Reload</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/5-03-hot-reloading-code"></script>
+</body>
+</html>

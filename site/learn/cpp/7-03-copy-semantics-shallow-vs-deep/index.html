@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Copy Semantics — Shallow vs Deep · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/7-03-copy-semantics-shallow-vs-deep/">
+  <meta name="description" content="The default copy copies each member, and for a pointer that means the address , not the data. Two objects then own one block of memory and both delete it. A…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Copy Semantics — Shallow vs Deep · C++ · Xenon">
+  <meta property="og:description" content="The default copy copies each member, and for a pointer that means the address , not the data. Two objects then own one block of memory and both delete it. A…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/7-03-copy-semantics-shallow-vs-deep/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Copy Semantics — Shallow vs Deep · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Copy Semantics — Shallow vs Deep · C++ · Xenon">
+  <meta name="twitter:description" content="The default copy copies each member, and for a pointer that means the address , not the data. Two objects then own one block of memory and both delete it. A…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Memory Management</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Copy Semantics — Shallow vs Deep</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.03</b></span><span>3 of 8 in milestone 7</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">The default copy copies each member, and for a pointer that means the <strong>address</strong>, not the data. Two objects then own one block of memory and both delete it. A class that owns a resource needs a <strong>copy constructor</strong> and a <strong>copy assignment operator</strong> that make a <strong>deep copy</strong>.</p>
+      <div class="prose">
+<h2>The shallow copy trap</h2>
+<p>Here is a class that owns a dynamic array, with a correct constructor and destructor.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Buffer</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">Buffer</span>(std::size_t size) : m_data{ <span class="tk-k">new</span> <span class="tk-k">int</span>[size]{} }, m_size{ size } {}
+    ~<span class="tk-f">Buffer</span>() { <span class="tk-k">delete</span>[] m_data; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span>* m_data{};
+    std::size_t m_size{};
+};
+
+{
+    <span class="tk-t">Buffer</span> a{ <span class="tk-n">3</span> };
+    <span class="tk-t">Buffer</span> b{ a };    <span class="tk-c">// the compiler-generated copy</span>
+}                     <span class="tk-c">// b is destroyed: delete[]. a is destroyed: delete[] on the SAME block.</span></code></pre></div>
+<p>The copy constructor the compiler generates copies member by member. Copying <code>m_data</code> copies an address.</p>
+<div class="codeblock diagram plain"><pre><code> SHALLOW COPY
+  a.m_data ──┐
+             ├──▶ [ 0 | 0 | 0 ]     one block, two owners
+  b.m_data ──┘</code></pre></div>
+<p>Both objects believe they own the block, both destructors release it, and the program has a double delete. Before that, a change made through <code>a</code> silently appears in <code>b</code>.</p>
+<h2>Deep copy</h2>
+<p>A <strong>deep copy</strong> duplicates the data, so each object owns its own block.</p>
+<div class="codeblock diagram plain"><pre><code> DEEP COPY
+  a.m_data ────▶ [ 1 | 2 | 3 ]
+  b.m_data ────▶ [ 1 | 2 | 3 ]      separate blocks</code></pre></div>
+<p>Two functions create copies, and a class that owns a resource must define both.</p>
+<h3>The copy constructor</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">Buffer</span>(<span class="tk-k">const</span> <span class="tk-t">Buffer</span>&amp; other)
+    : m_data{ <span class="tk-k">new</span> <span class="tk-k">int</span>[other.m_size] }, m_size{ other.m_size }
+{
+    std::<span class="tk-f">copy</span>(other.m_data, other.m_data + m_size, m_data);
+}</code></pre></div>
+<p>It builds a <strong>new</strong> object from an existing one: allocate a block of the same size, then copy the contents.</p>
+<h3>The copy assignment operator</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Buffer</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-k">const</span> <span class="tk-t">Buffer</span>&amp; other)
+{
+    <span class="tk-k">if</span> (<span class="tk-k">this</span> == &amp;other)
+    {
+        <span class="tk-k">return</span> *<span class="tk-k">this</span>;                               <span class="tk-c">// a = a must not destroy its own data</span>
+    }
+    <span class="tk-k">int</span>* fresh{ <span class="tk-k">new</span> <span class="tk-k">int</span>[other.m_size] };            <span class="tk-c">// allocate first</span>
+    std::<span class="tk-f">copy</span>(other.m_data, other.m_data + other.m_size, fresh);
+    <span class="tk-k">delete</span>[] m_data;                                <span class="tk-c">// only then release the old block</span>
+    m_data = fresh;
+    m_size = other.m_size;
+    <span class="tk-k">return</span> *<span class="tk-k">this</span>;
+}</code></pre></div>
+<p>Assignment is harder, because the left-hand object already holds a block that must be released. The order matters: if the allocation failed after the old block had been deleted, the object would be left pointing at released memory.</p>
+<h3>Which one runs?</h3>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    Q{&quot;Does the object on the left&lt;br/&gt;already exist?&quot;} -- &quot;no: Buffer b{ a };&lt;br/&gt;Buffer b = a;&lt;br/&gt;passing or returning by value&quot; --&gt; C[&quot;Copy constructor&quot;]
+    Q -- &quot;yes: b = a;&quot; --&gt; A[&quot;Copy assignment&lt;br/&gt;(must release the old data)&quot;]</pre></div>
+<p>Note that <code>Buffer b = a;</code> is a construction despite the <code>=</code> sign, because <code>b</code> is being created.</p>
+<h2>Copy and swap</h2>
+<p>There is a way to write assignment that reuses the copy constructor and is correct by construction.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">friend</span> <span class="tk-k">void</span> <span class="tk-f">swap</span>(<span class="tk-t">Buffer</span>&amp; a, <span class="tk-t">Buffer</span>&amp; b) <span class="tk-k">noexcept</span>
+{
+    <span class="tk-k">using</span> std::swap;
+    <span class="tk-f">swap</span>(a.m_data, b.m_data);
+    <span class="tk-f">swap</span>(a.m_size, b.m_size);
+}
+
+<span class="tk-t">Buffer</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-t">Buffer</span> other)    <span class="tk-c">// by value: the parameter is already a copy</span>
+{
+    <span class="tk-f">swap</span>(*<span class="tk-k">this</span>, other);
+    <span class="tk-k">return</span> *<span class="tk-k">this</span>;
+}                                  <span class="tk-c">// other, now holding the old data, is destroyed here</span></code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;b = a&quot;] --&gt; B[&quot;other is a copy of a&lt;br/&gt;(copy constructor)&quot;] --&gt; C[&quot;swap this object's contents&lt;br/&gt;with other's&quot;] --&gt; D[&quot;other is destroyed,&lt;br/&gt;releasing the old data&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>How it is handled</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Self-assignment</td>
+<td>Harmless: a copy is made and swapped in</td>
+</tr>
+<tr>
+<td>Allocation failure</td>
+<td>It happens while making the parameter, before this object is touched</td>
+</tr>
+<tr>
+<td>Duplicate code</td>
+<td>The copying logic exists only in the copy constructor</td>
+</tr>
+</tbody></table>
+</div>
+<p>This is the <strong>copy-and-swap idiom</strong>.</p>
+<h2>Forbidding copies</h2>
+<p>Some things should not be copied at all: an open file, a lock, a window. Say so, and the compiler enforces it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Window</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Window</span>(<span class="tk-k">const</span> <span class="tk-t">Window</span>&amp;) = <span class="tk-k">delete</span>;
+    <span class="tk-t">Window</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-k">const</span> <span class="tk-t">Window</span>&amp;) = <span class="tk-k">delete</span>;
+};</code></pre></div>
+<p>Any attempt to copy a <code>Window</code> is now a compile error.</p>
+<h2>The real lesson</h2>
+<p>Everything above exists because <code>Buffer</code> holds a <strong>raw owning pointer</strong>. Replace it with a <code>std::vector&lt;int&gt;</code> and the compiler-generated copy is already a deep copy, the destructor is already correct, and you write none of this.</p>
+<p>Write a deep copy by hand when you are building a low-level resource class. Everywhere else, use members that copy themselves correctly.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/7.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/7.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-02-new-and-delete-dynamic-memory/"><span class="mono">previous</span><b>7.02 new and delete — Dynamic Memory</b></a>
+      <a class="lp-next" href="../7-04-raii-and-the-rule-of-three/"><span class="mono">next</span><b>7.04 RAII and the Rule of Three</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/7-03-copy-semantics-shallow-vs-deep"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

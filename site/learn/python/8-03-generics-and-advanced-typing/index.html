@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Generics and Advanced Typing · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/8-03-generics-and-advanced-typing/">
+  <meta name="description" content="Type hints that say more - generic functions and classes with type parameters, bounded types, Callable, TypedDict for dictionaries with fixed keys, Literal…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Generics and Advanced Typing · Python · Xenon">
+  <meta property="og:description" content="Type hints that say more - generic functions and classes with type parameters, bounded types, Callable, TypedDict for dictionaries with fixed keys, Literal…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/8-03-generics-and-advanced-typing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Generics and Advanced Typing · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Generics and Advanced Typing · Python · Xenon">
+  <meta name="twitter:description" content="Type hints that say more - generic functions and classes with type parameters, bounded types, Callable, TypedDict for dictionaries with fixed keys, Literal…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Python in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Generics and Advanced Typing</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.03</b></span><span>3 of 6 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Type hints that say more - generic functions and classes with type parameters, bounded types, Callable, TypedDict for dictionaries with fixed keys, Literal and Final, overloads, Protocols revisited, and how type checkers use all of it while Python itself ignores it.</p>
+      <div class="prose">
+<h2>Hints that follow the data</h2>
+<p>Lesson 5.05 introduced type hints like <code>def total(prices: list[float]) -&gt; float</code>. Some functions work for <strong>any</strong> type, but the types of their inputs and outputs are linked. <code>first(items)</code> returns an element of the list, whatever the list holds:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> first[T](items: list[T]) -&gt; T:
+    <span class="tk-k">return</span> items[<span class="tk-n">0</span>]
+
+name = <span class="tk-f">first</span>([<span class="tk-s">&quot;ada&quot;</span>, <span class="tk-s">&quot;bob&quot;</span>])     <span class="tk-c"># a type checker knows: str</span>
+count = <span class="tk-f">first</span>([<span class="tk-n">3</span>, <span class="tk-n">4</span>])            <span class="tk-c"># int</span>
+<span class="tk-f">print</span>(name.<span class="tk-f">upper</span>(), count + <span class="tk-n">1</span>)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>ADA 4</code></pre></div>
+<p><code>[T]</code> after the name declares a <strong>type parameter</strong> (Python 3.12 and later). Older code writes the same thing with <code>T = TypeVar(&quot;T&quot;)</code> at the top of the file; you will see both.</p>
+<p>Python does not check any of this when the program runs. Tools such as mypy and Pyright (built into many editors) read the hints and warn about mistakes before you run anything.</p>
+<h2>Generic classes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">class</span> Stack[T]:
+    <span class="tk-k">def</span> <span class="tk-f">__init__</span>(<span class="tk-k">self</span>) -&gt; <span class="tk-k">None</span>:
+        <span class="tk-k">self</span>._items: list[T] = []
+
+    <span class="tk-k">def</span> <span class="tk-f">push</span>(<span class="tk-k">self</span>, item: T) -&gt; <span class="tk-k">None</span>:
+        <span class="tk-k">self</span>._items.<span class="tk-f">append</span>(item)
+
+    <span class="tk-k">def</span> <span class="tk-f">pop</span>(<span class="tk-k">self</span>) -&gt; T:
+        <span class="tk-k">return</span> <span class="tk-k">self</span>._items.<span class="tk-f">pop</span>()
+
+    <span class="tk-k">def</span> <span class="tk-f">__len__</span>(<span class="tk-k">self</span>) -&gt; int:
+        <span class="tk-k">return</span> <span class="tk-f">len</span>(<span class="tk-k">self</span>._items)
+
+s = Stack[int]()
+s.<span class="tk-f">push</span>(<span class="tk-n">1</span>)
+s.<span class="tk-f">push</span>(<span class="tk-n">2</span>)
+<span class="tk-f">print</span>(s.<span class="tk-f">pop</span>(), <span class="tk-f">len</span>(s))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>2 1</code></pre></div>
+<p>With <code>Stack[int]</code>, a checker refuses <code>s.push(&quot;x&quot;)</code>.</p>
+<h2>Bounds</h2>
+<p>Sometimes &quot;any type&quot; is too wide. A <strong>bound</strong> says the type must have some ability:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> typing <span class="tk-k">import</span> Protocol
+
+<span class="tk-k">class</span> <span class="tk-f">HasLength</span>(Protocol):
+    <span class="tk-k">def</span> <span class="tk-f">__len__</span>(<span class="tk-k">self</span>) -&gt; int: ...
+
+<span class="tk-k">def</span> longest[T: HasLength](items: list[T]) -&gt; T:
+    <span class="tk-k">return</span> <span class="tk-f">max</span>(items, key=len)
+
+<span class="tk-f">print</span>(<span class="tk-f">longest</span>([<span class="tk-s">&quot;fig&quot;</span>, <span class="tk-s">&quot;banana&quot;</span>, <span class="tk-s">&quot;kiwi&quot;</span>]))
+<span class="tk-f">print</span>(<span class="tk-f">longest</span>([[<span class="tk-n">1</span>], [<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>]]))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>banana
+[1, 2, 3]</code></pre></div>
+<p><code>T: HasLength</code> means &quot;any type that has <code>__len__</code>&quot;, and the result is still the specific type that went in.</p>
+<h2>Functions as values</h2>
+<p><code>Callable[[ArgTypes...], ReturnType]</code> describes a function:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> collections.abc <span class="tk-k">import</span> Callable
+
+<span class="tk-k">def</span> <span class="tk-f">apply_all</span>(values: list[int], fn: Callable[[int], int]) -&gt; list[int]:
+    <span class="tk-k">return</span> [<span class="tk-f">fn</span>(v) <span class="tk-k">for</span> v <span class="tk-k">in</span> values]
+
+<span class="tk-f">print</span>(<span class="tk-f">apply_all</span>([<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>], <span class="tk-k">lambda</span> v: v * <span class="tk-n">10</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>[10, 20, 30]</code></pre></div>
+<h2>Dictionaries with known keys</h2>
+<p>JSON and configuration often arrive as dictionaries with fixed keys. <code>TypedDict</code> describes them without turning them into classes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> typing <span class="tk-k">import</span> NotRequired, TypedDict
+
+<span class="tk-k">class</span> <span class="tk-f">User</span>(TypedDict):
+    name: str
+    age: int
+    email: NotRequired[str]
+
+<span class="tk-k">def</span> <span class="tk-f">greet</span>(user: User) -&gt; str:
+    <span class="tk-k">return</span> <span class="tk-s">f&quot;Hello {user['name']} ({user['age']})&quot;</span>
+
+u: User = {<span class="tk-s">&quot;name&quot;</span>: <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;age&quot;</span>: <span class="tk-n">36</span>}
+<span class="tk-f">print</span>(<span class="tk-f">greet</span>(u), <span class="tk-f">isinstance</span>(u, dict))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Hello Ada (36) True</code></pre></div>
+<p>At run time <code>u</code> is an ordinary <code>dict</code>; only the checker knows its keys.</p>
+<h2>Exact values: Literal and Final</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> typing <span class="tk-k">import</span> Final, Literal
+
+Mode = Literal[<span class="tk-s">&quot;r&quot;</span>, <span class="tk-s">&quot;w&quot;</span>, <span class="tk-s">&quot;a&quot;</span>]
+MAX_RETRIES: Final = <span class="tk-n">3</span>
+
+<span class="tk-k">def</span> <span class="tk-f">open_log</span>(mode: Mode) -&gt; str:
+    <span class="tk-k">return</span> <span class="tk-s">f&quot;opened in {mode} mode&quot;</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">open_log</span>(<span class="tk-s">&quot;a&quot;</span>))</code></pre></div>
+<p>A checker refuses <code>open_log(&quot;x&quot;)</code>, and refuses any later assignment to <code>MAX_RETRIES</code>.</p>
+<h2>Overloads</h2>
+<p>When the return type depends on the arguments in a way a single signature cannot say, list the cases with <code>@overload</code>, then write one real implementation:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">from</span> typing <span class="tk-k">import</span> Literal, overload
+
+<span class="tk-p">@overload</span>
+<span class="tk-k">def</span> <span class="tk-f">parse</span>(text: str, as_int: Literal[<span class="tk-k">True</span>]) -&gt; int: ...
+<span class="tk-p">@overload</span>
+<span class="tk-k">def</span> <span class="tk-f">parse</span>(text: str, as_int: Literal[<span class="tk-k">False</span>]) -&gt; str: ...
+
+<span class="tk-k">def</span> <span class="tk-f">parse</span>(text, as_int):
+    <span class="tk-k">return</span> <span class="tk-f">int</span>(text) <span class="tk-k">if</span> as_int <span class="tk-k">else</span> text.<span class="tk-f">strip</span>()
+
+<span class="tk-f">print</span>(<span class="tk-f">parse</span>(<span class="tk-s">&quot;42&quot;</span>, <span class="tk-k">True</span>) + <span class="tk-n">1</span>, <span class="tk-f">parse</span>(<span class="tk-s">&quot; hi &quot;</span>, <span class="tk-k">False</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>43 hi</code></pre></div>
+<p>The <code>@overload</code> versions are only for the checker; Python runs the last definition.</p>
+<h2>Using hints well</h2>
+<ul>
+<li>Hint the edges of your code (function parameters and results, class attributes); local variables are usually inferred.</li>
+<li>Prefer abstract types in parameters (<code>Iterable[int]</code>, <code>Mapping[str, int]</code>) and concrete ones in results (<code>list[int]</code>).</li>
+<li><code>object</code> means &quot;anything, and I will check before using it&quot;; <code>Any</code> means &quot;stop checking&quot;, so use it rarely.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/8.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/8.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-02-testing-in-depth/"><span class="mono">previous</span><b>8.02 Testing in Depth</b></a>
+      <a class="lp-next" href="../8-04-bytes-encodings-and-binary-data/"><span class="mono">next</span><b>8.04 Bytes, Encodings and Binary Data</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/8-03-generics-and-advanced-typing"></script>
+</body>
+</html>

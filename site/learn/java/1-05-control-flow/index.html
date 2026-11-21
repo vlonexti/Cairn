@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Control Flow · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/1-05-control-flow/">
+  <meta name="description" content="Making decisions with if and else, the classic switch statement and the modern switch expression with arrows, loops with while, do-while, for and the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Control Flow · Java · Xenon">
+  <meta property="og:description" content="Making decisions with if and else, the classic switch statement and the modern switch expression with arrows, loops with while, do-while, for and the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/1-05-control-flow/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Control Flow · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Control Flow · Java · Xenon">
+  <meta name="twitter:description" content="Making decisions with if and else, the classic switch statement and the modern switch expression with arrows, loops with while, do-while, for and the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Control Flow</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.05</b></span><span>5 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making decisions with if and else, the classic switch statement and the modern switch expression with arrows, loops with while, do-while, for and the enhanced for, break and continue, labelled breaks for nested loops, and input loops with a sentinel.</p>
+      <div class="prose">
+<h2>if and else</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> temperature = <span class="tk-n">23</span>;
+        <span class="tk-k">if</span> (temperature &gt;= <span class="tk-n">30</span>) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Hot&quot;</span>);
+        } <span class="tk-k">else</span> <span class="tk-k">if</span> (temperature &gt;= <span class="tk-n">18</span>) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Pleasant&quot;</span>);
+        } <span class="tk-k">else</span> {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Cold&quot;</span>);
+        }
+    }
+}</code></pre></div>
+<p>Always use braces, even for one statement: without them, only the first line belongs to the <code>if</code>, however it is indented.</p>
+<h2>switch</h2>
+<p>The modern <strong>switch expression</strong> (Java 14+) uses arrows, needs no <code>break</code>, and produces a value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> day = <span class="tk-n">6</span>;
+        <span class="tk-t">String</span> kind = <span class="tk-k">switch</span> (day) {
+            <span class="tk-k">case</span> <span class="tk-n">6</span>, <span class="tk-n">7</span> -&gt; <span class="tk-s">&quot;weekend&quot;</span>;
+            <span class="tk-k">case</span> <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span> -&gt; <span class="tk-s">&quot;weekday&quot;</span>;
+            <span class="tk-k">default</span> -&gt; <span class="tk-s">&quot;not a day&quot;</span>;
+        };
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(kind);
+
+        <span class="tk-t">String</span> command = <span class="tk-s">&quot;stop&quot;</span>;
+        <span class="tk-k">switch</span> (command) {
+            <span class="tk-k">case</span> <span class="tk-s">&quot;go&quot;</span>, <span class="tk-s">&quot;start&quot;</span> -&gt; <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Starting&quot;</span>);
+            <span class="tk-k">case</span> <span class="tk-s">&quot;stop&quot;</span> -&gt; <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Stopping&quot;</span>);
+            <span class="tk-k">default</span> -&gt; <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Unknown command&quot;</span>);
+        }
+    }
+}</code></pre></div>
+<p>You will also meet the <strong>classic</strong> form with colons. There, each case falls through into the next unless it ends with <code>break</code>, a frequent source of bugs:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">switch</span> (command) {
+    <span class="tk-k">case</span> <span class="tk-s">&quot;go&quot;</span>:
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Starting&quot;</span>);
+        <span class="tk-k">break</span>;                         <span class="tk-c">// without this, &quot;Stopping&quot; would print too</span>
+    <span class="tk-k">case</span> <span class="tk-s">&quot;stop&quot;</span>:
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Stopping&quot;</span>);
+        <span class="tk-k">break</span>;
+    <span class="tk-k">default</span>:
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Unknown&quot;</span>);
+}</code></pre></div>
+<p>Prefer the arrow form in new code.</p>
+<h2>while and do-while</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> n = <span class="tk-n">27</span>, steps = <span class="tk-n">0</span>;
+        <span class="tk-k">while</span> (n != <span class="tk-n">1</span>) {
+            n = (n % <span class="tk-n">2</span> == <span class="tk-n">0</span>) ? n / <span class="tk-n">2</span> : <span class="tk-n">3</span> * n + <span class="tk-n">1</span>;
+            steps++;
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(steps + <span class="tk-s">&quot; steps&quot;</span>);
+
+        <span class="tk-k">int</span> tries = <span class="tk-n">0</span>;
+        <span class="tk-k">do</span> {
+            tries++;                   <span class="tk-c">// runs at least once</span>
+        } <span class="tk-k">while</span> (tries &lt; <span class="tk-n">3</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(tries);
+    }
+}</code></pre></div>
+<h2>for loops</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt;= <span class="tk-n">5</span>; i++) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">print</span>(i + <span class="tk-s">&quot; &quot;</span>);
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>();
+
+        <span class="tk-t">String</span>[] names = {<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-s">&quot;Linus&quot;</span>};
+        <span class="tk-k">for</span> (<span class="tk-t">String</span> name : names) {                     <span class="tk-c">// the enhanced for: every item</span>
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(name.<span class="tk-f">toUpperCase</span>());
+        }
+
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> row = <span class="tk-n">1</span>; row &lt;= <span class="tk-n">3</span>; row++) {            <span class="tk-c">// nested loops: a times table</span>
+            <span class="tk-k">for</span> (<span class="tk-k">int</span> col = <span class="tk-n">1</span>; col &lt;= <span class="tk-n">4</span>; col++) {
+                <span class="tk-t">System</span>.out.<span class="tk-f">printf</span>(<span class="tk-s">&quot;%4d&quot;</span>, row * col);
+            }
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>();
+        }
+    }
+}</code></pre></div>
+<p>Use the classic <code>for</code> when you need the index or count; the <strong>enhanced for</strong> (<code>for (Type x : collection)</code>) when you just need every item.</p>
+<h2>break and continue</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span>[] numbers = {<span class="tk-n">4</span>, <span class="tk-n">7</span>, -<span class="tk-n">1</span>, <span class="tk-n">12</span>, <span class="tk-n">0</span>, <span class="tk-n">9</span>};
+        <span class="tk-k">int</span> sum = <span class="tk-n">0</span>;
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> x : numbers) {
+            <span class="tk-k">if</span> (x &lt; <span class="tk-n">0</span>) <span class="tk-k">continue</span>;     <span class="tk-c">// skip this one</span>
+            <span class="tk-k">if</span> (x == <span class="tk-n">0</span>) <span class="tk-k">break</span>;       <span class="tk-c">// stop the loop</span>
+            sum += x;
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(sum);     <span class="tk-c">// 23</span>
+
+        outer:
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">5</span>; i++) {
+            <span class="tk-k">for</span> (<span class="tk-k">int</span> j = <span class="tk-n">0</span>; j &lt; <span class="tk-n">5</span>; j++) {
+                <span class="tk-k">if</span> (i * j == <span class="tk-n">6</span>) {
+                    <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;found &quot;</span> + i + <span class="tk-s">&quot; x &quot;</span> + j);
+                    <span class="tk-k">break</span> outer;     <span class="tk-c">// leaves both loops</span>
+                }
+            }
+        }
+    }
+}</code></pre></div>
+<h2>Input loops</h2>
+<p>A common pattern reads until a special <strong>sentinel</strong> value or the end of input:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.<span class="tk-t">Scanner</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Scanner</span> in = <span class="tk-k">new</span> <span class="tk-f">Scanner</span>(<span class="tk-t">System</span>.in);
+        <span class="tk-k">int</span> total = <span class="tk-n">0</span>;
+        <span class="tk-k">while</span> (in.<span class="tk-f">hasNextLine</span>()) {
+            <span class="tk-t">String</span> line = in.<span class="tk-f">nextLine</span>().<span class="tk-f">trim</span>();
+            <span class="tk-k">if</span> (line.<span class="tk-f">equals</span>(<span class="tk-s">&quot;done&quot;</span>)) <span class="tk-k">break</span>;
+            <span class="tk-k">try</span> {
+                total += <span class="tk-t">Integer</span>.<span class="tk-f">parseInt</span>(line);
+            } <span class="tk-k">catch</span> (<span class="tk-t">NumberFormatException</span> e) {
+                <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Not a number: &quot;</span> + line);
+            }
+        }
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Total: &quot;</span> + total);
+    }
+}</code></pre></div>
+<p><code>try</code>/<code>catch</code> handles text that is not a number; exceptions are covered fully in lesson 4.04.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/1.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/1.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-04-strings-and-input/"><span class="mono">previous</span><b>1.04 Strings and Input</b></a>
+      <a class="lp-next" href="../2-01-methods/"><span class="mono">next</span><b>2.01 Methods</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/1-05-control-flow"></script>
+</body>
+</html>

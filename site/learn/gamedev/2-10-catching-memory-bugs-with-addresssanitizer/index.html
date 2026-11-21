@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Catching Memory Bugs with AddressSanitizer · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/2-10-catching-memory-bugs-with-addresssanitizer/">
+  <meta name="description" content="AddressSanitizer (ASan) is a compiler feature that adds a check to every memory access. It stops the program at the exact moment of a buffer overrun or use…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Catching Memory Bugs with AddressSanitizer · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="AddressSanitizer (ASan) is a compiler feature that adds a check to every memory access. It stops the program at the exact moment of a buffer overrun or use…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/2-10-catching-memory-bugs-with-addresssanitizer/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Catching Memory Bugs with AddressSanitizer · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Catching Memory Bugs with AddressSanitizer · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="AddressSanitizer (ASan) is a compiler feature that adds a check to every memory access. It stops the program at the exact moment of a buffer overrun or use…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Memory in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Catching Memory Bugs with AddressSanitizer</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.10</b></span><span>10 of 11 in milestone 2</span><span>7 min</span></div>
+      <p class="lp-summary"><strong>AddressSanitizer</strong> (ASan) is a compiler feature that adds a check to every memory access. It stops the program at the exact moment of a buffer overrun or use after free, and prints where the memory was allocated, where it was freed and where it was misused. Visual Studio supports it with one switch. This lesson shows how it works and how to read its reports.</p>
+      <div class="prose">
+<h2>The idea</h2>
+<p>The previous lesson&#39;s bugs are hard because nothing happens at the moment of the mistake. A Debug build&#39;s patterns help after the fact; AddressSanitizer catches the mistake <strong>as it happens</strong>.</p>
+<p>When you compile with ASan, the compiler adds a small check before every load and store. The check asks: &quot;is the address about to be touched part of a live object?&quot; If not, the program stops immediately with a report.</p>
+<p>To answer that question quickly, ASan keeps <strong>shadow memory</strong>: for every 8 bytes of the program&#39;s memory, one byte of shadow says how many of those 8 are valid to use. Around every heap block, stack array and global it places <strong>red zones</strong>, bytes marked as forbidden. Freed heap blocks are marked forbidden too, and held back for a while before being reused, so a late use of one is still caught.</p>
+<div class="codeblock diagram plain"><pre><code>heap block of 10 bytes, as ASan sees it
+ ┌────────┬──────────┬──┬──────────────────┐
+ │ red    │ 10 bytes │  │ red zone         │
+ │ zone   │ usable   │6 │ (forbidden)      │
+ └────────┴──────────┴──┴──────────────────┘
+                       ▲
+          bytes 10..15: forbidden, though in the same 8-byte group</code></pre></div>
+<p>The checks make a program about twice as slow and use more memory. That is fine for testing, and ASan builds are not meant for shipping.</p>
+<h2>Turning it on in Visual Studio</h2>
+<ol>
+<li>Install the <strong>C++ AddressSanitizer</strong> component (lesson 1.07 ticked it).</li>
+<li>Project <strong>Properties → C/C++ → General → Enable Address Sanitizer: Yes</strong> (<code>/fsanitize=address</code>).</li>
+<li>In the same properties, under <strong>C/C++ → General</strong>, set <strong>Debug Information Format</strong> to <strong>Program Database (/Zi)</strong> if it is not already, and turn <strong>Edit and Continue</strong> off; ASan is not compatible with it.</li>
+<li>Build and run under the debugger (F5).</li>
+</ol>
+<p>When ASan finds an error, the debugger stops on the bad line and the Output window shows the report.</p>
+<h2>Reading a report: heap buffer overflow</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span>* scores{ <span class="tk-k">new</span> <span class="tk-k">int</span>[<span class="tk-n">4</span>]{ <span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">40</span> } };
+    <span class="tk-k">int</span> total{ <span class="tk-n">0</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt;= <span class="tk-n">4</span>; ++i)        <span class="tk-c">// &lt;= is one too many</span>
+        total += scores[i];
+    std::cout &lt;&lt; total &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">delete</span>[] scores;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Without ASan this usually prints a wrong total and carries on. With ASan it stops on the fifth read:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>==14260==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x11b5c0420040
+READ of size 4 at 0x11b5c0420040 thread T0
+    #0 0x7ff6d4e81103 in main C:\code\scores\main.cpp:8
+    #1 0x7ff6d4e8b4e8 in invoke_main exe_common.inl:78
+    ...
+
+0x11b5c0420040 is located 0 bytes to the right of 16-byte region [0x11b5c0420030,0x11b5c0420040)
+allocated by thread T0 here:
+    #0 0x7ffe4c0d8d5b in operator new[] ...
+    #1 0x7ff6d4e81069 in main C:\code\scores\main.cpp:5</code></pre></div>
+<p>Read it from the top:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Line</th>
+<th>What it tells you</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>heap-buffer-overflow</code></td>
+<td>The kind of bug: past the end of a heap block</td>
+</tr>
+<tr>
+<td><code>READ of size 4</code></td>
+<td>An <code>int</code> was read (a write would say WRITE)</td>
+</tr>
+<tr>
+<td><code>#0 ... main.cpp:8</code></td>
+<td>The exact line that did it: <code>total += scores[i];</code></td>
+</tr>
+<tr>
+<td><code>0 bytes to the right of 16-byte region</code></td>
+<td>It touched the byte just after a 16-byte block, which is 4 <code>int</code>s</td>
+</tr>
+<tr>
+<td><code>allocated by ... main.cpp:5</code></td>
+<td>Where that block came from: the <code>new int[4]</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>That is the whole investigation done for you: what went wrong, where, and with which block.</p>
+<h2>Reading a report: use after free</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; health{ <span class="tk-n">100</span>, <span class="tk-n">80</span> };
+    <span class="tk-k">int</span>&amp; first{ health[<span class="tk-n">0</span>] };
+    health.<span class="tk-f">push_back</span>(<span class="tk-n">60</span>);       <span class="tk-c">// reallocates: first now refers to freed memory</span>
+    first -= <span class="tk-n">10</span>;
+    std::cout &lt;&lt; health[<span class="tk-n">0</span>] &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>ASan reports <code>heap-use-after-free</code>, with <strong>three</strong> stacks: where the bad access happened (<code>first -= 10</code>), where the memory was freed (inside <code>push_back</code>, called from your line), and where it was originally allocated (the vector&#39;s constructor). That third-party &quot;freed inside <code>push_back</code>&quot; line is exactly the clue that points at iterator and reference invalidation from lesson 2.04.</p>
+<h2>What ASan catches, and what it does not</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Catches</th>
+<th>Does not catch</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Heap buffer overflow and underflow</td>
+<td>Reading uninitialised memory</td>
+</tr>
+<tr>
+<td>Stack buffer overflow</td>
+<td>Leaks, on Windows (use the CRT leak report)</td>
+</tr>
+<tr>
+<td>Global buffer overflow</td>
+<td>Overruns that stay inside the same object, such as from one struct member into the next</td>
+</tr>
+<tr>
+<td>Use after free</td>
+<td>Logic errors</td>
+</tr>
+<tr>
+<td>Use after return or scope (with extra options)</td>
+<td>Data races between threads</td>
+</tr>
+<tr>
+<td>Double free, mismatched <code>new[]</code>/<code>delete</code></td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<p>The &quot;same object&quot; row deserves attention: the <code>Player::name</code> overrun in lesson 2.09 writes into <code>gold</code>, which is part of the same struct. Both are inside one live object, so ASan sees nothing wrong. Prevention there is still <code>std::string</code> and bounds checks.</p>
+<h2>Using it well</h2>
+<ul>
+<li><strong>Run your tests and a play session under ASan regularly</strong>, not only when something breaks. Bugs that have not caused a crash yet are the cheapest to fix.</li>
+<li><strong>Fix the first report first.</strong> One overrun can cause later, confusing reports.</li>
+<li><strong>Keep a separate configuration.</strong> In Configuration Manager, copy Debug to a new configuration called <code>ASan</code> with the option on, so normal debugging stays fast.</li>
+<li><strong>Third-party code may need to be rebuilt</strong> with ASan, or its errors may show up inside your program&#39;s reports.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Shipping an ASan build</span></div><div class="callout-body"><p>It is slower and depends on the ASan runtime DLL. ASan is for testing only.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Mixing ASan and Edit and Continue</span></div><div class="callout-body"><p>Visual Studio refuses to build with both. Switch Edit and Continue off for the ASan configuration.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Assuming no report means no memory bugs</span></div><div class="callout-body"><p>ASan only checks code paths that actually ran, and it misses overruns within one object. It finds a lot; it does not prove correctness.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">When does AddressSanitizer report a buffer overrun?</div><ul><li>At the moment the bad read or write happens</li><li>When the program exits</li><li>When the corrupted value is next used</li></ul><details><summary>Show the answer</summary><p><b>At the moment the bad read or write happens</b> Every access is checked as it happens, which is what makes ASan so much more useful than finding the damage later.</p></details></li><li><div class="q">A report says &quot;0 bytes to the right of 16-byte region&quot;. What happened?</div><ul><li>The code touched the first byte after the end of a 16-byte block</li><li>The code read a 16-byte value</li><li>16 bytes leaked</li></ul><details><summary>Show the answer</summary><p><b>The code touched the first byte after the end of a 16-byte block</b> &quot;To the right&quot; means past the end; &quot;0 bytes&quot; means immediately after it.</p></details></li><li><div class="q">Which of these does ASan not catch?</div><ul><li>Use after free</li><li>Heap buffer overflow</li><li>An overrun from one struct member into the next member of the same struct</li></ul><details><summary>Show the answer</summary><p><b>An overrun from one struct member into the next member of the same struct</b> Both members belong to one live object, so the access is to valid memory as far as ASan can tell.</p></details></li><li><div class="q">What is shadow memory?</div><ul><li>A copy of the program kept for debugging</li><li>Extra memory where ASan records which bytes of the program&#39;s memory are valid to use</li><li>Memory used by the GPU</li></ul><details><summary>Show the answer</summary><p><b>Extra memory where ASan records which bytes of the program&#39;s memory are valid to use</b> One shadow byte describes eight bytes of real memory.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/2.10">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/2.10">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-09-memory-bugs-overruns-dangling-pointers-and-leaks/"><span class="mono">previous</span><b>2.09 Memory Bugs: Overruns, Dangling Pointers and Leaks</b></a>
+      <a class="lp-next" href="../2-11-reading-the-memory-window-in-visual-studio/"><span class="mono">next</span><b>2.11 Reading the Memory Window in Visual Studio</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/2-10-catching-memory-bugs-with-addresssanitizer"></script>
+</body>
+</html>

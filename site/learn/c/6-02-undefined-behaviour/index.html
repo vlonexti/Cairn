@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Undefined Behaviour · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/6-02-undefined-behaviour/">
+  <meta name="description" content="For some mistakes the C standard sets no rules at all - signed overflow, out-of-bounds access, using freed memory, dividing by zero. The optimiser assumes…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Undefined Behaviour · C · Xenon">
+  <meta property="og:description" content="For some mistakes the C standard sets no rules at all - signed overflow, out-of-bounds access, using freed memory, dividing by zero. The optimiser assumes…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/6-02-undefined-behaviour/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Undefined Behaviour · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Undefined Behaviour · C · Xenon">
+  <meta name="twitter:description" content="For some mistakes the C standard sets no rules at all - signed overflow, out-of-bounds access, using freed memory, dividing by zero. The optimiser assumes…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C Close to the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Undefined Behaviour</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">For some mistakes the C standard sets no rules at all - signed overflow, out-of-bounds access, using freed memory, dividing by zero. The optimiser assumes they never happen and builds on that assumption, so their effects can be strange and far away. Learn the list, compile with warnings, and test with sanitizers.</p>
+      <div class="prose">
+<h2>Three kinds of &quot;it depends&quot;</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Means</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>implementation-defined</td>
+<td>each compiler chooses and documents it</td>
+<td>the size of <code>long</code>, whether <code>char</code> is signed</td>
+</tr>
+<tr>
+<td>unspecified</td>
+<td>one of several outcomes, not documented</td>
+<td>which argument of <code>f(a(), b())</code> is worked out first</td>
+</tr>
+<tr>
+<td><strong>undefined</strong></td>
+<td>the standard says nothing at all: <strong>anything</strong> may happen</td>
+<td><code>INT_MAX + 1</code>, <code>a[10]</code> in an <code>int a[10]</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Undefined behaviour (UB) is not &quot;a random value&quot; or &quot;a crash&quot;. The compiler is allowed to assume it never happens, and it optimises on that basis.</p>
+<h2>The usual suspects</h2>
+<ul>
+<li>signed integer overflow: <code>INT_MAX + 1</code></li>
+<li>reading or writing outside an object: arrays, strings without terminators</li>
+<li>using a pointer after <code>free</code>, or to a local that has gone</li>
+<li>dereferencing <code>NULL</code></li>
+<li>dividing by zero, or <code>INT_MIN / -1</code></li>
+<li>shifting by a negative amount or by the width of the type or more</li>
+<li>reading an uninitialised local</li>
+<li>changing a variable twice without a sequence point: <code>i = i++ + 1;</code></li>
+<li>modifying a string literal</li>
+<li>a non-void function falling off its end when the caller uses the result</li>
+</ul>
+<h2>How the optimiser uses it</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;limits.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">will_overflow</span>(<span class="tk-k">int</span> x)
+{
+    <span class="tk-k">int</span> bigger = x + <span class="tk-n">1</span>;
+    <span class="tk-k">return</span> bigger &lt; x;      <span class="tk-c">// only true if x + 1 overflowed</span>
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d\n&quot;</span>, <span class="tk-f">will_overflow</span>(INT_MAX));
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>At <code>-O0</code> (the website&#39;s normal build) this prints <code>1</code>: the addition wraps and the test sees it. Switch the build to <strong>Release</strong> (click <strong>Debug</strong> in the editor&#39;s status bar), which compiles with <code>-O2</code>, and GCC prints <code>0</code>, because it reasons: &quot;signed overflow cannot happen, so x + 1 is always bigger than x&quot;, and replaces the whole function with <code>return 0</code>. (Written as one expression, <code>return x + 1 &lt; x;</code>, GCC removes it even in a debug build.) Neither answer is a bug in GCC. The program had none to give.</p>
+<p>Real damage happens the same way. In 2009 a Linux kernel driver read a field through a pointer <strong>before</strong> checking the pointer for <code>NULL</code>. Since dereferencing NULL is UB, the compiler concluded the pointer could not be NULL and deleted the check, which created a security hole.</p>
+<div class="callout tip"><div class="callout-title"><span>Check before the operation, not after</span></div><div class="callout-body"><p>To find out whether <code>a + b</code> would overflow, test first: <code>if (b &gt; 0 &amp;&amp; a &gt; INT_MAX - b)</code>. Or use the builtins: <code>__builtin_add_overflow(a, b, &amp;result)</code> returns true on overflow (C23 adds <code>ckd_add</code> in <code>stdckdint.h</code>).</p>
+</div></div>
+<h2>Unsigned arithmetic is safe</h2>
+<p>Unsigned types are defined to wrap around: <code>UINT_MAX + 1u</code> is <code>0</code>, always. That is why hash functions and checksums use <code>uint32_t</code> or <code>uint64_t</code>.</p>
+<h2>Defending yourself</h2>
+<ul>
+<li><code>-Wall -Wextra</code> catch many cases at compile time.</li>
+<li><strong>Memory checks</strong> in the editor&#39;s menu turn on AddressSanitizer and UndefinedBehaviorSanitizer, which report each overflow, bad shift or bad memory access as it happens, with a message such as <code>runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type &#39;int&#39;</code>.</li>
+<li>Prefer <code>size_t</code> for sizes and indexes, and unsigned types for bit work.</li>
+<li>Keep functions small enough to check every path by eye.</li>
+</ul>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What may a program with undefined behaviour do?</div><ul><li>Anything at all, including appearing to work</li><li>Always crash</li><li>Always print 0</li></ul><details><summary>Show the answer</summary><p><b>Anything at all, including appearing to work</b> The standard places no requirements on it.</p></details></li><li><div class="q">Why can x + 1 &lt; x be replaced by 0?</div><ul><li>The compiler may assume signed overflow never happens</li><li>The compiler has a bug</li><li>x + 1 is always computed as a double</li></ul><details><summary>Show the answer</summary><p><b>The compiler may assume signed overflow never happens</b> It optimises on that assumption.</p></details></li><li><div class="q">Which of these is defined behaviour?</div><ul><li>UINT_MAX + 1u, which is 0</li><li>INT_MAX + 1</li><li>1 &lt;&lt; 40 on a 32-bit int</li></ul><details><summary>Show the answer</summary><p><b>UINT_MAX + 1u, which is 0</b> Unsigned arithmetic wraps by definition.</p></details></li><li><div class="q">How do you safely test whether a + b would overflow for positive b?</div><ul><li>if (a &gt; INT_MAX - b) before adding</li><li>if (a + b &lt; a) after adding</li><li>if (a + b &gt; INT_MAX)</li></ul><details><summary>Show the answer</summary><p><b>if (a &gt; INT_MAX - b) before adding</b> The other two tests rely on the overflow having happened.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-function-pointers-and-qsort/"><span class="mono">previous</span><b>6.01 Function Pointers and qsort</b></a>
+      <a class="lp-next" href="../6-03-how-c-becomes-assembly/"><span class="mono">next</span><b>6.03 How C Becomes Assembly</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/6-02-undefined-behaviour"></script>
+</body>
+</html>

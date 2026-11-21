@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Unions and Narrowing · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/5-03-unions-and-narrowing/">
+  <meta name="description" content="Union types for values that can be one of several things, literal types, narrowing with typeof, instanceof, in and equality checks, discriminated unions with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Unions and Narrowing · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Union types for values that can be one of several things, literal types, narrowing with typeof, instanceof, in and equality checks, discriminated unions with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/5-03-unions-and-narrowing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Unions and Narrowing · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Unions and Narrowing · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Union types for values that can be one of several things, literal types, narrowing with typeof, instanceof, in and equality checks, discriminated unions with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>TypeScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Unions and Narrowing</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Union types for values that can be one of several things, literal types, narrowing with typeof, instanceof, in and equality checks, discriminated unions with a kind field, exhaustive switches with never, and type guard functions for validating unknown data.</p>
+      <div class="prose">
+<h2>Unions</h2>
+<p>A <strong>union</strong> type <code>A | B</code> means &quot;an A or a B&quot;:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">pad</span>(value: <span class="tk-k">string</span> | <span class="tk-k">number</span>): <span class="tk-k">string</span> {
+  <span class="tk-k">if</span> (<span class="tk-k">typeof</span> value === <span class="tk-s">&quot;number&quot;</span>) <span class="tk-k">return</span> value.<span class="tk-f">toFixed</span>(<span class="tk-n">2</span>).<span class="tk-f">padStart</span>(<span class="tk-n">8</span>);   <span class="tk-c">// here value is number</span>
+  <span class="tk-k">return</span> value.<span class="tk-f">padStart</span>(<span class="tk-n">8</span>);                                              <span class="tk-c">// here value is string</span>
+}
+console.<span class="tk-f">log</span>(<span class="tk-s">`[${pad(3.5)}] [${pad(&quot;abc&quot;)}]`</span>);</code></pre></div>
+<p>Inside the <code>if</code>, TypeScript knows <code>value</code> is a <code>number</code>; after it, a <code>string</code>. This is <strong>narrowing</strong>: checks you would write anyway in JavaScript teach the compiler which type you have.</p>
+<p><strong>Literal types</strong> limit a value to exact options:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">Direction</span> = <span class="tk-s">&quot;up&quot;</span> | <span class="tk-s">&quot;down&quot;</span> | <span class="tk-s">&quot;left&quot;</span> | <span class="tk-s">&quot;right&quot;</span>;
+<span class="tk-k">type</span> <span class="tk-t">Dice</span> = <span class="tk-n">1</span> | <span class="tk-n">2</span> | <span class="tk-n">3</span> | <span class="tk-n">4</span> | <span class="tk-n">5</span> | <span class="tk-n">6</span>;
+<span class="tk-k">function</span> <span class="tk-f">move</span>(d: <span class="tk-t">Direction</span>, steps: <span class="tk-t">Dice</span>) { <span class="tk-k">return</span> <span class="tk-s">`${d} ${steps}`</span>; }
+console.<span class="tk-f">log</span>(<span class="tk-f">move</span>(<span class="tk-s">&quot;up&quot;</span>, <span class="tk-n">3</span>));
+<span class="tk-c">// move(&quot;north&quot;, 7)   // two errors: neither value is allowed</span></code></pre></div>
+<h2>Ways to narrow</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Narrows</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>typeof x === &quot;string&quot;</code></td>
+<td>primitives: string, number, boolean, bigint, symbol, undefined, function</td>
+</tr>
+<tr>
+<td><code>x instanceof Date</code></td>
+<td>class instances</td>
+</tr>
+<tr>
+<td><code>&quot;radius&quot; in shape</code></td>
+<td>objects that have that property</td>
+</tr>
+<tr>
+<td><code>x === null</code>, <code>x !== undefined</code>, <code>if (x)</code></td>
+<td>removes null / undefined (careful: <code>if (x)</code> also removes 0 and &quot;&quot;)</td>
+</tr>
+<tr>
+<td><code>Array.isArray(x)</code></td>
+<td>arrays</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Discriminated unions</h2>
+<p>The most useful pattern in TypeScript: each variant has a common <strong>tag</strong> property with a literal type.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">Shape</span> =
+  | { kind: <span class="tk-s">&quot;circle&quot;</span>; radius: <span class="tk-k">number</span> }
+  | { kind: <span class="tk-s">&quot;rect&quot;</span>; width: <span class="tk-k">number</span>; height: <span class="tk-k">number</span> }
+  | { kind: <span class="tk-s">&quot;triangle&quot;</span>; base: <span class="tk-k">number</span>; height: <span class="tk-k">number</span> };
+
+<span class="tk-k">function</span> <span class="tk-f">area</span>(s: <span class="tk-t">Shape</span>): <span class="tk-k">number</span> {
+  <span class="tk-k">switch</span> (s.kind) {
+    <span class="tk-k">case</span> <span class="tk-s">&quot;circle&quot;</span>: <span class="tk-k">return</span> <span class="tk-t">Math</span>.PI * s.radius ** <span class="tk-n">2</span>;     <span class="tk-c">// s is the circle variant here</span>
+    <span class="tk-k">case</span> <span class="tk-s">&quot;rect&quot;</span>: <span class="tk-k">return</span> s.width * s.height;
+    <span class="tk-k">case</span> <span class="tk-s">&quot;triangle&quot;</span>: <span class="tk-k">return</span> (s.base * s.height) / <span class="tk-n">2</span>;
+    <span class="tk-k">default</span>: {
+      <span class="tk-k">const</span> unreachable: <span class="tk-k">never</span> = s;                   <span class="tk-c">// error if a variant is not handled</span>
+      <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">Error</span>(<span class="tk-s">`unknown shape ${JSON.stringify(unreachable)}`</span>);
+    }
+  }
+}
+
+<span class="tk-k">const</span> shapes: <span class="tk-t">Shape</span>[] = [{ kind: <span class="tk-s">&quot;circle&quot;</span>, radius: <span class="tk-n">1</span> }, { kind: <span class="tk-s">&quot;rect&quot;</span>, width: <span class="tk-n">2</span>, height: <span class="tk-n">3</span> }];
+console.<span class="tk-f">log</span>(shapes.<span class="tk-f">map</span>(area).<span class="tk-f">map</span>(a =&gt; a.<span class="tk-f">toFixed</span>(<span class="tk-n">2</span>)));</code></pre></div>
+<p>The <code>never</code> line makes the switch <strong>exhaustive</strong>: if someone adds <code>{ kind: &quot;hexagon&quot; }</code> to <code>Shape</code> and forgets <code>area</code>, the assignment fails to compile, pointing at the exact place to update.</p>
+<p>Results are often modelled the same way:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">type</span> <span class="tk-t">Result</span>&lt;T&gt; = { ok: <span class="tk-k">true</span>; value: T } | { ok: <span class="tk-k">false</span>; error: <span class="tk-k">string</span> };
+
+<span class="tk-k">function</span> <span class="tk-f">parsePort</span>(text: <span class="tk-k">string</span>): <span class="tk-t">Result</span>&lt;<span class="tk-k">number</span>&gt; {
+  <span class="tk-k">const</span> n = <span class="tk-f">Number</span>(text);
+  <span class="tk-k">return</span> <span class="tk-t">Number</span>.<span class="tk-f">isInteger</span>(n) &amp;&amp; n &gt; <span class="tk-n">0</span> &amp;&amp; n &lt; <span class="tk-n">65536</span> ? { ok: <span class="tk-k">true</span>, value: n } : { ok: <span class="tk-k">false</span>, error: <span class="tk-s">`bad port &quot;${text}&quot;`</span> };
+}
+<span class="tk-k">const</span> r = <span class="tk-f">parsePort</span>(<span class="tk-s">&quot;80&quot;</span>);
+<span class="tk-k">if</span> (r.ok) console.<span class="tk-f">log</span>(<span class="tk-s">&quot;port&quot;</span>, r.value); <span class="tk-k">else</span> console.<span class="tk-f">log</span>(r.error);</code></pre></div>
+<h2>Type guards</h2>
+<p>A function returning <code>x is T</code> is a <strong>type guard</strong>: when it returns true, the caller&#39;s value is narrowed to <code>T</code>. Use them to validate <code>unknown</code> data:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">TypeScript</span></div><pre><code><span class="tk-k">interface</span> <span class="tk-t">User</span> { name: <span class="tk-k">string</span>; age: <span class="tk-k">number</span> }
+
+<span class="tk-k">function</span> <span class="tk-f">isUser</span>(x: <span class="tk-k">unknown</span>): x <span class="tk-k">is</span> <span class="tk-t">User</span> {
+  <span class="tk-k">return</span> <span class="tk-k">typeof</span> x === <span class="tk-s">&quot;object&quot;</span> &amp;&amp; x !== <span class="tk-k">null</span>
+    &amp;&amp; <span class="tk-k">typeof</span> (x <span class="tk-k">as</span> <span class="tk-t">User</span>).name === <span class="tk-s">&quot;string&quot;</span>
+    &amp;&amp; <span class="tk-k">typeof</span> (x <span class="tk-k">as</span> <span class="tk-t">User</span>).age === <span class="tk-s">&quot;number&quot;</span>;
+}
+
+<span class="tk-k">const</span> data: <span class="tk-k">unknown</span> = JSON.<span class="tk-f">parse</span>(<span class="tk-s">'{&quot;name&quot;: &quot;Ada&quot;, &quot;age&quot;: 36}'</span>);
+<span class="tk-k">if</span> (<span class="tk-f">isUser</span>(data)) console.<span class="tk-f">log</span>(data.name.<span class="tk-f">toUpperCase</span>(), data.age + <span class="tk-n">1</span>);</code></pre></div>
+<p><code>x as User</code> is a <strong>type assertion</strong>: it tells the compiler to treat the value as a <code>User</code> without any check. Inside a guard that verifies each property it is fine; elsewhere, an assertion is a claim the compiler cannot verify, so prefer narrowing.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-interfaces-and-type-aliases/"><span class="mono">previous</span><b>5.02 Interfaces and Type Aliases</b></a>
+      <a class="lp-next" href="../5-04-generics/"><span class="mono">next</span><b>5.04 Generics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/5-03-unions-and-narrowing"></script>
+</body>
+</html>

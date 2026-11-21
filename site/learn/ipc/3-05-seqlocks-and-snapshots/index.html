@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Seqlocks and Snapshots · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/3-05-seqlocks-and-snapshots/">
+  <meta name="description" content="Publishing a state that changes constantly, such as a game's player positions for an external tool - why readers can see torn data, double buffering, and the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Seqlocks and Snapshots · Processes and Communication · Xenon">
+  <meta property="og:description" content="Publishing a state that changes constantly, such as a game's player positions for an external tool - why readers can see torn data, double buffering, and the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/3-05-seqlocks-and-snapshots/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Seqlocks and Snapshots · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Seqlocks and Snapshots · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="Publishing a state that changes constantly, such as a game's player positions for an external tool - why readers can see torn data, double buffering, and the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Shared Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Seqlocks and Snapshots</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Publishing a state that changes constantly, such as a game&#39;s player positions for an external tool - why readers can see torn data, double buffering, and the seqlock - a sequence counter that lets readers detect a write in progress and retry without ever blocking the writer.</p>
+      <div class="prose">
+<h2>The problem: torn reads</h2>
+<p>A game updates a block of shared state every frame: player position, health, the current level. An external tool (an overlay, a stats panel, a test harness) reads it whenever it likes. If the tool reads while the game is halfway through writing, it can see the <strong>new</strong> x with the <strong>old</strong> y: a <strong>torn read</strong>, a state that never existed.</p>
+<p>A lock would fix it, but a lock lets a slow reader stall the game, which is exactly what must not happen. We want: the writer never waits; readers always get a consistent snapshot, retrying if needed.</p>
+<h2>Double buffering</h2>
+<p>Keep two copies of the state and an index saying which one is current. The writer fills the <strong>other</strong> copy, then flips the index (atomically, with release ordering). Readers read the index (acquire), then copy that buffer.</p>
+<p>It is simple, but not quite safe on its own: a reader that is slow enough could still be copying buffer A when the writer, two frames later, starts filling A again. It works when readers are known to be fast compared with the update rate; otherwise add a check, which leads to the seqlock.</p>
+<h2>The seqlock</h2>
+<p>A <strong>seqlock</strong> pairs the data with a <strong>sequence counter</strong>:</p>
+<ul>
+<li>The writer increments the counter (it becomes <strong>odd</strong>: &quot;writing&quot;), writes the data, then increments it again (<strong>even</strong>: &quot;stable&quot;).</li>
+<li>A reader reads the counter; if it is odd, a write is in progress, try again. Otherwise it copies the data, then reads the counter again. If the counter changed, a write happened during the copy, so the copy may be torn: try again.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// writer: never waits</span>
+seq.<span class="tk-f">store</span>(s + <span class="tk-n">1</span>, std::memory_order_relaxed);          <span class="tk-c">// odd: writing</span>
+std::<span class="tk-f">atomic_thread_fence</span>(std::memory_order_release);
+<span class="tk-f">copyIn</span>(data, state);
+seq.<span class="tk-f">store</span>(s + <span class="tk-n">2</span>, std::memory_order_release);          <span class="tk-c">// even: stable</span>
+
+<span class="tk-c">// reader: retries instead of blocking anyone</span>
+<span class="tk-k">for</span> (;;)
+{
+    <span class="tk-k">const</span> std::uint32_t before{ seq.<span class="tk-f">load</span>(std::memory_order_acquire) };
+    <span class="tk-k">if</span> (before &amp; <span class="tk-n">1</span>) <span class="tk-k">continue</span>;                          <span class="tk-c">// writer is busy</span>
+    <span class="tk-t">State</span> copy{ <span class="tk-f">copyOut</span>(data) };
+    std::<span class="tk-f">atomic_thread_fence</span>(std::memory_order_acquire);
+    <span class="tk-k">if</span> (seq.<span class="tk-f">load</span>(std::memory_order_relaxed) == before) <span class="tk-k">return</span> copy;   <span class="tk-c">// nothing changed meanwhile</span>
+}</code></pre></div>
+<p>The writer never blocks, readers never block the writer, and a reader only retries in the rare case that it overlapped a write. Linux uses seqlocks for the system clock for exactly these reasons.</p>
+<h2>Doing it correctly in C++</h2>
+<p>The data is read while it may be being written, which is a data race and undefined behaviour if the data is ordinary memory, however carefully the counter is checked afterwards. The clean way is to store the payload in <strong>atomic words</strong> and copy it word by word with relaxed atomic loads and stores; the fences then order those against the counter. That is what the practice does: the state is any trivially copyable struct, copied into and out of an array of <code>std::atomic&lt;std::uint64_t&gt;</code>.</p>
+<p>Requirements and limits:</p>
+<ul>
+<li>One writer at a time. Several writers need a lock among themselves (they can still let readers use the seqlock).</li>
+<li>The state must be trivially copyable: plain numbers and arrays, no pointers into a process&#39;s heap.</li>
+<li>Readers must cope with retrying; under constant updates of a huge state they could retry several times, so keep the published state small.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-memory-mapped-files/"><span class="mono">previous</span><b>3.04 Memory-Mapped Files</b></a>
+      <a class="lp-next" href="../4-01-named-kernel-objects/"><span class="mono">next</span><b>4.01 Named Kernel Objects</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/3-05-seqlocks-and-snapshots"></script>
+</body>
+</html>

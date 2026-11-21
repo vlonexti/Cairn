@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>How C Becomes Assembly · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/6-03-how-c-becomes-assembly/">
+  <meta name="description" content="Each C construct turns into a few machine instructions. Locals live in registers or on the stack, arguments arrive in registers, if and loops become compares…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How C Becomes Assembly · C · Xenon">
+  <meta property="og:description" content="Each C construct turns into a few machine instructions. Locals live in registers or on the stack, arguments arrive in registers, if and loops become compares…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/6-03-how-c-becomes-assembly/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="How C Becomes Assembly · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How C Becomes Assembly · C · Xenon">
+  <meta name="twitter:description" content="Each C construct turns into a few machine instructions. Locals live in registers or on the stack, arguments arrive in registers, if and loops become compares…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C Close to the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">How C Becomes Assembly</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Each C construct turns into a few machine instructions. Locals live in registers or on the stack, arguments arrive in registers, if and loops become compares and jumps, and array indexing becomes an address calculation. Reading compiler output shows what your code costs and what the optimiser does with it.</p>
+      <div class="prose">
+<h2>Looking at the output</h2>
+<p><code>gcc -S -masm=intel program.c</code> stops after compiling and writes the assembly to <code>program.s</code>. Compiler Explorer (godbolt.org), the service this website compiles with, shows the same side by side with the source. The Assembly course teaches the language properly; here is enough to read it.</p>
+<p>x86-64 has 16 general registers (<code>rax</code>, <code>rbx</code>, <code>rcx</code>, <code>rdx</code>, <code>rsi</code>, <code>rdi</code>, <code>rbp</code>, <code>rsp</code>, <code>r8</code> to <code>r15</code>). Their low halves have names too: <code>eax</code> is the low 32 bits of <code>rax</code>. On Linux and Mac, the first six integer or pointer arguments arrive in <code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code>, and the result goes back in <code>rax</code> (<code>eax</code> for an <code>int</code>).</p>
+<h2>A simple function</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">add3</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b, <span class="tk-k">int</span> c)
+{
+    <span class="tk-k">return</span> a + b + c;
+}</code></pre></div>
+<p>GCC with <code>-O2</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">add3:</span>
+        add     <span class="tk-t">edi</span>, <span class="tk-t">esi</span>        <span class="tk-c">; a += b</span>
+        lea     <span class="tk-t">eax</span>, [<span class="tk-t">rdi</span>+<span class="tk-t">rdx</span>]  <span class="tk-c">; result = a + c  (lea computes an address, here used as an adder)</span>
+        ret</code></pre></div>
+<p>Three instructions, no memory touched at all. With <code>-O0</code> the same function stores each argument on the stack and loads it back, which is easier to debug and much slower:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">add3:</span>
+        push    <span class="tk-t">rbp</span>
+        mov     <span class="tk-t">rbp</span>, <span class="tk-t">rsp</span>
+        mov     <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">4</span>], <span class="tk-t">edi</span>     <span class="tk-c">; a</span>
+        mov     <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">8</span>], <span class="tk-t">esi</span>     <span class="tk-c">; b</span>
+        mov     <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">12</span>], <span class="tk-t">edx</span>    <span class="tk-c">; c</span>
+        mov     <span class="tk-t">edx</span>, <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">4</span>]
+        mov     <span class="tk-t">eax</span>, <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">8</span>]
+        add     <span class="tk-t">edx</span>, <span class="tk-t">eax</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">12</span>]
+        add     <span class="tk-t">eax</span>, <span class="tk-t">edx</span>
+        pop     <span class="tk-t">rbp</span>
+        ret</code></pre></div>
+<p><code>DWORD PTR [rbp-4]</code> is &quot;the 4 bytes at address rbp - 4&quot;: a local variable in the stack frame (lesson 2.02&#39;s frames, for real).</p>
+<h2>if becomes compare and jump</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">sign</span>(<span class="tk-k">int</span> x)
+{
+    <span class="tk-k">if</span> (x &gt; <span class="tk-n">0</span>) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    <span class="tk-k">if</span> (x &lt; <span class="tk-n">0</span>) <span class="tk-k">return</span> -<span class="tk-n">1</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>GCC with <code>-O0</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">sign:</span>
+        push    <span class="tk-t">rbp</span>
+        mov     <span class="tk-t">rbp</span>, <span class="tk-t">rsp</span>
+        mov     <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">4</span>], <span class="tk-t">edi</span>
+        cmp     <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">4</span>], <span class="tk-n">0</span>     <span class="tk-c">; compare x with 0, setting the flags</span>
+        jle     .L2                      <span class="tk-c">; jump if less or equal: skip the first return</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+        jmp     .L3
+<span class="tk-f">.L2:</span>
+        cmp     <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rbp</span>-<span class="tk-n">4</span>], <span class="tk-n">0</span>
+        jns     .L4                      <span class="tk-c">; jump if not negative (the sign flag is clear)</span>
+        mov     <span class="tk-t">eax</span>, -<span class="tk-n">1</span>
+        jmp     .L3
+<span class="tk-f">.L4:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">0</span>
+<span class="tk-f">.L3:</span>
+        pop     <span class="tk-t">rbp</span>
+        ret</code></pre></div>
+<p>The processor has no <code>if</code>. It has <strong>flags</strong>, set by comparisons, and <strong>conditional jumps</strong> that go to a label depending on them. With <code>-O1</code>, GCC gets rid of the jumps altogether:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">sign:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-t">edi</span>
+        sar     <span class="tk-t">eax</span>, <span class="tk-n">31</span>          <span class="tk-c">; shift the sign bit all the way down: -1 if x &lt; 0, else 0</span>
+        test    <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        mov     <span class="tk-t">edx</span>, <span class="tk-n">1</span>
+        cmovg   <span class="tk-t">eax</span>, <span class="tk-t">edx</span>         <span class="tk-c">; &quot;move if greater&quot;: 1 if x &gt; 0</span>
+        ret</code></pre></div>
+<p><code>sar</code> copies the sign bit as it shifts, so a negative number becomes all 1 bits, which is -1. <code>cmovg</code> is a <strong>conditional move</strong>: no jump, so the processor never has to guess which way the code will go.</p>
+<h2>Loops and arrays</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">sum</span>(<span class="tk-k">const</span> <span class="tk-k">int</span> *values, <span class="tk-k">int</span> count)
+{
+    <span class="tk-k">int</span> total = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; count; i++) total += values[i];
+    <span class="tk-k">return</span> total;
+}</code></pre></div>
+<p>Indexing becomes an address calculation, <code>values + i * 4</code>, folded into one memory operand. Step through a loop like the one GCC writes, as the CPU runs it:</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/c/l/6.03">Try it in Xenon</a></div>
+<p><code>[rdi+rdx*4]</code> is <code>values[i]</code>: base address plus index times the size of an <code>int</code>. That is pointer arithmetic (lesson 3.02), done in one instruction by the hardware.</p>
+<h2>What the optimiser does</h2>
+<p>At <code>-O2</code> and <code>-O3</code> GCC also:</p>
+<ul>
+<li>keeps variables in registers instead of memory</li>
+<li><strong>inlines</strong> small functions, pasting their bodies in place of the call</li>
+<li>replaces multiplications by shifts and adds (<code>x * 9</code> becomes <code>lea eax, [rdi+rdi*8]</code>)</li>
+<li>unrolls and <strong>vectorises</strong> loops, adding 4 or 8 values per instruction with SIMD registers</li>
+<li>deletes code whose result is never used</li>
+</ul>
+<p>This is why <code>-O2</code> C is so fast, and also why undefined behaviour (lesson 6.02) gets &quot;optimised&quot; in surprising ways.</p>
+<h2>The other way round</h2>
+<p>Assembly to machine code is a simple one-to-one translation, done by the <strong>assembler</strong>: <code>add edi, esi</code> is the two bytes <code>01 f7</code>. The Fundamentals course shows how those bytes drive the circuits; the Assembly course has you write the instructions yourself.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Where does the first int argument arrive on x86-64 Linux?</div><ul><li>In edi (the low half of rdi)</li><li>On the stack</li><li>In eax</li></ul><details><summary>Show the answer</summary><p><b>In edi (the low half of rdi)</b> Then rsi, rdx, rcx, r8, r9.</p></details></li><li><div class="q">What does values[i] become for an int array?</div><ul><li>A memory access at values + i * 4</li><li>A function call</li><li>A loop over the array</li></ul><details><summary>Show the answer</summary><p><b>A memory access at values + i * 4</b> [rdi+rdx*4] in Intel syntax.</p></details></li><li><div class="q">How does an if statement appear in assembly?</div><ul><li>A comparison that sets flags, then a conditional jump</li><li>An if instruction</li><li>A call to a library function</li></ul><details><summary>Show the answer</summary><p><b>A comparison that sets flags, then a conditional jump</b> The processor has jumps, not structured statements.</p></details></li><li><div class="q">What does inlining mean?</div><ul><li>Pasting a function&#39;s body where it is called, removing the call</li><li>Putting code on one line</li><li>Writing assembly inside C</li></ul><details><summary>Show the answer</summary><p><b>Pasting a function&#39;s body where it is called, removing the call</b> It saves the call and opens more optimisations.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-undefined-behaviour/"><span class="mono">previous</span><b>6.02 Undefined Behaviour</b></a>
+      <a class="lp-next" href="../6-04-the-standard-library-tour/"><span class="mono">next</span><b>6.04 The Standard Library Tour</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/6-03-how-c-becomes-assembly"></script>
+</body>
+</html>

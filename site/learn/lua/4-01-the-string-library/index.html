@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The String Library · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/4-01-the-string-library/">
+  <meta name="description" content="Method syntax s:upper(), sub with positive and negative positions, upper, lower, rep, reverse, byte and char, find with plain text, and walking through a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The String Library · Lua · Xenon">
+  <meta property="og:description" content="Method syntax s:upper(), sub with positive and negative positions, upper, lower, rep, reverse, byte and char, find with plain text, and walking through a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/4-01-the-string-library/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The String Library · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The String Library · Lua · Xenon">
+  <meta name="twitter:description" content="Method syntax s:upper(), sub with positive and negative positions, upper, lower, rep, reverse, byte and char, find with plain text, and walking through a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Strings and Patterns</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The String Library</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Method syntax s:upper(), sub with positive and negative positions, upper, lower, rep, reverse, byte and char, find with plain text, and walking through a string character by character.</p>
+      <div class="prose">
+<h2>Method syntax</h2>
+<p>Every string function lives in the table <code>string</code>, and every string knows it. So <code>string.upper(s)</code> can be written <code>s:upper()</code>: the colon passes the string as the first argument.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> s = <span class="tk-s">&quot;Hello, Lua&quot;</span>
+<span class="tk-f">print</span>(string.<span class="tk-f">upper</span>(s), s:<span class="tk-f">upper</span>(), s:<span class="tk-f">lower</span>())
+<span class="tk-f">print</span>((<span class="tk-s">&quot;abc&quot;</span>):<span class="tk-f">rep</span>(<span class="tk-n">3</span>), (<span class="tk-s">&quot;abc&quot;</span>):<span class="tk-f">rep</span>(<span class="tk-n">3</span>, <span class="tk-s">&quot;-&quot;</span>), s:<span class="tk-f">reverse</span>())
+<span class="tk-f">print</span>(s:<span class="tk-f">len</span>(), #s)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>HELLO, LUA	HELLO, LUA	hello, lua
+abcabcabc	abc-abc-abc	auL ,olleH
+10	10</code></pre></div>
+<p>A string literal needs brackets around it before the colon: <code>(&quot;abc&quot;):rep(3)</code>.</p>
+<h2>sub: pieces of a string</h2>
+<p><code>s:sub(i, j)</code> returns the characters from position <code>i</code> to <code>j</code>, <strong>both included</strong>, counting from 1. Negative positions count from the end: <code>-1</code> is the last character.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> s = <span class="tk-s">&quot;programming&quot;</span>
+<span class="tk-f">print</span>(s:<span class="tk-f">sub</span>(<span class="tk-n">1</span>, <span class="tk-n">3</span>), s:<span class="tk-f">sub</span>(<span class="tk-n">4</span>), s:<span class="tk-f">sub</span>(-<span class="tk-n">4</span>), s:<span class="tk-f">sub</span>(-<span class="tk-n">4</span>, -<span class="tk-n">2</span>))
+<span class="tk-f">print</span>(s:<span class="tk-f">sub</span>(<span class="tk-n">5</span>, <span class="tk-n">5</span>), s:<span class="tk-f">sub</span>(<span class="tk-n">20</span>), s:<span class="tk-f">sub</span>(<span class="tk-n">3</span>, <span class="tk-n">1</span>) == <span class="tk-s">&quot;&quot;</span>)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>pro	gramming	ming	min
+r		true</code></pre></div>
+<p><code>sub</code> never fails: positions past the end are clamped, and an empty range gives <code>&quot;&quot;</code>. To get one character, use <code>s:sub(i, i)</code>.</p>
+<h2>Characters and their codes</h2>
+<p><code>s:byte(i)</code> gives the numeric code of the byte at position <code>i</code>; <code>string.char</code> turns codes back into text:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-f">print</span>((<span class="tk-s">&quot;A&quot;</span>):<span class="tk-f">byte</span>(), (<span class="tk-s">&quot;abc&quot;</span>):<span class="tk-f">byte</span>(<span class="tk-n">1</span>, <span class="tk-n">3</span>))
+<span class="tk-f">print</span>(string.<span class="tk-f">char</span>(<span class="tk-n">72</span>, <span class="tk-n">105</span>, <span class="tk-n">33</span>))
+
+<span class="tk-k">local</span> shifted = {}
+<span class="tk-k">for</span> i = <span class="tk-n">1</span>, #<span class="tk-s">&quot;HAL&quot;</span> <span class="tk-k">do</span>
+    shifted[i] = string.<span class="tk-f">char</span>((<span class="tk-s">&quot;HAL&quot;</span>):<span class="tk-f">byte</span>(i) + <span class="tk-n">1</span>)
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(table.<span class="tk-f">concat</span>(shifted))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>65	97	98	99
+Hi!
+IBM</code></pre></div>
+<h2>Walking through a string</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> word = <span class="tk-s">&quot;banana&quot;</span>
+<span class="tk-k">local</span> count = <span class="tk-n">0</span>
+<span class="tk-k">for</span> i = <span class="tk-n">1</span>, #word <span class="tk-k">do</span>
+    <span class="tk-k">if</span> word:<span class="tk-f">sub</span>(i, i) == <span class="tk-s">&quot;a&quot;</span> <span class="tk-k">then</span> count = count + <span class="tk-n">1</span> <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(count)
+
+<span class="tk-k">local</span> reversed = {}
+<span class="tk-k">for</span> i = #word, <span class="tk-n">1</span>, -<span class="tk-n">1</span> <span class="tk-k">do</span> reversed[#reversed + <span class="tk-n">1</span>] = word:<span class="tk-f">sub</span>(i, i) <span class="tk-k">end</span>
+<span class="tk-f">print</span>(table.<span class="tk-f">concat</span>(reversed))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>3
+ananab</code></pre></div>
+<p>Building a new string by <code>..</code>-ing one character at a time works but copies the whole string each time. For anything long, collect the pieces in a table and <code>table.concat</code> once at the end.</p>
+<h2>find</h2>
+<p><code>s:find(text, start, true)</code> looks for <code>text</code> and returns where it starts and ends, or <code>nil</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> s = <span class="tk-s">&quot;one, two, three&quot;</span>
+<span class="tk-f">print</span>(s:<span class="tk-f">find</span>(<span class="tk-s">&quot;two&quot;</span>, <span class="tk-n">1</span>, <span class="tk-k">true</span>))
+<span class="tk-f">print</span>(s:<span class="tk-f">find</span>(<span class="tk-s">&quot;four&quot;</span>, <span class="tk-n">1</span>, <span class="tk-k">true</span>))
+<span class="tk-f">print</span>(s:<span class="tk-f">find</span>(<span class="tk-s">&quot;,&quot;</span>, <span class="tk-n">6</span>, <span class="tk-k">true</span>))
+<span class="tk-f">print</span>(s:<span class="tk-f">find</span>(<span class="tk-s">&quot;.&quot;</span>, <span class="tk-n">1</span>, <span class="tk-k">true</span>), s:<span class="tk-f">find</span>(<span class="tk-s">&quot;.&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>6	8
+nil
+9	9
+nil	1	1</code></pre></div>
+<p>The fourth argument <code>true</code> means <strong>plain</strong> search. Without it, the text is a <strong>pattern</strong> (next lesson), where <code>.</code> means &quot;any character&quot;, which is why the last <code>find(&quot;.&quot;)</code> matched at 1. Always pass <code>1, true</code> when you are searching for literal text that might contain <code>. % - + * ? [ ] ( ) ^ $</code>.</p>
+<p>Using <code>find</code> to split at a separator:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">split_once</span>(s, sep)
+    <span class="tk-k">local</span> at = s:<span class="tk-f">find</span>(sep, <span class="tk-n">1</span>, <span class="tk-k">true</span>)
+    <span class="tk-k">if</span> <span class="tk-k">not</span> at <span class="tk-k">then</span> <span class="tk-k">return</span> s, <span class="tk-k">nil</span> <span class="tk-k">end</span>
+    <span class="tk-k">return</span> s:<span class="tk-f">sub</span>(<span class="tk-n">1</span>, at - <span class="tk-n">1</span>), s:<span class="tk-f">sub</span>(at + #sep)
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">split_once</span>(<span class="tk-s">&quot;key=value&quot;</span>, <span class="tk-s">&quot;=&quot;</span>))
+<span class="tk-f">print</span>(<span class="tk-f">split_once</span>(<span class="tk-s">&quot;no separator&quot;</span>, <span class="tk-s">&quot;=&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>key	value
+no separator	nil</code></pre></div>
+<h2>Comparing and testing</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> a, b = <span class="tk-s">&quot;Lua&quot;</span>, <span class="tk-s">&quot;lua&quot;</span>
+<span class="tk-f">print</span>(a == b, a:<span class="tk-f">lower</span>() == b:<span class="tk-f">lower</span>())
+<span class="tk-f">print</span>((<span class="tk-s">&quot;hello&quot;</span>):<span class="tk-f">sub</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>) == <span class="tk-s">&quot;he&quot;</span>, (<span class="tk-s">&quot;file.txt&quot;</span>):<span class="tk-f">sub</span>(-<span class="tk-n">4</span>) == <span class="tk-s">&quot;.txt&quot;</span>)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>false	true
+true	true</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-scope-globals-and-blocks/"><span class="mono">previous</span><b>3.05 Scope, Globals and Blocks</b></a>
+      <a class="lp-next" href="../4-02-patterns/"><span class="mono">next</span><b>4.02 Patterns</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/4-01-the-string-library"></script>
+</body>
+</html>

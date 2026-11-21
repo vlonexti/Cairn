@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>How Structs and Classes Are Laid Out · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/2-06-how-structs-and-classes-are-laid-out/">
+  <meta name="description" content="A class in memory is only its data members, laid out by the alignment rules. Member functions, static members and access specifiers take no space in the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How Structs and Classes Are Laid Out · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A class in memory is only its data members, laid out by the alignment rules. Member functions, static members and access specifiers take no space in the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/2-06-how-structs-and-classes-are-laid-out/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="How Structs and Classes Are Laid Out · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How Structs and Classes Are Laid Out · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A class in memory is only its data members, laid out by the alignment rules. Member functions, static members and access specifiers take no space in the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Memory in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">How Structs and Classes Are Laid Out</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.06</b></span><span>6 of 11 in milestone 2</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A class in memory is only its data members, laid out by the alignment rules. Member functions, <code>static</code> members and access specifiers take no space in the object. Inheritance puts the base class&#39;s members first, and a class with virtual functions gains a hidden pointer at the front. Knowing this lets you read any object&#39;s bytes in a debugger.</p>
+      <div class="prose">
+<h2>What is, and is not, inside an object</h2>
+<p>Here is a class that looks large:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">Character</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">static</span> <span class="tk-k">int</span> s_count;                 <span class="tk-c">// one shared copy, in static storage</span>
+
+    <span class="tk-f">Character</span>(<span class="tk-k">int</span> hp, <span class="tk-k">float</span> x, <span class="tk-k">float</span> y) : m_health{ hp }, m_x{ x }, m_y{ y } { ++s_count; }
+
+    <span class="tk-k">void</span> <span class="tk-f">move</span>(<span class="tk-k">float</span> dx, <span class="tk-k">float</span> dy) { m_x += dx; m_y += dy; }
+    <span class="tk-k">int</span> <span class="tk-f">health</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_health; }
+    <span class="tk-k">bool</span> <span class="tk-f">alive</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_health &gt; <span class="tk-n">0</span>; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_health;
+    <span class="tk-k">float</span> m_x;
+    <span class="tk-k">float</span> m_y;
+};
+
+<span class="tk-k">int</span> <span class="tk-t">Character</span>::s_count{ <span class="tk-n">0</span> };
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Character</span> hero{ <span class="tk-n">100</span>, <span class="tk-n">2.0f</span>, <span class="tk-n">3.5f</span> };
+    hero.<span class="tk-f">move</span>(<span class="tk-n">1.0f</span>, <span class="tk-n">0.0f</span>);
+    std::cout &lt;&lt; <span class="tk-s">&quot;sizeof(Character) = &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-t">Character</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;characters made   = &quot;</span> &lt;&lt; <span class="tk-t">Character</span>::s_count &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>sizeof(Character) = 12
+characters made   = 1</code></pre></div>
+<p>Twelve bytes: just <code>m_health</code>, <code>m_x</code> and <code>m_y</code>. The rest is not stored in objects at all:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part of the class</th>
+<th>Where it lives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Non-static data members</td>
+<td>In every object, laid out by the rules of lesson 2.05</td>
+</tr>
+<tr>
+<td>Member functions</td>
+<td>Once, in the program&#39;s <code>.text</code> section, like any function</td>
+</tr>
+<tr>
+<td><code>static</code> data members</td>
+<td>Once, in static storage (lesson 2.03)</td>
+</tr>
+<tr>
+<td><code>public</code>, <code>private</code>, <code>protected</code></td>
+<td>Nowhere. They are checked by the compiler and leave no trace in the program</td>
+</tr>
+</tbody></table>
+</div>
+<p>How does <code>move</code> know which object to change, then? It receives the object&#39;s address as a hidden first argument called <code>this</code>. <code>hero.move(1.0f, 0.0f)</code> compiles to roughly <code>Character::move(&amp;hero, 1.0f, 0.0f)</code>, and inside, <code>m_x</code> means <code>this-&gt;m_x</code>: &quot;the float 4 bytes after the address in <code>this</code>&quot;. On x64 Windows, <code>this</code> arrives in <code>rcx</code> like any first argument. You will see this in chapter 7.</p>
+<h2>struct and class are the same thing</h2>
+<p>The only difference between <code>struct</code> and <code>class</code> is the default access: <code>public</code> for <code>struct</code>, <code>private</code> for <code>class</code>. Their layout rules are identical. This course uses <code>struct</code> for plain bundles of data and <code>class</code> for types that guard their data, but the memory looks the same.</p>
+<h2>Inheritance: the base comes first</h2>
+<p>A derived class contains a complete copy of its base class&#39;s members, called the <strong>base subobject</strong>, at the start, followed by its own members.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdint&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Entity</span>
+{
+    <span class="tk-k">int</span> id;
+    <span class="tk-k">float</span> x, y;
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">Monster</span> : <span class="tk-t">Entity</span>
+{
+    <span class="tk-k">int</span> health;
+    std::uint8_t level;
+};
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T, <span class="tk-k">typename</span> M&gt;
+std::ptrdiff_t <span class="tk-f">offsetIn</span>(<span class="tk-k">const</span> T&amp; object, <span class="tk-k">const</span> M&amp; member)
+{
+    <span class="tk-k">return</span> <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(&amp;member) - <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(&amp;object);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Monster</span> m{};
+    std::cout &lt;&lt; <span class="tk-s">&quot;id     &quot;</span> &lt;&lt; <span class="tk-f">offsetIn</span>(m, m.id) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;x      &quot;</span> &lt;&lt; <span class="tk-f">offsetIn</span>(m, m.x) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;y      &quot;</span> &lt;&lt; <span class="tk-f">offsetIn</span>(m, m.y) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;health &quot;</span> &lt;&lt; <span class="tk-f">offsetIn</span>(m, m.health) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;level  &quot;</span> &lt;&lt; <span class="tk-f">offsetIn</span>(m, m.level) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;size   &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-t">Monster</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-t">Entity</span>* asEntity{ &amp;m };   <span class="tk-c">// a Monster* converts to an Entity* with no adjustment</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;same address: &quot;</span> &lt;&lt; (<span class="tk-k">static_cast</span>&lt;<span class="tk-k">void</span>*&gt;(asEntity) == <span class="tk-k">static_cast</span>&lt;<span class="tk-k">void</span>*&gt;(&amp;m)) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>id     0
+x      4
+y      8
+health 12
+level  16
+size   20
+same address: 1</code></pre></div>
+<p>Because the <code>Entity</code> part sits at offset 0, a <code>Monster*</code> and the <code>Entity*</code> made from it hold the same address. Code that only knows about <code>Entity</code> can work with a <code>Monster</code> without knowing anything else about it. That is what makes inheritance-based designs work at the machine level.</p>
+<p>With <strong>multiple inheritance</strong>, each base gets its own region, one after the other. Converting to the second base then changes the address: the compiler adds that base&#39;s offset. It is one reason game code tends to avoid deep or multiple inheritance.</p>
+<h2>Virtual functions add a hidden pointer</h2>
+<p>As soon as a class has a <code>virtual</code> function, every object of it carries one extra hidden member: a pointer, called the <strong>vptr</strong>, at offset 0. It points to a table of function addresses for that object&#39;s actual type, the <strong>vtable</strong>. Lesson 3.05 is about exactly this; for now, watch the size change:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Plain</span>
+{
+    <span class="tk-k">int</span> health;
+    <span class="tk-k">void</span> <span class="tk-f">hurt</span>(<span class="tk-k">int</span> n) { health -= n; }
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">WithVirtual</span>
+{
+    <span class="tk-k">int</span> health;
+    <span class="tk-k">virtual</span> <span class="tk-k">void</span> <span class="tk-f">hurt</span>(<span class="tk-k">int</span> n) { health -= n; }
+    <span class="tk-k">virtual</span> ~<span class="tk-f">WithVirtual</span>() = <span class="tk-k">default</span>;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-t">Plain</span>) &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-t">WithVirtual</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>4 16</code></pre></div>
+<p>Eight bytes for the vptr, then the <code>int</code>, then 4 bytes of tail padding to keep the size a multiple of 8. If you look at an object of a class with virtual functions in the Memory window, its first 8 bytes always look like an address inside the program&#39;s image: that is the vptr.</p>
+<h2>Empty classes</h2>
+<p>A class with no data members still has <code>sizeof</code> 1, because every object must have a distinct address. But when an empty class is used as a <strong>base</strong>, the compiler may give it no space at all (the <strong>empty base optimisation</strong>). Since C++20, the attribute <code>[[no_unique_address]]</code> (spelled <code>[[msvc::no_unique_address]]</code> for MSVC) lets an empty <em>member</em> take no space either.</p>
+<h2>Reading an object in the debugger</h2>
+<p>Put it together and you can decode objects by hand. Suppose a <code>Monster</code> from above shows this in the Memory window:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>07 00 00 00  00 00 20 41  00 00 a0 c0  3c 00 00 00  05 cc cc cc</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Bytes</th>
+<th>Member</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>07 00 00 00</code></td>
+<td><code>id</code></td>
+<td>7</td>
+</tr>
+<tr>
+<td><code>00 00 20 41</code></td>
+<td><code>x</code></td>
+<td>10.0 (the bit pattern of a <code>float</code>; lesson 2.11)</td>
+</tr>
+<tr>
+<td><code>00 00 a0 c0</code></td>
+<td><code>y</code></td>
+<td>−5.0</td>
+</tr>
+<tr>
+<td><code>3c 00 00 00</code></td>
+<td><code>health</code></td>
+<td>60</td>
+</tr>
+<tr>
+<td><code>05</code></td>
+<td><code>level</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td><code>cc cc cc</code></td>
+<td>tail padding</td>
+<td>(Debug fill)</td>
+</tr>
+</tbody></table>
+</div>
+<p>This is the core skill behind using memory views, and later behind chapter 9&#39;s work of reconstructing the layout of a type from compiled code.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Thinking member functions make objects bigger</span></div><div class="callout-body"><p>They do not. Only data members (and a vptr, if there are virtual functions) take space.</p>
+</div></div>
+<blockquote><p>[!warning] Assuming <code>private</code> members are protected at run time
+Access control is a compile-time rule. In memory, private members are bytes like any others.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Writing an object with virtual functions to a file</span></div><div class="callout-body"><p>Its first 8 bytes are a pointer that will be wrong the next time the program runs. Save the data members, not the raw object.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A class has three <code>int</code> members, ten member functions and a <code>static int</code>. What is its <code>sizeof</code>?</div><ul><li>12</li><li>16</li><li>56</li></ul><details><summary>Show the answer</summary><p><b>12</b> Only the non-static data members are stored in each object.</p></details></li><li><div class="q">Where does a derived class&#39;s base subobject go?</div><ul><li>At the start of the derived object, at offset 0 for a single base</li><li>At the end of the derived object</li><li>In a separate heap block</li></ul><details><summary>Show the answer</summary><p><b>At the start of the derived object, at offset 0 for a single base</b> The base&#39;s members come first, so a pointer to the derived object is also a valid pointer to its base.</p></details></li><li><div class="q">Why is <code>sizeof(WithVirtual)</code> 16 when its only data member is an <code>int</code>?</div><ul><li><code>virtual</code> doubles the size of every member</li><li>A hidden 8-byte vptr is added at the front, and the size is padded to a multiple of 8</li><li>Virtual functions are stored inside the object</li></ul><details><summary>Show the answer</summary><p><b>A hidden 8-byte vptr is added at the front, and the size is padded to a multiple of 8</b> The vptr points to the class&#39;s table of virtual functions. The functions themselves are in the code section.</p></details></li><li><div class="q">How does a member function know which object it is working on?</div><ul><li>Each object stores a copy of its functions</li><li>The object&#39;s address is passed as a hidden argument, <code>this</code></li><li>It looks the object up in a global list</li></ul><details><summary>Show the answer</summary><p><b>The object&#39;s address is passed as a hidden argument, <code>this</code></b> <code>obj.f(x)</code> is compiled much like <code>f(&amp;obj, x)</code>.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/2.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/2.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-alignment-and-padding-in-detail/"><span class="mono">previous</span><b>2.05 Alignment and Padding in Detail</b></a>
+      <a class="lp-next" href="../2-07-arrays-and-multi-dimensional-data-in-memory/"><span class="mono">next</span><b>2.07 Arrays and Multi-Dimensional Data in Memory</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/2-06-how-structs-and-classes-are-laid-out"></script>
+</body>
+</html>

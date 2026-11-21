@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Standard Controls · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/2-05-standard-controls/">
+  <meta name="description" content="Buttons, check boxes, edit boxes, list boxes and combo boxes are child windows of classes Windows provides. This lesson creates them, talks to them with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Standard Controls · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="Buttons, check boxes, edit boxes, list boxes and combo boxes are child windows of classes Windows provides. This lesson creates them, talks to them with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/2-05-standard-controls/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Standard Controls · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Standard Controls · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="Buttons, check boxes, edit boxes, list boxes and combo boxes are child windows of classes Windows provides. This lesson creates them, talks to them with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Input, Menus and Controls</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Standard Controls</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Buttons, check boxes, edit boxes, list boxes and combo boxes are child windows of classes Windows provides. This lesson creates them, talks to them with messages, handles their notifications, gives them the right font, and moves the keyboard focus between them with Tab.</p>
+      <div class="prose">
+<h2>Controls are windows</h2>
+<p>A <strong>control</strong> is a child window of a predefined class. Create it in the parent&#39;s <code>WM_CREATE</code> with <code>WS_CHILD | WS_VISIBLE</code>, and give it an <strong>id</strong> in the menu parameter:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">constexpr</span> <span class="tk-k">int</span> IDC_NAME = <span class="tk-n">1001</span>, IDC_ADD = <span class="tk-n">1002</span>, IDC_LIST = <span class="tk-n">1003</span>, IDC_SHOUT = <span class="tk-n">1004</span>;
+
+<span class="tk-k">case</span> WM_CREATE:
+{
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> instance = <span class="tk-k">reinterpret_cast</span>&lt;CREATESTRUCTW*&gt;(lParam)-&gt;hInstance;
+    <span class="tk-f">CreateWindowExW</span>(WS_EX_CLIENTEDGE, <span class="tk-s">L&quot;EDIT&quot;</span>, <span class="tk-s">L&quot;&quot;</span>, WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL,
+                    <span class="tk-n">10</span>, <span class="tk-n">10</span>, <span class="tk-n">200</span>, <span class="tk-n">24</span>, hwnd, <span class="tk-k">reinterpret_cast</span>&lt;HMENU&gt;(IDC_NAME), instance, <span class="tk-k">nullptr</span>);
+    <span class="tk-f">CreateWindowExW</span>(<span class="tk-n">0</span>, <span class="tk-s">L&quot;BUTTON&quot;</span>, <span class="tk-s">L&quot;&amp;Add&quot;</span>, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
+                    <span class="tk-n">220</span>, <span class="tk-n">10</span>, <span class="tk-n">80</span>, <span class="tk-n">24</span>, hwnd, <span class="tk-k">reinterpret_cast</span>&lt;HMENU&gt;(IDC_ADD), instance, <span class="tk-k">nullptr</span>);
+    <span class="tk-f">CreateWindowExW</span>(<span class="tk-n">0</span>, <span class="tk-s">L&quot;BUTTON&quot;</span>, <span class="tk-s">L&quot;&amp;Shout&quot;</span>, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
+                    <span class="tk-n">10</span>, <span class="tk-n">44</span>, <span class="tk-n">200</span>, <span class="tk-n">24</span>, hwnd, <span class="tk-k">reinterpret_cast</span>&lt;HMENU&gt;(IDC_SHOUT), instance, <span class="tk-k">nullptr</span>);
+    <span class="tk-f">CreateWindowExW</span>(WS_EX_CLIENTEDGE, <span class="tk-s">L&quot;LISTBOX&quot;</span>, <span class="tk-s">L&quot;&quot;</span>, WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY,
+                    <span class="tk-n">10</span>, <span class="tk-n">78</span>, <span class="tk-n">290</span>, <span class="tk-n">200</span>, hwnd, <span class="tk-k">reinterpret_cast</span>&lt;HMENU&gt;(IDC_LIST), instance, <span class="tk-k">nullptr</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Control</th>
+<th>Common styles</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BUTTON</code></td>
+<td>Push button, check box, radio button, group box</td>
+<td><code>BS_PUSHBUTTON</code>, <code>BS_DEFPUSHBUTTON</code>, <code>BS_AUTOCHECKBOX</code>, <code>BS_AUTORADIOBUTTON</code>, <code>BS_GROUPBOX</code></td>
+</tr>
+<tr>
+<td><code>EDIT</code></td>
+<td>Text box</td>
+<td><code>ES_AUTOHSCROLL</code>, <code>ES_MULTILINE</code>, <code>ES_NUMBER</code>, <code>ES_PASSWORD</code>, <code>ES_READONLY</code></td>
+</tr>
+<tr>
+<td><code>STATIC</code></td>
+<td>Label, picture, frame</td>
+<td><code>SS_LEFT</code>, <code>SS_RIGHT</code>, <code>SS_CENTER</code></td>
+</tr>
+<tr>
+<td><code>LISTBOX</code></td>
+<td>List of strings</td>
+<td><code>LBS_NOTIFY</code>, <code>LBS_SORT</code>, <code>LBS_EXTENDEDSEL</code></td>
+</tr>
+<tr>
+<td><code>COMBOBOX</code></td>
+<td>Drop-down list</td>
+<td><code>CBS_DROPDOWNLIST</code>, <code>CBS_DROPDOWN</code></td>
+</tr>
+<tr>
+<td><code>SCROLLBAR</code></td>
+<td>A separate scroll bar</td>
+<td><code>SBS_HORZ</code>, <code>SBS_VERT</code></td>
+</tr>
+</tbody></table>
+</div>
+<h2>Talking to controls</h2>
+<p>Controls are driven by <strong>messages</strong>. <code>GetDlgItem(parent, id)</code> finds a control&#39;s window:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HWND list = <span class="tk-f">GetDlgItem</span>(hwnd, IDC_LIST);
+<span class="tk-f">SendMessageW</span>(list, LB_ADDSTRING, <span class="tk-n">0</span>, <span class="tk-k">reinterpret_cast</span>&lt;LPARAM&gt;(<span class="tk-s">L&quot;Granite&quot;</span>));
+<span class="tk-k">const</span> <span class="tk-k">int</span> selected = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-f">SendMessageW</span>(list, LB_GETCURSEL, <span class="tk-n">0</span>, <span class="tk-n">0</span>));      <span class="tk-c">// LB_ERR (-1) for none</span>
+<span class="tk-k">const</span> <span class="tk-k">bool</span> shout = <span class="tk-f">SendMessageW</span>(<span class="tk-f">GetDlgItem</span>(hwnd, IDC_SHOUT), BM_GETCHECK, <span class="tk-n">0</span>, <span class="tk-n">0</span>) == BST_CHECKED;
+
+<span class="tk-k">wchar_t</span> name[<span class="tk-n">256</span>];
+<span class="tk-f">GetDlgItemTextW</span>(hwnd, IDC_NAME, name, <span class="tk-n">256</span>);           <span class="tk-c">// SetDlgItemTextW to change it</span></code></pre></div>
+<p>Each control family has its prefix: <code>BM_</code> buttons, <code>EM_</code> edits, <code>LB_</code> list boxes, <code>CB_</code> combo boxes. Reading text of unknown length: ask <code>GetWindowTextLengthW</code> first, then size the buffer.</p>
+<h2>Notifications</h2>
+<p>Controls tell their parent about events with <code>WM_COMMAND</code>: <code>LOWORD(wParam)</code> is the control&#39;s id, <code>HIWORD(wParam)</code> is the <strong>notification code</strong>, and <code>lParam</code> is the control&#39;s window:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">case</span> WM_COMMAND:
+    <span class="tk-k">switch</span> (<span class="tk-f">LOWORD</span>(wParam))
+    {
+    <span class="tk-k">case</span> IDC_ADD:
+        <span class="tk-k">if</span> (<span class="tk-f">HIWORD</span>(wParam) == BN_CLICKED) <span class="tk-f">addName</span>();
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    <span class="tk-k">case</span> IDC_NAME:
+        <span class="tk-k">if</span> (<span class="tk-f">HIWORD</span>(wParam) == EN_CHANGE) <span class="tk-f">updateAddButton</span>();       <span class="tk-c">// the text changed</span>
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    <span class="tk-k">case</span> IDC_LIST:
+        <span class="tk-k">if</span> (<span class="tk-f">HIWORD</span>(wParam) == LBN_DBLCLK) <span class="tk-f">openSelected</span>();
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    }
+    <span class="tk-k">break</span>;</code></pre></div>
+<p>Newer controls (lesson 3.05) use <code>WM_NOTIFY</code> with a structure instead, because two numbers are not enough to describe their events.</p>
+<h2>Fonts</h2>
+<p>Controls created this way use the old bitmap &quot;System&quot; font, which looks wrong. Give every control the system&#39;s message font once they are created:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>NONCLIENTMETRICSW m{ <span class="tk-k">sizeof</span>(m) };
+<span class="tk-f">SystemParametersInfoW</span>(SPI_GETNONCLIENTMETRICS, <span class="tk-k">sizeof</span>(m), &amp;m, <span class="tk-n">0</span>);
+m_font = <span class="tk-f">CreateFontIndirectW</span>(&amp;m.lfMessageFont);                 <span class="tk-c">// delete it in WM_DESTROY</span>
+<span class="tk-f">EnumChildWindows</span>(hwnd, [](HWND child, LPARAM font) { <span class="tk-f">SendMessageW</span>(child, WM_SETFONT, font, TRUE); <span class="tk-k">return</span> TRUE; },
+                 <span class="tk-k">reinterpret_cast</span>&lt;LPARAM&gt;(m_font));</code></pre></div>
+<p>With high DPI (lesson 3.04), use <code>SystemParametersInfoForDpi</code> so the font has the right size on each monitor.</p>
+<h2>Tab between controls</h2>
+<p>In an ordinary window, Tab does nothing. <code>IsDialogMessageW</code> adds dialog-style keyboard navigation (Tab and Shift+Tab between <code>WS_TABSTOP</code> controls, arrows within groups, Enter for the default button, Alt+letter for <code>&amp;</code> mnemonics) to any window:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">while</span> (<span class="tk-f">GetMessageW</span>(&amp;msg, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>) &gt; <span class="tk-n">0</span>)
+{
+    <span class="tk-k">if</span> (!<span class="tk-f">IsDialogMessageW</span>(hwnd, &amp;msg)) { <span class="tk-f">TranslateMessage</span>(&amp;msg); <span class="tk-f">DispatchMessageW</span>(&amp;msg); }
+}</code></pre></div>
+<p>The Tab order is the order the controls were <strong>created</strong> in, so create them in reading order.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-menus-accelerators-and-resources/"><span class="mono">previous</span><b>2.04 Menus, Accelerators and Resources</b></a>
+      <a class="lp-next" href="../3-01-dialog-boxes/"><span class="mono">next</span><b>3.01 Dialog Boxes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/2-05-standard-controls"></script>
+</body>
+</html>

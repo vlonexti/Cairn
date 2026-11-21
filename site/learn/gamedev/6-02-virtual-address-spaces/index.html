@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Virtual Address Spaces · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/6-02-virtual-address-spaces/">
+  <meta name="description" content="Every address a program uses is virtual : the processor translates it, page by page, into a physical location in RAM using page tables the operating system…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Virtual Address Spaces · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Every address a program uses is virtual : the processor translates it, page by page, into a physical location in RAM using page tables the operating system…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/6-02-virtual-address-spaces/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Virtual Address Spaces · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Virtual Address Spaces · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Every address a program uses is virtual : the processor translates it, page by page, into a physical location in RAM using page tables the operating system…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Processes, Threads and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Virtual Address Spaces</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 9 in milestone 6</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Every address a program uses is <strong>virtual</strong>: the processor translates it, page by page, into a physical location in RAM using <strong>page tables</strong> the operating system maintains for each process. This lesson explains the translation, the size and shape of a 64-bit address space, why some addresses are impossible, and what happens when a page is not in RAM at all.</p>
+      <div class="prose">
+<h2>Every address is translated</h2>
+<p>Lesson 1.06 said each process has a private address space. Here is how that works. Every time the CPU reads or writes memory, the address goes through the <strong>memory management unit</strong> (MMU), part of the processor, which translates it from a <strong>virtual address</strong> to a <strong>physical address</strong>: a real location in the RAM chips.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    C[&quot;CPU wants&lt;br/&gt;virtual 0x00007FF6A1234567&quot;] --&gt; M[&quot;MMU&lt;br/&gt;looks up the page tables&lt;br/&gt;of the current process&quot;]
+    M --&gt; R[&quot;Physical 0x00000002_4C8F1567&lt;br/&gt;in RAM&quot;]</pre></div>
+<p>Translation happens in units of <strong>pages</strong>, 4,096 bytes (<code>0x1000</code>) each. An address splits into two parts:</p>
+<div class="codeblock diagram plain"><pre><code>virtual address 0x00007FF6A1234567
+                └────────┬───────┘└┬┘
+                 page number        offset within the page: 0x567
+                 0x7FF6A1234</code></pre></div>
+<p>The page number is looked up and replaced with a <strong>physical frame number</strong>; the offset stays the same. So within a page, bytes keep their order, but two neighbouring virtual pages can be anywhere in physical memory, in any order.</p>
+<p>Because each process has its own page tables, the same virtual page number leads to different frames in different processes. When the scheduler switches to another process, it switches the CPU to that process&#39;s tables (by loading the register <code>CR3</code>), and the whole address space changes in one step.</p>
+<h2>Four levels of tables</h2>
+<p>A 64-bit address space is enormous. A single flat table with one entry per page would be gigabytes per process. So the tables are a <strong>tree</strong> with four levels, and only the parts that are actually used exist. On x64, the 48 significant bits of an address split like this:</p>
+<div class="codeblock diagram plain"><pre><code> 47     39 38     30 29     21 20     12 11          0
+┌─────────┬─────────┬─────────┬─────────┬────────────┐
+│ level 4 │ level 3 │ level 2 │ level 1 │  offset    │
+│ 9 bits  │ 9 bits  │ 9 bits  │ 9 bits  │  12 bits   │
+└─────────┴─────────┴─────────┴─────────┴────────────┘</code></pre></div>
+<p>Each 9-bit index picks one of 512 entries in a table; each entry points to the next level&#39;s table; the last level gives the physical frame. The practice task splits addresses this way.</p>
+<p>Walking four tables for every memory access would be slow, so the CPU caches recent translations in the <strong>TLB</strong> (translation lookaside buffer). Nearly all accesses hit the TLB and cost nothing extra. Code that jumps randomly across a very large amount of memory misses it, which is another reason (besides the cache, lesson 2.07) to keep data compact.</p>
+<h2>The shape of a 64-bit address space</h2>
+<p>x64 processors use 48 bits of address today, not 64. The top 16 bits must all copy bit 47, which splits the space into two halves with a huge gap between them:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Range</th>
+<th>Size</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>0x00000000&#39;00000000</code> to <code>0x00007FFF&#39;FFFFFFFF</code></td>
+<td>128 TB</td>
+<td><strong>User mode</strong>: your process</td>
+</tr>
+<tr>
+<td>(the gap)</td>
+<td></td>
+<td>Not valid: using an address here is an immediate fault</td>
+</tr>
+<tr>
+<td><code>0xFFFF8000&#39;00000000</code> to <code>0xFFFFFFFF&#39;FFFFFFFF</code></td>
+<td>128 TB</td>
+<td><strong>Kernel mode</strong>: shared by all processes, inaccessible from user mode</td>
+</tr>
+</tbody></table>
+</div>
+<p>Addresses in the valid ranges are called <strong>canonical</strong>. That is why every user-mode pointer you print starts with <code>0000</code>, and why the top two bytes in the Memory window are always <code>00 00</code> (lesson 2.11). A pointer like <code>0x12345678&#39;9ABCDEF0</code> is not just invalid, it is impossible, and is a sure sign of corrupted data.</p>
+<p>Within the user half, Windows places the program&#39;s modules near the top (<code>0x00007FF...</code>), and stacks and heaps lower down, at addresses randomised each run (lesson 6.09). The first 64 KB (<code>0x0</code> to <code>0xFFFF</code>) are never mapped, so that a null pointer plus a small offset always faults.</p>
+<h2>Pages that are not in RAM</h2>
+<p>A page table entry can also say <strong>&quot;not present&quot;</strong>. Touching such a page raises a <strong>page fault</strong>, an exception the kernel handles:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Why it was not present</th>
+<th>What the kernel does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The page was never committed (lesson 6.03), or is in the gap</td>
+<td>The access is invalid: the program gets an <strong>access violation</strong></td>
+</tr>
+<tr>
+<td>It was committed but never touched yet</td>
+<td>Finds a free frame, fills it with zeros, maps it, and resumes the program: a <strong>demand-zero</strong> fault</td>
+</tr>
+<tr>
+<td>It was moved out to the page file on disk to free RAM</td>
+<td>Reads it back, maps it, resumes: a <strong>hard</strong> fault, which takes milliseconds</td>
+</tr>
+<tr>
+<td>It is part of a file mapping (the <code>.exe</code>&#39;s code, a DLL)</td>
+<td>Reads it from the file, maps it, resumes</td>
+</tr>
+</tbody></table>
+</div>
+<p>The program never notices the middle three, except as a pause. This is how a 100 GB address space can exist on a PC with 16 GB of RAM, and why a game that uses more memory than the machine has starts to stutter: its pages are going to and from disk. Task Manager&#39;s <strong>Commit size</strong> and <strong>Working set</strong> columns show how much memory a process has committed and how much is currently in RAM.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Thinking a pointer value is a RAM location</span></div><div class="callout-body"><p>It is virtual. The physical location may change and is never visible to user-mode code.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Ignoring a non-canonical pointer in a crash</span></div><div class="callout-body"><p>A pointer with random high bits is corrupted data: look for whatever overwrote it, not for the code that used it.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Assuming memory use is the same as RAM use</span></div><div class="callout-body"><p>Committed memory may be in the page file; RAM in use is the working set.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does the MMU replace when it translates an address?</div><ul><li>The page number, with a physical frame number; the offset within the page stays the same</li><li>The whole address, with a random one</li><li>Only the offset</li></ul><details><summary>Show the answer</summary><p><b>The page number, with a physical frame number; the offset within the page stays the same</b> Translation works page by page.</p></details></li><li><div class="q">Why does every user-mode pointer on x64 Windows start with <code>0000</code>?</div><ul><li>User addresses are in the lower 128 TB, so the top 16 bits are zero</li><li>Windows wastes the first two bytes</li><li>Pointers are padded for alignment</li></ul><details><summary>Show the answer</summary><p><b>User addresses are in the lower 128 TB, so the top 16 bits are zero</b> Canonical user-mode addresses have bits 48 to 63 equal to bit 47, which is 0.</p></details></li><li><div class="q">What is a demand-zero page fault?</div><ul><li>The first touch of committed memory, where the kernel provides a zero-filled page and the program continues</li><li>A crash caused by a null pointer</li><li>A page that was written to disk</li></ul><details><summary>Show the answer</summary><p><b>The first touch of committed memory, where the kernel provides a zero-filled page and the program continues</b> It is invisible to the program, apart from a tiny delay.</p></details></li><li><div class="q">Why are page tables a tree rather than one flat array?</div><ul><li>So that only the parts of the huge address space actually in use need tables</li><li>Because the CPU cannot read arrays</li><li>To make translation faster than a flat table</li></ul><details><summary>Show the answer</summary><p><b>So that only the parts of the huge address space actually in use need tables</b> A flat table for 48-bit addresses would need billions of entries per process.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-programs-processes-and-modules/"><span class="mono">previous</span><b>6.01 Programs, Processes and Modules</b></a>
+      <a class="lp-next" href="../6-03-pages-protection-and-committing-memory/"><span class="mono">next</span><b>6.03 Pages, Protection and Committing Memory</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/6-02-virtual-address-spaces"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

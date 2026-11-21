@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Field Guide to Memory Bugs · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/6-05-a-field-guide-to-memory-bugs/">
+  <meta name="description" content="Everything in this course turned into a way of working - reading a crash's address, recognising the debug fill patterns, the symptom-to-cause table, data…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Field Guide to Memory Bugs · Pointers and Memory · Xenon">
+  <meta property="og:description" content="Everything in this course turned into a way of working - reading a crash's address, recognising the debug fill patterns, the symptom-to-cause table, data…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/6-05-a-field-guide-to-memory-bugs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Field Guide to Memory Bugs · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Field Guide to Memory Bugs · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="Everything in this course turned into a way of working - reading a crash's address, recognising the debug fill patterns, the symptom-to-cause table, data…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Allocators and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Field Guide to Memory Bugs</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Everything in this course turned into a way of working - reading a crash&#39;s address, recognising the debug fill patterns, the symptom-to-cause table, data breakpoints, AddressSanitizer and page heap, and the habits that stop the bugs being written in the first place.</p>
+      <div class="prose">
+<h2>Read the address first</h2>
+<p>When a program crashes with an access violation, the most useful single fact is the <strong>address</strong> it tried to use. The debugger shows it in the exception message and, for a pointer, in the Locals or Watch window. Many bad addresses identify themselves:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Address looks like</th>
+<th>Usually means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>0x0000000000000000</code> to a few thousand</td>
+<td>a null pointer; the small number is the offset of the member being reached</td>
+</tr>
+<tr>
+<td><code>0xCCCCCCCCCCCCCCCC</code> (plus a small offset)</td>
+<td>a pointer read from <strong>uninitialised stack</strong> memory (MSVC debug)</td>
+</tr>
+<tr>
+<td><code>0xCDCDCDCDCDCDCDCD</code></td>
+<td>a pointer read from <strong>heap memory never written</strong> after <code>new</code> or <code>malloc</code></td>
+</tr>
+<tr>
+<td><code>0xDDDDDDDDDDDDDDDD</code></td>
+<td>a pointer read from <strong>freed heap</strong> memory: the object holding it was already deleted</td>
+</tr>
+<tr>
+<td><code>0xFEEEFEEEFEEEFEEE</code></td>
+<td>a pointer read from memory freed back to the Windows heap</td>
+</tr>
+<tr>
+<td><code>0xFDFDFDFD</code> in your data</td>
+<td>you are reading the <strong>guard bytes</strong> around a heap block: past an end</td>
+</tr>
+<tr>
+<td>a valid-looking heap address, but the data is garbage</td>
+<td>a dangling pointer to memory that has been reused</td>
+</tr>
+</tbody></table>
+</div>
+<p>The first three patterns only appear in Debug builds, which is a good reason to reproduce crashes in one.</p>
+<h2>Symptoms and causes</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely causes</th>
+<th>Lessons</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Crash at a small address</td>
+<td>null pointer, often a missing check after a lookup</td>
+<td>1.05, 3.03</td>
+</tr>
+<tr>
+<td>Value changes &quot;by itself&quot;</td>
+<td>a write through a dangling or out-of-bounds pointer from somewhere else</td>
+<td>1.05, 2.01</td>
+</tr>
+<tr>
+<td><code>Run-Time Check Failure #2 - Stack around the variable was corrupted</code></td>
+<td>writing past a local array</td>
+<td>2.01, 4.02</td>
+</tr>
+<tr>
+<td><code>HEAP CORRUPTION DETECTED</code> or a crash inside <code>ntdll.dll</code> during <code>new</code>/<code>delete</code></td>
+<td>heap overrun, double free, mismatched <code>delete</code>/<code>delete[]</code></td>
+<td>4.03</td>
+</tr>
+<tr>
+<td>Works in Debug, fails in Release</td>
+<td>uninitialised variables, undefined behaviour the optimiser exploited, strict aliasing</td>
+<td>2.02, 2.05</td>
+</tr>
+<tr>
+<td>Crash only after a container grows</td>
+<td>pointers or views into a <code>std::vector</code> that reallocated</td>
+<td>1.05, 5.04</td>
+</tr>
+<tr>
+<td>Memory use climbs steadily</td>
+<td>leaks, or <code>shared_ptr</code> cycles</td>
+<td>4.05, 5.03</td>
+</tr>
+<tr>
+<td>Stack overflow (<code>0xC00000FD</code>)</td>
+<td>deep recursion, huge local arrays</td>
+<td>4.02</td>
+</tr>
+<tr>
+<td>Image comes out slanted</td>
+<td>width used instead of stride</td>
+<td>2.04</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Data breakpoints</h2>
+<p>When a value changes and you do not know who changed it, set a <strong>data breakpoint</strong> on it. In Visual Studio, stop somewhere the variable exists, right-click it in the Locals or Watch window and choose <strong>Break When Value Changes</strong> (or Debug &gt; New Breakpoint &gt; Data Breakpoint with an address). The processor&#39;s debug registers watch that address, and the debugger stops at the exact instruction that writes to it, however indirect the pointer was. There are only four such registers, so only a few bytes at a time can be watched.</p>
+<p>This is the tool for &quot;something is overwriting my health with garbage&quot;: the write that should not happen stops in the debugger with its call stack.</p>
+<h2>Make the bug happen at the bug</h2>
+<p>Memory bugs are hard because the damage shows up later than the mistake. Every tool here moves the failure back to the moment of the mistake:</p>
+<ul>
+<li><strong>AddressSanitizer</strong> (<code>/fsanitize=address</code>) checks every access and reports overruns, use after free and double frees as they happen (lesson 4.05).</li>
+<li><strong>Page heap</strong> (<code>gflags /p /enable game.exe /full</code>) puts every heap block against an inaccessible page, so an overrun faults on the exact instruction (lesson 6.04). It uses a lot of memory; enable it for one program at a time.</li>
+<li><strong>The debug heap</strong> checks guard bytes when blocks are freed and fills memory with recognisable patterns. <code>_CrtCheckMemory()</code> called at points in your code checks every block immediately, narrowing down when the corruption happened.</li>
+<li><strong>Debug fill on free</strong> in your own allocators: fill freed memory with a pattern (as your debug heap in milestone 4 did) so a use after free reads obvious garbage instead of plausible old data.</li>
+</ul>
+<h2>A way of working</h2>
+<ol>
+<li><strong>Reproduce it</strong> reliably, in a Debug build if possible.</li>
+<li><strong>Read the crash</strong>: the faulting address, the instruction, the call stack. Match the address against the patterns above.</li>
+<li><strong>Turn on the tools</strong>: ASan first; page heap or data breakpoints if needed.</li>
+<li><strong>Find the owner</strong>: for the object involved, who created it, who frees it, and who still held a pointer. Most memory bugs are ownership bugs (lesson 4.04).</li>
+<li><strong>Fix the design, not just the line</strong>: a raw owning pointer that should be a <code>unique_ptr</code>, a cached pointer that should be a handle, a stored view that should be a copy.</li>
+</ol>
+<h2>The habits that prevent them</h2>
+<ul>
+<li>Initialise every variable, pointers above all.</li>
+<li>One owner per object, written in the type: values, containers and <code>unique_ptr</code>; <code>shared_ptr</code> only for real sharing.</li>
+<li>No <code>new</code>/<code>delete</code> in ordinary code; RAII for every resource.</li>
+<li>Pass views (<code>span</code>, <code>string_view</code>, references) down, never store them casually.</li>
+<li>Indices or handles instead of long-lived pointers into containers.</li>
+<li>Bounds-checked access (<code>at()</code>, spans with known sizes) wherever speed does not demand otherwise.</li>
+<li>Run tests under AddressSanitizer regularly.</li>
+</ul>
+<p>You now know what every one of those habits protects against, byte by byte.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-virtual-memory-and-pages/"><span class="mono">previous</span><b>6.04 Virtual Memory and Pages</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/6-05-a-field-guide-to-memory-bugs"></script>
+</body>
+</html>

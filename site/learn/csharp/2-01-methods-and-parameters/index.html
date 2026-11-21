@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Methods and Parameters · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/2-01-methods-and-parameters/">
+  <meta name="description" content="Writing methods with parameters and return values, expression-bodied methods, overloading, optional and named arguments, params arrays, ref, out and in…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Methods and Parameters · C# · Xenon">
+  <meta property="og:description" content="Writing methods with parameters and return values, expression-bodied methods, overloading, optional and named arguments, params arrays, ref, out and in…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/2-01-methods-and-parameters/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Methods and Parameters · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Methods and Parameters · C# · Xenon">
+  <meta name="twitter:description" content="Writing methods with parameters and return values, expression-bodied methods, overloading, optional and named arguments, params arrays, ref, out and in…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Methods and Collections</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Methods and Parameters</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.01</b></span><span>1 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Writing methods with parameters and return values, expression-bodied methods, overloading, optional and named arguments, params arrays, ref, out and in parameters, local functions, recursion, and static methods in classes.</p>
+      <div class="prose">
+<h2>Methods</h2>
+<p>A <strong>method</strong> is a named block of code that takes <strong>parameters</strong> and may <strong>return</strong> a value. Methods live in classes; in a top-level program you can also write them directly as <strong>local functions</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Area</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Describe</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>));
+<span class="tk-f">Greet</span>(<span class="tk-s">&quot;Grace&quot;</span>);
+
+<span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">Area</span>(<span class="tk-k">double</span> width, <span class="tk-k">double</span> height)
+{
+    <span class="tk-k">return</span> width * height;
+}
+
+<span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Describe</span>(<span class="tk-k">string</span> name, <span class="tk-k">int</span> age) =&gt; <span class="tk-s">$&quot;{name} ({age})&quot;</span>;   <span class="tk-c">// expression-bodied</span>
+
+<span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">Greet</span>(<span class="tk-k">string</span> name)     <span class="tk-c">// void: returns nothing</span>
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;Hello, {name}!&quot;</span>);
+}</code></pre></div>
+<p>Each parameter has a type, and so does the result: the compiler checks every call. <code>=&gt; expression</code> is shorthand for a body that returns one expression.</p>
+<p>In a class, the same methods look like this; <code>static</code> means they belong to the class itself rather than to an object (lesson 3.05):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">class</span> <span class="tk-t">Geometry</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">Area</span>(<span class="tk-k">double</span> width, <span class="tk-k">double</span> height) =&gt; width * height;
+}
+<span class="tk-c">// called as Geometry.Area(3, 4)</span></code></pre></div>
+<h2>Overloading</h2>
+<p>Several methods in a class may share a name if their parameter lists differ. The compiler picks the best match:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">MathX</span>.<span class="tk-f">Max</span>(<span class="tk-n">3</span>, <span class="tk-n">9</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">MathX</span>.<span class="tk-f">Max</span>(<span class="tk-n">2.5</span>, <span class="tk-n">1.5</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">MathX</span>.<span class="tk-f">Max</span>(<span class="tk-n">4</span>, <span class="tk-n">8</span>, <span class="tk-n">6</span>));
+
+<span class="tk-k">static</span> <span class="tk-k">class</span> <span class="tk-t">MathX</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">Max</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b) =&gt; a &gt; b ? a : b;
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">Max</span>(<span class="tk-k">double</span> a, <span class="tk-k">double</span> b) =&gt; a &gt; b ? a : b;
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">Max</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b, <span class="tk-k">int</span> c) =&gt; <span class="tk-f">Max</span>(<span class="tk-f">Max</span>(a, b), c);
+}</code></pre></div>
+<p>Local functions in a top-level program cannot be overloaded; methods in classes can.</p>
+<h2>Optional and named arguments</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Format</span>(<span class="tk-n">1234.5</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Format</span>(<span class="tk-n">1234.5</span>, decimals: <span class="tk-n">0</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Format</span>(<span class="tk-n">1234.5</span>, prefix: <span class="tk-s">&quot;EUR &quot;</span>));
+
+<span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Format</span>(<span class="tk-k">double</span> amount, <span class="tk-k">int</span> decimals = <span class="tk-n">2</span>, <span class="tk-k">string</span> prefix = <span class="tk-s">&quot;&quot;</span>)
+    =&gt; prefix + amount.<span class="tk-f">ToString</span>(<span class="tk-s">&quot;F&quot;</span> + decimals);</code></pre></div>
+<p>Parameters with default values are optional; they must come after the required ones. <strong>Named arguments</strong> (<code>decimals: 0</code>) make calls readable and let you skip optional parameters.</p>
+<h2>params</h2>
+<p>A <code>params</code> parameter accepts any number of arguments as an array:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Sum</span>());
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Sum</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>));
+<span class="tk-k">int</span>[] values = { <span class="tk-n">10</span>, <span class="tk-n">20</span> };
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Sum</span>(values));
+
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">Sum</span>(<span class="tk-k">params</span> <span class="tk-k">int</span>[] numbers)
+{
+    <span class="tk-k">int</span> total = <span class="tk-n">0</span>;
+    <span class="tk-k">foreach</span> (<span class="tk-k">int</span> n <span class="tk-k">in</span> numbers) total += n;
+    <span class="tk-k">return</span> total;
+}</code></pre></div>
+<h2>ref, out and in</h2>
+<p>Arguments are normally passed <strong>by value</strong>: the method gets a copy of the variable&#39;s value (for reference types, a copy of the reference). Three keywords pass the variable itself:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span> a = <span class="tk-n">1</span>, b = <span class="tk-n">2</span>;
+<span class="tk-f">Swap</span>(<span class="tk-k">ref</span> a, <span class="tk-k">ref</span> b);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{a} {b}&quot;</span>);
+
+<span class="tk-k">if</span> (<span class="tk-f">TryDivide</span>(<span class="tk-n">10</span>, <span class="tk-n">4</span>, <span class="tk-k">out</span> <span class="tk-k">double</span> result)) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(result);
+<span class="tk-k">if</span> (!<span class="tk-f">TryDivide</span>(<span class="tk-n">1</span>, <span class="tk-n">0</span>, <span class="tk-k">out</span> _)) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;cannot divide by zero&quot;</span>);
+
+<span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">Swap</span>(<span class="tk-k">ref</span> <span class="tk-k">int</span> x, <span class="tk-k">ref</span> <span class="tk-k">int</span> y) =&gt; (x, y) = (y, x);
+
+<span class="tk-k">static</span> <span class="tk-k">bool</span> <span class="tk-f">TryDivide</span>(<span class="tk-k">int</span> x, <span class="tk-k">int</span> y, <span class="tk-k">out</span> <span class="tk-k">double</span> quotient)
+{
+    <span class="tk-k">if</span> (y == <span class="tk-n">0</span>) { quotient = <span class="tk-n">0</span>; <span class="tk-k">return</span> <span class="tk-k">false</span>; }
+    quotient = (<span class="tk-k">double</span>)x / y;
+    <span class="tk-k">return</span> <span class="tk-k">true</span>;
+}</code></pre></div>
+<ul>
+<li><code>ref</code>: the method can read and change the caller&#39;s variable.</li>
+<li><code>out</code>: the method must assign it; used for extra results, as in the <code>TryParse</code> pattern. <code>out _</code> discards a result you do not need.</li>
+<li><code>in</code>: passed by reference but read-only, to avoid copying large structs.</li>
+</ul>
+<p>For several results, a <strong>tuple</strong> is often clearer than <code>out</code>: <code>static (int Min, int Max) Range(int[] xs)</code>, used as <code>var (lo, hi) = Range(xs);</code>.</p>
+<h2>Recursion</h2>
+<p>A method can call itself. Every recursive method needs a <strong>base case</strong> that stops:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Factorial</span>(<span class="tk-n">10</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Gcd</span>(<span class="tk-n">84</span>, <span class="tk-n">36</span>));
+
+<span class="tk-k">static</span> <span class="tk-k">long</span> <span class="tk-f">Factorial</span>(<span class="tk-k">int</span> n) =&gt; n &lt;= <span class="tk-n">1</span> ? <span class="tk-n">1</span> : n * <span class="tk-f">Factorial</span>(n - <span class="tk-n">1</span>);
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">Gcd</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b) =&gt; b == <span class="tk-n">0</span> ? a : <span class="tk-f">Gcd</span>(b, a % b);</code></pre></div>
+<p>Without a base case, the calls never end and the program stops with a <code>StackOverflowException</code>.</p>
+<h2>Good methods</h2>
+<p>A method should do one thing that its name says. Prefer returning results over printing them: <code>CalculateTotal</code> that returns a number can be tested and reused; one that prints cannot. Keep reading input and printing at the edges of the program.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/2.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/2.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-05-control-flow/"><span class="mono">previous</span><b>1.05 Control Flow</b></a>
+      <a class="lp-next" href="../2-02-arrays-and-lists/"><span class="mono">next</span><b>2.02 Arrays and Lists</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/2-01-methods-and-parameters"></script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>How ImGui Identifies Widgets · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/1-05-how-imgui-identifies-widgets/">
+  <meta name="description" content="ImGui remembers a widget between frames by its ID , a number computed from the widget's label and the ID stack . Two widgets with the same ID in the same…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How ImGui Identifies Widgets · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="ImGui remembers a widget between frames by its ID , a number computed from the widget's label and the ID stack . Two widgets with the same ID in the same…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/1-05-how-imgui-identifies-widgets/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="How ImGui Identifies Widgets · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How ImGui Identifies Widgets · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="ImGui remembers a widget between frames by its ID , a number computed from the widget's label and the ID stack . Two widgets with the same ID in the same…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Immediate-Mode Foundations</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">How ImGui Identifies Widgets</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.05</b></span><span>5 of 6 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">ImGui remembers a widget between frames by its <strong>ID</strong>, a number computed from the widget&#39;s label and the <strong>ID stack</strong>. Two widgets with the same ID in the same place behave as one, which is the classic &quot;my second button does not work&quot; bug. This lesson explains IDs, the <code>##</code> and <code>###</code> label rules, and <code>PushID</code>.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">for</span> (<span class="tk-t">Stone</span>&amp; stone : stones)
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%s&quot;</span>, stone.name.<span class="tk-f">c_str</span>());
+    <span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>();
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Delete&quot;</span>)) <span class="tk-f">remove</span>(stone);   <span class="tk-c">// only the first one works!</span>
+}</code></pre></div>
+<p>Every button has the label &quot;Delete&quot;. ImGui computes each widget&#39;s <strong>ID</strong> from its label, so all the buttons get the <strong>same</strong> ID. When you press the third one, ImGui thinks the widget with that ID is active, but the first button with that ID claims it. The result: only the first button works, or the wrong one reacts.</p>
+<h2>How an ID is made</h2>
+<p>An ID is a 32-bit hash. ImGui keeps an <strong>ID stack</strong>: a stack of seed values. Each widget&#39;s ID is the hash of its label, <strong>seeded</strong> with the value on top of the stack. Every window pushes its own seed (from its name), so a &quot;Delete&quot; button in window A and one in window B already differ.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>ID = hash(label, seed = top of the ID stack)</code></pre></div>
+<p>To make widgets in a loop differ, push something unique onto the stack around each iteration:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; (<span class="tk-k">int</span>)stones.<span class="tk-f">size</span>(); ++i)
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">PushID</span>(i);                            <span class="tk-c">// changes the seed for everything inside</span>
+    <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%s&quot;</span>, stones[i].name.<span class="tk-f">c_str</span>());
+    <span class="tk-t">ImGui</span>::<span class="tk-f">SameLine</span>();
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(<span class="tk-s">&quot;Delete&quot;</span>)) toDelete = i;   <span class="tk-c">// now each has a different ID</span>
+    <span class="tk-t">ImGui</span>::<span class="tk-f">PopID</span>();
+}</code></pre></div>
+<p><code>PushID</code> accepts an integer, a string, or a pointer (<code>PushID(&amp;stone)</code> is a good choice: the stone&#39;s address is unique and stable). Every <code>PushID</code> needs a <code>PopID</code>.</p>
+<h2>Label tricks: ## and</h2>
+<p>Labels do two jobs: the text shown and the source of the ID. Two markers separate them:</p>
+<ul>
+<li><strong><code>##</code></strong>: everything after it is part of the ID but <strong>not shown</strong>. <code>&quot;Delete##3&quot;</code> shows &quot;Delete&quot; and hashes the whole string. <code>&quot;##speed&quot;</code> shows nothing (a slider with no label).</li>
+<li><strong><code>###</code></strong>: <strong>only</strong> the part from <code>###</code> onward is used for the ID. <code>&quot;Score: 120###score&quot;</code> shows &quot;Score: 120&quot; and hashes just <code>&quot;###score&quot;</code>, so the ID stays the same when the score changes. Useful for window titles that show changing text: <code>Begin(&quot;Level 3 - 12 enemies###LevelWindow&quot;)</code> keeps its position and size even though the title changes.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Shown</th>
+<th>Hashed for the ID</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;Delete&quot;</code></td>
+<td>Delete</td>
+<td><code>Delete</code></td>
+</tr>
+<tr>
+<td><code>&quot;Delete##3&quot;</code></td>
+<td>Delete</td>
+<td><code>Delete##3</code></td>
+</tr>
+<tr>
+<td><code>&quot;##speed&quot;</code></td>
+<td>(nothing)</td>
+<td><code>##speed</code></td>
+</tr>
+<tr>
+<td><code>&quot;HP: 87###hp&quot;</code></td>
+<td>HP: 87</td>
+<td><code>###hp</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The practice has you implement exactly this table, plus the stack, with a simple hash.</p>
+<h2>When IDs matter</h2>
+<p>IDs are how ImGui finds a widget&#39;s remembered state: whether it is <strong>hot</strong> (hovered) or <strong>active</strong> (being clicked or dragged), whether a tree node is open, a text box&#39;s cursor, a window&#39;s position. If two widgets share an ID, they share that state. If a widget&#39;s ID changes every frame (say its label contains a timer), it loses its state every frame: a tree node never stays open, a drag stops immediately.</p>
+<h2>Debugging IDs</h2>
+<ul>
+<li><strong>Tools, ID Stack Tool</strong> in the demo window, or <code>ImGui::ShowIDStackToolWindow()</code>, shows the ID stack under the mouse.</li>
+<li>Recent versions of ImGui detect duplicate IDs in the same window and draw a warning over them (<code>io.ConfigDebugHighlightIdConflicts</code>, on by default in debug builds).</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Buttons with the same label in a loop</span></div><div class="callout-body"><p>Wrap each iteration in PushID / PopID, or add <code>##</code> and a unique suffix.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>A label that changes every frame</span></div><div class="callout-body"><p>The widget gets a new ID each frame and forgets its state. Use <code>###</code> with a fixed part.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Forgetting PopID</span></div><div class="callout-body"><p>Every widget after it gets a different ID than intended. ImGui asserts at the end of the window.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Two buttons labelled &quot;Delete&quot; are drawn in the same window without PushID. What happens?</div><ul><li>They share one ID, so clicking one can trigger the other or only the first works</li><li>ImGui renames the second automatically</li><li>Both work normally</li></ul><details><summary>Show the answer</summary><p><b>They share one ID, so clicking one can trigger the other or only the first works</b> IDs come from labels; the same label gives the same ID.</p></details></li><li><div class="q">What is shown and what is hashed for the label &quot;Gold: 50###gold&quot;?</div><ul><li>Shown &quot;Gold: 50&quot;; hashed &quot;###gold&quot;</li><li>Shown &quot;Gold: 50###gold&quot;; hashed &quot;Gold: 50&quot;</li><li>Shown &quot;gold&quot;; hashed &quot;Gold: 50&quot;</li></ul><details><summary>Show the answer</summary><p><b>Shown &quot;Gold: 50&quot;; hashed &quot;###gold&quot;</b> ### keeps the ID stable while the visible text changes.</p></details></li><li><div class="q">Why does PushID(&amp;stone) work well in a loop?</div><ul><li>The address is unique for each stone and stays the same between frames</li><li>Pointers are faster to hash</li><li>It shows the address on screen</li></ul><details><summary>Show the answer</summary><p><b>The address is unique for each stone and stays the same between frames</b> A good ID source is unique and stable.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/1.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/1.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-04-windows-text-and-buttons/"><span class="mono">previous</span><b>1.04 Windows, Text and Buttons</b></a>
+      <a class="lp-next" href="../1-06-the-demo-window-and-the-debug-tools/"><span class="mono">next</span><b>1.06 The Demo Window and the Debug Tools</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/1-05-how-imgui-identifies-widgets"></script>
+</body>
+</html>

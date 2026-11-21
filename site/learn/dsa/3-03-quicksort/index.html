@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Quicksort · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/3-03-quicksort/">
+  <meta name="description" content="Sorting by partitioning - the Lomuto and Hoare partition schemes, quicksort's average O(n log n) and worst-case O(n²), choosing pivots at random or by median…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Quicksort · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Sorting by partitioning - the Lomuto and Hoare partition schemes, quicksort's average O(n log n) and worst-case O(n²), choosing pivots at random or by median…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/3-03-quicksort/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Quicksort · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Quicksort · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Sorting by partitioning - the Lomuto and Hoare partition schemes, quicksort's average O(n log n) and worst-case O(n²), choosing pivots at random or by median…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Sorting and Heaps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Quicksort</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Sorting by partitioning - the Lomuto and Hoare partition schemes, quicksort&#39;s average O(n log n) and worst-case O(n²), choosing pivots at random or by median of three, three-way partitioning for many duplicates, recursing on the smaller side, introsort (std::sort), and quickselect and std::nth_element for the k-th smallest element in linear time.</p>
+      <div class="prose">
+<h2>Partition, then recurse</h2>
+<p>Quicksort is divide and conquer with the work done <strong>before</strong> the recursion instead of after:</p>
+<ol>
+<li>Choose a <strong>pivot</strong> element.</li>
+<li><strong>Partition</strong>: rearrange the array so everything smaller than the pivot comes before it and everything larger after it. The pivot is now in its final place.</li>
+<li>Recursively sort the two sides. No combining is needed.</li>
+</ol>
+<p>Partitioning is a single O(n) pass with swaps, in place. If the pivot splits the array roughly in half, the recursion is T(n) = 2T(n/2) + O(n) = O(n log n), like merge sort, but with no buffer and a very tight inner loop. In practice it is usually the fastest comparison sort.</p>
+<h2>Lomuto partition</h2>
+<p>The simplest scheme uses the last element as the pivot and grows a region of &quot;small&quot; elements at the front:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-c">// Partitions a[lo..hi] (inclusive) around a[hi]; returns the pivot's final index.</span>
+<span class="tk-k">int</span> <span class="tk-f">lomuto</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; a, <span class="tk-k">int</span> lo, <span class="tk-k">int</span> hi)
+{
+    <span class="tk-k">int</span> pivot = a[hi];
+    <span class="tk-k">int</span> small = lo;                                <span class="tk-c">// a[lo..small) are &lt; pivot</span>
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> j = lo; j &lt; hi; ++j)
+        <span class="tk-k">if</span> (a[j] &lt; pivot) std::<span class="tk-f">swap</span>(a[small++], a[j]);
+    std::<span class="tk-f">swap</span>(a[small], a[hi]);
+    <span class="tk-k">return</span> small;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">quickSort</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; a, <span class="tk-k">int</span> lo, <span class="tk-k">int</span> hi)
+{
+    <span class="tk-k">if</span> (lo &gt;= hi) <span class="tk-k">return</span>;
+    <span class="tk-k">int</span> p = <span class="tk-f">lomuto</span>(a, lo, hi);
+    <span class="tk-f">quickSort</span>(a, lo, p - <span class="tk-n">1</span>);
+    <span class="tk-f">quickSort</span>(a, p + <span class="tk-n">1</span>, hi);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; a{ <span class="tk-n">10</span>, <span class="tk-n">80</span>, <span class="tk-n">30</span>, <span class="tk-n">90</span>, <span class="tk-n">40</span>, <span class="tk-n">50</span>, <span class="tk-n">70</span> };
+    std::cout &lt;&lt; <span class="tk-s">&quot;pivot 70 ends at index &quot;</span> &lt;&lt; <span class="tk-f">lomuto</span>(a, <span class="tk-n">0</span>, <span class="tk-n">6</span>) &lt;&lt; <span class="tk-s">&quot;: &quot;</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : a) std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">' '</span>;
+    <span class="tk-f">quickSort</span>(a, <span class="tk-n">0</span>, <span class="tk-n">6</span>);
+    std::cout &lt;&lt; <span class="tk-s">&quot;\nsorted: &quot;</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : a) std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p><strong>Hoare&#39;s</strong> original scheme moves two indexes towards each other from both ends, swapping pairs that are on the wrong side. It does about three times fewer swaps than Lomuto and handles equal elements better, at the cost of trickier bounds.</p>
+<h2>The worst case and how to avoid it</h2>
+<p>If the pivot is always the smallest or largest element, one side is empty and the other has n − 1 elements: T(n) = T(n − 1) + O(n) = <strong>O(n²)</strong>, and the recursion is n levels deep. With &quot;last element as pivot&quot;, that happens on <strong>already sorted</strong> input, which is very common in practice.</p>
+<p>Two standard fixes:</p>
+<ul>
+<li><strong>Random pivot</strong>: swap a randomly chosen element into the pivot position first. Then no particular input is bad; the expected time is O(n log n) for every input, and O(n²) becomes astronomically unlikely.</li>
+<li><strong>Median of three</strong>: use the median of the first, middle and last elements. Sorted and reversed inputs become best cases, and it is cheap.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;chrono&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;random&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+std::mt19937 <span class="tk-f">rng</span>(<span class="tk-n">7</span>);
+<span class="tk-k">long</span> <span class="tk-k">long</span> comparisons = <span class="tk-n">0</span>;
+
+<span class="tk-k">int</span> <span class="tk-f">partition</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; a, <span class="tk-k">int</span> lo, <span class="tk-k">int</span> hi, <span class="tk-k">bool</span> randomPivot)
+{
+    <span class="tk-k">if</span> (randomPivot) std::<span class="tk-f">swap</span>(a[std::uniform_int_distribution&lt;<span class="tk-k">int</span>&gt;(lo, hi)(rng)], a[hi]);
+    <span class="tk-k">int</span> pivot = a[hi], small = lo;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> j = lo; j &lt; hi; ++j)
+        <span class="tk-k">if</span> (++comparisons, a[j] &lt; pivot) std::<span class="tk-f">swap</span>(a[small++], a[j]);
+    std::<span class="tk-f">swap</span>(a[small], a[hi]);
+    <span class="tk-k">return</span> small;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">quickSort</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; a, <span class="tk-k">int</span> lo, <span class="tk-k">int</span> hi, <span class="tk-k">bool</span> randomPivot)
+{
+    <span class="tk-k">while</span> (lo &lt; hi)
+    {
+        <span class="tk-k">int</span> p = <span class="tk-f">partition</span>(a, lo, hi, randomPivot);
+        <span class="tk-k">if</span> (p - lo &lt; hi - p) { <span class="tk-f">quickSort</span>(a, lo, p - <span class="tk-n">1</span>, randomPivot); lo = p + <span class="tk-n">1</span>; }   <span class="tk-c">// recurse on the smaller side,</span>
+        <span class="tk-k">else</span> { <span class="tk-f">quickSort</span>(a, p + <span class="tk-n">1</span>, hi, randomPivot); hi = p - <span class="tk-n">1</span>; }                   <span class="tk-c">// loop on the larger one</span>
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (<span class="tk-k">bool</span> randomPivot : { <span class="tk-k">false</span>, <span class="tk-k">true</span> })
+    {
+        std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">a</span>(<span class="tk-n">5000</span>);
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">5000</span>; ++i) a[i] = i;                <span class="tk-c">// already sorted</span>
+        comparisons = <span class="tk-n">0</span>;
+        <span class="tk-f">quickSort</span>(a, <span class="tk-n">0</span>, <span class="tk-n">4999</span>, randomPivot);
+        std::cout &lt;&lt; (randomPivot ? <span class="tk-s">&quot;random pivot: &quot;</span> : <span class="tk-s">&quot;last element: &quot;</span>) &lt;&lt; comparisons &lt;&lt; <span class="tk-s">&quot; comparisons on sorted input\n&quot;</span>;
+    }
+}</code></pre></div>
+<p>The loop at the end of <code>quickSort</code> is another important detail: recursing only into the <strong>smaller</strong> side and looping over the larger one keeps the recursion depth at O(log n) even in a bad case, so the stack cannot overflow.</p>
+<h2>Many duplicates: three-way partitioning</h2>
+<p>If the array contains many equal elements (say, a million values that are all 0, 1 or 2), two-way partitioning wastes time on them: Lomuto puts all equal elements on one side, which is again O(n²) when everything is equal. <strong>Three-way partitioning</strong> (Dijkstra&#39;s &quot;Dutch national flag&quot;) splits into <strong>less than</strong>, <strong>equal to</strong> and <strong>greater than</strong> the pivot, and recurses only on the outer two parts:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-c">// Rearranges a[lo..hi] into &lt; pivot, == pivot, &gt; pivot. Returns the bounds of the middle part.</span>
+std::pair&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>&gt; <span class="tk-f">partition3</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; a, <span class="tk-k">int</span> lo, <span class="tk-k">int</span> hi, <span class="tk-k">int</span> pivot)
+{
+    <span class="tk-k">int</span> lt = lo, i = lo, gt = hi;                 <span class="tk-c">// a[lo..lt) &lt; p, a[lt..i) == p, a(gt..hi] &gt; p</span>
+    <span class="tk-k">while</span> (i &lt;= gt)
+    {
+        <span class="tk-k">if</span> (a[i] &lt; pivot) std::<span class="tk-f">swap</span>(a[lt++], a[i++]);
+        <span class="tk-k">else</span> <span class="tk-k">if</span> (a[i] &gt; pivot) std::<span class="tk-f">swap</span>(a[i], a[gt--]);
+        <span class="tk-k">else</span> ++i;
+    }
+    <span class="tk-k">return</span> { lt, gt };
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; flags{ <span class="tk-n">2</span>, <span class="tk-n">0</span>, <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">1</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">2</span>, <span class="tk-n">1</span> };
+    <span class="tk-k">auto</span> [lt, gt] = <span class="tk-f">partition3</span>(flags, <span class="tk-n">0</span>, <span class="tk-n">8</span>, <span class="tk-n">1</span>);
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : flags) std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;| the 1s are at [&quot;</span> &lt;&lt; lt &lt;&lt; <span class="tk-s">&quot;, &quot;</span> &lt;&lt; gt &lt;&lt; <span class="tk-s">&quot;]\n&quot;</span>;
+}</code></pre></div>
+<p>With three-way partitioning, an array of all-equal elements is sorted in a single O(n) pass.</p>
+<h2>std::sort is introsort</h2>
+<p><code>std::sort</code> must be O(n log n) in the worst case, which plain quicksort is not. Library implementations use <strong>introsort</strong> (&quot;introspective sort&quot;):</p>
+<ul>
+<li>quicksort with a median-of-three (or similar) pivot,</li>
+<li>switching to <strong>heapsort</strong> (lesson 3.04) if the recursion gets deeper than about 2 log₂ n, which only happens on adversarial inputs,</li>
+<li>and finishing small pieces (under 16 or so elements) with <strong>insertion sort</strong>.</li>
+</ul>
+<p>It is not stable; use <code>std::stable_sort</code> when that matters.</p>
+<h2>Quickselect: the k-th smallest in O(n)</h2>
+<p>To find the median, or the k-th smallest element, you do not need to sort. Partition once: if the pivot lands at index k, you are done; otherwise recurse into <strong>only the side that contains k</strong>. The expected work is n + n/2 + n/4 + ... = <strong>O(n)</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;algorithm&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;random&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">quickSelect</span>(std::vector&lt;<span class="tk-k">int</span>&gt; a, <span class="tk-k">int</span> k)       <span class="tk-c">// the k-th smallest, counting from 0</span>
+{
+    std::mt19937 <span class="tk-f">rng</span>(<span class="tk-n">1</span>);
+    <span class="tk-k">int</span> lo = <span class="tk-n">0</span>, hi = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(a.<span class="tk-f">size</span>()) - <span class="tk-n">1</span>;
+    <span class="tk-k">while</span> (<span class="tk-k">true</span>)
+    {
+        std::<span class="tk-f">swap</span>(a[std::uniform_int_distribution&lt;<span class="tk-k">int</span>&gt;(lo, hi)(rng)], a[hi]);
+        <span class="tk-k">int</span> pivot = a[hi], small = lo;
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> j = lo; j &lt; hi; ++j)
+            <span class="tk-k">if</span> (a[j] &lt; pivot) std::<span class="tk-f">swap</span>(a[small++], a[j]);
+        std::<span class="tk-f">swap</span>(a[small], a[hi]);
+        <span class="tk-k">if</span> (small == k) <span class="tk-k">return</span> a[small];
+        <span class="tk-k">if</span> (k &lt; small) hi = small - <span class="tk-n">1</span>; <span class="tk-k">else</span> lo = small + <span class="tk-n">1</span>;
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; a{ <span class="tk-n">9</span>, <span class="tk-n">1</span>, <span class="tk-n">8</span>, <span class="tk-n">2</span>, <span class="tk-n">7</span>, <span class="tk-n">3</span>, <span class="tk-n">6</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span> };
+    std::cout &lt;&lt; <span class="tk-s">&quot;median &quot;</span> &lt;&lt; <span class="tk-f">quickSelect</span>(a, <span class="tk-n">4</span>) &lt;&lt; <span class="tk-s">&quot;, smallest &quot;</span> &lt;&lt; <span class="tk-f">quickSelect</span>(a, <span class="tk-n">0</span>) &lt;&lt; <span class="tk-s">&quot;, largest &quot;</span> &lt;&lt; <span class="tk-f">quickSelect</span>(a, <span class="tk-n">8</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    std::<span class="tk-f">nth_element</span>(a.<span class="tk-f">begin</span>(), a.<span class="tk-f">begin</span>() + <span class="tk-n">4</span>, a.<span class="tk-f">end</span>());     <span class="tk-c">// the library version</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;nth_element: &quot;</span> &lt;&lt; a[<span class="tk-n">4</span>] &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>The standard library&#39;s <code>std::nth_element</code> does exactly this (with introselect&#39;s worst-case guard), and <code>std::partial_sort</code> sorts just the first k elements in O(n log k).</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">When does quicksort with &quot;last element as pivot&quot; take O(n²)?</div><ul><li>On random input</li><li>On input that is already sorted (or reversed)</li><li>On input with no duplicates</li><li>Never</li></ul><details><summary>Show the answer</summary><p><b>On input that is already sorted (or reversed)</b> Each partition then splits off just one element, so there are n levels of O(n) work.</p></details></li><li><div class="q">What does three-way partitioning fix?</div><ul><li>Arrays with many equal elements, which otherwise make quicksort slow</li><li>The need for a random pivot</li><li>Quicksort&#39;s instability</li><li>The extra buffer</li></ul><details><summary>Show the answer</summary><p><b>Arrays with many equal elements, which otherwise make quicksort slow</b> Equal elements are gathered in the middle and never touched again.</p></details></li><li><div class="q">Why recurse on the smaller side and loop on the larger one?</div><ul><li>It makes the sort stable</li><li>It halves the number of comparisons</li><li>It keeps the recursion depth at O(log n), so the stack cannot overflow</li><li>It avoids the worst case entirely</li></ul><details><summary>Show the answer</summary><p><b>It keeps the recursion depth at O(log n), so the stack cannot overflow</b> Each recursive call handles at most half of the current range.</p></details></li><li><div class="q">What does std::nth_element(b, b + k, e) guarantee?</div><ul><li>The range is fully sorted</li><li>The element at b + k is the one that would be there if sorted, with no larger elements before it and no smaller ones after it</li><li>The first k elements are sorted</li><li>It runs in O(n log n)</li></ul><details><summary>Show the answer</summary><p><b>The element at b + k is the one that would be there if sorted, with no larger elements before it and no smaller ones after it</b> It is quickselect: expected O(n).</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>Quicksort partitions around a pivot, then sorts each side: O(n log n) on average, in place, very fast.</li>
+<li>Bad pivots give O(n²); random or median-of-three pivots avoid it, and recursing on the smaller side bounds the stack.</li>
+<li>Three-way partitioning handles many duplicates.</li>
+<li><code>std::sort</code> is introsort: quicksort plus heapsort as a safety net plus insertion sort for small pieces.</li>
+<li>Quickselect and <code>std::nth_element</code> find the k-th smallest in expected O(n).</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-merge-sort/"><span class="mono">previous</span><b>3.02 Merge Sort</b></a>
+      <a class="lp-next" href="../3-04-heaps-and-priority-queues/"><span class="mono">next</span><b>3.04 Heaps and Priority Queues</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/3-03-quicksort"></script>
+</body>
+</html>

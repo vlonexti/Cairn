@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Unit Testing · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/6-02-unit-testing/">
+  <meta name="description" content="Writing automated tests with xUnit - test projects, Facts and Theories with InlineData, Arrange-Act-Assert, asserting values, collections and exceptions,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Unit Testing · C# · Xenon">
+  <meta property="og:description" content="Writing automated tests with xUnit - test projects, Facts and Theories with InlineData, Arrange-Act-Assert, asserting values, collections and exceptions,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/6-02-unit-testing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Unit Testing · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Unit Testing · C# · Xenon">
+  <meta name="twitter:description" content="Writing automated tests with xUnit - test projects, Facts and Theories with InlineData, Arrange-Act-Assert, asserting values, collections and exceptions,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Building Applications</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Unit Testing</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Writing automated tests with xUnit - test projects, Facts and Theories with InlineData, Arrange-Act-Assert, asserting values, collections and exceptions, testing async code, fakes for dependencies, what makes code testable, test naming, and how a test framework finds and runs tests with attributes and reflection.</p>
+      <div class="prose">
+<h2>Why tests</h2>
+<p>A <strong>unit test</strong> is code that runs a small part of your program with known inputs and checks the result. A good test suite lets you change code without fear: if you break something, a test fails within seconds. Every practice task in this course has been checked this way.</p>
+<h2>xUnit</h2>
+<p>xUnit is the most common test framework for .NET. A test project references the code under test and contains classes of test methods:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">Xunit</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">LedgerTests</span>
+{
+    [<span class="tk-t">Fact</span>]
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Deposit_increases_the_balance</span>()
+    {
+        <span class="tk-c">// Arrange</span>
+        <span class="tk-k">var</span> ledger = <span class="tk-k">new</span> <span class="tk-f">Ledger</span>(<span class="tk-n">100m</span>);
+
+        <span class="tk-c">// Act</span>
+        ledger.<span class="tk-f">Deposit</span>(<span class="tk-n">25m</span>);
+
+        <span class="tk-c">// Assert</span>
+        <span class="tk-t">Assert</span>.<span class="tk-f">Equal</span>(<span class="tk-n">125m</span>, ledger.<span class="tk-t">Balance</span>);
+    }
+
+    [<span class="tk-t">Fact</span>]
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Withdrawing_too_much_throws</span>()
+    {
+        <span class="tk-k">var</span> ledger = <span class="tk-k">new</span> <span class="tk-f">Ledger</span>(<span class="tk-n">10m</span>);
+        <span class="tk-k">var</span> ex = <span class="tk-t">Assert</span>.<span class="tk-t">Throws</span>&lt;<span class="tk-t">InvalidOperationException</span>&gt;(() =&gt; ledger.<span class="tk-f">Withdraw</span>(<span class="tk-n">50m</span>));
+        <span class="tk-t">Assert</span>.<span class="tk-f">Contains</span>(<span class="tk-s">&quot;not enough&quot;</span>, ex.<span class="tk-t">Message</span>);
+    }
+
+    [<span class="tk-t">Theory</span>]
+    [<span class="tk-f">InlineData</span>(<span class="tk-n">2024</span>, <span class="tk-k">true</span>)]
+    [<span class="tk-f">InlineData</span>(<span class="tk-n">1900</span>, <span class="tk-k">false</span>)]
+    [<span class="tk-f">InlineData</span>(<span class="tk-n">2000</span>, <span class="tk-k">true</span>)]
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Leap_years</span>(<span class="tk-k">int</span> year, <span class="tk-k">bool</span> expected)
+    {
+        <span class="tk-t">Assert</span>.<span class="tk-f">Equal</span>(expected, <span class="tk-t">Dates</span>.<span class="tk-f">IsLeapYear</span>(year));
+    }
+}</code></pre></div>
+<ul>
+<li><code>[Fact]</code> marks a test with no parameters; <code>[Theory]</code> with <code>[InlineData(...)]</code> runs the same test for each set of data.</li>
+<li><strong>Arrange, Act, Assert</strong>: set up, do the one thing being tested, check the result.</li>
+<li>Name tests after the behaviour they check, so a failing name explains the problem.</li>
+<li><code>dotnet test</code> builds and runs every test, and reports failures with the expected and actual values.</li>
+</ul>
+<h2>Assertions</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Assertion</th>
+<th>Checks</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Assert.Equal(expected, actual)</code></td>
+<td>Values (records and collections compare by content)</td>
+</tr>
+<tr>
+<td><code>Assert.True(cond)</code>, <code>Assert.False(cond)</code></td>
+<td>Conditions</td>
+</tr>
+<tr>
+<td><code>Assert.Null(x)</code>, <code>Assert.NotNull(x)</code></td>
+<td>Null</td>
+</tr>
+<tr>
+<td><code>Assert.Contains(item, collection)</code>, <code>Assert.Empty(c)</code>, <code>Assert.Single(c)</code></td>
+<td>Collections</td>
+</tr>
+<tr>
+<td><code>Assert.Throws&lt;T&gt;(() =&gt; ...)</code></td>
+<td>An exception of exactly type T</td>
+</tr>
+<tr>
+<td><code>await Assert.ThrowsAsync&lt;T&gt;(() =&gt; ...)</code></td>
+<td>The same for async code</td>
+</tr>
+<tr>
+<td><code>Assert.InRange(x, low, high)</code></td>
+<td>Numbers in a range</td>
+</tr>
+</tbody></table>
+</div>
+<p>Async tests return <code>Task</code>: <code>public async Task Loads_settings() { var s = await store.LoadAsync(); Assert.Equal(...); }</code>.</p>
+<h2>Testable code</h2>
+<p>Code is easy to test when its dependencies come in from outside. Code that reads <code>DateTime.Now</code>, the file system or the network directly can only be tested by changing the computer&#39;s clock or files. Code that receives an <code>IClock</code>, a <code>TextReader</code> or an <code>IWeatherApi</code> (lessons 3.04, 5.03, 5.05) can be given <strong>fakes</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> clock = <span class="tk-k">new</span> <span class="tk-f">FixedClock</span>(<span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">3</span>, <span class="tk-n">31</span>));
+<span class="tk-k">var</span> invoices = <span class="tk-k">new</span> <span class="tk-f">InvoiceService</span>(clock);
+<span class="tk-k">var</span> invoice = invoices.<span class="tk-f">Create</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">120m</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{invoice.Due:yyyy-MM-dd} {invoice.Due == new DateTime(2026, 4, 30)}&quot;</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">interface</span> IClock { <span class="tk-t">DateTime</span> <span class="tk-t">Today</span> { <span class="tk-k">get</span>; } }
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-f">FixedClock</span>(<span class="tk-t">DateTime</span> today) : IClock { <span class="tk-k">public</span> <span class="tk-t">DateTime</span> <span class="tk-t">Today</span> =&gt; today; }
+
+<span class="tk-k">public</span> <span class="tk-k">record</span> <span class="tk-f">Invoice</span>(<span class="tk-k">string</span> <span class="tk-t">Customer</span>, <span class="tk-k">decimal</span> <span class="tk-t">Amount</span>, <span class="tk-t">DateTime</span> <span class="tk-t">Due</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">InvoiceService</span>(IClock clock)
+{
+    <span class="tk-k">public</span> <span class="tk-t">Invoice</span> <span class="tk-f">Create</span>(<span class="tk-k">string</span> customer, <span class="tk-k">decimal</span> amount) =&gt; <span class="tk-k">new</span>(customer, amount, clock.<span class="tk-t">Today</span>.<span class="tk-f">AddDays</span>(<span class="tk-n">30</span>));
+}</code></pre></div>
+<p>Fakes can be hand-written classes like <code>FixedClock</code>, or made with a mocking library such as NSubstitute or Moq. Hand-written fakes are often clearer for small interfaces.</p>
+<p>What to test: the rules and calculations (the class library), the edge cases (empty lists, zero, the last day of a month, invalid input), and every bug you fix (a test that fails before the fix and passes after).</p>
+<h2>How a test framework works</h2>
+<p>There is no magic in <code>[Fact]</code>. An <strong>attribute</strong> is a class that attaches information to code. At run time, <strong>reflection</strong> lets a program inspect types and their methods, read their attributes, and call them. A test runner finds every public method with <code>[Fact]</code>, creates the class, invokes the method, and records whether it threw:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Reflection</span>;
+
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> (name, passed, error) <span class="tk-k">in</span> <span class="tk-t">MiniRunner</span>.<span class="tk-f">Run</span>(<span class="tk-k">typeof</span>(<span class="tk-t">MathTests</span>)))
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{(passed ? &quot;</span>PASS<span class="tk-s">&quot; : &quot;</span>FAIL<span class="tk-s">&quot;)} {name}{(error is null ? &quot;&quot; : &quot;</span>: <span class="tk-s">&quot; + error)}&quot;</span>);
+
+[<span class="tk-f">AttributeUsage</span>(<span class="tk-t">AttributeTargets</span>.<span class="tk-t">Method</span>)]
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">FactAttribute</span> : <span class="tk-t">Attribute</span> { }
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">MathTests</span>
+{
+    [<span class="tk-t">Fact</span>] <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Adding</span>() { <span class="tk-k">if</span> (<span class="tk-n">2</span> + <span class="tk-n">2</span> != <span class="tk-n">4</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">Exception</span>(<span class="tk-s">&quot;2 + 2 is not 4&quot;</span>); }
+    [<span class="tk-t">Fact</span>] <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Dividing</span>() { <span class="tk-k">if</span> (<span class="tk-n">7</span> / <span class="tk-n">2</span> != <span class="tk-n">3.5</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">Exception</span>(<span class="tk-s">$&quot;7 / 2 gave {7 / 2}&quot;</span>); }
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">NotATest</span>() { }
+}
+
+<span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">class</span> <span class="tk-t">MiniRunner</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> IEnumerable&lt;(<span class="tk-k">string</span> <span class="tk-t">Name</span>, <span class="tk-k">bool</span> <span class="tk-t">Passed</span>, <span class="tk-k">string</span>? <span class="tk-t">Error</span>)&gt; <span class="tk-f">Run</span>(<span class="tk-t">Type</span> testClass)
+    {
+        <span class="tk-k">foreach</span> (<span class="tk-t">MethodInfo</span> method <span class="tk-k">in</span> testClass.<span class="tk-f">GetMethods</span>().<span class="tk-f">Where</span>(m =&gt; m.<span class="tk-t">GetCustomAttribute</span>&lt;<span class="tk-t">FactAttribute</span>&gt;() != <span class="tk-k">null</span>).<span class="tk-f">OrderBy</span>(m =&gt; m.<span class="tk-t">Name</span>))
+        {
+            <span class="tk-k">object</span> instance = <span class="tk-t">Activator</span>.<span class="tk-f">CreateInstance</span>(testClass)!;      <span class="tk-c">// a fresh object for every test</span>
+            <span class="tk-k">string</span>? error = <span class="tk-k">null</span>;
+            <span class="tk-k">try</span> { method.<span class="tk-f">Invoke</span>(instance, <span class="tk-k">null</span>); }
+            <span class="tk-k">catch</span> (<span class="tk-t">TargetInvocationException</span> e) { error = e.<span class="tk-t">InnerException</span>?.<span class="tk-t">Message</span>; }
+            <span class="tk-k">yield</span> <span class="tk-k">return</span> (method.<span class="tk-t">Name</span>, error <span class="tk-k">is</span> <span class="tk-k">null</span>, error);
+        }
+    }
+}</code></pre></div>
+<p>xUnit does the same with many more features: theories, async tests, parallel runs, fixtures for shared setup. Practice 6.02 builds a fuller runner.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-solutions-projects-and-nuget/"><span class="mono">previous</span><b>6.01 Solutions, Projects and NuGet</b></a>
+      <a class="lp-next" href="../6-03-dependency-injection-and-configuration/"><span class="mono">next</span><b>6.03 Dependency Injection and Configuration</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/6-02-unit-testing"></script>
+</body>
+</html>

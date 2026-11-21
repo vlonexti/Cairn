@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Game Loop · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/10-01-the-game-loop/">
+  <meta name="description" content="Every real-time game is built around one loop that runs as long as the game does: read input , update the world, render a frame, repeat, dozens of times a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Game Loop · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Every real-time game is built around one loop that runs as long as the game does: read input , update the world, render a frame, repeat, dozens of times a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/10-01-the-game-loop/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Game Loop · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Game Loop · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Every real-time game is built around one loop that runs as long as the game does: read input , update the world, render a frame, repeat, dozens of times a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Game Engine Architecture</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Game Loop</h1>
+      <div class="readout lp-readout"><span>lesson <b>10.01</b></span><span>1 of 9 in milestone 10</span><span>5 min</span></div>
+      <p class="lp-summary">Every real-time game is built around one loop that runs as long as the game does: read <strong>input</strong>, <strong>update</strong> the world, <strong>render</strong> a frame, repeat, dozens of times a second. This lesson builds that loop step by step, explains what belongs in each phase, and shows how an engine is organised around it.</p>
+      <div class="prose">
+<h2>The heart of every game</h2>
+<p>A word processor waits for the user to do something. A game does not wait: monsters move, timers tick and the screen redraws whether or not the player touches anything. So at the centre of every game engine is a loop:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    I[&quot;Process input&lt;br/&gt;keys, mouse, pad, network&quot;] --&gt; U[&quot;Update&lt;br/&gt;move, collide, think, animate&quot;]
+    U --&gt; R[&quot;Render&lt;br/&gt;draw the current state&quot;]
+    R --&gt; I</pre></div>
+<p>Each trip round the loop produces one <strong>frame</strong>. At 60 frames per second the whole loop has 16.7 ms (lesson 8.08).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;chrono&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">World</span> { <span class="tk-k">float</span> x{ <span class="tk-n">0</span> }; <span class="tk-k">float</span> speed{ <span class="tk-n">2.0f</span> }; <span class="tk-k">int</span> frames{ <span class="tk-n">0</span> }; <span class="tk-k">bool</span> running{ <span class="tk-k">true</span> }; };
+
+<span class="tk-k">void</span> <span class="tk-f">processInput</span>(<span class="tk-t">World</span>&amp;) { <span class="tk-c">/* read keys; set flags such as world.running = false on Escape */</span> }
+
+<span class="tk-k">void</span> <span class="tk-f">update</span>(<span class="tk-t">World</span>&amp; w, <span class="tk-k">float</span> dt)
+{
+    w.x += w.speed * dt;               <span class="tk-c">// move 2 units per second, however long the frame was</span>
+    ++w.frames;
+    <span class="tk-k">if</span> (w.x &gt;= <span class="tk-n">1.0f</span>) w.running = <span class="tk-k">false</span>;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">render</span>(<span class="tk-k">const</span> <span class="tk-t">World</span>&amp; w) { std::cout &lt;&lt; <span class="tk-s">&quot;frame &quot;</span> &lt;&lt; w.frames &lt;&lt; <span class="tk-s">&quot;: x = &quot;</span> &lt;&lt; w.x &lt;&lt; <span class="tk-s">'\n'</span>; }
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">World</span> world;
+    <span class="tk-k">const</span> <span class="tk-k">float</span> dt{ <span class="tk-n">0.1f</span> };            <span class="tk-c">// pretend each frame takes 0.1 s, so the output is the same every run</span>
+    <span class="tk-k">while</span> (world.running)
+    {
+        <span class="tk-f">processInput</span>(world);
+        <span class="tk-f">update</span>(world, dt);
+        <span class="tk-f">render</span>(world);
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>frame 1: x = 0.2
+frame 2: x = 0.4
+frame 3: x = 0.6
+frame 4: x = 0.8
+frame 5: x = 1</code></pre></div>
+<p>A real game measures <code>dt</code> with a clock (lesson 5.07) instead of pretending; the next lesson covers how to use it well.</p>
+<h2>What goes in each phase</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Does</th>
+<th>Must not</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Input</strong></td>
+<td>Drain the window messages (lesson 5.05&#39;s <code>PeekMessage</code> loop), read devices, turn them into actions (lesson 10.05)</td>
+<td>Change the world directly</td>
+</tr>
+<tr>
+<td><strong>Update</strong></td>
+<td>Advance the simulation by <code>dt</code>: movement, physics, AI, timers, animation, game rules, spawning and removing entities</td>
+<td>Draw anything, or wait for anything</td>
+</tr>
+<tr>
+<td><strong>Render</strong></td>
+<td>Draw the world <strong>as it is now</strong>: sprites, models, effects, interface</td>
+<td>Change the world</td>
+</tr>
+</tbody></table>
+</div>
+<p>Keeping these separate is what lets engines run update at a fixed rate while rendering as fast as possible (lesson 10.02), run rendering on another thread, record and replay input, or run a server with no rendering at all.</p>
+<h2>The engine around the loop</h2>
+<p>An engine is mostly the systems that the loop calls each frame:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    L[&quot;Game loop&quot;] --&gt; IN[&quot;Input system&quot;]
+    L --&gt; SIM[&quot;Simulation&lt;br/&gt;entities and components (10.03)&quot;]
+    SIM --&gt; PH[&quot;Physics and collision&quot;]
+    SIM --&gt; AI[&quot;AI and scripts (10.08)&quot;]
+    SIM --&gt; AN[&quot;Animation&quot;]
+    L --&gt; AU[&quot;Audio&quot;]
+    L --&gt; RE[&quot;Renderer (10.04)&quot;]
+    RES[&quot;Resource manager (10.06)&quot;] --&gt; RE
+    RES --&gt; AU
+    RES --&gt; SIM</pre></div>
+<p>A small game calls these in a fixed order on one thread. A large engine spreads their work across worker threads with a job system (lesson 6.05) while keeping the same overall order, because order matters: physics must run after movement is decided and before rendering, or the frame shows stale positions.</p>
+<h2>Starting and stopping</h2>
+<p>Around the loop sit <strong>initialisation</strong> (create the window, load the first level, start subsystems in dependency order) and <strong>shutdown</strong> (stop them in the reverse order, as RAII does for objects, lesson 2.04). Many engine bugs are ordering bugs here: audio shut down before the entities that still play sounds, a resource released before the renderer stops using it.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Updating in the render phase</span></div><div class="callout-body"><p>Rendering must only read the state, or the result depends on how often frames are drawn.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Waiting inside the loop</span></div><div class="callout-body"><p>Blocking on a file, the network or a lock stalls every frame. Move slow work to other threads (lesson 6.05) and check its result each frame.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Moving by a fixed amount per frame</span></div><div class="callout-body"><p><code>x += 2</code> moves twice as fast at 120 fps as at 60. Multiply by <code>dt</code>.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What are the three phases of the game loop?</div><ul><li>Process input, update the world, render the frame</li><li>Load, play, save</li><li>Compile, link, run</li></ul><details><summary>Show the answer</summary><p><b>Process input, update the world, render the frame</b> They repeat every frame for as long as the game runs.</p></details></li><li><div class="q">Why should rendering never change the game state?</div><ul><li>The state would then depend on how many frames are drawn, which varies between machines</li><li>Rendering is too slow</li><li>The GPU cannot write to memory</li></ul><details><summary>Show the answer</summary><p><b>The state would then depend on how many frames are drawn, which varies between machines</b> Updates belong in the update phase, driven by time.</p></details></li><li><div class="q">Why multiply speeds by <code>dt</code>?</div><ul><li>So movement is the same per second regardless of the frame rate</li><li>To make the game run faster</li><li>Because the compiler requires it</li></ul><details><summary>Show the answer</summary><p><b>So movement is the same per second regardless of the frame rate</b> A fixed step per frame makes speed depend on frame rate.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/10.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/10.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../9-10-practice-targets-you-compile-yourself/"><span class="mono">previous</span><b>9.10 Practice Targets You Compile Yourself</b></a>
+      <a class="lp-next" href="../10-02-time-steps-and-frame-rates/"><span class="mono">next</span><b>10.02 Time Steps and Frame Rates</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/10-01-the-game-loop"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

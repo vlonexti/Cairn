@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Arrays and Lists · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/2-02-arrays-and-lists/">
+  <meta name="description" content="Fixed-size arrays and growable List&lt;T - creating, indexing, ranges and Index from the end, iterating, adding, inserting and removing, searching, sorting with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Arrays and Lists · C# · Xenon">
+  <meta property="og:description" content="Fixed-size arrays and growable List&lt;T - creating, indexing, ranges and Index from the end, iterating, adding, inserting and removing, searching, sorting with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/2-02-arrays-and-lists/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Arrays and Lists · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Arrays and Lists · C# · Xenon">
+  <meta name="twitter:description" content="Fixed-size arrays and growable List&lt;T - creating, indexing, ranges and Index from the end, iterating, adding, inserting and removing, searching, sorting with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Methods and Collections</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Arrays and Lists</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Fixed-size arrays and growable List&lt;T&gt; - creating, indexing, ranges and Index from the end, iterating, adding, inserting and removing, searching, sorting with comparisons, copying versus sharing, collection expressions, and two-dimensional and jagged arrays.</p>
+      <div class="prose">
+<h2>Arrays</h2>
+<p>An <strong>array</strong> holds a fixed number of values of one type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span>[] scores = <span class="tk-k">new</span> <span class="tk-k">int</span>[<span class="tk-n">3</span>];            <span class="tk-c">// three zeros</span>
+scores[<span class="tk-n">0</span>] = <span class="tk-n">90</span>;
+scores[<span class="tk-n">2</span>] = <span class="tk-n">75</span>;
+<span class="tk-k">string</span>[] days = { <span class="tk-s">&quot;Mon&quot;</span>, <span class="tk-s">&quot;Tue&quot;</span>, <span class="tk-s">&quot;Wed&quot;</span> };
+<span class="tk-k">int</span>[] primes = [<span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">5</span>, <span class="tk-n">7</span>, <span class="tk-n">11</span>];      <span class="tk-c">// a collection expression (C# 12)</span>
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(scores.<span class="tk-t">Length</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(days[^<span class="tk-n">1</span>]);          <span class="tk-c">// last item</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;,&quot;</span>, primes[<span class="tk-n">1</span>..<span class="tk-n">3</span>]));   <span class="tk-c">// 3,5</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, scores));</code></pre></div>
+<p>Indexes start at 0. Reading <code>scores[3]</code> throws an <code>IndexOutOfRangeException</code>: C# always checks bounds.</p>
+<h2>List&lt;T&gt;</h2>
+<p>A <strong>List</strong> grows and shrinks. <code>List&lt;string&gt;</code> is a list of strings: the type in angle brackets is a <strong>type argument</strong> (generics, lesson 4.01).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> names = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">string</span>&gt; { <span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-s">&quot;Ada&quot;</span> };
+names.<span class="tk-f">Add</span>(<span class="tk-s">&quot;Linus&quot;</span>);
+names.<span class="tk-f">Insert</span>(<span class="tk-n">0</span>, <span class="tk-s">&quot;Ken&quot;</span>);
+names.<span class="tk-f">Remove</span>(<span class="tk-s">&quot;Grace&quot;</span>);               <span class="tk-c">// by value; returns false if not found</span>
+names.<span class="tk-f">RemoveAt</span>(names.<span class="tk-t">Count</span> - <span class="tk-n">1</span>);     <span class="tk-c">// by index</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{names.Count}: {string.Join(&quot;</span>, <span class="tk-s">&quot;, names)}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(names.<span class="tk-f">Contains</span>(<span class="tk-s">&quot;Ada&quot;</span>) + <span class="tk-s">&quot; &quot;</span> + names.<span class="tk-f">IndexOf</span>(<span class="tk-s">&quot;Ada&quot;</span>));
+names.<span class="tk-f">AddRange</span>([<span class="tk-s">&quot;Barbara&quot;</span>, <span class="tk-s">&quot;Margaret&quot;</span>]);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;, &quot;</span>, names));</code></pre></div>
+<p>Arrays use <code>Length</code>, lists use <code>Count</code>. Use an array when the size is fixed and known; use a list for everything that changes.</p>
+<h2>Iterating</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">List</span>&lt;<span class="tk-k">int</span>&gt; numbers = [<span class="tk-n">4</span>, <span class="tk-n">8</span>, <span class="tk-n">15</span>, <span class="tk-n">16</span>, <span class="tk-n">23</span>, <span class="tk-n">42</span>];
+<span class="tk-k">int</span> sum = <span class="tk-n">0</span>;
+<span class="tk-k">foreach</span> (<span class="tk-k">int</span> n <span class="tk-k">in</span> numbers) sum += n;
+
+<span class="tk-k">for</span> (<span class="tk-k">int</span> i = numbers.<span class="tk-t">Count</span> - <span class="tk-n">1</span>; i &gt;= <span class="tk-n">0</span>; i--)
+{
+    <span class="tk-k">if</span> (numbers[i] % <span class="tk-n">2</span> == <span class="tk-n">1</span>) numbers.<span class="tk-f">RemoveAt</span>(i);   <span class="tk-c">// removing: go backwards</span>
+}
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{sum} {string.Join(&quot;</span> <span class="tk-s">&quot;, numbers)}&quot;</span>);</code></pre></div>
+<p>Changing a list while <code>foreach</code> walks over it throws <code>InvalidOperationException</code>. Loop backwards with <code>for</code>, or use <code>numbers.RemoveAll(n =&gt; n % 2 == 1)</code>.</p>
+<h2>Searching and sorting</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> words = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">string</span>&gt; { <span class="tk-s">&quot;pear&quot;</span>, <span class="tk-s">&quot;fig&quot;</span>, <span class="tk-s">&quot;banana&quot;</span>, <span class="tk-s">&quot;kiwi&quot;</span> };
+words.<span class="tk-f">Sort</span>();                                         <span class="tk-c">// alphabetical, in place</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, words));
+words.<span class="tk-f">Sort</span>((a, b) =&gt; a.<span class="tk-t">Length</span>.<span class="tk-f">CompareTo</span>(b.<span class="tk-t">Length</span>));   <span class="tk-c">// by length</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, words));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(words.<span class="tk-f">Find</span>(w =&gt; w.<span class="tk-f">StartsWith</span>(<span class="tk-s">&quot;b&quot;</span>)));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(words.<span class="tk-f">Exists</span>(w =&gt; w.<span class="tk-t">Length</span> &gt; <span class="tk-n">5</span>));
+<span class="tk-k">int</span>[] arr = [<span class="tk-n">5</span>, <span class="tk-n">1</span>, <span class="tk-n">4</span>];
+<span class="tk-t">Array</span>.<span class="tk-f">Sort</span>(arr);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">Array</span>.<span class="tk-f">BinarySearch</span>(arr, <span class="tk-n">4</span>));        <span class="tk-c">// index 1: needs a sorted array</span></code></pre></div>
+<p>A <strong>comparison</strong> returns a negative number when <code>a</code> comes first, zero when equal, positive when <code>b</code> comes first; <code>x.CompareTo(y)</code> does that for numbers and strings. <code>List.Sort</code> is not stable: equal items may change order. LINQ&#39;s <code>OrderBy</code> (lesson 2.04) is stable and returns a new sequence.</p>
+<h2>Copying versus sharing</h2>
+<p>Arrays and lists are reference types:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> a = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">int</span>&gt; { <span class="tk-n">1</span>, <span class="tk-n">2</span> };
+<span class="tk-k">var</span> b = a;                 <span class="tk-c">// the same list</span>
+<span class="tk-k">var</span> c = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">int</span>&gt;(a);  <span class="tk-c">// a copy</span>
+b.<span class="tk-f">Add</span>(<span class="tk-n">3</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{a.Count} {c.Count}&quot;</span>);    <span class="tk-c">// 3 2</span>
+<span class="tk-k">int</span>[] x = [<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>];
+<span class="tk-k">int</span>[] y = (<span class="tk-k">int</span>[])x.<span class="tk-f">Clone</span>();
+y[<span class="tk-n">0</span>] = <span class="tk-n">9</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(x[<span class="tk-n">0</span>]);   <span class="tk-c">// 1</span></code></pre></div>
+<p>A method that receives a list can change the caller&#39;s list. If it should not, accept <code>IReadOnlyList&lt;T&gt;</code> instead: the method then cannot call <code>Add</code> or <code>Remove</code>.</p>
+<h2>Two dimensions</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span>[,] grid = <span class="tk-k">new</span> <span class="tk-k">int</span>[<span class="tk-n">3</span>, <span class="tk-n">4</span>];            <span class="tk-c">// rectangular: 3 rows, 4 columns</span>
+grid[<span class="tk-n">1</span>, <span class="tk-n">2</span>] = <span class="tk-n">7</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{grid.GetLength(0)}x{grid.GetLength(1)}, {grid[1, 2]}&quot;</span>);
+
+<span class="tk-k">int</span>[][] jagged = [[<span class="tk-n">1</span>], [<span class="tk-n">2</span>, <span class="tk-n">3</span>], [<span class="tk-n">4</span>, <span class="tk-n">5</span>, <span class="tk-n">6</span>]];   <span class="tk-c">// an array of arrays, rows of any length</span>
+<span class="tk-k">foreach</span> (<span class="tk-k">int</span>[] row <span class="tk-k">in</span> jagged) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, row));</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-methods-and-parameters/"><span class="mono">previous</span><b>2.01 Methods and Parameters</b></a>
+      <a class="lp-next" href="../2-03-dictionaries-and-sets/"><span class="mono">next</span><b>2.03 Dictionaries and Sets</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/2-02-arrays-and-lists"></script>
+</body>
+</html>

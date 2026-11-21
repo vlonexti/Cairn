@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Writing It Up · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/6-04-writing-it-up/">
+  <meta name="description" content="Turning an analysis into something others can use - the structure of a good report, evidence and reproducibility, annotated databases and headers, clean-room…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Writing It Up · Reverse Engineering · Xenon">
+  <meta property="og:description" content="Turning an analysis into something others can use - the structure of a good report, evidence and reproducibility, annotated databases and headers, clean-room…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/6-04-writing-it-up/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Writing It Up · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Writing It Up · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="Turning an analysis into something others can use - the structure of a good report, evidence and reproducibility, annotated databases and headers, clean-room…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Reversing in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Writing It Up</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 5 in milestone 6</span><span>5 min</span></div>
+      <p class="lp-summary">Turning an analysis into something others can use - the structure of a good report, evidence and reproducibility, annotated databases and headers, clean-room reimplementation, and handling security findings responsibly through coordinated disclosure.</p>
+      <div class="prose">
+<h2>Analysis nobody can use is wasted</h2>
+<p>The output of reverse engineering is understanding, and understanding that lives only in your head disappears. Whether it is for a teammate, your future self, or the maintainers of software you found a bug in, the work ends with writing it up.</p>
+<h2>The shape of a report</h2>
+<p>A useful report answers, in this order:</p>
+<ol>
+<li><strong>Summary</strong>: the question and the answer, in a few sentences. Many readers stop here.</li>
+<li><strong>Scope</strong>: exactly what was analysed: file name, version, hash (SHA-256), date, and which parts.</li>
+<li><strong>Findings</strong>: one section each, with the claim, the <strong>evidence</strong> (addresses as <code>module+offset</code>, disassembly excerpts, captured bytes, screenshots) and how confident you are.</li>
+<li><strong>How to reproduce</strong>: the steps someone else follows to see the same thing.</li>
+<li><strong>Open questions</strong>: what you did not resolve, and what you assumed.</li>
+</ol>
+<p>Evidence and reproduction are what separate a finding from an opinion. &quot;The save file has a CRC-32 at offset 0x7C&quot; is a claim; &quot;changing any byte changes offset 0x7C–0x7F; the value matches <code>crc32(bytes[0..0x7C))</code> in all 23 samples; the loader at <code>game.exe+0x4A1B0</code> compares it and shows <em>Corrupt save</em> on mismatch&quot; is a finding.</p>
+<h2>Artefacts</h2>
+<p>Alongside the report, keep what lets someone continue the work:</p>
+<ul>
+<li>The <strong>disassembler database</strong> with your names, types and comments.</li>
+<li><strong>Headers</strong> for recovered structures, exported from the database or written by hand.</li>
+<li><strong>Parsers and scripts</strong> that encode the knowledge in executable form: a format parser is its own specification, and its tests are your evidence.</li>
+<li><strong>Signatures</strong> (lesson 4.05) for the important functions, so the work transfers to the next version.</li>
+</ul>
+<h2>Reimplementation</h2>
+<p>A common end goal is a new program that does what the old one did: a file converter, a replacement server, a source port of an old game. When rights matter, teams use a <strong>clean-room</strong> process: one person reverse engineers and writes a specification describing behaviour and formats; another, who never sees the original code, implements from the specification. That keeps the new code from being a copy of the old. Whether that is needed depends on the situation and the law; when it matters, take advice before starting.</p>
+<h2>Security findings</h2>
+<p>If your analysis turns up a vulnerability, in your own program or in software you were authorised to examine, the responsible path is <strong>coordinated disclosure</strong>:</p>
+<ol>
+<li>Report it privately to the maintainers (a security contact, <code>SECURITY.md</code>, a bug bounty programme), with enough detail to reproduce and fix it.</li>
+<li>Give them reasonable time to release a fix; 90 days is a common default.</li>
+<li>Publish details only after a fix is available, or by agreement.</li>
+</ol>
+<p>Never test a vulnerability against systems you do not own or have explicit permission to test. Bug bounty programmes publish their rules precisely so that research within them is welcome.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-reversing-a-network-protocol/"><span class="mono">previous</span><b>6.03 Reversing a Network Protocol</b></a>
+      <a class="lp-next" href="../6-05-where-to-go-next/"><span class="mono">next</span><b>6.05 Where to Go Next</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/6-04-writing-it-up"></script>
+</body>
+</html>

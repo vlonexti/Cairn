@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Structs and Methods · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/2-04-structs-and-methods/">
+  <meta name="description" content="Defining structs with named fields, tuple structs and unit structs, creating them with field init shorthand and update syntax, methods in impl blocks with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Structs and Methods · Rust · Xenon">
+  <meta property="og:description" content="Defining structs with named fields, tuple structs and unit structs, creating them with field init shorthand and update syntax, methods in impl blocks with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/2-04-structs-and-methods/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Structs and Methods · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Structs and Methods · Rust · Xenon">
+  <meta name="twitter:description" content="Defining structs with named fields, tuple structs and unit structs, creating them with field init shorthand and update syntax, methods in impl blocks with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Ownership and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Structs and Methods</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Defining structs with named fields, tuple structs and unit structs, creating them with field init shorthand and update syntax, methods in impl blocks with &amp;self, &amp;mut self and self, associated functions like new, deriving Debug, Clone and PartialEq, and privacy with pub.</p>
+      <div class="prose">
+<h2>Structs</h2>
+<p>A <strong>struct</strong> groups named values into one type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[derive(Debug, Clone, PartialEq)]</span>
+<span class="tk-k">struct</span> <span class="tk-t">Book</span> {
+    title: <span class="tk-t">String</span>,
+    author: <span class="tk-t">String</span>,
+    year: <span class="tk-k">u16</span>,
+    pages: <span class="tk-k">u32</span>,
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> dune = <span class="tk-t">Book</span> {
+        title: <span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;Dune&quot;</span>),
+        author: <span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;Frank Herbert&quot;</span>),
+        year: <span class="tk-n">1965</span>,
+        pages: <span class="tk-n">412</span>,
+    };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} by {} ({})&quot;</span>, dune.title, dune.author, dune.year);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{dune:?}&quot;</span>);                       <span class="tk-c">// needs #[derive(Debug)]</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{dune:#?}&quot;</span>);                      <span class="tk-c">// pretty-printed</span>
+
+    <span class="tk-k">let</span> messiah = <span class="tk-t">Book</span> { title: <span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;Dune Messiah&quot;</span>), year: <span class="tk-n">1969</span>, ..dune.<span class="tk-f">clone</span>() };   <span class="tk-c">// update syntax</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {}&quot;</span>, messiah.title, messiah == dune);
+}</code></pre></div>
+<p><code>#[derive(...)]</code> asks the compiler to generate standard behaviour: <code>Debug</code> for <code>{:?}</code> printing, <code>Clone</code> for <code>.clone()</code>, <code>PartialEq</code> for <code>==</code> (lesson 4.03 covers these traits).</p>
+<p>A struct owns its fields. A field of type <code>String</code> means each <code>Book</code> owns its text, which is usually what you want; fields holding references need lifetimes (lesson 4.04).</p>
+<h2>Methods</h2>
+<p>Methods are defined in an <code>impl</code> block. The first parameter says how the method uses the value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[derive(Debug)]</span>
+<span class="tk-k">struct</span> <span class="tk-t">Counter</span> {
+    name: <span class="tk-t">String</span>,
+    count: <span class="tk-k">u32</span>,
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Counter</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">new</span>(name: &amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">Counter</span> {            <span class="tk-c">// an associated function: no self, called as Counter::new</span>
+        <span class="tk-t">Counter</span> { name: name.<span class="tk-f">to_string</span>(), count: <span class="tk-n">0</span> }
+    }
+
+    <span class="tk-k">fn</span> <span class="tk-f">increment</span>(&amp;<span class="tk-k">mut</span> <span class="tk-k">self</span>) {                   <span class="tk-c">// &amp;mut self: may change the struct</span>
+        <span class="tk-k">self</span>.count += <span class="tk-n">1</span>;
+    }
+
+    <span class="tk-k">fn</span> <span class="tk-f">describe</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> {              <span class="tk-c">// &amp;self: only reads it</span>
+        <span class="tk-p">format!</span>(<span class="tk-s">&quot;{}: {}&quot;</span>, <span class="tk-k">self</span>.name, <span class="tk-k">self</span>.count)
+    }
+
+    <span class="tk-k">fn</span> <span class="tk-f">into_name</span>(<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> {             <span class="tk-c">// self: takes ownership; the counter is used up</span>
+        <span class="tk-k">self</span>.name
+    }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> clicks = <span class="tk-t">Counter</span>::<span class="tk-f">new</span>(<span class="tk-s">&quot;clicks&quot;</span>);
+    clicks.<span class="tk-f">increment</span>();
+    clicks.<span class="tk-f">increment</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, clicks.<span class="tk-f">describe</span>());
+    <span class="tk-k">let</span> name = clicks.<span class="tk-f">into_name</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{name}&quot;</span>);
+    <span class="tk-c">// clicks.describe();                       // error: clicks was moved by into_name</span>
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>First parameter</th>
+<th>Meaning</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&amp;self</code></td>
+<td>Borrows the value to read it</td>
+<td>Getters, calculations</td>
+</tr>
+<tr>
+<td><code>&amp;mut self</code></td>
+<td>Borrows it to change it</td>
+<td>Updating fields</td>
+</tr>
+<tr>
+<td><code>self</code></td>
+<td>Takes ownership</td>
+<td>Turning it into something else</td>
+</tr>
+<tr>
+<td>none</td>
+<td>An associated function</td>
+<td>Constructors like <code>new</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The method call <code>clicks.increment()</code> borrows <code>clicks</code> mutably for you; there is no need to write <code>(&amp;mut clicks).increment()</code>. Inside methods, <code>Self</code> is the type being implemented.</p>
+<h2>Tuple structs and unit structs</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-p">#[derive(Debug, Clone, Copy, PartialEq)]</span>
+<span class="tk-k">struct</span> <span class="tk-f">Meters</span>(<span class="tk-k">f64</span>);                 <span class="tk-c">// a tuple struct: a named wrapper</span>
+
+<span class="tk-p">#[derive(Debug, Clone, Copy, PartialEq)]</span>
+<span class="tk-k">struct</span> <span class="tk-f">Point</span>(<span class="tk-k">i32</span>, <span class="tk-k">i32</span>);
+
+<span class="tk-k">struct</span> <span class="tk-t">Marker</span>;                      <span class="tk-c">// a unit struct: no fields</span>
+
+<span class="tk-k">impl</span> <span class="tk-t">Meters</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">to_feet</span>(<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { <span class="tk-k">self</span>.<span class="tk-n">0</span> * <span class="tk-n">3.28084</span> }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> height = <span class="tk-f">Meters</span>(<span class="tk-n">1.8</span>);
+    <span class="tk-k">let</span> p = <span class="tk-f">Point</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>);
+    <span class="tk-k">let</span> _m = <span class="tk-t">Marker</span>;
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:.2} {:?} {}&quot;</span>, height.<span class="tk-f">to_feet</span>(), p, p.<span class="tk-n">0</span> + p.<span class="tk-n">1</span>);
+}</code></pre></div>
+<p>Wrapping a number in a tuple struct (<code>Meters</code>, <code>UserId</code>) makes the compiler stop you mixing up values that have the same underlying type: the <strong>newtype</strong> pattern.</p>
+<h2>Privacy</h2>
+<p>Fields and methods are private to their <strong>module</strong> unless marked <code>pub</code>. Inside one file&#39;s module that does not matter; once code is split into modules (lesson 3.05), keep fields private and expose methods, so that a struct&#39;s rules (like a non-negative balance) cannot be broken from outside.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-slices/"><span class="mono">previous</span><b>2.03 Slices</b></a>
+      <a class="lp-next" href="../2-05-enums-option-and-match/"><span class="mono">next</span><b>2.05 Enums, Option and match</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/2-04-structs-and-methods"></script>
+</body>
+</html>

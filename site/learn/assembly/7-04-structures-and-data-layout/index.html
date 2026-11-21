@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Structures and Data Layout · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/7-04-structures-and-data-layout/">
+  <meta name="description" content="Records in assembly - NASM's struc and endstruc for field offsets, istruc and at for initialised records, reaching fields through a pointer, arrays of…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Structures and Data Layout · Assembly · Xenon">
+  <meta property="og:description" content="Records in assembly - NASM's struc and endstruc for field offsets, istruc and at for initialised records, reaching fields through a pointer, arrays of…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/7-04-structures-and-data-layout/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Structures and Data Layout · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Structures and Data Layout · Assembly · Xenon">
+  <meta name="twitter:description" content="Records in assembly - NASM's struc and endstruc for field offsets, istruc and at for initialised records, reaching fields through a pointer, arrays of…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Deeper Assembly</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Structures and Data Layout</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.04</b></span><span>4 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Records in assembly - NASM&#39;s struc and endstruc for field offsets, istruc and at for initialised records, reaching fields through a pointer, arrays of structures and the index arithmetic they need, matching a C struct&#39;s layout and padding, and structure of arrays versus array of structures.</p>
+      <div class="prose">
+<h2>A struct is offsets</h2>
+<p>To the processor, a C <code>struct</code> is just a block of bytes, and each field is a fixed <strong>offset</strong> from its start. <code>p-&gt;hp</code> is &quot;load from the address in p plus the offset of hp&quot;. In assembly you could write the numbers yourself (<code>[rdi + 8]</code>), but names are far easier to read and to change.</p>
+<h2>struc and endstruc</h2>
+<p>NASM&#39;s <code>struc</code> defines a list of field offsets and the total size, without reserving any memory:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-k">struc</span> player
+<span class="tk-f">    .id:</span>      <span class="tk-k">resq</span> <span class="tk-n">1</span>        <span class="tk-c">; offset 0, 8 bytes</span>
+<span class="tk-f">    .hp:</span>      <span class="tk-k">resq</span> <span class="tk-n">1</span>        <span class="tk-c">; offset 8</span>
+<span class="tk-f">    .score:</span>   <span class="tk-k">resq</span> <span class="tk-n">1</span>        <span class="tk-c">; offset 16</span>
+<span class="tk-f">    .name:</span>    <span class="tk-k">resb</span> <span class="tk-n">16</span>       <span class="tk-c">; offset 24, 16 bytes</span>
+<span class="tk-k">endstruc</span>                    <span class="tk-c">; defines player_size = 40</span></code></pre></div>
+<p>Now <code>player.hp</code> is the number 8 and <code>player_size</code> is 40. Fields are reached through a pointer:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        mov     <span class="tk-t">rax</span>, [<span class="tk-t">rdi</span> + player.score]       <span class="tk-c">; rdi points at a player</span>
+        add     <span class="tk-k">qword</span> [<span class="tk-t">rdi</span> + player.hp], <span class="tk-n">10</span>     <span class="tk-c">; heal by 10</span></code></pre></div>
+<h2>istruc: a filled-in record</h2>
+<p><code>istruc</code> lays out an actual record in the data section, with <code>at</code> placing each value at its field:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+<span class="tk-k">struc</span> point
+<span class="tk-f">    .x:</span>     <span class="tk-k">resq</span> <span class="tk-n">1</span>
+<span class="tk-f">    .y:</span>     <span class="tk-k">resq</span> <span class="tk-n">1</span>
+<span class="tk-k">endstruc</span>
+
+        <span class="tk-k">section</span> .data
+<span class="tk-f">corner:</span> <span class="tk-k">istruc</span> point
+            <span class="tk-k">at</span> point.x, <span class="tk-k">dq</span> <span class="tk-n">3</span>
+            <span class="tk-k">at</span> point.y, <span class="tk-k">dq</span> <span class="tk-n">4</span>
+        <span class="tk-k">iend</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        lea     <span class="tk-t">rbx</span>, [<span class="tk-k">rel</span> corner]
+        mov     <span class="tk-t">rax</span>, [<span class="tk-t">rbx</span> + point.x]
+        imul    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        mov     <span class="tk-t">rcx</span>, [<span class="tk-t">rbx</span> + point.y]
+        imul    <span class="tk-t">rcx</span>, <span class="tk-t">rcx</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-t">rcx</span>                <span class="tk-c">; x*x + y*y</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 25</span>
+        call    print_newline
+        mov     <span class="tk-t">rdi</span>, point_size
+        call    print_int               <span class="tk-c">; 16</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<h2>Arrays of structures</h2>
+<p>In an array of records, element i starts at <code>base + i * size</code>. With a size of 1, 2, 4 or 8 the addressing mode can do the multiplication; other sizes need an <code>imul</code> (or a running pointer that adds the size each time):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+<span class="tk-k">struc</span> item
+<span class="tk-f">    .price:</span> <span class="tk-k">resq</span> <span class="tk-n">1</span>
+<span class="tk-f">    .count:</span> <span class="tk-k">resq</span> <span class="tk-n">1</span>
+<span class="tk-f">    .flags:</span> <span class="tk-k">resq</span> <span class="tk-n">1</span>
+<span class="tk-k">endstruc</span>
+
+        <span class="tk-k">section</span> .data
+<span class="tk-f">stock:</span>  <span class="tk-k">dq</span>      <span class="tk-n">250</span>, <span class="tk-n">4</span>, <span class="tk-n">0</span>               <span class="tk-c">; three items of three qwords each</span>
+        <span class="tk-k">dq</span>      <span class="tk-n">1000</span>, <span class="tk-n">1</span>, <span class="tk-n">1</span>
+        <span class="tk-k">dq</span>      <span class="tk-n">75</span>, <span class="tk-n">12</span>, <span class="tk-n">0</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-c">; stock_value: rdi = an array of items, rsi = how many. Returns the sum of price * count.</span>
+<span class="tk-f">stock_value:</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+<span class="tk-f">.loop:</span>  test    <span class="tk-t">rsi</span>, <span class="tk-t">rsi</span>
+        jz      .done
+        mov     <span class="tk-t">rcx</span>, [<span class="tk-t">rdi</span> + item.price]
+        imul    <span class="tk-t">rcx</span>, [<span class="tk-t">rdi</span> + item.count]
+        add     <span class="tk-t">rax</span>, <span class="tk-t">rcx</span>
+        add     <span class="tk-t">rdi</span>, item_size          <span class="tk-c">; on to the next record</span>
+        dec     <span class="tk-t">rsi</span>
+        jmp     .loop
+<span class="tk-f">.done:</span>  ret
+
+<span class="tk-f">_start:</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> stock]
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">3</span>
+        call    stock_value
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 250*4 + 1000*1 + 75*12 = 2900</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<h2>Matching C&#39;s layout</h2>
+<p>To share a struct with C (lesson 5.05), your offsets must match the C compiler&#39;s, <strong>padding included</strong> (C course lesson 7.02). For <code>struct { char tag; double value; int count; }</code> on x86-64, C puts <code>value</code> at 8 (after 7 padding bytes) and <code>count</code> at 16, and the size is 24. Write the padding into your <code>struc</code>, or use <code>alignb</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-k">struc</span> reading
+<span class="tk-f">    .tag:</span>    <span class="tk-k">resb</span> <span class="tk-n">1</span>
+             <span class="tk-k">alignb</span> <span class="tk-n">8</span>        <span class="tk-c">; pad to the next multiple of 8</span>
+<span class="tk-f">    .value:</span>  <span class="tk-k">resq</span> <span class="tk-n">1</span>          <span class="tk-c">; offset 8, like C</span>
+<span class="tk-f">    .count:</span>  <span class="tk-k">resd</span> <span class="tk-n">1</span>          <span class="tk-c">; offset 16</span>
+             <span class="tk-k">alignb</span> <span class="tk-n">8</span>
+<span class="tk-k">endstruc</span>                     <span class="tk-c">; reading_size = 24</span></code></pre></div>
+<h2>Array of structures or structure of arrays?</h2>
+<p>An <strong>array of structures</strong> (AoS) keeps each record together: good when code uses all the fields of one record at a time. A <strong>structure of arrays</strong> (SoA) keeps each field in its own array: good when a loop uses one field of every record, because the values it needs are next to each other in memory (the cache works better) and SIMD can process several at once (lesson 6.04). Games often keep positions, velocities and health in separate arrays for exactly this reason.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/7.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/7.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-03-files-with-system-calls/"><span class="mono">previous</span><b>7.03 Files with System Calls</b></a>
+      <a class="lp-next" href="../7-05-bit-scanning-and-atomics/"><span class="mono">next</span><b>7.05 Bit Scanning and Atomics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/7-04-structures-and-data-layout"></script>
+</body>
+</html>

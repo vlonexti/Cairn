@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Packet Capture · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/4-01-packet-capture/">
+  <meta name="description" content="Seeing the actual packets - capturing with Wireshark and Npcap, capture filters versus display filters, the pcap file format with its global and per-packet…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Packet Capture · Networking · Xenon">
+  <meta property="og:description" content="Seeing the actual packets - capturing with Wireshark and Npcap, capture filters versus display filters, the pcap file format with its global and per-packet…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/4-01-packet-capture/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Packet Capture · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Packet Capture · Networking · Xenon">
+  <meta name="twitter:description" content="Seeing the actual packets - capturing with Wireshark and Npcap, capture filters versus display filters, the pcap file format with its global and per-packet…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Capturing and Reading Packets</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Packet Capture</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Seeing the actual packets - capturing with Wireshark and Npcap, capture filters versus display filters, the pcap file format with its global and per-packet headers, and the rules about what you may capture.</p>
+      <div class="prose">
+<h2>Seeing what is really sent</h2>
+<p>Everything in this course so far has been described from the program&#39;s point of view. A <strong>packet capture</strong> shows what actually crossed the wire: every header, every retransmission, every byte. When a networked program misbehaves, a capture is usually the fastest way to find out whether the bug is in the client, the server, or the network.</p>
+<h2>Tools</h2>
+<ul>
+<li><strong>Wireshark</strong>: the standard graphical capture and analysis tool. It decodes thousands of protocols, shows each packet&#39;s layers as a tree, and can follow whole conversations.</li>
+<li><strong>Npcap</strong>: the capture driver Wireshark installs on Windows. Enable its &quot;loopback&quot; support to capture traffic to <code>127.0.0.1</code>, which never touches a real network card.</li>
+<li><strong>tshark</strong> and <strong>dumpcap</strong>: Wireshark&#39;s command-line tools, for capturing on servers and scripting.</li>
+<li><strong>pktmon</strong>: built into Windows 10 and later (<code>pktmon start --capture</code>), writing captures that Wireshark can open after conversion (<code>pktmon etl2pcap</code>).</li>
+</ul>
+<h2>Two kinds of filter</h2>
+<p><strong>Capture filters</strong> decide what is recorded at all, in the BPF syntax of libpcap. They keep files small on busy networks:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>host 192.168.1.50
+tcp port 7777
+udp and port 53
+not port 3389</code></pre></div>
+<p><strong>Display filters</strong> decide what Wireshark shows from a capture, using its own field names, and can be changed freely afterwards:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>ip.addr == 192.168.1.50
+tcp.port == 7777 &amp;&amp; tcp.flags.syn == 1
+dns.qry.name contains &quot;justloofy&quot;
+http.request.method == &quot;POST&quot;
+tcp.analysis.retransmission
+tls.handshake.extensions_server_name</code></pre></div>
+<p>Capture broadly, filter the display narrowly: you cannot recover packets a capture filter dropped.</p>
+<h2>The pcap file format</h2>
+<p>Captures are saved as <strong>pcap</strong> files (or the newer <strong>pcapng</strong>, which Wireshark uses by default and can convert). The classic pcap format is simple, which is why every tool supports it:</p>
+<p><strong>A 24-byte global header:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Size</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>4</td>
+<td>magic number: <code>0xA1B2C3D4</code> (microsecond timestamps) or <code>0xA1B23C4D</code> (nanoseconds)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2 + 2</td>
+<td>version, 2.4</td>
+</tr>
+<tr>
+<td>8</td>
+<td>4</td>
+<td>time zone correction (always 0)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>4</td>
+<td>timestamp accuracy (always 0)</td>
+</tr>
+<tr>
+<td>16</td>
+<td>4</td>
+<td><strong>snapshot length</strong>: the most bytes stored per packet</td>
+</tr>
+<tr>
+<td>20</td>
+<td>4</td>
+<td><strong>link type</strong>: 1 means Ethernet frames</td>
+</tr>
+</tbody></table>
+</div>
+<p>The magic number also tells you the <strong>byte order</strong> of the file: read as little-endian it is <code>0xA1B2C3D4</code> on files written by little-endian machines; if it reads as <code>0xD4C3B2A1</code>, every field in the file is big-endian.</p>
+<p><strong>Then, for each packet, a 16-byte record header and the packet bytes:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Size</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>4</td>
+<td>timestamp, seconds</td>
+</tr>
+<tr>
+<td>4</td>
+<td>4</td>
+<td>timestamp, microseconds (or nanoseconds)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>4</td>
+<td><strong>captured length</strong>: bytes stored in the file</td>
+</tr>
+<tr>
+<td>12</td>
+<td>4</td>
+<td><strong>original length</strong>: bytes the packet really had</td>
+</tr>
+</tbody></table>
+</div>
+<p>When a packet was longer than the snapshot length, only the first bytes are stored and the captured length is smaller than the original. Decoders must cope with truncated packets.</p>
+<h2>What you may capture</h2>
+<p>Capturing traffic is reading other people&#39;s communication when it is not yours. Capture only on networks and machines you own or are explicitly authorised to examine, only the traffic you need, and treat captures as sensitive data: they can contain passwords sent without encryption, cookies, and private messages. Deleting a capture you no longer need is good practice.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-https-and-tls/"><span class="mono">previous</span><b>3.05 HTTPS and TLS</b></a>
+      <a class="lp-next" href="../4-02-ethernet-and-ip-headers/"><span class="mono">next</span><b>4.02 Ethernet and IP Headers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/4-01-packet-capture"></script>
+</body>
+</html>

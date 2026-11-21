@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>How Virtual Works — vtables · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/8-04-how-virtual-works-vtables/">
+  <meta name="description" content="Ordinary calls are resolved at compile time (early binding). Virtual calls are resolved at run time (late binding) through a hidden pointer in each object,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How Virtual Works — vtables · C++ · Xenon">
+  <meta property="og:description" content="Ordinary calls are resolved at compile time (early binding). Virtual calls are resolved at run time (late binding) through a hidden pointer in each object,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/8-04-how-virtual-works-vtables/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="How Virtual Works — vtables · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How Virtual Works — vtables · C++ · Xenon">
+  <meta name="twitter:description" content="Ordinary calls are resolved at compile time (early binding). Virtual calls are resolved at run time (late binding) through a hidden pointer in each object,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Inheritance and Polymorphism</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">How Virtual Works — vtables</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.04</b></span><span>4 of 7 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Ordinary calls are resolved at <strong>compile time</strong> (early binding). Virtual calls are resolved at <strong>run time</strong> (late binding) through a hidden pointer in each object, the <code>vptr</code>, to a per-class table of function addresses, the <code>vtable</code>. The cost is one pointer per object and one indirection per call.</p>
+      <div class="prose">
+<h2>Early and late binding</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph Early[&quot;Early binding: an ordinary call&quot;]
+        direction LR
+        E1[&quot;obj.f()&quot;] --&gt;|&quot;the compiler emits a call&lt;br/&gt;to a fixed address&quot;| E2[&quot;f&quot;]
+    end
+    subgraph Late[&quot;Late binding: a virtual call&quot;]
+        direction LR
+        L1[&quot;ref.f()&quot;] --&gt;|&quot;read the object's vptr&quot;| L2[&quot;that class's vtable&quot;] --&gt;|&quot;read the slot for f&quot;| L3[&quot;call that address&quot;]
+    end</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Binding</th>
+<th>Decided</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Non-virtual call</td>
+<td>Early (static)</td>
+<td>By the compiler</td>
+</tr>
+<tr>
+<td>Virtual call</td>
+<td>Late (dynamic)</td>
+<td>While the program runs</td>
+</tr>
+</tbody></table>
+</div>
+<p>The standard does not say how virtual dispatch must be implemented. Every mainstream compiler uses the mechanism below.</p>
+<h2>The vtable</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">virtual</span> ~<span class="tk-f">Animal</span>() = <span class="tk-k">default</span>;
+    <span class="tk-k">virtual</span> <span class="tk-k">void</span> <span class="tk-f">speak</span>() <span class="tk-k">const</span>;
+    <span class="tk-k">virtual</span> <span class="tk-k">void</span> <span class="tk-f">move</span>() <span class="tk-k">const</span>;
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Dog</span> : <span class="tk-k">public</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">speak</span>() <span class="tk-k">const</span> <span class="tk-k">override</span>;    <span class="tk-c">// move is not overridden</span>
+};
+
+<span class="tk-k">class</span> <span class="tk-t">Cat</span> : <span class="tk-k">public</span> <span class="tk-t">Animal</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">speak</span>() <span class="tk-k">const</span> <span class="tk-k">override</span>;
+    <span class="tk-k">void</span> <span class="tk-f">move</span>() <span class="tk-k">const</span> <span class="tk-k">override</span>;
+};</code></pre></div>
+<div class="codeblock diagram plain"><pre><code>   OBJECTS                    VTABLES: one per CLASS, shared by all its objects
+
+   ┌────────────┐            Dog's vtable
+   │ rex (Dog)  │            ┌──────────────┬──────────────────┐
+   │ vptr ──────┼──────────▶ │ slot 0 dtor  │ ~Dog             │
+   │ members    │            │ slot 1 speak │ Dog::speak       │   overridden
+   └────────────┘            │ slot 2 move  │ Animal::move     │   inherited
+                             └──────────────┴──────────────────┘
+   ┌────────────┐            Cat's vtable
+   │ tom (Cat)  │            ┌──────────────┬──────────────────┐
+   │ vptr ──────┼──────────▶ │ slot 0 dtor  │ ~Cat             │
+   │ members    │            │ slot 1 speak │ Cat::speak       │
+   └────────────┘            │ slot 2 move  │ Cat::move        │
+                             └──────────────┴──────────────────┘</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Where</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>vtable</strong></td>
+<td>One per class with virtual functions</td>
+<td>The address of that class&#39;s version of each virtual function</td>
+</tr>
+<tr>
+<td><strong>vptr</strong></td>
+<td>One hidden member in every object of such a class</td>
+<td>The address of its class&#39;s vtable</td>
+</tr>
+</tbody></table>
+</div>
+<p>Every class in a hierarchy uses the same slot number for the same function. So <code>animalRef.speak()</code> compiles to three steps that work without knowing the dynamic type:</p>
+<ol>
+<li>Read the object&#39;s <code>vptr</code>.</li>
+<li>Read slot 1 of the table it points to.</li>
+<li>Call the address found there.</li>
+</ol>
+<h2>The cost</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Memory per object</td>
+<td>One pointer, 8 bytes on a 64-bit system, plus any padding</td>
+</tr>
+<tr>
+<td>Memory per class</td>
+<td>One table</td>
+</tr>
+<tr>
+<td>Time per call</td>
+<td>Two extra memory reads and an indirect call</td>
+</tr>
+<tr>
+<td>Lost optimisation</td>
+<td>The compiler generally <strong>cannot inline</strong> a virtual call, which is often the larger effect</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">NoVirtual</span>
+{
+    <span class="tk-k">int</span> x;
+};    <span class="tk-c">// sizeof is 4</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">HasVirtual</span>
+{
+    <span class="tk-k">int</span> x;
+    <span class="tk-k">virtual</span> ~<span class="tk-f">HasVirtual</span>() = <span class="tk-k">default</span>;
+};    <span class="tk-c">// sizeof is 16: an 8-byte vptr, the int, and 4 bytes of padding</span></code></pre></div>
+<p>In most code this is immaterial. It becomes measurable when a tiny virtual function is called millions of times in a tight loop over small objects. Alternatives for those cases:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Lesson</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Compile-time polymorphism with CRTP</td>
+<td><a href="../11-05-crtp-mixins-and-static-polymorphism/">11.05 CRTP, Mixins and Static Polymorphism</a></td>
+</tr>
+<tr>
+<td>A closed set of types in a <code>std::variant</code></td>
+<td><a href="../10-04-std-optional-std-variant-std-any-and-std-tuple/">10.04 std::optional, std::variant, std::any and std::tuple</a></td>
+</tr>
+<tr>
+<td>Grouping objects by type and processing each group in bulk</td>
+<td><a href="../13-04-performance-caches-and-data-oriented-design/">13.04 Performance, Caches and Data-Oriented Design</a></td>
+</tr>
+</tbody></table>
+</div>
+<h2>Devirtualization</h2>
+<p>When the compiler can prove the dynamic type, it replaces the virtual call with a direct one, which can then be inlined. This is <strong>devirtualization</strong>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Why the type is known</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A call on a local object by value</td>
+<td>Its type is exactly the declared one</td>
+</tr>
+<tr>
+<td>The class or the function is <code>final</code></td>
+<td>Nothing can override further</td>
+</tr>
+<tr>
+<td>Whole-program optimisation shows a single implementation</td>
+<td>There is only one candidate</td>
+</tr>
+</tbody></table>
+</div>
+<p>Marking leaf classes <code>final</code> is therefore a small, free optimisation.</p>
+<h2>Why virtual calls in constructors do not dispatch</h2>
+<p>The <code>vptr</code> is set by each constructor in turn.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> constructing a Dog:
+
+ Animal's constructor runs    vptr points at Animal's vtable
+ Dog's constructor runs       vptr points at Dog's vtable</code></pre></div>
+<p>While <code>Animal</code>&#39;s constructor is running, the object <strong>is</strong> an <code>Animal</code>: the <code>Dog</code> members are not yet constructed. A virtual call at that moment reaches <code>Animal</code>&#39;s version, which is the only safe choice. Destruction mirrors it: by the time <code>~Animal</code> runs, the <code>Dog</code> part has already been destroyed and the <code>vptr</code> has been set back.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/8.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/8.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-03-virtual-functions-and-polymorphism/"><span class="mono">previous</span><b>8.03 Virtual Functions and Polymorphism</b></a>
+      <a class="lp-next" href="../8-05-abstract-classes-and-interfaces/"><span class="mono">next</span><b>8.05 Abstract Classes and Interfaces</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/8-04-how-virtual-works-vtables"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

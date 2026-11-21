@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Windows, Classes and the Message Loop · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/1-03-windows-classes-and-the-message-loop/">
+  <meta name="description" content="The smallest real Windows program - registering a window class, creating a window, running the message loop, and writing the window procedure that handles…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Windows, Classes and the Message Loop · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="The smallest real Windows program - registering a window class, creating a window, running the message loop, and writing the window procedure that handles…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/1-03-windows-classes-and-the-message-loop/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Windows, Classes and the Message Loop · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Windows, Classes and the Message Loop · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="The smallest real Windows program - registering a window class, creating a window, running the message loop, and writing the window procedure that handles…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Windows and Messages</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Windows, Classes and the Message Loop</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.03</b></span><span>3 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The smallest real Windows program - registering a window class, creating a window, running the message loop, and writing the window procedure that handles messages. This lesson builds it line by line and explains each step.</p>
+      <div class="prose">
+<h2>The whole program</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#define</span> WIN32_LEAN_AND_MEAN
+<span class="tk-p">#define</span> NOMINMAX
+<span class="tk-p">#include &lt;windows.h&gt;</span>
+
+LRESULT CALLBACK <span class="tk-f">WndProc</span>(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    <span class="tk-k">switch</span> (msg)
+    {
+    <span class="tk-k">case</span> WM_DESTROY:
+        <span class="tk-f">PostQuitMessage</span>(<span class="tk-n">0</span>);          <span class="tk-c">// ends the message loop</span>
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-f">DefWindowProcW</span>(hwnd, msg, wParam, lParam);   <span class="tk-c">// default handling for everything else</span>
+}
+
+<span class="tk-k">int</span> WINAPI <span class="tk-f">wWinMain</span>(HINSTANCE instance, HINSTANCE, PWSTR commandLine, <span class="tk-k">int</span> showCommand)
+{
+    <span class="tk-c">// 1. Describe a kind of window.</span>
+    WNDCLASSEXW wc{ <span class="tk-k">sizeof</span>(wc) };
+    wc.lpfnWndProc = <span class="tk-t">WndProc</span>;
+    wc.hInstance = instance;
+    wc.hCursor = <span class="tk-f">LoadCursorW</span>(<span class="tk-k">nullptr</span>, IDC_ARROW);
+    wc.hbrBackground = <span class="tk-k">reinterpret_cast</span>&lt;HBRUSH&gt;(COLOR_WINDOW + <span class="tk-n">1</span>);
+    wc.lpszClassName = <span class="tk-s">L&quot;XenonMainWindow&quot;</span>;
+    <span class="tk-k">if</span> (!<span class="tk-f">RegisterClassExW</span>(&amp;wc)) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+
+    <span class="tk-c">// 2. Create one.</span>
+    HWND hwnd = <span class="tk-f">CreateWindowExW</span>(<span class="tk-n">0</span>, <span class="tk-s">L&quot;XenonMainWindow&quot;</span>, <span class="tk-s">L&quot;Hello, Windows&quot;</span>, WS_OVERLAPPEDWINDOW,
+                                CW_USEDEFAULT, CW_USEDEFAULT, <span class="tk-n">800</span>, <span class="tk-n">500</span>, <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>, instance, <span class="tk-k">nullptr</span>);
+    <span class="tk-k">if</span> (!hwnd) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    <span class="tk-f">ShowWindow</span>(hwnd, showCommand);
+
+    <span class="tk-c">// 3. Run the message loop.</span>
+    MSG msg;
+    <span class="tk-k">while</span> (<span class="tk-f">GetMessageW</span>(&amp;msg, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>) &gt; <span class="tk-n">0</span>)
+    {
+        <span class="tk-f">TranslateMessage</span>(&amp;msg);      <span class="tk-c">// turns key presses into WM_CHAR messages</span>
+        <span class="tk-f">DispatchMessageW</span>(&amp;msg);      <span class="tk-c">// calls the window procedure</span>
+    }
+    <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(msg.wParam);
+}</code></pre></div>
+<p>In Visual Studio, create a <strong>Windows Desktop Application</strong> (or an empty project with SubSystem set to Windows) so <code>wWinMain</code> is the entry point.</p>
+<h2>Step 1: the window class</h2>
+<p>A <strong>window class</strong> describes a kind of window: which window procedure handles its messages, its cursor, its background brush, its icon. Every window belongs to a class. <code>RegisterClassExW</code> registers it under a name, once per program. Buttons, edit boxes and list boxes are windows of classes Windows registers for you (<code>L&quot;BUTTON&quot;</code>, <code>L&quot;EDIT&quot;</code>), which is how controls work (lesson 2.05).</p>
+<p><code>COLOR_WINDOW + 1</code> is an odd convention: a system colour index plus one, cast to a brush, tells Windows to paint the background in the user&#39;s window colour.</p>
+<h2>Step 2: creating the window</h2>
+<p><code>CreateWindowExW</code> takes the extended style, class name, title, <strong>style</strong>, position, size, parent, menu, instance and a user pointer. <code>WS_OVERLAPPEDWINDOW</code> is the usual top-level window with a title bar, border, and minimise, maximise and close buttons. <code>CW_USEDEFAULT</code> lets Windows choose the position.</p>
+<p>The size includes the border and title bar. To get a client area (the inside) of exactly 800 × 500, compute the outer size first with <code>AdjustWindowRectEx</code> (or <code>AdjustWindowRectExForDpi</code>, lesson 3.04).</p>
+<h2>Step 3: the message loop</h2>
+<p>Windows does not call your code directly when something happens. It puts a <strong>message</strong> in your thread&#39;s <strong>message queue</strong>: a key was pressed, the mouse moved, the window must be repainted. The loop takes messages out one by one:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    Q[Message queue] --&gt;|GetMessageW| L[Your loop] --&gt;|DispatchMessageW| P[WndProc]</pre></div>
+<ul>
+<li><code>GetMessageW</code> waits until there is a message and returns it. It returns <strong>0</strong> for <code>WM_QUIT</code> (the loop ends) and <strong>-1</strong> on error, which is why the loop tests <code>&gt; 0</code> rather than just &quot;true&quot;.</li>
+<li><code>TranslateMessage</code> creates character messages from key messages (lesson 2.01).</li>
+<li><code>DispatchMessageW</code> calls the window procedure of the window the message is for.</li>
+</ul>
+<h2>Step 4: the window procedure</h2>
+<p>The <strong>window procedure</strong> (<code>WndProc</code>) is called with each message: the window, the message number (<code>WM_...</code>), and two parameters whose meaning depends on the message. It returns a result whose meaning also depends on the message.</p>
+<p>Anything you do not handle goes to <code>DefWindowProcW</code>, which implements standard behaviour: moving and resizing the window, the system menu, closing on Alt+F4, and so on. Forgetting to call it for unhandled messages gives a window that cannot even be moved.</p>
+<h2>Closing</h2>
+<p>Clicking the close button sends <code>WM_CLOSE</code>; the default handling calls <code>DestroyWindow</code>, which sends <code>WM_DESTROY</code>. The main window handles <code>WM_DESTROY</code> by calling <code>PostQuitMessage(0)</code>, which posts <code>WM_QUIT</code>, which makes <code>GetMessageW</code> return 0 and the loop end. To ask &quot;save changes?&quot; before closing, handle <code>WM_CLOSE</code> and only call <code>DestroyWindow</code> if the user agrees.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/1.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/1.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-02-strings-on-windows/"><span class="mono">previous</span><b>1.02 Strings on Windows</b></a>
+      <a class="lp-next" href="../1-04-messages-in-depth/"><span class="mono">next</span><b>1.04 Messages in Depth</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/1-03-windows-classes-and-the-message-loop"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>C-Style Arrays and C-Strings · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/5-05-c-style-arrays-and-c-strings/">
+  <meta name="description" content="int arr[5]{}; is the raw array inherited from C. Passed to a function it decays to a pointer and loses its length. A C-string is a char array ending in '\0'.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="C-Style Arrays and C-Strings · C++ · Xenon">
+  <meta property="og:description" content="int arr[5]{}; is the raw array inherited from C. Passed to a function it decays to a pointer and loses its length. A C-string is a char array ending in '\0'.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/5-05-c-style-arrays-and-c-strings/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="C-Style Arrays and C-Strings · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="C-Style Arrays and C-Strings · C++ · Xenon">
+  <meta name="twitter:description" content="int arr[5]{}; is the raw array inherited from C. Passed to a function it decays to a pointer and loses its length. A C-string is a char array ending in '\0'.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Containers and Algorithms</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">C-Style Arrays and C-Strings</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 11 in milestone 5</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary"><code>int arr[5]{};</code> is the raw array inherited from C. Passed to a function it <strong>decays</strong> to a pointer and loses its length. A C-string is a <code>char</code> array ending in <code>&#39;\0&#39;</code>. Learn them to read existing code; write <code>std::array</code>, <code>std::vector</code> and <code>std::string</code>.</p>
+      <div class="prose">
+<h2>Why learn the old way?</h2>
+<p>C++ grew out of C and still contains C&#39;s arrays and strings. New code should not use them, but operating-system interfaces, C libraries and thirty years of existing code do. You need to read them fluently.</p>
+<h2>C-style arrays</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;iterator&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> scores[<span class="tk-n">5</span>]{ <span class="tk-n">90</span>, <span class="tk-n">80</span>, <span class="tk-n">70</span>, <span class="tk-n">60</span>, <span class="tk-n">50</span> };
+    scores[<span class="tk-n">0</span>] = <span class="tk-n">100</span>;
+    std::cout &lt;&lt; std::<span class="tk-f">size</span>(scores) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 5</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock diagram plain"><pre><code> scores    ┌─────┬─────┬─────┬─────┬─────┐
+           │ 100 │ 80  │ 70  │ 60  │ 50  │
+           └─────┴─────┴─────┴─────┴─────┘
+ address:   0x100 0x104 0x108 0x10C 0x110       each int is 4 bytes</code></pre></div>
+<p>The length goes in square brackets after the name. There is no <code>.size()</code>, no <code>.at()</code> and no bounds checking of any kind.</p>
+<h2>Array decay</h2>
+<p>This is the property that makes C-style arrays hazardous.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">print</span>(<span class="tk-k">int</span> arr[])    <span class="tk-c">// this really means: int* arr</span>
+{
+    std::cout &lt;&lt; <span class="tk-k">sizeof</span>(arr) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 8: the size of a pointer</span>
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;int scores[5]&lt;br/&gt;knows it has 5 elements&quot;] --&gt;|&quot;passed to a function&quot;| P[&quot;int*&lt;br/&gt;only an address:&lt;br/&gt;the length is gone&quot;]</pre></div>
+<p>When a C-style array is passed to a function, it converts to a pointer to its first element. This is <strong>decay</strong>. The function receives an address and nothing else, so the length has to travel as a separate argument:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">print</span>(<span class="tk-k">const</span> <span class="tk-k">int</span>* values, std::size_t length);</code></pre></div>
+<p>Nothing ensures the two stay in agreement. A wrong length means reading or writing beyond the array: the classic <strong>buffer overflow</strong>.</p>
+<h2>Pointer arithmetic</h2>
+<p>Because an array name converts to a pointer, pointers can be used to walk an array.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int* p{ scores };</code></td>
+<td><code>p</code> points at <code>scores[0]</code></td>
+</tr>
+<tr>
+<td><code>*(p + 2)</code></td>
+<td>The element two places on: <code>scores[2]</code></td>
+</tr>
+<tr>
+<td><code>p[2]</code></td>
+<td>Exactly the same thing</td>
+</tr>
+<tr>
+<td><code>++p;</code></td>
+<td><code>p</code> now points at the next element</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>  p    p+1   p+2   p+3   p+4
+  ▼     ▼     ▼     ▼     ▼
+ [100] [80]  [70]  [60]  [50]</code></pre></div>
+<p>Adding 1 to a pointer moves it by one <strong>element</strong>, not one byte. For an <code>int*</code> that is 4 bytes. In fact <code>a[i]</code> is defined as <code>*(a + i)</code>.</p>
+<h2>C-strings</h2>
+<p>A C-string is an array of <code>char</code> with a <strong>null terminator</strong>, the character <code>&#39;\0&#39;</code> (value 0), marking the end.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">char</span> name[]{ <span class="tk-s">&quot;Ada&quot;</span> };    <span class="tk-c">// four chars: 'A' 'd' 'a' '\0'</span></code></pre></div>
+<div class="codeblock diagram plain"><pre><code> ┌───┬───┬───┬────┐
+ │ A │ d │ a │ \0 │
+ └───┴───┴───┴────┘</code></pre></div>
+<p>No length is stored. Every function that needs it walks the characters until it meets the terminator.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Fact</th>
+<th>Consequence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A literal <code>&quot;hello&quot;</code> is a <code>const char[6]</code></td>
+<td>Five letters plus the terminator</td>
+</tr>
+<tr>
+<td>Functions live in <code>&lt;cstring&gt;</code></td>
+<td><code>std::strlen</code>, <code>std::strcpy</code>, <code>std::strcmp</code></td>
+</tr>
+<tr>
+<td>None of them check sizes</td>
+<td>Copying into too small an array overflows it</td>
+</tr>
+<tr>
+<td><code>==</code> on two <code>char*</code> compares <strong>addresses</strong></td>
+<td>Not the text</td>
+</tr>
+</tbody></table>
+</div>
+<p>Converting between the two worlds is easy:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">char</span>* greeting{ <span class="tk-s">&quot;Hello&quot;</span> };
+std::string s{ greeting };            <span class="tk-c">// C-string to std::string</span>
+<span class="tk-k">const</span> <span class="tk-k">char</span>* raw{ s.<span class="tk-f">c_str</span>() };         <span class="tk-c">// std::string to C-string, for a C function</span></code></pre></div>
+<h2>The modern equivalents</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>C style</th>
+<th>Modern C++</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int a[5];</code></td>
+<td><code>std::array&lt;int, 5&gt;</code></td>
+</tr>
+<tr>
+<td>An array whose size is decided while running</td>
+<td><code>std::vector&lt;int&gt;</code></td>
+</tr>
+<tr>
+<td><code>char s[100];</code> or <code>const char*</code></td>
+<td><code>std::string</code> or <code>std::string_view</code></td>
+</tr>
+<tr>
+<td><code>std::strlen(s)</code></td>
+<td><code>s.length()</code></td>
+</tr>
+<tr>
+<td><code>std::strcmp(a, b) == 0</code></td>
+<td><code>a == b</code></td>
+</tr>
+<tr>
+<td>A pointer and a length</td>
+<td><code>std::span</code></td>
+</tr>
+</tbody></table>
+</div>
+<h3><code>std::span</code></h3>
+<p><code>std::span</code> (C++20) is to arrays what <code>std::string_view</code> is to text: a pointer and a length carried together, with no ownership.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;span&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">sum</span>(std::span&lt;<span class="tk-k">const</span> <span class="tk-k">int</span>&gt; data)
+{
+    <span class="tk-k">int</span> total{ <span class="tk-n">0</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : data)
+    {
+        total += x;
+    }
+    <span class="tk-k">return</span> total;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> raw[]{ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> };
+    std::vector&lt;<span class="tk-k">int</span>&gt; v{ <span class="tk-n">4</span>, <span class="tk-n">5</span> };
+    std::cout &lt;&lt; <span class="tk-f">sum</span>(raw) &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; <span class="tk-f">sum</span>(v) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 6 9</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>One function accepts a C-style array, a <code>std::array</code> or a vector, and the length can never disagree with the data.</p>
+<h2>Where you will still meet them</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Place</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The program&#39;s command line</td>
+<td><code>int main(int argc, char* argv[])</code>: see <a href="../5-10-function-pointers-callbacks-and-command-line-arguments/">5.10 Function Pointers, Callbacks and Command-Line Arguments</a></td>
+</tr>
+<tr>
+<td>C libraries and operating-system functions</td>
+<td>They take <code>const char*</code> and pointer-plus-length pairs</td>
+</tr>
+<tr>
+<td>Older code and tutorials</td>
+<td>Anything written before about 2011</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-fixed-size-arrays-std-array/"><span class="mono">previous</span><b>5.04 Fixed-Size Arrays — std::array</b></a>
+      <a class="lp-next" href="../5-06-iterators-and-stl-algorithms/"><span class="mono">next</span><b>5.06 Iterators and STL Algorithms</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/5-05-c-style-arrays-and-c-strings"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

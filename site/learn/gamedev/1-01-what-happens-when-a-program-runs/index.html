@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>What Happens When a Program Runs · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/1-01-what-happens-when-a-program-runs/">
+  <meta name="description" content="A computer does one small thing at a time. It fetches an instruction from memory, works out what it means, and does it . Everything a game does, from drawing…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What Happens When a Program Runs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A computer does one small thing at a time. It fetches an instruction from memory, works out what it means, and does it . Everything a game does, from drawing…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/1-01-what-happens-when-a-program-runs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="What Happens When a Program Runs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What Happens When a Program Runs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A computer does one small thing at a time. It fetches an instruction from memory, works out what it means, and does it . Everything a game does, from drawing…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>How Computers Run Programs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">What Happens When a Program Runs</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 8 in milestone 1</span><span>15 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">A computer does one small thing at a time. It <strong>fetches</strong> an instruction from memory, works out what it means, and <strong>does it</strong>. Everything a game does, from drawing a frame to saving your progress, is billions of those small steps.</p>
+      <div class="prose">
+<h2>Why this course starts here</h2>
+<p>This course is about what is really going on inside a running game: where its numbers live, how the processor works through its code, what the operating system does around it, and how tools such as debuggers look inside.</p>
+<p>All of that rests on one picture of how a computer runs a program. If that picture is clear, later topics such as pointers, assembly language and debugging become ordinary consequences of it. If it is fuzzy, they stay mysterious however many times they are explained.</p>
+<p>So this lesson builds the picture, and it lets you operate a small computer yourself.</p>
+<h2>Three parts that do all the work</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    CPU[&quot;CPU&lt;br/&gt;does the work&quot;] &lt;--&gt;|&quot;reads and writes&quot;| RAM[&quot;Memory (RAM)&lt;br/&gt;holds what is in use&quot;]
+    DISK[&quot;Storage&lt;br/&gt;keeps files&quot;] --&gt;|&quot;program is loaded&quot;| RAM
+    RAM --&gt;|&quot;results&quot;| OUT[&quot;Screen, speakers,&lt;br/&gt;network&quot;]
+    IN[&quot;Keyboard, mouse,&lt;br/&gt;controller&quot;] --&gt; RAM</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>What it does</th>
+<th>Keeps its contents with the power off?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>CPU</strong> (processor)</td>
+<td>Carries out instructions, one after another</td>
+<td>It holds almost nothing</td>
+</tr>
+<tr>
+<td><strong>Memory</strong> (RAM)</td>
+<td>Holds the program that is running and the numbers it is working with</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Storage</strong> (SSD, hard disk)</td>
+<td>Keeps files, including program files, for the long term</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+</div>
+<p>A program on your disk is only a file. It does nothing until the operating system copies it into memory and tells the CPU where its first instruction is. From then on the CPU and memory do all the work, and storage is only touched when the program reads or writes a file.</p>
+<p>That is why this course spends so much time on memory. While a game is running, everything it knows is in memory: the player&#39;s health, the position of every monster, the level layout, and the game&#39;s own instructions.</p>
+<h2>A program is a list of numbers</h2>
+<p>Memory is a long row of numbered boxes, and each box holds a number. Nothing else. There are no words in there, no pictures and no C++.</p>
+<p>A program is stored in those boxes as numbers too. The people who design a CPU decide which number means which action. On the tiny machine you are about to use, the code works like this:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Written as</th>
+<th>What the CPU does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>1nn</code></td>
+<td><code>LOAD nn</code></td>
+<td>Copy the number in cell <code>nn</code> into register A</td>
+</tr>
+<tr>
+<td><code>2nn</code></td>
+<td><code>ADD nn</code></td>
+<td>Add the number in cell <code>nn</code> to register A</td>
+</tr>
+<tr>
+<td><code>3nn</code></td>
+<td><code>SUB nn</code></td>
+<td>Subtract the number in cell <code>nn</code> from register A</td>
+</tr>
+<tr>
+<td><code>4nn</code></td>
+<td><code>STORE nn</code></td>
+<td>Copy register A into cell <code>nn</code></td>
+</tr>
+<tr>
+<td><code>5nn</code></td>
+<td><code>JUMP nn</code></td>
+<td>Carry on from cell <code>nn</code> instead of the next cell</td>
+</tr>
+<tr>
+<td><code>6nn</code></td>
+<td><code>JUMPZ nn</code></td>
+<td>If register A is zero, carry on from cell <code>nn</code></td>
+</tr>
+<tr>
+<td><code>0</code></td>
+<td><code>HALT</code></td>
+<td>Stop</td>
+</tr>
+</tbody></table>
+</div>
+<p>So the number <code>110</code> means &quot;load cell 10&quot;, and <code>412</code> means &quot;store into cell 12&quot;. The words <code>LOAD</code> and <code>STORE</code> are only there for people. The CPU sees <code>110</code> and <code>412</code>.</p>
+<div class="callout important"><div class="callout-title"><span>The same number can be an instruction or a value</span></div><div class="callout-body"><p>Memory does not label its boxes. <code>110</code> is &quot;load cell 10&quot; when the CPU fetches it as an instruction, and it is just the quantity one hundred and ten when a program adds it to something. What a number means depends entirely on how it is used. This idea comes back throughout the course.</p>
+</div></div>
+<p>A <strong>register</strong> is a storage slot inside the CPU itself. It is much faster to reach than memory, and there are very few of them. This machine has one for doing sums, called A.</p>
+<h2>The cycle: fetch, decode, execute</h2>
+<p>The CPU repeats three steps for as long as the power is on.</p>
+<ol>
+<li><strong>Fetch.</strong> A register called the <strong>program counter</strong> holds the number of the cell where the next instruction is. The CPU copies that cell&#39;s contents into its <strong>instruction register</strong>, then adds one to the program counter so it points at the following cell.</li>
+<li><strong>Decode.</strong> The CPU works out what the number in the instruction register means.</li>
+<li><strong>Execute.</strong> It does it: copies a number, adds, or changes the program counter.</li>
+</ol>
+<p>Then it goes back to step 1. That loop is the whole of how a computer runs a program.</p>
+<p>Here is a program that adds two numbers. Press <strong>Step</strong> and read the explanation each time. Watch three things: the program counter moving down the cells, register A changing, and cell 12 at the end.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/gamedev/l/1.01">Try it in Xenon</a></div>
+<p>Things to notice:</p>
+<ul>
+<li>The program counter always names the cell that will be fetched <strong>next</strong>. It is the CPU&#39;s bookmark.</li>
+<li>Nothing happened to memory until the <code>STORE</code>. Loading and adding only changed register A.</li>
+<li>When the machine halted, the answer was sitting in cell 12. A program&#39;s results are simply whatever it left in memory.</li>
+</ul>
+<p>Now type different numbers into cells 10 and 11. The machine goes back to the start each time you change one. Then press <strong>Run</strong>. The program is the same four instructions; only the data changed. That separation between the instructions and the data they work on is what makes a program reusable.</p>
+<div class="callout info"><div class="callout-title"><span>This machine is invented, but the idea is exact</span></div><div class="callout-body"><p>The processor in your computer has sixteen general registers instead of one, hundreds of instructions instead of seven, and its instructions are different lengths. Chapter 7 covers the real thing. The cycle of fetch, decode and execute is the same.</p>
+</div></div>
+<h2>Loops and decisions are jumps</h2>
+<p>Left alone, the program counter just counts upward, so the CPU runs instructions in the order they sit in memory. <code>JUMP</code> and <code>JUMPZ</code> are the two instructions that put a different number in the program counter. That is all a loop or an <code>if</code> is at this level.</p>
+<p>This program counts down from 3 to 0. Step through it and watch the program counter go <strong>backwards</strong> when it reaches <code>JUMP 1</code>.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/gamedev/l/1.01">Try it in Xenon</a></div>
+<p>The instructions in cells 1 to 4 run once for every count. Cell 1 is the question &quot;has it reached zero yet?&quot; and cell 4 is &quot;go round again&quot;.</p>
+<p>Change the counter in cell 10 to 5 and run it again. It takes more instructions to finish, because the loop goes round more times, although the program itself did not get any longer.</p>
+<p>When you write a <code>while</code> loop or an <code>if</code> statement in C++, the compiler turns it into exactly this: a test that sets up a condition, and a jump that depends on it.</p>
+<h2>A bigger program from the same seven instructions</h2>
+<p>This machine has no multiply instruction. It can still multiply, by adding the same number again and again and counting how many times are left.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/gamedev/l/1.01">Try it in Xenon</a></div>
+<p>Run it and watch cell 12, the running total, grow by 4 on each trip round the loop. Then change cell 10 or cell 11 and run it again.</p>
+<p>Real processors do have a multiply instruction, but the lesson holds: complicated behaviour is built from a small set of simple instructions, repeated.</p>
+<h2>From C++ to those numbers</h2>
+<p>You do not write programs as numbers. You write something like this, and a <strong>compiler</strong> translates it into the CPU&#39;s instructions.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> first{ <span class="tk-n">7</span> };
+    <span class="tk-k">int</span> second{ <span class="tk-n">5</span> };
+    <span class="tk-k">int</span> answer{ first + second };
+    std::cout &lt;&lt; answer &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>12</code></pre></div>
+<p>For the line <code>int answer{ first + second };</code> a compiler for a real x64 processor produces instructions along these lines:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>mov  <span class="tk-t">eax</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [first]     <span class="tk-c">; LOAD   copy first into a register</span>
+add  <span class="tk-t">eax</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [second]    <span class="tk-c">; ADD    add second to it</span>
+mov  <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [answer], <span class="tk-t">eax</span>    <span class="tk-c">; STORE  copy the register into answer</span></code></pre></div>
+<p>It is the same three steps you watched in the first demonstration. The names <code>first</code>, <code>second</code> and <code>answer</code> are for you and the compiler. In the finished program they are gone, replaced by the numbers of the memory cells where those values live. Lesson 1.03 is about those cell numbers, which are called addresses.</p>
+<h2>How fast this happens</h2>
+<p>One core of a modern processor gets through billions of these steps every second. A game that draws 60 frames a second has about 16.7 milliseconds for each frame, and in that time one core can carry out tens of millions of instructions.</p>
+<p>That is why a game can move hundreds of objects, check their collisions, play sound and draw the screen, all between one frame and the next. Each of those jobs is still nothing more than loading numbers, doing arithmetic on them, storing them and jumping.</p>
+<h2>Where the operating system comes in</h2>
+<p>Three things happen when you start a program on Windows.</p>
+<ol>
+<li>Windows finds the program file on disk and reads it.</li>
+<li>It sets aside memory for the program and copies the program&#39;s instructions and starting data into it. A program that has been loaded and is running is called a <strong>process</strong>.</li>
+<li>It sets the program counter to the program&#39;s first instruction and lets the CPU go.</li>
+</ol>
+<p>Windows also keeps many processes going at once by letting each use the CPU for a short slice of time, then switching to another. It keeps each process&#39;s memory separate from every other&#39;s. Chapter 6 covers processes and their memory in detail.</p>
+<h2>Why this matters for games</h2>
+<p>Take the picture you now have and look at a game with it.</p>
+<ul>
+<li><strong>Game state is numbers in memory.</strong> Health, gold, position, the current level: each is a number in some memory cell.</li>
+<li><strong>The game is a loop.</strong> Read the input, update the numbers, draw the picture, go round again. It is the countdown program with a much bigger body.</li>
+<li><strong>A debugger stops the cycle.</strong> Because the CPU does one instruction at a time, a tool can pause it between two instructions and show you every register and every memory cell. That is what Visual Studio&#39;s debugger does, and you will use it constantly in this course.</li>
+</ul>
+<h2>Common misunderstandings</h2>
+<div class="callout warning"><div class="callout-title"><span>&quot;The computer understands C++&quot;</span></div><div class="callout-body"><p>It does not. The CPU only carries out its own numbered instructions. C++ exists for people, and a compiler has to translate it before anything can run.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>&quot;Instructions and data are kept in different kinds of memory&quot;</span></div><div class="callout-body"><p>They sit in the same memory, as the same kind of numbers. Modern operating systems do mark regions as &quot;may be run&quot; or &quot;may only be read&quot;, which is a safety measure you will meet later, but the bytes themselves are no different.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>&quot;Variables keep their names inside the machine&quot;</span></div><div class="callout-body"><p>Names disappear when the program is compiled. Only cell numbers remain. This is why a debugger needs a separate file of symbols to show you names again.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>&quot;A computer does many things at the same moment&quot;</span></div><div class="callout-body"><p>One core does one instruction at a time. It appears to do many things because it is fast and because the operating system switches between programs many times a second. A processor with several cores really does run several instruction streams at once, one per core.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does the program counter hold?</div><ul><li>The result of the most recent sum</li><li>The number of the memory cell that holds the next instruction</li><li>How many instructions have been run so far</li></ul><details><summary>Show the answer</summary><p><b>The number of the memory cell that holds the next instruction</b> It is the CPU&#39;s bookmark. Fetch reads the cell it names, then moves it on by one.</p></details></li><li><div class="q">In the first demonstration, which instruction changed memory?</div><ul><li><code>LOAD 10</code></li><li><code>ADD 11</code></li><li><code>STORE 12</code></li></ul><details><summary>Show the answer</summary><p><b><code>STORE 12</code></b> <code>LOAD</code> and <code>ADD</code> only change register A, inside the CPU. <code>STORE</code> is the one that copies a value out into a memory cell.</p></details></li><li><div class="q">Cell 5 of a program&#39;s memory holds the number 110. What is it?</div><ul><li>Always the instruction <code>LOAD 10</code></li><li>Always the value one hundred and ten</li><li>It depends on whether the CPU fetches it as an instruction or a program uses it as a value</li></ul><details><summary>Show the answer</summary><p><b>It depends on whether the CPU fetches it as an instruction or a program uses it as a value</b> Memory does not label its contents. The same number is an instruction if the program counter reaches it, and plain data if an instruction reads it.</p></details></li><li><div class="q">How does this machine repeat a group of instructions?</div><ul><li>It has a special <code>LOOP</code> instruction</li><li>A jump puts an earlier cell number into the program counter</li><li>The CPU remembers which instructions it has already run</li></ul><details><summary>Show the answer</summary><p><b>A jump puts an earlier cell number into the program counter</b> Loops and decisions are both made from jumps. <code>JUMP</code> always changes the program counter; <code>JUMPZ</code> changes it only when register A is zero.</p></details></li><li><div class="q">Where do the names of your C++ variables go when the program is compiled?</div><ul><li>They are stored next to each value in memory</li><li>The CPU keeps a table of them</li><li>They are replaced by memory cell numbers and are not in the running program</li></ul><details><summary>Show the answer</summary><p><b>They are replaced by memory cell numbers and are not in the running program</b> Names are for people and for the compiler. A debugger can show them again only because the compiler can write them to a separate symbol file.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-bits-bytes-and-hexadecimal/"><span class="mono">next</span><b>1.02 Bits, Bytes and Hexadecimal</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/1-01-what-happens-when-a-program-runs"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

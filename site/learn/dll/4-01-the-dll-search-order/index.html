@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The DLL Search Order · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/4-01-the-dll-search-order/">
+  <meta name="description" content="When a program asks for a DLL by name rather than by full path, Windows tries a fixed list of places. Knowing that list explains why the wrong copy of a DLL…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The DLL Search Order · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="When a program asks for a DLL by name rather than by full path, Windows tries a fixed list of places. Knowing that list explains why the wrong copy of a DLL…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/4-01-the-dll-search-order/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The DLL Search Order · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The DLL Search Order · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="When a program asks for a DLL by name rather than by full path, Windows tries a fixed list of places. Knowing that list explains why the wrong copy of a DLL…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Loading Safely and Shipping</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The DLL Search Order</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">When a program asks for a DLL by name rather than by full path, Windows tries a fixed list of places. Knowing that list explains why the wrong copy of a DLL sometimes loads, why &quot;it works on my machine&quot;, and why putting your DLLs next to your <code>.exe</code> is the reliable choice.</p>
+      <div class="prose">
+<h2>A name, not a path</h2>
+<p>Most DLLs are requested by name only: the import table of your <code>.exe</code> says <code>StoneMath.dll</code>, and <code>LoadLibraryW(L&quot;StoneMath.dll&quot;)</code> gives no folder either. Windows then has to decide which file that means.</p>
+<h2>Before any folder is searched</h2>
+<p>Two checks come first:</p>
+<ol>
+<li><strong>Already loaded?</strong> If a module with that name is already in the process, it is reused. This is why loading <code>StoneMath.dll</code> from two places never gives you two copies: the second request finds the first.</li>
+<li><strong>Known DLLs.</strong> Windows keeps a list of core system DLLs (<code>kernel32.dll</code>, <code>user32.dll</code>, <code>ole32.dll</code> and others, listed in the registry under <code>KnownDLLs</code>). For those it always uses the copy in <code>System32</code>, whatever folders come later. You cannot override <code>kernel32.dll</code> by putting a file next to your program.</li>
+</ol>
+<p>(There are also <strong>API sets</strong>, the <code>api-ms-win-...</code> names from lesson 1.06, which are redirected to real system DLLs without any search.)</p>
+<h2>The standard search order</h2>
+<p>If neither check settles it, a desktop application searches these places in order, and loads the first file with that name it finds:</p>
+<ol>
+<li><strong>The folder the application&#39;s <code>.exe</code> is in.</strong></li>
+<li>The <strong>system folder</strong>, <code>C:\Windows\System32</code>.</li>
+<li>The 16-bit system folder, <code>C:\Windows\System</code>.</li>
+<li>The <strong>Windows folder</strong>, <code>C:\Windows</code>.</li>
+<li>The <strong>current directory</strong> (the program&#39;s working directory).</li>
+<li>Every folder on the <strong>PATH</strong> environment variable, in order.</li>
+</ol>
+<p>This is the order with <strong>safe DLL search mode</strong>, which has been on by default for many years. Without it, the current directory was searched second, which is why it was moved down: an attacker who could put a file in your working directory (a downloaded folder, a network share) could get it loaded before the system&#39;s copy. Lesson 4.02 goes further.</p>
+<h2>What this means in practice</h2>
+<ul>
+<li><strong>Put your DLLs next to your <code>.exe</code>.</strong> The application folder is searched first, so your copy wins, and the program works no matter what the user&#39;s PATH or working directory is.</li>
+<li><strong>Never rely on the current directory.</strong> It changes with shortcuts, command lines and file dialogs.</li>
+<li><strong>Never rely on PATH for your own DLLs.</strong> It is the last place searched and differs on every machine. Something earlier on PATH with the same name wins, which is the classic &quot;works on my machine&quot; story.</li>
+<li><strong>Avoid generic names.</strong> <code>utils.dll</code> or <code>zlib.dll</code> may already be loaded into the process by some other component, and Windows will happily give you that one instead (check 1 above).</li>
+</ul>
+<h2>Seeing the search happen</h2>
+<p>Process Monitor (lesson 1.06) shows every attempt. A program in <code>C:\Games\Xenon</code> asking for <code>missing.dll</code> produces a trail like:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output (yours will differ)</span></div><pre><code>C:\Games\Xenon\missing.dll            NAME NOT FOUND
+C:\Windows\System32\missing.dll       NAME NOT FOUND
+C:\Windows\System\missing.dll         NAME NOT FOUND
+C:\Windows\missing.dll                NAME NOT FOUND
+C:\Users\you\Desktop\missing.dll      NAME NOT FOUND      (the current directory)
+C:\Program Files\Git\cmd\missing.dll  NAME NOT FOUND      (PATH...)</code></pre></div>
+<h2>A dependency&#39;s dependencies</h2>
+<p>When <code>StoneMath.dll</code> itself imports <code>zlib.dll</code>, the same search runs, still based on <strong>the application&#39;s</strong> folder, not the folder <code>StoneMath.dll</code> came from. So if you load a DLL from a subfolder by full path, its own dependencies are not found in that subfolder unless you say so. Lesson 4.02 shows the flags that fix this, and lesson 5.01 uses them for plugins in their own folders.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Testing only on the development machine</span></div><div class="callout-body"><p>Your PATH contains Visual Studio, SDKs and tools with DLLs in them. A clean machine has none of that. Test there before shipping.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Assuming a DLL from a subfolder finds its friends in that subfolder</span></div><div class="callout-body"><p>Its dependencies are searched for from the application&#39;s folder. Use full paths and the search flags from lesson 4.02.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Where does Windows look first for a DLL requested by name (after checking what is already loaded and the known DLLs)?</div><ul><li>The folder of the application&#39;s .exe</li><li>The current directory</li><li>The PATH</li></ul><details><summary>Show the answer</summary><p><b>The folder of the application&#39;s .exe</b> That is why shipping DLLs next to the .exe is reliable.</p></details></li><li><div class="q">Why was the current directory moved later in the search order?</div><ul><li>A file planted in the working directory could otherwise be loaded before the real system DLL</li><li>To make loading faster</li><li>Because the current directory is often empty</li></ul><details><summary>Show the answer</summary><p><b>A file planted in the working directory could otherwise be loaded before the real system DLL</b> That is safe DLL search mode.</p></details></li><li><div class="q">Can you replace kernel32.dll by putting your own copy next to your program?</div><ul><li>No; it is a known DLL and always loaded from System32</li><li>Yes, the application folder is searched first</li><li>Only for 32-bit programs</li></ul><details><summary>Show the answer</summary><p><b>No; it is a known DLL and always loaded from System32</b> Known DLLs bypass the folder search entirely.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-06-wrapping-a-c-api-in-modern-cpp/"><span class="mono">previous</span><b>3.06 Wrapping a C API in Modern C++</b></a>
+      <a class="lp-next" href="../4-02-loading-only-the-files-you-mean/"><span class="mono">next</span><b>4.02 Loading Only the Files You Mean</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/4-01-the-dll-search-order"></script>
+</body>
+</html>

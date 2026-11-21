@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Looking at Another Process with Documented APIs · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/12-01-looking-at-another-process-with-documented-apis/">
+  <meta name="description" content="Development tools often need to see inside a running game from a separate program: a stats panel, a level editor that previews live, a profiler. Each process…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Looking at Another Process with Documented APIs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Development tools often need to see inside a running game from a separate program: a stats panel, a level editor that previews live, a profiler. Each process…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/12-01-looking-at-another-process-with-documented-apis/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Looking at Another Process with Documented APIs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Looking at Another Process with Documented APIs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Development tools often need to see inside a running game from a separate program: a stats panel, a level editor that previews live, a profiler. Each process…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Inspection and Debugging Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Looking at Another Process with Documented APIs</h1>
+      <div class="readout lp-readout"><span>lesson <b>12.01</b></span><span>1 of 7 in milestone 12</span><span>6 min</span></div>
+      <p class="lp-summary">Development tools often need to see inside a running game from a separate program: a stats panel, a level editor that previews live, a profiler. Each process has its own private memory (lesson 6.02), so tools need a deliberate channel. This lesson surveys the documented ways (the game publishing data through <strong>shared memory</strong>, <strong>pipes</strong> or sockets; the <strong>debugging API</strong> for a process you start; dumps) and builds a shared-memory channel, the method the rest of this chapter uses.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>The game and the tool are separate processes. A pointer in one means nothing in the other, and Windows&#39; access checks (lesson 6.08) decide who may look at whom. So how does a tool show the game&#39;s frame time, the player&#39;s health or the number of live monsters?</p>
+<p>There are several documented ways, and they differ in <strong>who cooperates</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>The game cooperates?</th>
+<th>Good for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Shared memory</strong> (file mapping)</td>
+<td>Yes: the game writes a block of data that the tool maps too</td>
+<td>Fast, continuous data: stats, graphs, live values</td>
+</tr>
+<tr>
+<td><strong>Named pipes</strong> or <strong>sockets</strong></td>
+<td>Yes: they exchange messages</td>
+<td>Commands and events: &quot;spawn a troll&quot;, &quot;level loaded&quot;</td>
+</tr>
+<tr>
+<td><strong>Log files and ETW events</strong></td>
+<td>Yes</td>
+<td>Records over time, profiling (lesson 8.08)</td>
+</tr>
+<tr>
+<td><strong>The debugging API</strong> on a process the tool starts</td>
+<td>No code in the game, but the tool must be its debugger</td>
+<td>Debuggers and crash catchers (lesson 12.03)</td>
+</tr>
+<tr>
+<td><strong>Crash dumps</strong></td>
+<td>No</td>
+<td>Inspecting state after the fact (lesson 8.04)</td>
+</tr>
+</tbody></table>
+</div>
+<p>The first rows are how professional engines connect their editors and tools: the game <strong>publishes</strong> what tools may see, through an interface designed for it. That is reliable (no guessing at memory layouts), fast, survives game updates when versioned properly (lesson 12.06), and needs no special rights. This chapter builds that kind of tooling for Delve, plus a small debugger for a program the tool launches itself.</p>
+<div class="callout note"><div class="callout-title"><span>Ground rules</span></div><div class="callout-body"><p>The tools here inspect programs you build yourself, or programs started by your own tool. Reading or changing the memory of other people&#39;s software, particularly online games and anything protected by anti-cheat, is outside this course (lesson 9.01&#39;s ground rules): it harms other players, breaks the terms you agreed to, and is often illegal.</p>
+</div></div>
+<h2>Shared memory with a file mapping</h2>
+<p>Windows can map the same block of physical memory into two processes&#39; address spaces. Each sees it at its own virtual address, but writes by one are visible to the other. The block is a <strong>file mapping</strong> object, created by name:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Telemetry</span>               <span class="tk-c">// the agreed layout: plain data only, no pointers (lesson 6.09)</span>
+{
+    <span class="tk-k">unsigned</span> version;
+    <span class="tk-k">unsigned</span> frame;
+    <span class="tk-k">float</span> frameMs;
+    <span class="tk-k">int</span> playerHp;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-c">// The game creates a named, page-file-backed mapping big enough for the struct...</span>
+    HANDLE game{ <span class="tk-f">CreateFileMappingW</span>(INVALID_HANDLE_VALUE, <span class="tk-k">nullptr</span>, PAGE_READWRITE, <span class="tk-n">0</span>, <span class="tk-k">sizeof</span>(<span class="tk-t">Telemetry</span>), <span class="tk-s">L&quot;Local\\XenonDemoTelemetry&quot;</span>) };
+    <span class="tk-k">auto</span>* written{ <span class="tk-k">static_cast</span>&lt;<span class="tk-t">Telemetry</span>*&gt;(<span class="tk-f">MapViewOfFile</span>(game, FILE_MAP_WRITE, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-k">sizeof</span>(<span class="tk-t">Telemetry</span>))) };
+
+    <span class="tk-c">// ...and a tool opens the same name. (Here in one process, to keep the example runnable.)</span>
+    HANDLE tool{ <span class="tk-f">OpenFileMappingW</span>(FILE_MAP_READ, FALSE, <span class="tk-s">L&quot;Local\\XenonDemoTelemetry&quot;</span>) };
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>* read{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-t">Telemetry</span>*&gt;(<span class="tk-f">MapViewOfFile</span>(tool, FILE_MAP_READ, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-k">sizeof</span>(<span class="tk-t">Telemetry</span>))) };
+
+    *written = <span class="tk-t">Telemetry</span>{ <span class="tk-n">1</span>, <span class="tk-n">1234</span>, <span class="tk-n">16.4f</span>, <span class="tk-n">17</span> };
+    std::cout &lt;&lt; <span class="tk-s">&quot;two different addresses: &quot;</span> &lt;&lt; (<span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">void</span>*&gt;(written) != <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">void</span>*&gt;(read)) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;the tool sees frame &quot;</span> &lt;&lt; read-&gt;frame &lt;&lt; <span class="tk-s">&quot;, hp &quot;</span> &lt;&lt; read-&gt;playerHp &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-f">UnmapViewOfFile</span>(read); <span class="tk-f">CloseHandle</span>(tool);
+    <span class="tk-f">UnmapViewOfFile</span>(written); <span class="tk-f">CloseHandle</span>(game);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>two different addresses: 1
+the tool sees frame 1234, hp 17</code></pre></div>
+<p>Two different virtual addresses, one block of physical memory. Points to note:</p>
+<ul>
+<li><code>INVALID_HANDLE_VALUE</code> as the file means &quot;backed by the page file&quot;: pure shared memory, no file on disk.</li>
+<li>The name <code>Local\...</code> is visible to processes in the same login session. Choose names unique to your game.</li>
+<li>The <strong>tool opens the mapping read-only</strong> (<code>FILE_MAP_READ</code>): least privilege (lesson 6.08). A stats panel has no business writing into the game.</li>
+<li>The layout contains only plain values, never pointers: an address in the game is meaningless in the tool.</li>
+<li>Reading while the game writes can produce a <strong>torn</strong> snapshot (half old, half new). Lesson 12.04 fixes this with a sequence counter.</li>
+</ul>
+<h2>Pipes for commands</h2>
+<p>Shared memory is ideal for &quot;the current state&quot;. For <strong>messages</strong> (&quot;load level 3&quot;, &quot;screenshot taken&quot;) a <strong>named pipe</strong> (<code>CreateNamedPipeW</code> in the game, <code>CreateFileW</code> on <code>\\.\pipe\name</code> in the tool) carries a stream of bytes both ways, like a local network connection. Many engines run a small command server this way so editors can control the game; it is the debug console of lesson 11.07, reachable from outside.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Putting pointers or <code>std::string</code> in shared memory
+Their contents are addresses in one process. Use fixed-size plain data.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Opening the mapping writable in the tool</span></div><div class="callout-body"><p>Read-only is all a viewer needs, and protects the game from tool bugs.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Treating the shared block as always consistent</span></div><div class="callout-body"><p>Without a protocol (lesson 12.04), the tool may read a half-updated state.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why can a tool not simply follow a pointer it got from the game?</div><ul><li>The pointer is a virtual address in the game&#39;s address space; in the tool&#39;s process it means nothing</li><li>Pointers are encrypted</li><li>Tools have no memory</li></ul><details><summary>Show the answer</summary><p><b>The pointer is a virtual address in the game&#39;s address space; in the tool&#39;s process it means nothing</b> Each process has its own private address space (lesson 6.02).</p></details></li><li><div class="q">What makes shared memory work between two processes?</div><ul><li>Both map the same named file-mapping object, so the same physical memory appears in each address space</li><li>Windows copies the data between them every frame</li><li>They use the same virtual addresses</li></ul><details><summary>Show the answer</summary><p><b>Both map the same named file-mapping object, so the same physical memory appears in each address space</b> Each sees it at its own address, but it is the same memory.</p></details></li><li><div class="q">Which channel suits sending a command such as &quot;load level 3&quot; from an editor to the game?</div><ul><li>A named pipe (or socket) carrying messages</li><li>A crash dump</li><li>A file mapping holding the current frame number</li></ul><details><summary>Show the answer</summary><p><b>A named pipe (or socket) carrying messages</b> Pipes carry streams of messages; shared memory holds current state.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/12.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/12.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../11-08-polish-and-packaging/"><span class="mono">previous</span><b>11.08 Polish and Packaging</b></a>
+      <a class="lp-next" href="../12-02-a-memory-viewer/"><span class="mono">next</span><b>12.02 A Memory Viewer</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/12-01-looking-at-another-process-with-documented-apis"></script>
+</body>
+</html>

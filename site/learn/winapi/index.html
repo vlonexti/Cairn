@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Windows Programming with the Win32 API course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/">
+  <meta name="description" content="Native Windows applications, from the message loop up. A full course on the Windows API in C++: handles, errors and Unicode strings, windows and the message…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Windows Programming with the Win32 API course · Xenon">
+  <meta property="og:description" content="Native Windows applications, from the message loop up. A full course on the Windows API in C++: handles, errors and Unicode strings, windows and the message…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Windows Programming with the Win32 API course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Windows Programming with the Win32 API course · Xenon">
+  <meta name="twitter:description" content="Native Windows applications, from the message loop up. A full course on the Windows API in C++: handles, errors and Unicode strings, windows and the message…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Windows Programming with the Win32 API</span></div>
+    <h1 class="display">Windows Programming with the Win32 API</h1>
+    <div class="readout lp-readout"><span><b>7</b> milestones</span><span><b>33</b> lessons</span><span><b>33</b> practice tasks</span><span><b>35</b> projects</span></div>
+    <p class="lp-lede">A full course on the Windows API in C++: handles, errors and Unicode strings, windows and the message loop, painting, input, menus and resources, controls and dialogs, high DPI, Direct2D and DirectWrite, files, the registry, processes and threads, the clipboard and the shell, and packaging, a text editor and a file finder, and then deeper system topics: virtual memory, the console, overlapped I/O and completion ports, services, access tokens and privileges, and COM. It assumes the first milestones of the C++ course. You build the programs in Visual Studio; the practice on the site checks the logic inside them.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-handles-errors-and-the-documentation/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/winapi">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> Windows and Messages</h2>
+      <p class="lp-ms-blurb">Handles and errors, UTF-16 strings, window classes and the message loop, how messages work, and painting with GDI.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-handles-errors-and-the-documentation/"><span class="mono">1.01</span><span class="t">Handles, Errors and the Documentation</span><span class="n">1 task</span></a></li>
+        <li><a href="1-02-strings-on-windows/"><span class="mono">1.02</span><span class="t">Strings on Windows</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-windows-classes-and-the-message-loop/"><span class="mono">1.03</span><span class="t">Windows, Classes and the Message Loop</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-messages-in-depth/"><span class="mono">1.04</span><span class="t">Messages in Depth</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-painting-with-gdi/"><span class="mono">1.05</span><span class="t">Painting with GDI</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Input, Menus and Controls</h2>
+      <p class="lp-ms-blurb">The keyboard, the mouse, timers and the clock, menus, accelerators and resources, and the standard controls.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-keyboard-input/"><span class="mono">2.01</span><span class="t">Keyboard Input</span><span class="n">1 task</span></a></li>
+        <li><a href="2-02-mouse-input-and-capture/"><span class="mono">2.02</span><span class="t">Mouse Input and Capture</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-timers-and-the-clock/"><span class="mono">2.03</span><span class="t">Timers and the Clock</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-menus-accelerators-and-resources/"><span class="mono">2.04</span><span class="t">Menus, Accelerators and Resources</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-standard-controls/"><span class="mono">2.05</span><span class="t">Standard Controls</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Dialogs and Modern Interfaces</h2>
+      <p class="lp-ms-blurb">Dialog boxes, the common dialogs, layout when a window is resized, high-DPI screens, and the common controls.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-dialog-boxes/"><span class="mono">3.01</span><span class="t">Dialog Boxes</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-common-dialogs/"><span class="mono">3.02</span><span class="t">Common Dialogs</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-layout-and-resizing/"><span class="mono">3.03</span><span class="t">Layout and Resizing</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-high-dpi-screens/"><span class="mono">3.04</span><span class="t">High-DPI Screens</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-common-controls/"><span class="mono">3.05</span><span class="t">Common Controls</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Drawing</h2>
+      <p class="lp-ms-blurb">Flicker-free drawing, Direct2D for fast antialiased graphics, DirectWrite for text, and images with WIC.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-flicker-free-drawing/"><span class="mono">4.01</span><span class="t">Flicker-Free Drawing</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-drawing-with-direct2d/"><span class="mono">4.02</span><span class="t">Drawing with Direct2D</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-text-with-directwrite/"><span class="mono">4.03</span><span class="t">Text with DirectWrite</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-images-with-wic/"><span class="mono">4.04</span><span class="t">Images with WIC</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> The System</h2>
+      <p class="lp-ms-blurb">Files and directories, the registry and settings, processes, threads and synchronisation, and the clipboard, drag and drop and the shell.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-files-and-directories/"><span class="mono">5.01</span><span class="t">Files and Directories</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-the-registry-and-settings/"><span class="mono">5.02</span><span class="t">The Registry and Settings</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-processes/"><span class="mono">5.03</span><span class="t">Processes</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-threads-and-synchronisation/"><span class="mono">5.04</span><span class="t">Threads and Synchronisation</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-clipboard-drag-and-drop-and-the-shell/"><span class="mono">5.05</span><span class="t">Clipboard, Drag and Drop and the Shell</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Applications</h2>
+      <p class="lp-ms-blurb">A complete text editor, packaging and installing an application, and a file finder that searches on a worker thread.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-project-a-text-editor/"><span class="mono">6.01</span><span class="t">Project: A Text Editor</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-packaging-and-installing/"><span class="mono">6.02</span><span class="t">Packaging and Installing</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-project-a-file-finder/"><span class="mono">6.03</span><span class="t">Project: A File Finder</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">07</span> Deeper into the System</h2>
+      <p class="lp-ms-blurb">Virtual memory with VirtualAlloc and VirtualQuery, the console with Unicode and virtual terminal sequences, overlapped I/O and completion ports, Windows services, access tokens and privileges, and COM basics.</p>
+      <ol class="lp-lessons">
+        <li><a href="7-01-virtual-memory/"><span class="mono">7.01</span><span class="t">Virtual Memory</span><span class="n">1 task</span></a></li>
+        <li><a href="7-02-the-console/"><span class="mono">7.02</span><span class="t">The Console</span><span class="n">1 task</span></a></li>
+        <li><a href="7-03-overlapped-i-o/"><span class="mono">7.03</span><span class="t">Overlapped I/O</span><span class="n">1 task</span></a></li>
+        <li><a href="7-04-services/"><span class="mono">7.04</span><span class="t">Services</span><span class="n">1 task</span></a></li>
+        <li><a href="7-05-access-tokens-and-privileges/"><span class="mono">7.05</span><span class="t">Access Tokens and Privileges</span><span class="n">1 task</span></a></li>
+        <li><a href="7-06-com-basics/"><span class="mono">7.06</span><span class="t">COM Basics</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi"></script>
+</body>
+</html>

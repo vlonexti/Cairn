@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>NASM Macros and Conditional Assembly · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/7-02-nasm-macros-and-conditional-assembly/">
+  <meta name="description" content="Writing less assembly by hand - single-line macros with %define, multi-line macros with %macro and their parameters, local labels with %%, repeating code…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="NASM Macros and Conditional Assembly · Assembly · Xenon">
+  <meta property="og:description" content="Writing less assembly by hand - single-line macros with %define, multi-line macros with %macro and their parameters, local labels with %%, repeating code…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/7-02-nasm-macros-and-conditional-assembly/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="NASM Macros and Conditional Assembly · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="NASM Macros and Conditional Assembly · Assembly · Xenon">
+  <meta name="twitter:description" content="Writing less assembly by hand - single-line macros with %define, multi-line macros with %macro and their parameters, local labels with %%, repeating code…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Deeper Assembly</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">NASM Macros and Conditional Assembly</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.02</b></span><span>2 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Writing less assembly by hand - single-line macros with %define, multi-line macros with %macro and their parameters, local labels with %%, repeating code with %rep and %assign, choosing code with %if and %ifdef, and macros that generate whole functions.</p>
+      <div class="prose">
+<h2>The preprocessor</h2>
+<p>Before NASM assembles anything, its <strong>preprocessor</strong> expands macros, much as C&#39;s preprocessor does (C course lesson 5.04). Macros remove repetition that functions cannot: saving the same registers in every function, unrolling a loop, defining a family of similar functions.</p>
+<h2>%define: single-line macros</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>%define SYS_WRITE   <span class="tk-n">1</span>
+%define SYS_EXIT    <span class="tk-n">60</span>
+%define STDOUT      <span class="tk-n">1</span>
+%define ELEMENT(base, i)  [base + (i) * <span class="tk-n">8</span>]     <span class="tk-c">; a macro with parameters</span>
+
+        mov     <span class="tk-t">eax</span>, SYS_WRITE
+        mov     <span class="tk-t">rax</span>, ELEMENT(<span class="tk-t">rdi</span>, <span class="tk-n">3</span>)          <span class="tk-c">; becomes mov rax, [rdi + (3) * 8]</span></code></pre></div>
+<p><code>%define</code> is pure text replacement. <code>equ</code> (lesson 1.05) defines a number the assembler knows; <code>%define</code> can stand for any text, including registers and operands.</p>
+<h2>%macro: multi-line macros</h2>
+<p>A multi-line macro has a name and a <strong>number of parameters</strong>; inside, <code>%1</code>, <code>%2</code> ... are the arguments:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+
+%macro EXIT <span class="tk-n">1</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        mov     <span class="tk-t">edi</span>, %<span class="tk-n">1</span>
+        syscall
+%endmacro
+
+%macro PRINT_NUMBER <span class="tk-n">1</span>
+        mov     <span class="tk-t">rdi</span>, %<span class="tk-n">1</span>
+        call    print_int
+        call    print_newline
+%endmacro
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">rbx</span>, <span class="tk-n">6</span>
+        imul    <span class="tk-t">rbx</span>, <span class="tk-n">7</span>
+        PRINT_NUMBER <span class="tk-t">rbx</span>            <span class="tk-c">; 42</span>
+        PRINT_NUMBER <span class="tk-n">100</span>
+        EXIT    <span class="tk-n">0</span></code></pre></div>
+<p>A range like <code>%macro SAVE 1-3</code> accepts one to three arguments; <code>%0</code> is how many were given.</p>
+<h2>Local labels: %%</h2>
+<p>A label inside a macro would be defined twice if the macro is used twice. Prefixing it with <code>%%</code> makes NASM invent a fresh name at each use:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+
+<span class="tk-c">; CLAMP reg, low, high: keeps reg between low and high (registers or numbers).</span>
+%macro CLAMP <span class="tk-n">3</span>
+        cmp     %<span class="tk-n">1</span>, %<span class="tk-n">2</span>
+        jge     %%not_low
+        mov     %<span class="tk-n">1</span>, %<span class="tk-n">2</span>
+%%not_low:
+        cmp     %<span class="tk-n">1</span>, %<span class="tk-n">3</span>
+        jle     %%done
+        mov     %<span class="tk-n">1</span>, %<span class="tk-n">3</span>
+%%done:
+%endmacro
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">rax</span>, -<span class="tk-n">40</span>
+        CLAMP   <span class="tk-t">rax</span>, <span class="tk-n">0</span>, <span class="tk-n">255</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 0</span>
+        call    print_newline
+        mov     <span class="tk-t">rax</span>, <span class="tk-n">900</span>
+        CLAMP   <span class="tk-t">rax</span>, <span class="tk-n">0</span>, <span class="tk-n">255</span>
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 255</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<h2>Repeating: %rep and %assign</h2>
+<p><code>%rep n ... %endrep</code> copies its body n times. <code>%assign</code> sets a number the preprocessor can compute with, so each copy can be different. Together they <strong>unroll</strong> a loop:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">numbers:</span> <span class="tk-k">dq</span>     <span class="tk-n">3</span>, <span class="tk-n">1</span>, <span class="tk-n">4</span>, <span class="tk-n">1</span>, <span class="tk-n">5</span>, <span class="tk-n">9</span>, <span class="tk-n">2</span>, <span class="tk-n">6</span>
+        <span class="tk-k">section</span> .text
+
+<span class="tk-c">; sum8: rdi = an array of exactly 8 qwords. No loop counter, no jumps.</span>
+<span class="tk-f">sum8:</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+%assign i <span class="tk-n">0</span>
+%rep <span class="tk-n">8</span>
+        add     <span class="tk-t">rax</span>, [<span class="tk-t">rdi</span> + i * <span class="tk-n">8</span>]
+%assign i i + <span class="tk-n">1</span>
+%endrep
+        ret
+
+<span class="tk-f">_start:</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> numbers]
+        call    sum8
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 31</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>The listing of the assembled program shows eight <code>add</code> instructions with offsets 0, 8, 16 ... 56.</p>
+<h2>Choosing code: %if and %ifdef</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>%define DEBUG <span class="tk-n">1</span>
+
+%if DEBUG
+        call    dump_registers          <span class="tk-c">; only assembled when DEBUG is non-zero</span>
+%endif
+
+%ifdef WINDOWS
+        <span class="tk-c">; the Windows calling convention</span>
+%else
+        <span class="tk-c">; System V</span>
+%endif</code></pre></div>
+<p>Pass definitions on the command line with <code>nasm -dDEBUG=1 ...</code> to build different versions from one source.</p>
+<h2>Macros that write functions</h2>
+<p>A macro can produce a whole function, with names glued together from its parameters:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+
+%macro MAKE_SCALER <span class="tk-n">2</span>                    <span class="tk-c">; name, factor</span>
+scale_%<span class="tk-n">1</span>:
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rdi</span>
+        imul    <span class="tk-t">rax</span>, %<span class="tk-n">2</span>
+        ret
+%endmacro
+
+MAKE_SCALER double, <span class="tk-n">2</span>
+MAKE_SCALER triple, <span class="tk-n">3</span>
+MAKE_SCALER dozen, <span class="tk-n">12</span>
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">5</span>
+        call    scale_dozen
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 60</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<h2>When to use them</h2>
+<p>Macros are great for boilerplate that must be identical everywhere (prologues, system calls, error checks) and for unrolling. Overused, they hide what the code really does and make debugging harder, because the debugger shows the expanded instructions. A plain <code>call</code> to a function is often clearer and smaller.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/7.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/7.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-01-floating-point-with-sse/"><span class="mono">previous</span><b>7.01 Floating Point with SSE</b></a>
+      <a class="lp-next" href="../7-03-files-with-system-calls/"><span class="mono">next</span><b>7.03 Files with System Calls</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/7-02-nasm-macros-and-conditional-assembly"></script>
+</body>
+</html>

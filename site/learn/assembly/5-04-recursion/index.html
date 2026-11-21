@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Recursion · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/5-04-recursion/">
+  <meta name="description" content="A recursive function calls itself, and each call has its own frame, so it works like any other call - as long as values needed after the inner call are saved…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Recursion · Assembly · Xenon">
+  <meta property="og:description" content="A recursive function calls itself, and each call has its own frame, so it works like any other call - as long as values needed after the inner call are saved…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/5-04-recursion/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Recursion · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Recursion · Assembly · Xenon">
+  <meta name="twitter:description" content="A recursive function calls itself, and each call has its own frame, so it works like any other call - as long as values needed after the inner call are saved…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Functions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Recursion</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A recursive function calls itself, and each call has its own frame, so it works like any other call - as long as values needed after the inner call are saved first. Every level costs stack space, a base case stops the descent, and recursion too deep runs off the end of the stack and crashes.</p>
+      <div class="prose">
+<h2>Nothing special</h2>
+<p>To the processor, a function calling itself is just another <code>call</code>: a new return address on the stack, and the same code running again with new register values. The only thing to get right is the usual rule: <strong>anything needed after the call must survive it</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+
+<span class="tk-c">; factorial: rdi = n (0 to 20). Returns n!.</span>
+<span class="tk-f">factorial:</span>
+        cmp     <span class="tk-t">rdi</span>, <span class="tk-n">1</span>
+        jg      .recurse
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>                  <span class="tk-c">; the base case: 0! = 1! = 1</span>
+        ret
+<span class="tk-f">.recurse:</span>
+        push    <span class="tk-t">rbx</span>
+        mov     <span class="tk-t">rbx</span>, <span class="tk-t">rdi</span>                <span class="tk-c">; keep n: the inner call changes rdi</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-t">rdi</span> - <span class="tk-n">1</span>]
+        call    factorial               <span class="tk-c">; rax = (n - 1)!</span>
+        imul    <span class="tk-t">rax</span>, <span class="tk-t">rbx</span>                <span class="tk-c">; n * (n - 1)!</span>
+        pop     <span class="tk-t">rbx</span>
+        ret
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">10</span>
+        call    factorial
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; 3628800</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>Each level saves the caller&#39;s <code>rbx</code>, then uses <code>rbx</code> for its own <code>n</code>. When the inner call returns, that level&#39;s <code>n</code> is still in <code>rbx</code>, because the inner call saved and restored it. Ten levels deep, there are ten saved <code>rbx</code> values and ten return addresses on the stack.</p>
+<h2>Two calls: Fibonacci</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; fib: rdi = n. Returns the nth Fibonacci number: fib(0) = 0, fib(1) = 1.</span>
+<span class="tk-f">fib:</span>
+        cmp     <span class="tk-t">rdi</span>, <span class="tk-n">1</span>
+        jg      .recurse
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rdi</span>                <span class="tk-c">; fib(0) = 0, fib(1) = 1</span>
+        ret
+<span class="tk-f">.recurse:</span>
+        push    <span class="tk-t">rbx</span>
+        push    <span class="tk-t">r12</span>
+        sub     <span class="tk-t">rsp</span>, <span class="tk-n">8</span>                  <span class="tk-c">; keep rsp aligned for the calls</span>
+        mov     <span class="tk-t">rbx</span>, <span class="tk-t">rdi</span>                <span class="tk-c">; n</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-t">rbx</span> - <span class="tk-n">1</span>]
+        call    fib                     <span class="tk-c">; fib(n - 1)</span>
+        mov     <span class="tk-t">r12</span>, <span class="tk-t">rax</span>                <span class="tk-c">; keep it across the second call</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-t">rbx</span> - <span class="tk-n">2</span>]
+        call    fib                     <span class="tk-c">; fib(n - 2)</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-t">r12</span>
+        add     <span class="tk-t">rsp</span>, <span class="tk-n">8</span>
+        pop     <span class="tk-t">r12</span>
+        pop     <span class="tk-t">rbx</span>
+        ret</code></pre></div>
+<p>The first result must survive the second call, so it goes in <code>r12</code>. This version makes about 2ⁿ calls; a loop does it in n steps, which is why recursion is not always the right tool.</p>
+<h2>How deep can it go?</h2>
+<p>The main stack on Linux is usually 8 MB. A frame of 32 bytes allows about 250,000 levels; past that, the next push writes below the stack&#39;s end, the processor faults, and the program dies with a <strong>segmentation fault</strong>: a <strong>stack overflow</strong>. Some languages turn tail calls (a call that is the last thing a function does) into jumps so they need no extra stack; C and assembly do so only when the optimiser chooses to, or when you write <code>jmp</code> yourself.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why does factorial save n in rbx before calling itself?</div><ul><li>The inner call overwrites rdi, and rbx is kept by every call</li><li>rbx is the only register imul can use</li><li>To make the call faster</li></ul><details><summary>Show the answer</summary><p><b>The inner call overwrites rdi, and rbx is kept by every call</b> The usual rule for values needed after a call.</p></details></li><li><div class="q">What stops the recursion?</div><ul><li>The base case returns without calling again</li><li>The stack running out</li><li>ret</li></ul><details><summary>Show the answer</summary><p><b>The base case returns without calling again</b> Without a base case it would recurse until it crashed.</p></details></li><li><div class="q">In fib, why is fib(n - 1) moved to r12 before the second call?</div><ul><li>The second call would overwrite rax</li><li>r12 holds the result</li><li>To align the stack</li></ul><details><summary>Show the answer</summary><p><b>The second call would overwrite rax</b> And r12 was saved, so it is the function&#39;s to use.</p></details></li><li><div class="q">What happens when recursion goes far too deep?</div><ul><li>The stack runs out and the program crashes with a segmentation fault</li><li>The program slows down but finishes</li><li>The assembler warns</li></ul><details><summary>Show the answer</summary><p><b>The stack runs out and the program crashes with a segmentation fault</b> A stack overflow.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-stack-frames-and-locals/"><span class="mono">previous</span><b>5.03 Stack Frames and Locals</b></a>
+      <a class="lp-next" href="../5-05-working-with-c/"><span class="mono">next</span><b>5.05 Working with C</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/5-04-recursion"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>asyncio · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/7-06-asyncio/">
+  <meta name="description" content="Thousands of waits on one thread - coroutines with async def and await, asyncio.run, running tasks at the same time with gather and TaskGroup, timeouts and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="asyncio · Python · Xenon">
+  <meta property="og:description" content="Thousands of waits on one thread - coroutines with async def and await, asyncio.run, running tasks at the same time with gather and TaskGroup, timeouts and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/7-06-asyncio/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="asyncio · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="asyncio · Python · Xenon">
+  <meta name="twitter:description" content="Thousands of waits on one thread - coroutines with async def and await, asyncio.run, running tasks at the same time with gather and TaskGroup, timeouts and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Advanced Python</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">asyncio</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.06</b></span><span>6 of 6 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Thousands of waits on one thread - coroutines with async def and await, asyncio.run, running tasks at the same time with gather and TaskGroup, timeouts and cancellation, async with and async for, queues, and how to choose between asyncio, threads and processes.</p>
+      <div class="prose">
+<h2>One thread, many waits</h2>
+<p>Threads (lesson 7.05) overlap waiting, but each costs memory and switching between them is up to the operating system. <strong>asyncio</strong> overlaps waiting on a single thread: each task says where it is willing to pause (<code>await</code>), and an <strong>event loop</strong> runs another task while it waits. Servers and clients that juggle thousands of connections use it.</p>
+<h2>Coroutines</h2>
+<p><code>async def</code> makes a <strong>coroutine function</strong>. Calling it does not run it; it returns a coroutine object, which runs when it is awaited or handed to the event loop:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> asyncio
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">greet</span>(name, delay):
+    <span class="tk-k">await</span> asyncio.<span class="tk-f">sleep</span>(delay)          <span class="tk-c"># pause here; other tasks may run</span>
+    <span class="tk-f">print</span>(<span class="tk-s">&quot;hello&quot;</span>, name)
+    <span class="tk-k">return</span> name.<span class="tk-f">upper</span>()
+
+result = asyncio.<span class="tk-f">run</span>(<span class="tk-f">greet</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">0.1</span>))   <span class="tk-c"># starts the event loop and runs until done</span>
+<span class="tk-f">print</span>(result)</code></pre></div>
+<p><code>await</code> can only be used inside an <code>async def</code>. <code>asyncio.run</code> is the bridge from ordinary code: call it once, at the top.</p>
+<p>Never call <code>time.sleep</code> (or any other blocking function) inside a coroutine: it freezes the whole loop, and every other task waits too. Use <code>await asyncio.sleep</code>.</p>
+<h2>Running several at once: gather</h2>
+<p>Awaiting one coroutine after another runs them one after another. To run them <strong>together</strong>, use <code>asyncio.gather</code>, which returns their results in the order given:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> asyncio
+<span class="tk-k">import</span> time
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">fetch</span>(n):
+    <span class="tk-k">await</span> asyncio.<span class="tk-f">sleep</span>(<span class="tk-n">0.2</span>)
+    <span class="tk-k">return</span> n * <span class="tk-n">10</span>
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">main</span>():
+    start = time.<span class="tk-f">perf_counter</span>()
+    results = <span class="tk-k">await</span> asyncio.<span class="tk-f">gather</span>(*(<span class="tk-f">fetch</span>(n) <span class="tk-k">for</span> n <span class="tk-k">in</span> <span class="tk-f">range</span>(<span class="tk-n">5</span>)))
+    <span class="tk-f">print</span>(results, <span class="tk-s">f&quot;{time.perf_counter() - start:.1f} s&quot;</span>)   <span class="tk-c"># [0, 10, 20, 30, 40] 0.2 s</span>
+
+asyncio.<span class="tk-f">run</span>(<span class="tk-f">main</span>())</code></pre></div>
+<h2>TaskGroup</h2>
+<p><code>asyncio.TaskGroup</code> (Python 3.11+) is the safer way to start tasks: when the <code>async with</code> block ends, all of them have finished, and if one fails the others are cancelled and the errors are raised together.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> asyncio
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">work</span>(name, seconds):
+    <span class="tk-k">await</span> asyncio.<span class="tk-f">sleep</span>(seconds)
+    <span class="tk-k">return</span> <span class="tk-s">f&quot;{name} done&quot;</span>
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">main</span>():
+    <span class="tk-k">async</span> <span class="tk-k">with</span> asyncio.<span class="tk-f">TaskGroup</span>() <span class="tk-k">as</span> group:
+        a = group.<span class="tk-f">create_task</span>(<span class="tk-f">work</span>(<span class="tk-s">&quot;a&quot;</span>, <span class="tk-n">0.1</span>))
+        b = group.<span class="tk-f">create_task</span>(<span class="tk-f">work</span>(<span class="tk-s">&quot;b&quot;</span>, <span class="tk-n">0.2</span>))
+    <span class="tk-f">print</span>(a.<span class="tk-f">result</span>(), b.<span class="tk-f">result</span>())
+
+asyncio.<span class="tk-f">run</span>(<span class="tk-f">main</span>())</code></pre></div>
+<h2>Timeouts and cancellation</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> asyncio
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">slow</span>():
+    <span class="tk-k">await</span> asyncio.<span class="tk-f">sleep</span>(<span class="tk-n">10</span>)
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">main</span>():
+    <span class="tk-k">try</span>:
+        <span class="tk-k">async</span> <span class="tk-k">with</span> asyncio.<span class="tk-f">timeout</span>(<span class="tk-n">0.1</span>):
+            <span class="tk-k">await</span> <span class="tk-f">slow</span>()
+    <span class="tk-k">except</span> TimeoutError:
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;gave up after 0.1 s&quot;</span>)
+
+asyncio.<span class="tk-f">run</span>(<span class="tk-f">main</span>())</code></pre></div>
+<p>A timed-out or cancelled task receives <code>asyncio.CancelledError</code> at the <code>await</code> where it was paused, so <code>try/finally</code> inside it still cleans up.</p>
+<h2>async with, async for and queues</h2>
+<p>Some resources need to wait while opening or closing (a network connection); they are used with <code>async with</code>. Some produce values over time; they are looped over with <code>async for</code>. An <strong>async generator</strong> is an <code>async def</code> with <code>yield</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> asyncio
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">ticker</span>(count):
+    <span class="tk-k">for</span> i <span class="tk-k">in</span> <span class="tk-f">range</span>(count):
+        <span class="tk-k">await</span> asyncio.<span class="tk-f">sleep</span>(<span class="tk-n">0.05</span>)
+        <span class="tk-k">yield</span> i
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">main</span>():
+    <span class="tk-k">async</span> <span class="tk-k">for</span> tick <span class="tk-k">in</span> <span class="tk-f">ticker</span>(<span class="tk-n">3</span>):
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;tick&quot;</span>, tick)
+
+asyncio.<span class="tk-f">run</span>(<span class="tk-f">main</span>())</code></pre></div>
+<p><code>asyncio.Queue</code> works like <code>queue.Queue</code> from lesson 7.05, but <code>put</code> and <code>get</code> are awaited:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> asyncio
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">producer</span>(q):
+    <span class="tk-k">for</span> n <span class="tk-k">in</span> <span class="tk-f">range</span>(<span class="tk-n">5</span>):
+        <span class="tk-k">await</span> q.<span class="tk-f">put</span>(n)
+    <span class="tk-k">await</span> q.<span class="tk-f">put</span>(<span class="tk-k">None</span>)
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">consumer</span>(q, seen):
+    <span class="tk-k">while</span> (item := <span class="tk-k">await</span> q.<span class="tk-f">get</span>()) <span class="tk-k">is</span> <span class="tk-k">not</span> <span class="tk-k">None</span>:
+        seen.<span class="tk-f">append</span>(item * item)
+
+<span class="tk-k">async</span> <span class="tk-k">def</span> <span class="tk-f">main</span>():
+    q = asyncio.<span class="tk-f">Queue</span>(maxsize=<span class="tk-n">2</span>)
+    seen = []
+    <span class="tk-k">await</span> asyncio.<span class="tk-f">gather</span>(<span class="tk-f">producer</span>(q), <span class="tk-f">consumer</span>(q, seen))
+    <span class="tk-f">print</span>(seen)
+
+asyncio.<span class="tk-f">run</span>(<span class="tk-f">main</span>())</code></pre></div>
+<p>(<code>:=</code> is the assignment expression: it assigns and gives the value in one step.)</p>
+<h2>Blocking code inside asyncio</h2>
+<p>If you must call a slow ordinary function, hand it to a thread so the loop keeps running: <code>await asyncio.to_thread(slow_function, arg)</code>.</p>
+<h2>Which one?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Choose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>a handful of slow calls, ordinary libraries</td>
+<td><code>ThreadPoolExecutor</code></td>
+</tr>
+<tr>
+<td>thousands of connections, libraries that support asyncio</td>
+<td><code>asyncio</code></td>
+</tr>
+<tr>
+<td>heavy calculation in Python</td>
+<td><code>ProcessPoolExecutor</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/7.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/7.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-05-threads-and-processes/"><span class="mono">previous</span><b>7.05 Threads and Processes</b></a>
+      <a class="lp-next" href="../8-01-logging/"><span class="mono">next</span><b>8.01 Logging</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/7-06-asyncio"></script>
+</body>
+</html>

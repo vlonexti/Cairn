@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Scope and Closures · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/3-03-scope-and-closures/">
+  <meta name="description" content="Where names live - local and global scope, the LEGB lookup order, global and nonlocal, functions defined inside functions, closures that remember values, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Scope and Closures · Python · Xenon">
+  <meta property="og:description" content="Where names live - local and global scope, the LEGB lookup order, global and nonlocal, functions defined inside functions, closures that remember values, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/3-03-scope-and-closures/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scope and Closures · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Scope and Closures · Python · Xenon">
+  <meta name="twitter:description" content="Where names live - local and global scope, the LEGB lookup order, global and nonlocal, functions defined inside functions, closures that remember values, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Functions, Modules and Files</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Scope and Closures</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Where names live - local and global scope, the LEGB lookup order, global and nonlocal, functions defined inside functions, closures that remember values, and lambda expressions.</p>
+      <div class="prose">
+<h2>Local and global</h2>
+<p>A name assigned inside a function is <strong>local</strong>: it exists only while the function runs and does not affect a name outside with the same spelling:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>count = <span class="tk-n">10</span>
+
+<span class="tk-k">def</span> <span class="tk-f">reset</span>():
+    count = <span class="tk-n">0</span>          <span class="tk-c"># a new LOCAL name; the global count is untouched</span>
+    <span class="tk-k">return</span> count
+
+<span class="tk-f">reset</span>()
+<span class="tk-f">print</span>(count)           <span class="tk-c"># 10</span></code></pre></div>
+<p>Names are looked up in the order <strong>L</strong>ocal, <strong>E</strong>nclosing functions, <strong>G</strong>lobal (the module), <strong>B</strong>uilt-in (<code>print</code>, <code>len</code>): the <strong>LEGB</strong> rule. Reading a global inside a function works; assigning to it creates a local, unless you say otherwise.</p>
+<h2>global and nonlocal</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>total = <span class="tk-n">0</span>
+
+<span class="tk-k">def</span> <span class="tk-f">add</span>(n):
+    <span class="tk-k">global</span> total
+    total += n
+
+<span class="tk-f">add</span>(<span class="tk-n">5</span>)
+<span class="tk-f">print</span>(total)            <span class="tk-c"># 5</span></code></pre></div>
+<p><code>global</code> is rarely a good idea: functions that change globals are hard to test and reason about. Pass values in and return results instead. <code>nonlocal</code> does the same for a variable of an <strong>enclosing</strong> function, which is how closures keep state (below).</p>
+<p>A common error: reading a variable that is assigned <strong>later</strong> in the same function raises <code>UnboundLocalError</code>, because the assignment makes it local for the whole function.</p>
+<h2>Functions inside functions</h2>
+<p>A function can define another function, which can see the outer function&#39;s names:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">make_greeter</span>(greeting):
+    <span class="tk-k">def</span> <span class="tk-f">greet</span>(name):
+        <span class="tk-k">return</span> <span class="tk-s">f&quot;{greeting}, {name}!&quot;</span>
+    <span class="tk-k">return</span> greet
+
+hello = <span class="tk-f">make_greeter</span>(<span class="tk-s">&quot;Hello&quot;</span>)
+howdy = <span class="tk-f">make_greeter</span>(<span class="tk-s">&quot;Howdy&quot;</span>)
+<span class="tk-f">print</span>(<span class="tk-f">hello</span>(<span class="tk-s">&quot;Ada&quot;</span>), <span class="tk-f">howdy</span>(<span class="tk-s">&quot;Grace&quot;</span>))</code></pre></div>
+<p><code>greet</code> remembers <code>greeting</code> even after <code>make_greeter</code> has returned. A function together with the variables it remembers is a <strong>closure</strong>.</p>
+<h2>Closures with state</h2>
+<p>With <code>nonlocal</code>, a closure can update what it remembers:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">make_counter</span>():
+    count = <span class="tk-n">0</span>
+    <span class="tk-k">def</span> <span class="tk-f">next_value</span>():
+        <span class="tk-k">nonlocal</span> count
+        count += <span class="tk-n">1</span>
+        <span class="tk-k">return</span> count
+    <span class="tk-k">return</span> next_value
+
+counter = <span class="tk-f">make_counter</span>()
+<span class="tk-f">print</span>(<span class="tk-f">counter</span>(), <span class="tk-f">counter</span>(), <span class="tk-f">counter</span>())    <span class="tk-c"># 1 2 3</span></code></pre></div>
+<p>Each call to <code>make_counter</code> creates a separate <code>count</code>. For anything larger, a class (lesson 4.01) is usually clearer.</p>
+<h2>lambda</h2>
+<p>A <strong>lambda</strong> is a small anonymous function written as an expression: <code>lambda parameters: expression</code>. It is handy where a short function is passed to another:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>square = <span class="tk-k">lambda</span> x: x * x
+<span class="tk-f">print</span>(<span class="tk-f">square</span>(<span class="tk-n">7</span>))
+pairs = [(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>), (<span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-n">85</span>), (<span class="tk-s">&quot;Linus&quot;</span>, <span class="tk-n">21</span>)]
+<span class="tk-f">print</span>(<span class="tk-f">sorted</span>(pairs, key=<span class="tk-k">lambda</span> pair: pair[<span class="tk-n">1</span>]))</code></pre></div>
+<p>Keep lambdas to one simple expression; anything more deserves a <code>def</code> with a name.</p>
+<h2>A closure trap</h2>
+<p>Closures remember <strong>variables</strong>, not values. Lambdas made in a loop all see the loop variable&#39;s final value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>funcs = [<span class="tk-k">lambda</span>: i <span class="tk-k">for</span> i <span class="tk-k">in</span> <span class="tk-f">range</span>(<span class="tk-n">3</span>)]
+<span class="tk-f">print</span>([<span class="tk-f">f</span>() <span class="tk-k">for</span> f <span class="tk-k">in</span> funcs])               <span class="tk-c"># [2, 2, 2]</span>
+funcs = [<span class="tk-k">lambda</span> i=i: i <span class="tk-k">for</span> i <span class="tk-k">in</span> <span class="tk-f">range</span>(<span class="tk-n">3</span>)] <span class="tk-c"># a default captures the current value</span>
+<span class="tk-f">print</span>([<span class="tk-f">f</span>() <span class="tk-k">for</span> f <span class="tk-k">in</span> funcs])               <span class="tk-c"># [0, 1, 2]</span></code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-parameters-and-arguments/"><span class="mono">previous</span><b>3.02 Parameters and Arguments</b></a>
+      <a class="lp-next" href="../3-04-modules-and-packages/"><span class="mono">next</span><b>3.04 Modules and Packages</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/3-03-scope-and-closures"></script>
+</body>
+</html>

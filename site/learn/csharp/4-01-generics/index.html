@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Generics · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/4-01-generics/">
+  <meta name="description" content="Writing type-safe code that works for any type - generic methods and classes, type inference, constraints with where (class, struct, new(), interfaces,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Generics · C# · Xenon">
+  <meta property="og:description" content="Writing type-safe code that works for any type - generic methods and classes, type inference, constraints with where (class, struct, new(), interfaces,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/4-01-generics/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Generics · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Generics · C# · Xenon">
+  <meta name="twitter:description" content="Writing type-safe code that works for any type - generic methods and classes, type inference, constraints with where (class, struct, new(), interfaces,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Generics, Delegates and Errors</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Generics</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Writing type-safe code that works for any type - generic methods and classes, type inference, constraints with where (class, struct, new(), interfaces, notnull), generic interfaces, default(T), covariance in IEnumerable and IReadOnlyList, and why generics beat object.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>Without generics, a container for &quot;anything&quot; stores <code>object</code>. Every read needs a cast, mistakes show up only when the program runs, and value types get <strong>boxed</strong> (wrapped in an object) on the way in:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> list = <span class="tk-k">new</span> <span class="tk-t">System</span>.<span class="tk-t">Collections</span>.<span class="tk-f">ArrayList</span>();   <span class="tk-c">// the pre-generics collection</span>
+list.<span class="tk-f">Add</span>(<span class="tk-n">42</span>);
+list.<span class="tk-f">Add</span>(<span class="tk-s">&quot;oops&quot;</span>);                                  <span class="tk-c">// nothing stops this</span>
+<span class="tk-k">int</span> first = (<span class="tk-k">int</span>)list[<span class="tk-n">0</span>]!;                         <span class="tk-c">// a cast at every read</span>
+<span class="tk-k">int</span> second = (<span class="tk-k">int</span>)list[<span class="tk-n">1</span>]!;                        <span class="tk-c">// InvalidCastException at run time</span></code></pre></div>
+<p><strong>Generics</strong> let you write the code once with a <strong>type parameter</strong> <code>T</code>, and the compiler produces a checked version for every type you use it with: <code>List&lt;int&gt;</code>, <code>List&lt;string&gt;</code>, <code>Dictionary&lt;string, Order&gt;</code>.</p>
+<h2>Generic methods</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span>[] numbers = [<span class="tk-n">4</span>, <span class="tk-n">9</span>, <span class="tk-n">2</span>];
+<span class="tk-k">string</span>[] words = [<span class="tk-s">&quot;pear&quot;</span>, <span class="tk-s">&quot;fig&quot;</span>];
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Last</span>(numbers));          <span class="tk-c">// T inferred as int</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Last</span>(words));            <span class="tk-c">// T inferred as string</span>
+<span class="tk-f">Swap</span>(<span class="tk-k">ref</span> numbers[<span class="tk-n">0</span>], <span class="tk-k">ref</span> numbers[<span class="tk-n">2</span>]);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, numbers));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Largest</span>(words) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-f">Largest</span>(numbers));
+
+<span class="tk-k">static</span> T <span class="tk-t">Last</span>&lt;T&gt;(IReadOnlyList&lt;T&gt; items) =&gt; items[^<span class="tk-n">1</span>];
+
+<span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-t">Swap</span>&lt;T&gt;(<span class="tk-k">ref</span> T a, <span class="tk-k">ref</span> T b) =&gt; (a, b) = (b, a);
+
+<span class="tk-k">static</span> T <span class="tk-t">Largest</span>&lt;T&gt;(IEnumerable&lt;T&gt; items) <span class="tk-k">where</span> T : IComparable&lt;T&gt;
+{
+    <span class="tk-k">using</span> <span class="tk-k">var</span> e = items.<span class="tk-f">GetEnumerator</span>();
+    <span class="tk-k">if</span> (!e.<span class="tk-f">MoveNext</span>()) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">InvalidOperationException</span>(<span class="tk-s">&quot;empty&quot;</span>);
+    T best = e.<span class="tk-t">Current</span>;
+    <span class="tk-k">while</span> (e.<span class="tk-f">MoveNext</span>()) <span class="tk-k">if</span> (e.<span class="tk-t">Current</span>.<span class="tk-f">CompareTo</span>(best) &gt; <span class="tk-n">0</span>) best = e.<span class="tk-t">Current</span>;
+    <span class="tk-k">return</span> best;
+}</code></pre></div>
+<p>The compiler <strong>infers</strong> <code>T</code> from the arguments, so you rarely write <code>Last&lt;int&gt;(...)</code>.</p>
+<h2>Constraints</h2>
+<p><code>where T : ...</code> limits which types may be used, so the body can rely on what they offer:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Constraint</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>where T : IComparable&lt;T&gt;</code></td>
+<td>T implements that interface: <code>CompareTo</code> can be called</td>
+</tr>
+<tr>
+<td><code>where T : class</code> / <code>struct</code></td>
+<td>T is a reference / value type</td>
+</tr>
+<tr>
+<td><code>where T : new()</code></td>
+<td>T has a public parameterless constructor: <code>new T()</code></td>
+</tr>
+<tr>
+<td><code>where T : notnull</code></td>
+<td>T is not a nullable type</td>
+</tr>
+<tr>
+<td><code>where T : Shape</code></td>
+<td>T is <code>Shape</code> or derives from it</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Generic classes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> stack = <span class="tk-k">new</span> <span class="tk-t">BoundedStack</span>&lt;<span class="tk-k">string</span>&gt;(<span class="tk-n">2</span>);
+stack.<span class="tk-f">Push</span>(<span class="tk-s">&quot;a&quot;</span>);
+stack.<span class="tk-f">Push</span>(<span class="tk-s">&quot;b&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(stack.<span class="tk-f">TryPush</span>(<span class="tk-s">&quot;c&quot;</span>));     <span class="tk-c">// False: full</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(stack.<span class="tk-f">Pop</span>() + stack.<span class="tk-f">Peek</span>());
+
+<span class="tk-k">var</span> pair = <span class="tk-k">new</span> <span class="tk-t">Pair</span>&lt;<span class="tk-k">string</span>, <span class="tk-k">int</span>&gt;(<span class="tk-s">&quot;age&quot;</span>, <span class="tk-n">36</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(pair);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(pair.<span class="tk-f">Swap</span>());
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">BoundedStack</span>&lt;T&gt;(<span class="tk-k">int</span> capacity)
+{
+    <span class="tk-k">private</span> <span class="tk-k">readonly</span> <span class="tk-t">List</span>&lt;T&gt; _items = <span class="tk-k">new</span>();
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-t">Count</span> =&gt; _items.<span class="tk-t">Count</span>;
+
+    <span class="tk-k">public</span> <span class="tk-k">bool</span> <span class="tk-f">TryPush</span>(T item)
+    {
+        <span class="tk-k">if</span> (_items.<span class="tk-t">Count</span> &gt;= capacity) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+        _items.<span class="tk-f">Add</span>(item);
+        <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Push</span>(T item)
+    {
+        <span class="tk-k">if</span> (!<span class="tk-f">TryPush</span>(item)) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">InvalidOperationException</span>(<span class="tk-s">&quot;stack is full&quot;</span>);
+    }
+
+    <span class="tk-k">public</span> T <span class="tk-f">Pop</span>()
+    {
+        T top = <span class="tk-f">Peek</span>();
+        _items.<span class="tk-f">RemoveAt</span>(_items.<span class="tk-t">Count</span> - <span class="tk-n">1</span>);
+        <span class="tk-k">return</span> top;
+    }
+
+    <span class="tk-k">public</span> T <span class="tk-f">Peek</span>() =&gt; _items.<span class="tk-t">Count</span> &gt; <span class="tk-n">0</span> ? _items[^<span class="tk-n">1</span>] : <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">InvalidOperationException</span>(<span class="tk-s">&quot;stack is empty&quot;</span>);
+}
+
+<span class="tk-k">public</span> <span class="tk-k">record</span> <span class="tk-t">Pair</span>&lt;TFirst, TSecond&gt;(TFirst <span class="tk-t">First</span>, TSecond <span class="tk-t">Second</span>)
+{
+    <span class="tk-k">public</span> <span class="tk-t">Pair</span>&lt;TSecond, TFirst&gt; <span class="tk-f">Swap</span>() =&gt; <span class="tk-k">new</span>(<span class="tk-t">Second</span>, <span class="tk-t">First</span>);
+}</code></pre></div>
+<p>Name type parameters <code>T</code> when there is one, and <code>TKey</code>, <code>TValue</code>, <code>TResult</code> and so on when there are several.</p>
+<h2>default(T)</h2>
+<p><code>default(T)</code> (or just <code>default</code> when the type is known) is <code>0</code> for numbers, <code>false</code>, and <code>null</code> for reference types. It is the usual &quot;nothing found&quot; result of <code>TryGet</code>-style methods:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> ages = <span class="tk-k">new</span> <span class="tk-t">Dictionary</span>&lt;<span class="tk-k">string</span>, <span class="tk-k">int</span>&gt; { [<span class="tk-s">&quot;Ada&quot;</span>] = <span class="tk-n">36</span> };
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">GetOr</span>(ages, <span class="tk-s">&quot;Bob&quot;</span>, -<span class="tk-n">1</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">FirstOrNothing</span>(<span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">string</span>&gt;()) ?? <span class="tk-s">&quot;(none)&quot;</span>);
+
+<span class="tk-k">static</span> TValue <span class="tk-t">GetOr</span>&lt;TKey, TValue&gt;(<span class="tk-t">Dictionary</span>&lt;TKey, TValue&gt; d, TKey key, TValue fallback) <span class="tk-k">where</span> TKey : notnull
+    =&gt; d.<span class="tk-f">TryGetValue</span>(key, <span class="tk-k">out</span> <span class="tk-k">var</span> v) ? v : fallback;
+
+<span class="tk-k">static</span> T? <span class="tk-t">FirstOrNothing</span>&lt;T&gt;(<span class="tk-t">List</span>&lt;T&gt; items) <span class="tk-k">where</span> T : <span class="tk-k">class</span> =&gt; items.<span class="tk-t">Count</span> &gt; <span class="tk-n">0</span> ? items[<span class="tk-n">0</span>] : <span class="tk-k">default</span>;</code></pre></div>
+<h2>Variance</h2>
+<p><code>IEnumerable&lt;T&gt;</code> is <strong>covariant</strong>: an <code>IEnumerable&lt;Circle&gt;</code> can be used where an <code>IEnumerable&lt;Shape&gt;</code> is expected, because you only read from it. <code>List&lt;T&gt;</code> is not: a <code>List&lt;Circle&gt;</code> is not a <code>List&lt;Shape&gt;</code>, since someone could add a <code>Square</code> to it. This is why methods should accept <code>IEnumerable&lt;T&gt;</code> or <code>IReadOnlyList&lt;T&gt;</code> where they only read: callers can pass lists of more specific types.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">List</span>&lt;<span class="tk-t">Circle</span>&gt; circles = [<span class="tk-k">new</span>(<span class="tk-n">1</span>), <span class="tk-k">new</span>(<span class="tk-n">2</span>)];
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">TotalArea</span>(circles).<span class="tk-f">ToString</span>(<span class="tk-s">&quot;F2&quot;</span>));     <span class="tk-c">// fine: IEnumerable&lt;Shape&gt; accepts them</span>
+
+<span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">TotalArea</span>(IEnumerable&lt;<span class="tk-t">Shape</span>&gt; shapes) =&gt; shapes.<span class="tk-f">Sum</span>(s =&gt; s.<span class="tk-f">Area</span>());
+
+<span class="tk-k">public</span> <span class="tk-k">abstract</span> <span class="tk-k">record</span> <span class="tk-t">Shape</span> { <span class="tk-k">public</span> <span class="tk-k">abstract</span> <span class="tk-k">double</span> <span class="tk-f">Area</span>(); }
+<span class="tk-k">public</span> <span class="tk-k">record</span> <span class="tk-f">Circle</span>(<span class="tk-k">double</span> R) : <span class="tk-t">Shape</span> { <span class="tk-k">public</span> <span class="tk-k">override</span> <span class="tk-k">double</span> <span class="tk-f">Area</span>() =&gt; <span class="tk-t">Math</span>.PI * R * R; }</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-static-members-extension-methods-and-namespaces/"><span class="mono">previous</span><b>3.05 Static Members, Extension Methods and Namespaces</b></a>
+      <a class="lp-next" href="../4-02-delegates-lambdas-and-events/"><span class="mono">next</span><b>4.02 Delegates, Lambdas and Events</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/4-01-generics"></script>
+</body>
+</html>

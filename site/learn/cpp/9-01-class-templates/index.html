@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Class Templates · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/9-01-class-templates/">
+  <meta name="description" content="A class template is a pattern for classes, parameterized by type: Box&lt;int , Box&lt;std::string . It is how std::vector&lt;T works. The compiler can often deduce…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Class Templates · C++ · Xenon">
+  <meta property="og:description" content="A class template is a pattern for classes, parameterized by type: Box&lt;int , Box&lt;std::string . It is how std::vector&lt;T works. The compiler can often deduce…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/9-01-class-templates/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Class Templates · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Class Templates · C++ · Xenon">
+  <meta name="twitter:description" content="A class template is a pattern for classes, parameterized by type: Box&lt;int , Box&lt;std::string . It is how std::vector&lt;T works. The compiler can often deduce…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Templates and Exceptions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Class Templates</h1>
+      <div class="readout lp-readout"><span>lesson <b>9.01</b></span><span>1 of 6 in milestone 9</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>class template</strong> is a pattern for classes, parameterized by type: <code>Box&lt;int&gt;</code>, <code>Box&lt;std::string&gt;</code>. It is how <code>std::vector&lt;T&gt;</code> works. The compiler can often deduce the arguments (<strong>CTAD</strong>), and <strong>alias templates</strong> give long instantiations short names.</p>
+      <div class="prose">
+<h2>One template, many classes</h2>
+<p><a href="../4-02-function-templates/">4.02 Function Templates</a> parameterized a function by type. A <strong>class template</strong> does the same for a class.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">class</span> <span class="tk-t">Box</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">Box</span>(T value) : m_value{ std::<span class="tk-f">move</span>(value) } {}
+
+    <span class="tk-k">const</span> T&amp; <span class="tk-f">get</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_value; }
+    <span class="tk-k">void</span> <span class="tk-f">set</span>(T value) { m_value = std::<span class="tk-f">move</span>(value); }
+
+<span class="tk-k">private</span>:
+    T m_value{};
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Box</span>&lt;<span class="tk-k">int</span>&gt; a{ <span class="tk-n">5</span> };
+    <span class="tk-t">Box</span>&lt;std::string&gt; b{ <span class="tk-s">&quot;hello&quot;</span> };
+    std::cout &lt;&lt; a.<span class="tk-f">get</span>() &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; b.<span class="tk-f">get</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    T[&quot;template &amp;lt;typename T&amp;gt;&lt;br/&gt;class Box&quot;] --&gt;|&quot;Box&amp;lt;int&amp;gt;&quot;| I[&quot;class Box&amp;lt;int&amp;gt;&lt;br/&gt;int m_value&quot;]
+    T --&gt;|&quot;Box&amp;lt;std::string&amp;gt;&quot;| S[&quot;class Box&amp;lt;std::string&amp;gt;&lt;br/&gt;std::string m_value&quot;]
+    T --&gt;|&quot;Box&amp;lt;Point&amp;gt;&quot;| P[&quot;class Box&amp;lt;Point&amp;gt;&lt;br/&gt;Point m_value&quot;]</pre></div>
+<p>Each distinct set of arguments <strong>instantiates</strong> a separate class. <code>Box&lt;int&gt;</code> and <code>Box&lt;std::string&gt;</code> are unrelated types: neither converts to the other, and each has its own static members.</p>
+<p>Member functions of a class template are instantiated <strong>only if used</strong>. A <code>Box&lt;T&gt;</code> whose <code>T</code> lacks some operation is fine as long as no code calls the member that needs it.</p>
+<h2>Several parameters</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> K, <span class="tk-k">typename</span> V&gt;
+<span class="tk-k">struct</span> <span class="tk-t">Pair</span>
+{
+    K key{};
+    V value{};
+};
+
+<span class="tk-t">Pair</span>&lt;std::string, <span class="tk-k">int</span>&gt; score{ <span class="tk-s">&quot;Ann&quot;</span>, <span class="tk-n">90</span> };</code></pre></div>
+<h2>Defining members outside the class</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">class</span> <span class="tk-t">Stack</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">push</span>(<span class="tk-k">const</span> T&amp; item);
+    T <span class="tk-f">pop</span>();
+    <span class="tk-k">bool</span> <span class="tk-f">empty</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_items.<span class="tk-f">empty</span>(); }
+
+<span class="tk-k">private</span>:
+    std::vector&lt;T&gt; m_items{};
+};
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">void</span> <span class="tk-t">Stack</span>&lt;T&gt;::<span class="tk-f">push</span>(<span class="tk-k">const</span> T&amp; item)
+{
+    m_items.<span class="tk-f">push_back</span>(item);
+}
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+T <span class="tk-t">Stack</span>&lt;T&gt;::<span class="tk-f">pop</span>()
+{
+    T top{ std::<span class="tk-f">move</span>(m_items.<span class="tk-f">back</span>()) };
+    m_items.<span class="tk-f">pop_back</span>();
+    <span class="tk-k">return</span> top;
+}</code></pre></div>
+<p>Each out-of-class definition repeats the template header and qualifies the name with <code>Stack&lt;T&gt;::</code>. Inside the class&#39;s own scope, the bare name <code>Stack</code> means <code>Stack&lt;T&gt;</code>.</p>
+<div class="callout important"><div class="callout-title"><span>The whole template belongs in the header</span></div><div class="callout-body"><p>As with function templates, the compiler needs the full definition at every point of use. Declarations and member definitions all go in the header.</p>
+</div></div>
+<h2>Class template argument deduction</h2>
+<p>Since C++17 the compiler can deduce a class template&#39;s arguments from the constructor arguments. This is <strong>CTAD</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::pair p{ <span class="tk-n">1</span>, <span class="tk-n">2.5</span> };       <span class="tk-c">// std::pair&lt;int, double&gt;</span>
+std::vector v{ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> };    <span class="tk-c">// std::vector&lt;int&gt;</span>
+<span class="tk-t">Box</span> b{ <span class="tk-n">3.14</span> };               <span class="tk-c">// Box&lt;double&gt;</span></code></pre></div>
+<h3>Deduction guides</h3>
+<p>When the default deduction gives the wrong answer, a <strong>deduction guide</strong> states the mapping explicitly.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">Box</span>(<span class="tk-k">const</span> <span class="tk-k">char</span>*) -&gt; <span class="tk-t">Box</span>&lt;std::string&gt;;
+
+<span class="tk-t">Box</span> text{ <span class="tk-s">&quot;hello&quot;</span> };    <span class="tk-c">// Box&lt;std::string&gt;, not Box&lt;const char*&gt;</span></code></pre></div>
+<p>A guide has the form <em>constructor-like signature</em> <code>-&gt;</code> <em>resulting type</em>. It affects only deduction; the object is then constructed by an ordinary constructor of the deduced class.</p>
+<h2>Alias templates</h2>
+<p>A <code>using</code> alias can itself take template parameters.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">using</span> <span class="tk-t">Grid</span> = std::vector&lt;std::vector&lt;T&gt;&gt;;
+
+<span class="tk-t">Grid</span>&lt;<span class="tk-k">char</span>&gt; <span class="tk-f">map</span>(<span class="tk-n">10</span>, std::vector&lt;<span class="tk-k">char</span>&gt;(<span class="tk-n">10</span>, <span class="tk-s">'.'</span>));
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> V&gt;
+<span class="tk-k">using</span> <span class="tk-t">StringMap</span> = std::map&lt;std::string, V&gt;;</code></pre></div>
+<p>An alias template is purely a shorthand. <code>Grid&lt;char&gt;</code> <strong>is</strong> <code>std::vector&lt;std::vector&lt;char&gt;&gt;</code>, not a new type.</p>
+<h2>Default template arguments</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T, <span class="tk-k">typename</span> <span class="tk-t">Container</span> = std::vector&lt;T&gt;&gt;
+<span class="tk-k">class</span> <span class="tk-t">Stack2</span>
+{
+<span class="tk-k">private</span>:
+    <span class="tk-t">Container</span> m_items{};
+};
+
+<span class="tk-t">Stack2</span>&lt;<span class="tk-k">int</span>&gt; a{};                     <span class="tk-c">// stores in a std::vector&lt;int&gt;</span>
+<span class="tk-t">Stack2</span>&lt;<span class="tk-k">int</span>, std::deque&lt;<span class="tk-k">int</span>&gt;&gt; b{};    <span class="tk-c">// stores in a std::deque&lt;int&gt;</span></code></pre></div>
+<p>This is how <code>std::stack</code> and <code>std::queue</code> are defined in the standard library: they are <strong>adaptors</strong> that provide an interface over a container you can choose.</p>
+<h2>Templates and inheritance compared</h2>
+<p>Both give &quot;one piece of code, many types&quot;. They differ in when the type is fixed.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Class template</th>
+<th>Virtual functions</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Type chosen</td>
+<td>At compile time</td>
+<td>At run time</td>
+</tr>
+<tr>
+<td>Cost per call</td>
+<td>None; calls can be inlined</td>
+<td>An indirect call</td>
+</tr>
+<tr>
+<td>Different types in one container</td>
+<td>No: <code>Box&lt;int&gt;</code> and <code>Box&lt;double&gt;</code> are unrelated</td>
+<td>Yes, through a base pointer</td>
+</tr>
+<tr>
+<td>Requirement on the type</td>
+<td>It must support the operations used</td>
+<td>It must derive from the base</td>
+</tr>
+</tbody></table>
+</div>
+<p>They are sometimes called <strong>static</strong> and <strong>dynamic polymorphism</strong>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/9.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/9.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-07-multiple-inheritance-and-virtual-base-classes/"><span class="mono">previous</span><b>8.07 Multiple Inheritance and Virtual Base Classes</b></a>
+      <a class="lp-next" href="../9-02-non-type-parameters-and-template-specialization/"><span class="mono">next</span><b>9.02 Non-Type Parameters and Template Specialization</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/9-01-class-templates"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

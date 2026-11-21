@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Checking Your Understanding with Experiments · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/5-02-checking-your-understanding-with-experiments/">
+  <meta name="description" content="Confirming what you think a page says with small, focused programs - one question per experiment, predicting the result first, trying the edge cases, using…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Checking Your Understanding with Experiments · Reading Documentation · Xenon">
+  <meta property="og:description" content="Confirming what you think a page says with small, focused programs - one question per experiment, predicting the result first, trying the edge cases, using…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/5-02-checking-your-understanding-with-experiments/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Checking Your Understanding with Experiments · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Checking Your Understanding with Experiments · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="Confirming what you think a page says with small, focused programs - one question per experiment, predicting the result first, trying the edge cases, using…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>From Docs to Working Code</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Checking Your Understanding with Experiments</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 4 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Confirming what you think a page says with small, focused programs - one question per experiment, predicting the result first, trying the edge cases, using Compiler Explorer, turning experiments into learning tests that keep checking the behaviour - and the limits of experiments when behaviour is undefined or unspecified.</p>
+      <div class="prose">
+<h2>Reading is not knowing</h2>
+<p>After reading a reference page you have a <strong>belief</strong> about how a function behaves. A two-minute experiment turns it into knowledge, or shows you misread. Experienced programmers do this constantly, especially for anything with edge cases: rounding, string splitting, time zones, encodings, regular expressions.</p>
+<h2>How to run an experiment</h2>
+<ol>
+<li><strong>One question.</strong> &quot;What does <code>std::round(-2.5)</code> return?&quot; not &quot;how does rounding work?&quot;.</li>
+<li><strong>Predict first.</strong> Write down what you expect before running it. A surprise is the whole point; without a prediction you will not notice one.</li>
+<li><strong>Smallest program.</strong> No framework, no project: a <code>main</code> with a few prints, or a test.</li>
+<li><strong>Cover the edges.</strong> Zero, negative, empty, the boundary value, one past it, the largest value.</li>
+<li><strong>Compare with the page.</strong> If the result disagrees with your reading, re-read. If it disagrees with the page itself, see lesson 5.03.</li>
+</ol>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cmath&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-c">// Question: how do the rounding functions treat halves?</span>
+    <span class="tk-c">// Prediction: round goes away from zero; nearbyint goes to even.</span>
+    <span class="tk-k">for</span> (<span class="tk-k">double</span> x : { <span class="tk-n">0.5</span>, <span class="tk-n">1.5</span>, <span class="tk-n">2.5</span>, -<span class="tk-n">0.5</span>, -<span class="tk-n">2.5</span>, <span class="tk-n">2.4999</span> })
+        std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">&quot;: round &quot;</span> &lt;&lt; std::<span class="tk-f">round</span>(x) &lt;&lt; <span class="tk-s">&quot;, nearbyint &quot;</span> &lt;&lt; std::<span class="tk-f">nearbyint</span>(x)
+                  &lt;&lt; <span class="tk-s">&quot;, trunc &quot;</span> &lt;&lt; std::<span class="tk-f">trunc</span>(x) &lt;&lt; <span class="tk-s">&quot;, cast &quot;</span> &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(x) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>The pages explain the results: <code>std::round</code> rounds halves <strong>away from zero</strong>; <code>std::nearbyint</code> uses the current rounding mode, which is <strong>round-half-to-even</strong> by default (so 0.5 and 2.5 both go to the even neighbour); <code>std::trunc</code> and the cast drop the fraction towards zero. Seeing all four side by side fixes it in memory better than reading four pages.</p>
+<h2>Compiler Explorer</h2>
+<p><strong>godbolt.org</strong> compiles and runs small programs in the browser with many compilers and versions. It is ideal for experiments: you can check whether the behaviour differs between MSVC, GCC and Clang, or between C++17 and C++20, in seconds, and share a link to the result with a colleague.</p>
+<h2>Learning tests</h2>
+<p>An experiment you run once is forgotten; an experiment written as a <strong>test</strong> keeps checking:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">TEST</span>(<span class="tk-s">&quot;std::round rounds halves away from zero&quot;</span>) {
+    <span class="tk-f">CHECK_EQ</span>(std::<span class="tk-f">round</span>(<span class="tk-n">2.5</span>), <span class="tk-n">3.0</span>);
+    <span class="tk-f">CHECK_EQ</span>(std::<span class="tk-f">round</span>(-<span class="tk-n">2.5</span>), -<span class="tk-n">3.0</span>);
+}
+<span class="tk-f">TEST</span>(<span class="tk-s">&quot;our JSON library keeps the order of object keys&quot;</span>) {
+    <span class="tk-f">CHECK_EQ</span>(json::<span class="tk-f">parse</span>(<span class="tk-s">R&quot;({&quot;b&quot;:1,&quot;a&quot;:2})&quot;</span>).<span class="tk-f">keys</span>(), (std::vector&lt;std::string&gt;{ <span class="tk-s">&quot;b&quot;</span>, <span class="tk-s">&quot;a&quot;</span> }));
+}</code></pre></div>
+<p>Tests like the second one are called <strong>learning tests</strong>: they pin down behaviour of a library that your code relies on, especially behaviour the documentation is vague about. When you upgrade the library and one fails, you know immediately which assumption broke, instead of finding out from a bug report.</p>
+<h2>What experiments cannot tell you</h2>
+<p>An experiment shows what <strong>this</strong> compiler, library and machine did <strong>this</strong> time. That is the documented behaviour only when the page promises it:</p>
+<ul>
+<li><strong>Undefined behaviour</strong> can &quot;work&quot; in an experiment and fail elsewhere: reading past the end of an array may print plausible numbers. Never take a successful run as proof that something is allowed.</li>
+<li><strong>Unspecified</strong> and <strong>implementation-defined</strong> results (the order of iteration of an <code>unordered_map</code>, the size of <code>long</code>, the text of <code>what()</code>) may differ between compilers or versions.</li>
+<li><strong>Timing and threads</strong>: a race condition may hide in a hundred runs and appear in the hundred-and-first.</li>
+</ul>
+<p>So the rule is: the page says what you may rely on; the experiment confirms you read it correctly.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-turning-an-example-into-your-code/"><span class="mono">previous</span><b>5.01 Turning an Example into Your Code</b></a>
+      <a class="lp-next" href="../5-03-when-the-docs-are-wrong-or-missing/"><span class="mono">next</span><b>5.03 When the Docs Are Wrong or Missing</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/5-02-checking-your-understanding-with-experiments"></script>
+</body>
+</html>

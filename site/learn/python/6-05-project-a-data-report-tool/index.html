@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Project: A Data Report Tool · Python · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/python/6-05-project-a-data-report-tool/">
+  <meta name="description" content="Bring the whole course together in a command-line tool that reads sales data from CSV, validates it, groups and summarises it by month and product, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Project: A Data Report Tool · Python · Xenon">
+  <meta property="og:description" content="Bring the whole course together in a command-line tool that reads sales data from CSV, validates it, groups and summarises it by month and product, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/python/6-05-project-a-data-report-tool/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Project: A Data Report Tool · Python · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Project: A Data Report Tool · Python · Xenon">
+  <meta name="twitter:description" content="Bring the whole course together in a command-line tool that reads sales data from CSV, validates it, groups and summarises it by month and product, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/python.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Python</a><span>/</span><span>Data and Automation</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Project: A Data Report Tool</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>5 min</span></div>
+      <p class="lp-summary">Bring the whole course together in a command-line tool that reads sales data from CSV, validates it, groups and summarises it by month and product, and writes a text report and a JSON file. This lesson is the design, the structure and the order to build it in.</p>
+      <div class="prose">
+<h2>What it does</h2>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>python sales_report.py sales.csv --from 2026-01-01 --to 2026-06-30 --json summary.json
+
+Sales report 2026-01-01 to 2026-06-30
+Rows: 1 204 read, 1 198 used, 6 rejected (see errors below)
+
+Month       Orders     Revenue
+2026-01        201    12 450.50
+2026-02        188    11 980.00
+...
+Top products
+  1. Green tea        3 120.00
+  2. Mug              2 400.00
+  ...
+Errors
+  line 17: quantity is not a number: &quot;two&quot;
+  ...</code></pre></div>
+<p>The input is a CSV file with a header <code>date,product,quantity,unit_price</code>.</p>
+<h2>The pieces and where they come from</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Lessons</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reading CSV with DictReader, converting fields</td>
+<td>6.02</td>
+</tr>
+<tr>
+<td>Validating rows, collecting errors with line numbers</td>
+<td>4.05, practice 4.05</td>
+</tr>
+<tr>
+<td>A dataclass for a sale</td>
+<td>4.04</td>
+</tr>
+<tr>
+<td>Filtering by date range</td>
+<td>6.03</td>
+</tr>
+<tr>
+<td>Grouping by month and product</td>
+<td>2.05, 5.04 (<code>defaultdict</code>, <code>Counter</code>)</td>
+</tr>
+<tr>
+<td>Sorting the top products</td>
+<td>5.03</td>
+</tr>
+<tr>
+<td>Aligned text output</td>
+<td>1.03 (format specifications)</td>
+</tr>
+<tr>
+<td>JSON output</td>
+<td>6.02</td>
+</tr>
+<tr>
+<td>Command-line arguments, exit codes, stderr</td>
+<td>6.04</td>
+</tr>
+<tr>
+<td>Tests for every function</td>
+<td>5.05</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Structure</h2>
+<p>Keep the tool in small, testable functions, with input and output only at the edges:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">read_rows</span>(lines) -&gt; tuple[list[Sale], list[str]]: ...      <span class="tk-c"># parse and validate</span>
+<span class="tk-k">def</span> <span class="tk-f">in_range</span>(sales, start, end) -&gt; list[Sale]: ...
+<span class="tk-k">def</span> <span class="tk-f">by_month</span>(sales) -&gt; dict[str, tuple[int, float]]: ...        <span class="tk-c"># month -&gt; (orders, revenue)</span>
+<span class="tk-k">def</span> <span class="tk-f">top_products</span>(sales, n) -&gt; list[tuple[str, float]]: ...
+<span class="tk-k">def</span> <span class="tk-f">format_report</span>(...) -&gt; str: ...
+<span class="tk-k">def</span> <span class="tk-f">main</span>(argv=<span class="tk-k">None</span>) -&gt; int: ...                                  <span class="tk-c"># the only function that touches files</span></code></pre></div>
+<p><code>read_rows</code> takes lines rather than a path, so tests can pass a list of strings; <code>main</code> opens the file and passes <code>open(path)</code> to it. The final project of this milestone is exactly these functions, checked by tests.</p>
+<h2>Money</h2>
+<p>Revenue is a sum of <code>quantity × unit_price</code>. Floats can show tiny errors over thousands of rows (lesson 1.04). Either round only when displaying, or work in whole cents (<code>round(float(price) * 100)</code>), or use <code>decimal.Decimal</code> for exact decimal arithmetic. The project uses cents.</p>
+<h2>Order to build in</h2>
+<ol>
+<li><code>read_rows</code> with tests for good rows, each kind of bad row, and blank lines.</li>
+<li><code>by_month</code> and <code>top_products</code>, tested on a few hand-made sales.</li>
+<li><code>format_report</code>, compared against an expected text in a test.</li>
+<li><code>main</code> with argparse; try it on a real CSV exported from a spreadsheet.</li>
+<li>Date filtering and JSON output.</li>
+<li>Run it on messy data: an extra column, a missing header, a different delimiter, an empty file; make each fail clearly.</li>
+</ol>
+<h2>Where to go next</h2>
+<p>With this course you can write scripts and tools for almost any everyday task. From here:</p>
+<ul>
+<li><strong>Data analysis</strong>: <code>pandas</code> for tables, <code>matplotlib</code> for charts, Jupyter notebooks for exploring.</li>
+<li><strong>Web</strong>: <code>requests</code> to call APIs, <code>Flask</code> or <code>FastAPI</code> to build them.</li>
+<li><strong>Automation of the desktop and browser</strong>: <code>openpyxl</code> for Excel files, <code>playwright</code> for web pages.</li>
+<li><strong>Speed</strong>: profile first (<code>cProfile</code>), then reach for better algorithms (the DSA course) before anything else.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/python/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/python/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-automation-scripts/"><span class="mono">previous</span><b>6.04 Automation Scripts</b></a>
+      <a class="lp-next" href="../7-01-decorators/"><span class="mono">next</span><b>7.01 Decorators</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/python/6-05-project-a-data-report-tool"></script>
+</body>
+</html>

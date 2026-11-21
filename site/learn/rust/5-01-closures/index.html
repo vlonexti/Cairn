@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Closures · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/5-01-closures/">
+  <meta name="description" content="Anonymous functions that capture their environment - closure syntax and type inference, capturing by reference, by mutable reference and by value with move,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Closures · Rust · Xenon">
+  <meta property="og:description" content="Anonymous functions that capture their environment - closure syntax and type inference, capturing by reference, by mutable reference and by value with move,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/5-01-closures/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Closures · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Closures · Rust · Xenon">
+  <meta name="twitter:description" content="Anonymous functions that capture their environment - closure syntax and type inference, capturing by reference, by mutable reference and by value with move,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Closures, Iterators and Smart Pointers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Closures</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Anonymous functions that capture their environment - closure syntax and type inference, capturing by reference, by mutable reference and by value with move, the Fn, FnMut and FnOnce traits, passing closures to functions with generics or impl Fn, returning closures, storing them in structs and boxing them as dyn Fn.</p>
+      <div class="prose">
+<h2>Closure syntax</h2>
+<p>A <strong>closure</strong> is an anonymous function that can use variables from the scope where it is created:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> add_one = |x: <span class="tk-k">i32</span>| x + <span class="tk-n">1</span>;                    <span class="tk-c">// types can be written...</span>
+    <span class="tk-k">let</span> double = |x| x * <span class="tk-n">2</span>;                          <span class="tk-c">// ...or inferred from the first use</span>
+    <span class="tk-k">let</span> greet = |name: &amp;<span class="tk-k">str</span>| -&gt; <span class="tk-t">String</span> { <span class="tk-p">format!</span>(<span class="tk-s">&quot;Hello, {name}!&quot;</span>) };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {} {}&quot;</span>, <span class="tk-f">add_one</span>(<span class="tk-n">5</span>), <span class="tk-f">double</span>(<span class="tk-n">21</span>), <span class="tk-f">greet</span>(<span class="tk-s">&quot;Ada&quot;</span>));
+
+    <span class="tk-k">let</span> threshold = <span class="tk-n">10</span>;
+    <span class="tk-k">let</span> is_big = |n: <span class="tk-k">i32</span>| n &gt; threshold;             <span class="tk-c">// captures threshold</span>
+    <span class="tk-k">let</span> values = <span class="tk-p">vec!</span>[<span class="tk-n">4</span>, <span class="tk-n">12</span>, <span class="tk-n">9</span>, <span class="tk-n">30</span>];
+    <span class="tk-k">let</span> big: <span class="tk-t">Vec</span>&lt;<span class="tk-k">i32</span>&gt; = values.<span class="tk-f">iter</span>().<span class="tk-f">copied</span>().<span class="tk-f">filter</span>(|&amp;n| <span class="tk-f">is_big</span>(n)).<span class="tk-f">collect</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{big:?}&quot;</span>);
+}</code></pre></div>
+<p>Unlike <code>fn</code> items, closures can <strong>capture</strong> the variables around them. They are used everywhere iterators, sorting, threads and callbacks take &quot;a bit of code&quot;.</p>
+<h2>How closures capture</h2>
+<p>The compiler picks the least powerful way that works:</p>
+<ol>
+<li><strong>By shared reference</strong> if the closure only reads a variable.</li>
+<li><strong>By mutable reference</strong> if it changes it.</li>
+<li><strong>By value</strong> (moving it in) if it consumes it, or if you write <code>move</code>.</li>
+</ol>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> name = <span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;Ada&quot;</span>);
+    <span class="tk-k">let</span> print = || <span class="tk-p">println!</span>(<span class="tk-s">&quot;{name}&quot;</span>);               <span class="tk-c">// borrows name</span>
+    <span class="tk-f">print</span>();
+    <span class="tk-f">print</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;still usable: {name}&quot;</span>);
+
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> count = <span class="tk-n">0</span>;
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> tick = || count += <span class="tk-n">1</span>;                    <span class="tk-c">// borrows count mutably</span>
+    <span class="tk-f">tick</span>();
+    <span class="tk-f">tick</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;count = {count}&quot;</span>);                     <span class="tk-c">// the mutable borrow ended after the last tick</span>
+
+    <span class="tk-k">let</span> words = <span class="tk-p">vec!</span>[<span class="tk-s">&quot;a&quot;</span>.<span class="tk-f">to_string</span>(), <span class="tk-s">&quot;b&quot;</span>.<span class="tk-f">to_string</span>()];
+    <span class="tk-k">let</span> consume = <span class="tk-k">move</span> || words.<span class="tk-f">len</span>();               <span class="tk-c">// move: the closure owns words now</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">consume</span>());
+    <span class="tk-c">// println!(&quot;{words:?}&quot;);                        // error: words was moved into the closure</span>
+}</code></pre></div>
+<p><code>move</code> is needed when the closure must outlive the current scope, for example when it is returned from a function or sent to another thread.</p>
+<h2>Fn, FnMut and FnOnce</h2>
+<p>Every closure implements one or more of these traits, depending on what it does with its captures:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Trait</th>
+<th>The closure</th>
+<th>Can be called</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Fn</code></td>
+<td>Only reads its captures</td>
+<td>Any number of times, even at the same time</td>
+</tr>
+<tr>
+<td><code>FnMut</code></td>
+<td>Changes its captures</td>
+<td>Many times, one at a time (needs <code>mut</code>)</td>
+</tr>
+<tr>
+<td><code>FnOnce</code></td>
+<td>Moves something out of its captures</td>
+<td>Once</td>
+</tr>
+</tbody></table>
+</div>
+<p>Functions that take closures choose the least demanding bound they can accept:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> apply_twice&lt;F: <span class="tk-f">Fn</span>(<span class="tk-k">i32</span>) -&gt; <span class="tk-k">i32</span>&gt;(f: F, x: <span class="tk-k">i32</span>) -&gt; <span class="tk-k">i32</span> {
+    <span class="tk-f">f</span>(<span class="tk-f">f</span>(x))
+}
+
+<span class="tk-k">fn</span> repeat&lt;F: <span class="tk-f">FnMut</span>()&gt;(times: <span class="tk-k">usize</span>, <span class="tk-k">mut</span> f: F) {
+    <span class="tk-k">for</span> _ <span class="tk-k">in</span> <span class="tk-n">0</span>..times { <span class="tk-f">f</span>(); }
+}
+
+<span class="tk-k">fn</span> finish&lt;F: <span class="tk-f">FnOnce</span>() -&gt; <span class="tk-t">String</span>&gt;(f: F) -&gt; <span class="tk-t">String</span> {
+    <span class="tk-f">f</span>()
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">apply_twice</span>(|x| x * <span class="tk-n">3</span>, <span class="tk-n">2</span>));
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> log = <span class="tk-t">Vec</span>::<span class="tk-f">new</span>();
+    <span class="tk-f">repeat</span>(<span class="tk-n">3</span>, || log.<span class="tk-f">push</span>(<span class="tk-s">&quot;tick&quot;</span>));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{log:?}&quot;</span>);
+    <span class="tk-k">let</span> name = <span class="tk-t">String</span>::<span class="tk-f">from</span>(<span class="tk-s">&quot;done&quot;</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">finish</span>(<span class="tk-k">move</span> || name));             <span class="tk-c">// gives away name: FnOnce</span>
+}</code></pre></div>
+<p>Plain functions work too wherever a closure is expected: <code>apply_twice(i32::abs, -4)</code>.</p>
+<h2>Returning and storing closures</h2>
+<p>Each closure has its own unique, unnamed type. Return one with <code>impl Fn</code>, or box it as a trait object when several different closures must share one type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">multiplier</span>(k: <span class="tk-k">i32</span>) -&gt; <span class="tk-k">impl</span> <span class="tk-f">Fn</span>(<span class="tk-k">i32</span>) -&gt; <span class="tk-k">i32</span> {
+    <span class="tk-k">move</span> |x| x * k                                   <span class="tk-c">// move: k must live inside the closure</span>
+}
+
+<span class="tk-k">struct</span> <span class="tk-t">Button</span> {
+    label: <span class="tk-t">String</span>,
+    on_click: <span class="tk-t">Box</span>&lt;<span class="tk-k">dyn</span> <span class="tk-f">Fn</span>(&amp;<span class="tk-k">str</span>) -&gt; <span class="tk-t">String</span>&gt;,
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> triple = <span class="tk-f">multiplier</span>(<span class="tk-n">3</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">triple</span>(<span class="tk-n">14</span>));
+
+    <span class="tk-k">let</span> buttons = <span class="tk-p">vec!</span>[
+        <span class="tk-t">Button</span> { label: <span class="tk-s">&quot;save&quot;</span>.<span class="tk-f">into</span>(), on_click: <span class="tk-t">Box</span>::<span class="tk-f">new</span>(|l: &amp;<span class="tk-k">str</span>| <span class="tk-p">format!</span>(<span class="tk-s">&quot;saving via {l}&quot;</span>)) },
+        <span class="tk-t">Button</span> { label: <span class="tk-s">&quot;quit&quot;</span>.<span class="tk-f">into</span>(), on_click: <span class="tk-t">Box</span>::<span class="tk-f">new</span>(<span class="tk-k">move</span> |l: &amp;<span class="tk-k">str</span>| <span class="tk-p">format!</span>(<span class="tk-s">&quot;{l} after {}&quot;</span>, <span class="tk-f">triple</span>(<span class="tk-n">1</span>))) },
+    ];
+    <span class="tk-k">for</span> b <span class="tk-k">in</span> &amp;buttons {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, (b.on_click)(&amp;b.label));
+    }
+
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> ops: <span class="tk-t">Vec</span>&lt;(&amp;<span class="tk-k">str</span>, <span class="tk-t">Box</span>&lt;<span class="tk-k">dyn</span> <span class="tk-f">Fn</span>(<span class="tk-k">f64</span>) -&gt; <span class="tk-k">f64</span>&gt;)&gt; = <span class="tk-t">Vec</span>::<span class="tk-f">new</span>();
+    ops.<span class="tk-f">push</span>((<span class="tk-s">&quot;square&quot;</span>, <span class="tk-t">Box</span>::<span class="tk-f">new</span>(|x: <span class="tk-k">f64</span>| x * x)));
+    ops.<span class="tk-f">push</span>((<span class="tk-s">&quot;half&quot;</span>, <span class="tk-t">Box</span>::<span class="tk-f">new</span>(|x: <span class="tk-k">f64</span>| x / <span class="tk-n">2.0</span>)));
+    <span class="tk-k">for</span> (name, op) <span class="tk-k">in</span> &amp;ops {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{name}(6) = {}&quot;</span>, <span class="tk-f">op</span>(<span class="tk-n">6.0</span>));
+    }
+}</code></pre></div>
+<p>Call a closure stored in a field with parentheses around the field: <code>(b.on_click)(...)</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-trait-objects/"><span class="mono">previous</span><b>4.05 Trait Objects</b></a>
+      <a class="lp-next" href="../5-02-iterators-and-adapters/"><span class="mono">next</span><b>5.02 Iterators and Adapters</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/5-01-closures"></script>
+</body>
+</html>

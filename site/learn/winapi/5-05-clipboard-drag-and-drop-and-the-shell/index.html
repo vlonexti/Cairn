@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Clipboard, Drag and Drop and the Shell · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/5-05-clipboard-drag-and-drop-and-the-shell/">
+  <meta name="description" content="Exchanging data with other programs - copying and pasting text through the clipboard, its formats and line endings, accepting files dropped from Explorer,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Clipboard, Drag and Drop and the Shell · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="Exchanging data with other programs - copying and pasting text through the clipboard, its formats and line endings, accepting files dropped from Explorer,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/5-05-clipboard-drag-and-drop-and-the-shell/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Clipboard, Drag and Drop and the Shell · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Clipboard, Drag and Drop and the Shell · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="Exchanging data with other programs - copying and pasting text through the clipboard, its formats and line endings, accepting files dropped from Explorer,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>The System</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Clipboard, Drag and Drop and the Shell</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Exchanging data with other programs - copying and pasting text through the clipboard, its formats and line endings, accepting files dropped from Explorer, file associations and the Recent list, and notifications in the taskbar.</p>
+      <div class="prose">
+<h2>The clipboard</h2>
+<p>The clipboard holds data in one or more <strong>formats</strong> at once: the same copied text can be offered as Unicode text, HTML and RTF, and the pasting program picks the richest one it understands.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">copyText</span>(HWND owner, <span class="tk-k">const</span> std::wstring&amp; text)
+{
+    <span class="tk-k">if</span> (!<span class="tk-f">OpenClipboard</span>(owner)) <span class="tk-k">return</span> <span class="tk-k">false</span>;               <span class="tk-c">// another program may have it open: retry briefly</span>
+    <span class="tk-f">EmptyClipboard</span>();                                      <span class="tk-c">// we become the owner</span>
+    <span class="tk-k">const</span> size_t bytes = (text.<span class="tk-f">size</span>() + <span class="tk-n">1</span>) * <span class="tk-k">sizeof</span>(<span class="tk-k">wchar_t</span>);
+    HGLOBAL mem = <span class="tk-f">GlobalAlloc</span>(GMEM_MOVEABLE, bytes);
+    <span class="tk-k">if</span> (mem)
+    {
+        <span class="tk-f">memcpy</span>(<span class="tk-f">GlobalLock</span>(mem), text.<span class="tk-f">c_str</span>(), bytes);
+        <span class="tk-f">GlobalUnlock</span>(mem);
+        <span class="tk-k">if</span> (!<span class="tk-f">SetClipboardData</span>(CF_UNICODETEXT, mem)) <span class="tk-f">GlobalFree</span>(mem);   <span class="tk-c">// on success the clipboard owns the memory</span>
+    }
+    <span class="tk-f">CloseClipboard</span>();
+    <span class="tk-k">return</span> mem != <span class="tk-k">nullptr</span>;
+}
+
+std::wstring <span class="tk-f">pasteText</span>(HWND owner)
+{
+    std::wstring text;
+    <span class="tk-k">if</span> (!<span class="tk-f">OpenClipboard</span>(owner)) <span class="tk-k">return</span> text;
+    <span class="tk-k">if</span> (HANDLE h = <span class="tk-f">GetClipboardData</span>(CF_UNICODETEXT))
+    {
+        <span class="tk-k">if</span> (<span class="tk-k">auto</span>* p = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">wchar_t</span>*&gt;(<span class="tk-f">GlobalLock</span>(h))) { text = p; <span class="tk-f">GlobalUnlock</span>(h); }
+    }
+    <span class="tk-f">CloseClipboard</span>();
+    <span class="tk-k">return</span> text;
+}</code></pre></div>
+<p>Keep the clipboard open as briefly as possible: while one program has it open, nobody else can use it. Note who owns the memory: after a successful <code>SetClipboardData</code>, the clipboard does, and you must not free it; the data you get from <code>GetClipboardData</code> also belongs to the clipboard.</p>
+<h2>Line endings</h2>
+<p>Clipboard text uses <strong>CRLF</strong> (<code>\r\n</code>) line endings by convention. A program that stores <code>\n</code> internally converts to <code>\r\n</code> when copying and back when pasting; a pasted text may also contain lone <code>\r</code> or <code>\n</code> from other programs, so normalise all three. The practice writes these conversions.</p>
+<h2>Other formats</h2>
+<ul>
+<li><code>CF_HDROP</code>: a list of files, as Explorer copies them (also used for drag and drop).</li>
+<li><code>RegisterClipboardFormatW(L&quot;HTML Format&quot;)</code>: HTML with a small header giving offsets, which browsers and Office use.</li>
+<li>Your own format, registered by name, to copy rich objects between instances of your program, plus <code>CF_UNICODETEXT</code> as a fallback for everyone else.</li>
+</ul>
+<p>To keep &quot;Paste&quot; enabled only when it makes sense, check <code>IsClipboardFormatAvailable(CF_UNICODETEXT)</code> in <code>WM_INITMENUPOPUP</code> (lesson 2.04).</p>
+<h2>Dropping files</h2>
+<p>The simplest way to accept files dragged from Explorer:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">DragAcceptFiles</span>(hwnd, TRUE);          <span class="tk-c">// in WM_CREATE</span>
+
+<span class="tk-k">case</span> WM_DROPFILES:
+{
+    HDROP drop = <span class="tk-k">reinterpret_cast</span>&lt;HDROP&gt;(wParam);
+    <span class="tk-k">const</span> UINT count = <span class="tk-f">DragQueryFileW</span>(drop, <span class="tk-n">0xFFFFFFFF</span>, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>);
+    <span class="tk-k">for</span> (UINT i = <span class="tk-n">0</span>; i &lt; count; ++i)
+    {
+        <span class="tk-k">const</span> UINT len = <span class="tk-f">DragQueryFileW</span>(drop, i, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>);
+        std::wstring <span class="tk-f">path</span>(len, L<span class="tk-s">'\0'</span>);
+        <span class="tk-f">DragQueryFileW</span>(drop, i, path.<span class="tk-f">data</span>(), len + <span class="tk-n">1</span>);
+        <span class="tk-f">openFile</span>(path);
+    }
+    <span class="tk-f">DragFinish</span>(drop);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Inside, an <code>HDROP</code> is a <code>DROPFILES</code> header followed by the paths as a <strong>double-null-terminated list</strong> (each path null-terminated, an extra null at the end), the same layout as lesson 3.02&#39;s filters and <code>REG_MULTI_SZ</code>. Full OLE drag and drop (<code>RegisterDragDrop</code> with an <code>IDropTarget</code>) is needed to show a drop effect, accept text, or drag <strong>out</strong> of your program; it is more code but the same idea.</p>
+<h2>File associations</h2>
+<p>&quot;Double-click a <code>.xenonnote</code> file to open it in my program&quot; is a set of registry keys under <code>HKCU\Software\Classes</code> (lesson 5.02): a <strong>ProgID</strong> with the open command, and the extension pointing to it:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>HKCU\Software\Classes\.xenonnote               (default) = Xenon.Note
+HKCU\Software\Classes\Xenon.Note\shell\open\command   (default) = &quot;C:\...\XenonNotes.exe&quot; &quot;%1&quot;</code></pre></div>
+<p>The <code>&quot;%1&quot;</code> (in quotes, for paths with spaces) is replaced by the file&#39;s path, which then arrives in your command line (lesson 5.03). After changing associations, call <code>SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr)</code> so Explorer notices. Installers usually write these keys.</p>
+<h2>The Recent list</h2>
+<p><code>SHAddToRecentDocs(SHARD_PATHW, path)</code> adds a file to the user&#39;s recent documents, the taskbar jump list and the Start menu&#39;s recommendations, so the user can reopen it from outside your program.</p>
+<h2>Notifications</h2>
+<p>For &quot;the search finished&quot; while the window is in the background, flash the taskbar button (<code>FlashWindowEx</code> with <code>FLASHW_TRAY | FLASHW_TIMERNOFG</code>) or show progress on it (<code>ITaskbarList3::SetProgressValue</code>). A notification-area icon (<code>Shell_NotifyIconW</code>) suits programs that run in the background.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-threads-and-synchronisation/"><span class="mono">previous</span><b>5.04 Threads and Synchronisation</b></a>
+      <a class="lp-next" href="../6-01-project-a-text-editor/"><span class="mono">next</span><b>6.01 Project: A Text Editor</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/5-05-clipboard-drag-and-drop-and-the-shell"></script>
+</body>
+</html>

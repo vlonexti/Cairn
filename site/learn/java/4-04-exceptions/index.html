@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Exceptions · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/4-04-exceptions/">
+  <meta name="description" content="Throwing and catching exceptions, the exception hierarchy, checked versus unchecked exceptions and the throws clause, multi-catch, finally,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Exceptions · Java · Xenon">
+  <meta property="og:description" content="Throwing and catching exceptions, the exception hierarchy, checked versus unchecked exceptions and the throws clause, multi-catch, finally,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/4-04-exceptions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Exceptions · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Exceptions · Java · Xenon">
+  <meta name="twitter:description" content="Throwing and catching exceptions, the exception hierarchy, checked versus unchecked exceptions and the throws clause, multi-catch, finally,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Generics, Collections and Exceptions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Exceptions</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Throwing and catching exceptions, the exception hierarchy, checked versus unchecked exceptions and the throws clause, multi-catch, finally, try-with-resources, custom exception classes with causes, stack traces, and good practice for validating arguments and handling errors.</p>
+      <div class="prose">
+<h2>throw and catch</h2>
+<p>When a method cannot do its job it <strong>throws</strong> an exception. The exception travels up the call stack until a <code>catch</code> block handles it; if none does, the program stops and prints a <strong>stack trace</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">String</span>[] inputs = {<span class="tk-s">&quot;42&quot;</span>, <span class="tk-s">&quot;abc&quot;</span>, <span class="tk-s">&quot;-5&quot;</span>};
+        <span class="tk-k">for</span> (<span class="tk-t">String</span> input : inputs) {
+            <span class="tk-k">try</span> {
+                <span class="tk-k">int</span> age = <span class="tk-f">parseAge</span>(input);
+                <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;age &quot;</span> + age);
+            } <span class="tk-k">catch</span> (<span class="tk-t">NumberFormatException</span> e) {
+                <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;'&quot;</span> + input + <span class="tk-s">&quot;' is not a number&quot;</span>);
+            } <span class="tk-k">catch</span> (<span class="tk-t">IllegalArgumentException</span> e) {
+                <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(e.<span class="tk-f">getMessage</span>());
+            }
+        }
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">parseAge</span>(<span class="tk-t">String</span> text) {
+        <span class="tk-k">int</span> age = <span class="tk-t">Integer</span>.<span class="tk-f">parseInt</span>(text);       <span class="tk-c">// may throw NumberFormatException</span>
+        <span class="tk-k">if</span> (age &lt; <span class="tk-n">0</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">IllegalArgumentException</span>(<span class="tk-s">&quot;age cannot be negative: &quot;</span> + age);
+        <span class="tk-k">return</span> age;
+    }
+}</code></pre></div>
+<p>Catch blocks are tried in order, so put specific types first: <code>NumberFormatException</code> is a subclass of <code>IllegalArgumentException</code>, so the other order would not compile (the second catch could never run).</p>
+<h2>The hierarchy</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+  T[Throwable] --&gt; E[Exception]
+  T --&gt; ER[Error: OutOfMemoryError, StackOverflowError]
+  E --&gt; RE[RuntimeException: unchecked]
+  E --&gt; CE[IOException, other checked exceptions]
+  RE --&gt; IAE[IllegalArgumentException]
+  RE --&gt; ISE[IllegalStateException]
+  RE --&gt; NPE[NullPointerException]
+  RE --&gt; IOOBE[IndexOutOfBoundsException]</pre></div>
+<ul>
+<li><strong>Unchecked</strong> exceptions (<code>RuntimeException</code> and its subclasses) usually mean a bug or bad argument. The compiler does not force you to handle them.</li>
+<li><strong>Checked</strong> exceptions (other <code>Exception</code> subclasses, like <code>IOException</code>) are problems a correct program can still meet: a missing file, a lost connection. A method that may throw one must <strong>declare</strong> it with <code>throws</code>, and callers must catch it or declare it too.</li>
+<li><code>Error</code>s are serious problems of the JVM itself; do not catch them.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.io.IOException;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">try</span> {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">loadSetting</span>(<span class="tk-s">&quot;theme&quot;</span>));
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">loadSetting</span>(<span class="tk-s">&quot;missing&quot;</span>));
+        } <span class="tk-k">catch</span> (IOException e) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;could not load: &quot;</span> + e.<span class="tk-f">getMessage</span>());
+        }
+    }
+
+    <span class="tk-k">static</span> <span class="tk-t">String</span> <span class="tk-f">loadSetting</span>(<span class="tk-t">String</span> key) <span class="tk-k">throws</span> IOException {      <span class="tk-c">// callers must deal with IOException</span>
+        <span class="tk-k">if</span> (key.<span class="tk-f">equals</span>(<span class="tk-s">&quot;missing&quot;</span>)) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">IOException</span>(<span class="tk-s">&quot;no setting &quot;</span> + key);
+        <span class="tk-k">return</span> <span class="tk-s">&quot;dark&quot;</span>;
+    }
+}</code></pre></div>
+<h2>finally and try-with-resources</h2>
+<p><code>finally</code> runs whether or not an exception happened, for clean-up. For anything that must be closed (files, connections), <strong>try-with-resources</strong> closes it automatically, even if an exception is thrown:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">try</span> (<span class="tk-t">Resource</span> a = <span class="tk-k">new</span> <span class="tk-f">Resource</span>(<span class="tk-s">&quot;first&quot;</span>); <span class="tk-t">Resource</span> b = <span class="tk-k">new</span> <span class="tk-f">Resource</span>(<span class="tk-s">&quot;second&quot;</span>)) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;using both&quot;</span>);
+            <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">IllegalStateException</span>(<span class="tk-s">&quot;something failed&quot;</span>);
+        } <span class="tk-k">catch</span> (<span class="tk-t">IllegalStateException</span> e) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;caught: &quot;</span> + e.<span class="tk-f">getMessage</span>());
+        } <span class="tk-k">finally</span> {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;finally runs too&quot;</span>);
+        }
+    }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">Resource</span> <span class="tk-k">implements</span> <span class="tk-t">AutoCloseable</span> {
+    <span class="tk-k">private</span> <span class="tk-k">final</span> <span class="tk-t">String</span> name;
+    <span class="tk-f">Resource</span>(<span class="tk-t">String</span> name) { <span class="tk-k">this</span>.name = name; <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;open &quot;</span> + name); }
+    <span class="tk-p">@Override</span> <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">close</span>() { <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;close &quot;</span> + name); }   <span class="tk-c">// closed in reverse order</span>
+}</code></pre></div>
+<p>Any class implementing <code>AutoCloseable</code> works in a try-with-resources statement.</p>
+<h2>Your own exceptions</h2>
+<p>Create an exception class when callers need to recognise your specific problem. Pass the original exception as the <strong>cause</strong> when you wrap one:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">try</span> {
+            <span class="tk-t">Config</span>.<span class="tk-f">port</span>(<span class="tk-s">&quot;80x&quot;</span>);
+        } <span class="tk-k">catch</span> (<span class="tk-t">ConfigException</span> e) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(e.<span class="tk-f">getMessage</span>() + <span class="tk-s">&quot; &lt;- caused by &quot;</span> + e.<span class="tk-f">getCause</span>().<span class="tk-f">getClass</span>().<span class="tk-f">getSimpleName</span>());
+        }
+    }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">ConfigException</span> <span class="tk-k">extends</span> <span class="tk-t">Exception</span> {                    <span class="tk-c">// checked</span>
+    <span class="tk-f">ConfigException</span>(<span class="tk-t">String</span> message, <span class="tk-t">Throwable</span> cause) { <span class="tk-k">super</span>(message, cause); }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">Config</span> {
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">port</span>(<span class="tk-t">String</span> text) <span class="tk-k">throws</span> <span class="tk-t">ConfigException</span> {
+        <span class="tk-k">try</span> {
+            <span class="tk-k">return</span> <span class="tk-t">Integer</span>.<span class="tk-f">parseInt</span>(text);
+        } <span class="tk-k">catch</span> (<span class="tk-t">NumberFormatException</span> e) {
+            <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">ConfigException</span>(<span class="tk-s">&quot;bad port '&quot;</span> + text + <span class="tk-s">&quot;'&quot;</span>, e);
+        }
+    }
+}</code></pre></div>
+<p>Extend <code>RuntimeException</code> instead for exceptions that signal programming errors, so callers are not forced to catch them.</p>
+<h2>Good practice</h2>
+<ul>
+<li><strong>Validate arguments early</strong> with clear messages: <code>Objects.requireNonNull(name, &quot;name&quot;)</code>, <code>if (qty &lt; 1) throw new IllegalArgumentException(&quot;qty must be at least 1: &quot; + qty)</code>.</li>
+<li><strong>Catch only what you can handle</strong>, where you can do something useful. Never swallow an exception with an empty <code>catch</code>; at least log it.</li>
+<li><strong>Do not use exceptions for normal control flow</strong>: check with <code>hasNextInt()</code>, <code>containsKey()</code> or <code>Optional</code> (lesson 6.03) when a missing value is normal.</li>
+<li><strong>Read stack traces from the top</strong>: the first line names the exception and message; the first <code>at</code> line in your own code is usually where to look.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-comparable-comparator-and-sorting/"><span class="mono">previous</span><b>4.03 Comparable, Comparator and Sorting</b></a>
+      <a class="lp-next" href="../4-05-files-and-i-o/"><span class="mono">next</span><b>4.05 Files and I/O</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/4-04-exceptions"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

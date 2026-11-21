@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Trees and Binary Search Trees · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/5-05-trees-and-binary-search-trees/">
+  <meta name="description" content="Trees and their vocabulary, binary trees, the binary search tree property, recursive insert, search and delete including the two-child case, in-order,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Trees and Binary Search Trees · Java · Xenon">
+  <meta property="og:description" content="Trees and their vocabulary, binary trees, the binary search tree property, recursive insert, search and delete including the two-child case, in-order,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/5-05-trees-and-binary-search-trees/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Trees and Binary Search Trees · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Trees and Binary Search Trees · Java · Xenon">
+  <meta name="twitter:description" content="Trees and their vocabulary, binary trees, the binary search tree property, recursive insert, search and delete including the two-child case, in-order,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Data Structures and Algorithms</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Trees and Binary Search Trees</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Trees and their vocabulary, binary trees, the binary search tree property, recursive insert, search and delete including the two-child case, in-order, pre-order, post-order and level-order traversal, height and balance, why balanced trees like Java&#39;s TreeMap guarantee O(log n), and heaps for priority queues.</p>
+      <div class="prose">
+<h2>Trees</h2>
+<p>A <strong>tree</strong> is made of <strong>nodes</strong> connected by edges, with one <strong>root</strong> at the top. Each node has zero or more <strong>children</strong>; nodes without children are <strong>leaves</strong>. The <strong>height</strong> of a tree is the number of edges on the longest path from the root to a leaf. File systems, HTML pages, organisation charts and parsed expressions (practice 3.05) are trees.</p>
+<p>In a <strong>binary tree</strong> every node has at most two children, <code>left</code> and <code>right</code>.</p>
+<h2>Binary search trees</h2>
+<p>A <strong>binary search tree</strong> (BST) keeps this property at every node: everything in the <strong>left</strong> subtree is smaller, and everything in the <strong>right</strong> subtree is larger. Searching follows one path down, discarding half the tree at each step when the tree is balanced:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+  A((50)) --&gt; B((30))
+  A --&gt; C((70))
+  B --&gt; D((20))
+  B --&gt; E((40))
+  C --&gt; F((60))
+  C --&gt; G((80))</pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.*;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Bst</span> tree = <span class="tk-k">new</span> <span class="tk-f">Bst</span>();
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> x : <span class="tk-k">new</span> <span class="tk-k">int</span>[] {<span class="tk-n">50</span>, <span class="tk-n">30</span>, <span class="tk-n">70</span>, <span class="tk-n">20</span>, <span class="tk-n">40</span>, <span class="tk-n">60</span>, <span class="tk-n">80</span>, <span class="tk-n">30</span>}) tree.<span class="tk-f">insert</span>(x);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(tree.<span class="tk-f">inOrder</span>() + <span class="tk-s">&quot; size &quot;</span> + tree.<span class="tk-f">size</span>() + <span class="tk-s">&quot; height &quot;</span> + tree.<span class="tk-f">height</span>());
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(tree.<span class="tk-f">contains</span>(<span class="tk-n">60</span>) + <span class="tk-s">&quot; &quot;</span> + tree.<span class="tk-f">contains</span>(<span class="tk-n">65</span>) + <span class="tk-s">&quot; min &quot;</span> + tree.<span class="tk-f">min</span>());
+        tree.<span class="tk-f">delete</span>(<span class="tk-n">30</span>);                                   <span class="tk-c">// a node with two children</span>
+        tree.<span class="tk-f">delete</span>(<span class="tk-n">80</span>);                                   <span class="tk-c">// a leaf</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(tree.<span class="tk-f">inOrder</span>() + <span class="tk-s">&quot; &quot;</span> + tree.<span class="tk-f">preOrder</span>() + <span class="tk-s">&quot; &quot;</span> + tree.<span class="tk-f">levelOrder</span>());
+    }
+}
+
+<span class="tk-k">class</span> <span class="tk-t">Bst</span> {
+    <span class="tk-k">private</span> <span class="tk-k">static</span> <span class="tk-k">class</span> <span class="tk-t">Node</span> {
+        <span class="tk-k">int</span> key;
+        <span class="tk-t">Node</span> left, right;
+        <span class="tk-f">Node</span>(<span class="tk-k">int</span> key) { <span class="tk-k">this</span>.key = key; }
+    }
+
+    <span class="tk-k">private</span> <span class="tk-t">Node</span> root;
+    <span class="tk-k">private</span> <span class="tk-k">int</span> size;
+
+    <span class="tk-k">void</span> <span class="tk-f">insert</span>(<span class="tk-k">int</span> key) { root = <span class="tk-f">insert</span>(root, key); }
+
+    <span class="tk-k">private</span> <span class="tk-t">Node</span> <span class="tk-f">insert</span>(<span class="tk-t">Node</span> n, <span class="tk-k">int</span> key) {
+        <span class="tk-k">if</span> (n == <span class="tk-k">null</span>) { size++; <span class="tk-k">return</span> <span class="tk-k">new</span> <span class="tk-f">Node</span>(key); }
+        <span class="tk-k">if</span> (key &lt; n.key) n.left = <span class="tk-f">insert</span>(n.left, key);
+        <span class="tk-k">else</span> <span class="tk-k">if</span> (key &gt; n.key) n.right = <span class="tk-f">insert</span>(n.right, key);
+        <span class="tk-k">return</span> n;                                          <span class="tk-c">// duplicates are ignored</span>
+    }
+
+    <span class="tk-k">boolean</span> <span class="tk-f">contains</span>(<span class="tk-k">int</span> key) {
+        <span class="tk-t">Node</span> n = root;
+        <span class="tk-k">while</span> (n != <span class="tk-k">null</span>) {
+            <span class="tk-k">if</span> (key == n.key) <span class="tk-k">return</span> <span class="tk-k">true</span>;
+            n = key &lt; n.key ? n.left : n.right;
+        }
+        <span class="tk-k">return</span> <span class="tk-k">false</span>;
+    }
+
+    <span class="tk-k">int</span> <span class="tk-f">min</span>() {
+        <span class="tk-k">if</span> (root == <span class="tk-k">null</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">NoSuchElementException</span>();
+        <span class="tk-t">Node</span> n = root;
+        <span class="tk-k">while</span> (n.left != <span class="tk-k">null</span>) n = n.left;
+        <span class="tk-k">return</span> n.key;
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">delete</span>(<span class="tk-k">int</span> key) { root = <span class="tk-f">delete</span>(root, key); }
+
+    <span class="tk-k">private</span> <span class="tk-t">Node</span> <span class="tk-f">delete</span>(<span class="tk-t">Node</span> n, <span class="tk-k">int</span> key) {
+        <span class="tk-k">if</span> (n == <span class="tk-k">null</span>) <span class="tk-k">return</span> <span class="tk-k">null</span>;
+        <span class="tk-k">if</span> (key &lt; n.key) n.left = <span class="tk-f">delete</span>(n.left, key);
+        <span class="tk-k">else</span> <span class="tk-k">if</span> (key &gt; n.key) n.right = <span class="tk-f">delete</span>(n.right, key);
+        <span class="tk-k">else</span> {
+            <span class="tk-k">if</span> (n.left == <span class="tk-k">null</span>) { size--; <span class="tk-k">return</span> n.right; }       <span class="tk-c">// zero or one child: replace by the child</span>
+            <span class="tk-k">if</span> (n.right == <span class="tk-k">null</span>) { size--; <span class="tk-k">return</span> n.left; }
+            <span class="tk-t">Node</span> successor = n.right;                             <span class="tk-c">// two children: take the smallest key on the right</span>
+            <span class="tk-k">while</span> (successor.left != <span class="tk-k">null</span>) successor = successor.left;
+            n.key = successor.key;
+            n.right = <span class="tk-f">delete</span>(n.right, successor.key);
+        }
+        <span class="tk-k">return</span> n;
+    }
+
+    <span class="tk-k">int</span> <span class="tk-f">size</span>() { <span class="tk-k">return</span> size; }
+
+    <span class="tk-k">int</span> <span class="tk-f">height</span>() { <span class="tk-k">return</span> <span class="tk-f">height</span>(root); }
+    <span class="tk-k">private</span> <span class="tk-k">int</span> <span class="tk-f">height</span>(<span class="tk-t">Node</span> n) { <span class="tk-k">return</span> n == <span class="tk-k">null</span> ? -<span class="tk-n">1</span> : <span class="tk-n">1</span> + <span class="tk-t">Math</span>.<span class="tk-f">max</span>(<span class="tk-f">height</span>(n.left), <span class="tk-f">height</span>(n.right)); }
+
+    <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; <span class="tk-f">inOrder</span>() { <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; out = <span class="tk-k">new</span> <span class="tk-t">ArrayList</span>&lt;&gt;(); <span class="tk-f">inOrder</span>(root, out); <span class="tk-k">return</span> out; }
+    <span class="tk-k">private</span> <span class="tk-k">void</span> <span class="tk-f">inOrder</span>(<span class="tk-t">Node</span> n, <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; out) {
+        <span class="tk-k">if</span> (n == <span class="tk-k">null</span>) <span class="tk-k">return</span>;
+        <span class="tk-f">inOrder</span>(n.left, out); out.<span class="tk-f">add</span>(n.key); <span class="tk-f">inOrder</span>(n.right, out);       <span class="tk-c">// left, node, right: sorted</span>
+    }
+
+    <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; <span class="tk-f">preOrder</span>() { <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; out = <span class="tk-k">new</span> <span class="tk-t">ArrayList</span>&lt;&gt;(); <span class="tk-f">preOrder</span>(root, out); <span class="tk-k">return</span> out; }
+    <span class="tk-k">private</span> <span class="tk-k">void</span> <span class="tk-f">preOrder</span>(<span class="tk-t">Node</span> n, <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; out) {
+        <span class="tk-k">if</span> (n == <span class="tk-k">null</span>) <span class="tk-k">return</span>;
+        out.<span class="tk-f">add</span>(n.key); <span class="tk-f">preOrder</span>(n.left, out); <span class="tk-f">preOrder</span>(n.right, out);     <span class="tk-c">// node first: copies the shape</span>
+    }
+
+    <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; <span class="tk-f">levelOrder</span>() {                                           <span class="tk-c">// breadth first, with a queue</span>
+        <span class="tk-t">List</span>&lt;<span class="tk-t">Integer</span>&gt; out = <span class="tk-k">new</span> <span class="tk-t">ArrayList</span>&lt;&gt;();
+        <span class="tk-t">Deque</span>&lt;<span class="tk-t">Node</span>&gt; queue = <span class="tk-k">new</span> <span class="tk-t">ArrayDeque</span>&lt;&gt;();
+        <span class="tk-k">if</span> (root != <span class="tk-k">null</span>) queue.<span class="tk-f">add</span>(root);
+        <span class="tk-k">while</span> (!queue.<span class="tk-f">isEmpty</span>()) {
+            <span class="tk-t">Node</span> n = queue.<span class="tk-f">poll</span>();
+            out.<span class="tk-f">add</span>(n.key);
+            <span class="tk-k">if</span> (n.left != <span class="tk-k">null</span>) queue.<span class="tk-f">add</span>(n.left);
+            <span class="tk-k">if</span> (n.right != <span class="tk-k">null</span>) queue.<span class="tk-f">add</span>(n.right);
+        }
+        <span class="tk-k">return</span> out;
+    }
+}</code></pre></div>
+<p>Recursive methods that return the (possibly new) subtree, like <code>insert</code> and <code>delete</code>, avoid special cases for the root: <code>root = insert(root, key)</code>.</p>
+<h2>Deleting</h2>
+<p>Deleting has three cases:</p>
+<ol>
+<li>a <strong>leaf</strong>: just remove it;</li>
+<li>a node with <strong>one child</strong>: replace it by that child;</li>
+<li>a node with <strong>two children</strong>: copy in its <strong>in-order successor</strong> (the smallest key in its right subtree), then delete the successor from the right subtree, which has at most one child.</li>
+</ol>
+<h2>Traversals</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Visits</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>In-order</td>
+<td>left, node, right</td>
+<td>A BST&#39;s keys in sorted order</td>
+</tr>
+<tr>
+<td>Pre-order</td>
+<td>node, left, right</td>
+<td>Copying or printing the tree&#39;s structure</td>
+</tr>
+<tr>
+<td>Post-order</td>
+<td>left, right, node</td>
+<td>Deleting a tree, evaluating an expression tree</td>
+</tr>
+<tr>
+<td>Level-order</td>
+<td>level by level, with a queue</td>
+<td>Shortest paths in unweighted trees, printing by depth</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Balance</h2>
+<p>A BST&#39;s operations take time proportional to its <strong>height</strong>. Random insertions give a height of about 2 log n, but inserting keys <strong>in sorted order</strong> makes every node a right child: the &quot;tree&quot; becomes a linked list and everything is O(n).</p>
+<p><strong>Self-balancing</strong> trees fix this by restructuring (rotating) nodes during insertions and deletions so the height stays O(log n). Java&#39;s <code>TreeMap</code> and <code>TreeSet</code> are <strong>red-black trees</strong>: their <code>get</code>, <code>put</code> and <code>remove</code> are O(log n) guaranteed, and they iterate in sorted order.</p>
+<h2>Heaps</h2>
+<p>A <strong>binary heap</strong> is a different tree property: every parent is smaller than (or equal to) its children, so the minimum is always at the root. It is stored compactly in an array (the children of index <code>i</code> are <code>2i + 1</code> and <code>2i + 2</code>), and both adding and removing the minimum are O(log n). Java&#39;s <code>PriorityQueue</code> is a binary heap; heap sort and Dijkstra&#39;s shortest-path algorithm are built on one.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-stacks-queues-and-hash-tables/"><span class="mono">previous</span><b>5.04 Stacks, Queues and Hash Tables</b></a>
+      <a class="lp-next" href="../6-01-lambdas-and-functional-interfaces/"><span class="mono">next</span><b>6.01 Lambdas and Functional Interfaces</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/5-05-trees-and-binary-search-trees"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

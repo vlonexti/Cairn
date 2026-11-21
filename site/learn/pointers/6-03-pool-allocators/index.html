@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Pool Allocators · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/6-03-pool-allocators/">
+  <meta name="description" content="A pool hands out blocks of one fixed size from a single region. Free blocks are linked into a list through their own memory, so allocating and freeing are a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pool Allocators · Pointers and Memory · Xenon">
+  <meta property="og:description" content="A pool hands out blocks of one fixed size from a single region. Free blocks are linked into a list through their own memory, so allocating and freeing are a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/6-03-pool-allocators/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pool Allocators · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pool Allocators · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="A pool hands out blocks of one fixed size from a single region. Free blocks are linked into a list through their own memory, so allocating and freeing are a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Allocators and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Pool Allocators</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A pool hands out blocks of one fixed size from a single region. Free blocks are linked into a list through their own memory, so allocating and freeing are a couple of pointer moves, with no headers and no fragmentation. Building one, and where games use them.</p>
+      <div class="prose">
+<h2>Many objects of one size</h2>
+<p>Games create and destroy huge numbers of identical objects: bullets, particles, sound voices, network messages. Each one is the same size. A <strong>pool allocator</strong> exploits that: it divides one region into equal blocks, and handing one out is just taking any free block.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>[ block 0 ][ block 1 ][ block 2 ][ block 3 ][ block 4 ][ block 5 ] ...   every block 64 bytes</code></pre></div>
+<p>Because every block is the same size, there is no searching for a fit, no splitting, no headers to record sizes, and no fragmentation: any free block is as good as any other.</p>
+<h2>The free list lives in the free blocks</h2>
+<p>The pool needs to know which blocks are free. It keeps them on a linked list, and the clever part is where the <code>next</code> pointers go: <strong>inside the free blocks themselves</strong>. A free block&#39;s memory is unused anyway, so its first 8 bytes can hold the address of the next free block.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>free --&gt; [ next: &amp;block 3 | .... ] --&gt; [ next: &amp;block 5 | .... ] --&gt; [ next: nullptr | .... ]
+          block 1                       block 3                        block 5</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Pool</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Pool</span>(std::size_t blockSize, std::size_t count)
+        : size{ std::<span class="tk-f">max</span>(blockSize, <span class="tk-k">sizeof</span>(<span class="tk-k">void</span>*)) }, <span class="tk-f">memory</span>(size * count)
+    {
+        <span class="tk-k">for</span> (std::size_t i{ count }; i-- &gt; <span class="tk-n">0</span>;)            <span class="tk-c">// push every block onto the list</span>
+            <span class="tk-f">push</span>(memory.<span class="tk-f">data</span>() + i * size);
+    }
+
+    <span class="tk-k">void</span>* <span class="tk-f">allocate</span>()
+    {
+        <span class="tk-k">if</span> (!head) <span class="tk-k">return</span> <span class="tk-k">nullptr</span>;                         <span class="tk-c">// pool exhausted</span>
+        <span class="tk-k">void</span>* block{ head };
+        std::<span class="tk-f">memcpy</span>(&amp;head, block, <span class="tk-k">sizeof</span>(head));           <span class="tk-c">// head = the next pointer stored in the block</span>
+        <span class="tk-k">return</span> block;
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">release</span>(<span class="tk-k">void</span>* block) { <span class="tk-f">push</span>(<span class="tk-k">static_cast</span>&lt;std::byte*&gt;(block)); }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">void</span> <span class="tk-f">push</span>(std::byte* block)
+    {
+        std::<span class="tk-f">memcpy</span>(block, &amp;head, <span class="tk-k">sizeof</span>(head));           <span class="tk-c">// the block's first bytes point at the old head</span>
+        head = block;
+    }
+
+    std::size_t size;
+    std::vector&lt;std::byte&gt; memory;
+    <span class="tk-k">void</span>* head{ <span class="tk-k">nullptr</span> };
+};</code></pre></div>
+<p>Allocating pops the head of the list; freeing pushes the block back on. Both are a handful of instructions, always the same speed however full the pool is. Blocks must be at least as big as a pointer, which the constructor makes sure of.</p>
+<h2>LIFO reuse</h2>
+<p>The most recently freed block is the next one handed out. That is good for the cache: memory just touched is likely still in it. It also means a use-after-free bug in pooled objects shows up quickly and strangely, because the freed object&#39;s memory is immediately reused by the next allocation of the same type, and its first 8 bytes are overwritten by the free-list pointer as soon as it is freed.</p>
+<h2>Pools in practice</h2>
+<ul>
+<li><strong>Particle systems and bullets</strong>: thousands created and destroyed per second, all the same size.</li>
+<li><strong>Network messages and events</strong>: fixed-size records queued and processed.</li>
+<li><strong>Nodes of linked structures</strong>: a pool of <code>Node</code>s makes a linked list or tree far faster than one <code>new</code> per node, and keeps the nodes close together in memory.</li>
+<li><strong>Size-class allocators</strong> (lesson 6.01) are just one pool per size.</li>
+</ul>
+<p>A pool can also hand out <strong>indices</strong> instead of pointers: block numbers from 0 to count - 1. Indices are 4 bytes instead of 8, stay valid if the pool is moved or saved to disk, and combine naturally with the generation counters of lesson 1.05&#39;s handles, which catch use-after-free on the spot.</p>
+<h2>Growing</h2>
+<p>A fixed pool can run out. Either treat that as a design limit (&quot;at most 4096 bullets&quot;, and refuse more), or let the pool allocate another region when it is exhausted and add its blocks to the free list. Growing never moves existing blocks, so pointers into the pool stay valid, which a <code>std::vector</code> of objects cannot promise.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-arena-allocators/"><span class="mono">previous</span><b>6.02 Arena Allocators</b></a>
+      <a class="lp-next" href="../6-04-virtual-memory-and-pages/"><span class="mono">next</span><b>6.04 Virtual Memory and Pages</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/6-03-pool-allocators"></script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Smart Pointers · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/7-06-smart-pointers/">
+  <meta name="description" content="Smart pointers are RAII wrappers that delete a heap object automatically. std::unique ptr has one owner and is the default. std::shared ptr shares ownership…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Smart Pointers · C++ · Xenon">
+  <meta property="og:description" content="Smart pointers are RAII wrappers that delete a heap object automatically. std::unique ptr has one owner and is the default. std::shared ptr shares ownership…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/7-06-smart-pointers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Smart Pointers · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Smart Pointers · C++ · Xenon">
+  <meta name="twitter:description" content="Smart pointers are RAII wrappers that delete a heap object automatically. std::unique ptr has one owner and is the default. std::shared ptr shares ownership…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Memory Management</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Smart Pointers</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.06</b></span><span>6 of 8 in milestone 7</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">Smart pointers are RAII wrappers that delete a heap object automatically. <code>std::unique_ptr</code> has <strong>one owner</strong> and is the default. <code>std::shared_ptr</code> shares ownership by counting references. <code>std::weak_ptr</code> observes without owning. Create them with <code>std::make_unique</code> and <code>std::make_shared</code>.</p>
+      <div class="prose">
+<h2>Ownership, in the type</h2>
+<p><a href="../7-02-new-and-delete-dynamic-memory/">7.02 new and delete — Dynamic Memory</a> ended on a problem: a raw pointer cannot say who is responsible for deleting. A <strong>smart pointer</strong> is a small class that owns a heap object and deletes it in its destructor. It is RAII for <code>new</code>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    Q{&quot;Is a heap object&lt;br/&gt;needed at all?&quot;} -- no --&gt; S[&quot;Use a plain value&lt;br/&gt;or a std::vector&quot;]
+    Q -- yes --&gt; O{&quot;How many owners?&quot;}
+    O -- &quot;exactly one&quot; --&gt; U[&quot;std::unique_ptr&lt;br/&gt;(the default)&quot;]
+    O -- &quot;several, and no clear last one&quot; --&gt; SH[&quot;std::shared_ptr&quot;]
+    SH --&gt; C{&quot;Could the owners&lt;br/&gt;form a cycle?&quot;}
+    C -- yes --&gt; W[&quot;Break it with std::weak_ptr&quot;]</pre></div>
+<p>All three live in <code>&lt;memory&gt;</code>.</p>
+<h2><code>std::unique_ptr</code>: one owner</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Player</span>
+{
+    std::string name{};
+    <span class="tk-k">int</span> hp{ <span class="tk-n">100</span> };
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">auto</span> hero{ std::make_unique&lt;<span class="tk-t">Player</span>&gt;(<span class="tk-s">&quot;Aria&quot;</span>, <span class="tk-n">100</span>) };
+    hero-&gt;hp -= <span class="tk-n">10</span>;
+    std::cout &lt;&lt; hero-&gt;name &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; hero-&gt;hp &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}    <span class="tk-c">// the Player is deleted here, automatically</span></code></pre></div>
+<div class="codeblock diagram plain"><pre><code> hero (unique_ptr) ──owns──▶ [ Player &quot;Aria&quot; ]
+
+ hero goes out of scope: its destructor deletes the Player</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Use</td>
+<td>Like a pointer: <code>*p</code>, <code>p-&gt;member</code>, <code>if (p)</code></td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>The same size and speed as a raw pointer</td>
+</tr>
+<tr>
+<td>Copying</td>
+<td>Not allowed: two owners would both delete</td>
+</tr>
+<tr>
+<td>Moving</td>
+<td>Allowed: ownership is transferred</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">auto</span> a{ std::make_unique&lt;<span class="tk-k">int</span>&gt;(<span class="tk-n">5</span>) };
+<span class="tk-k">auto</span> b{ std::<span class="tk-f">move</span>(a) };    <span class="tk-c">// b now owns the int; a is null</span>
+<span class="tk-k">if</span> (!a)
+{
+    std::cout &lt;&lt; <span class="tk-s">&quot;a is empty\n&quot;</span>;
+}</code></pre></div>
+<p><code>std::make_unique&lt;T&gt;(arguments)</code> allocates and constructs in one step and returns the <code>unique_ptr</code>. There is no <code>new</code> in your code and no <code>delete</code> anywhere.</p>
+<h3>Passing smart pointers to functions</h3>
+<p>This is where people go wrong. Most functions should not mention the smart pointer at all.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>The function wants to</th>
+<th>Parameter type</th>
+<th>Call</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Use the object</td>
+<td><code>Player&amp;</code> or <code>const Player&amp;</code></td>
+<td><code>heal(*hero);</code></td>
+</tr>
+<tr>
+<td>Use it, and it may be absent</td>
+<td><code>Player*</code></td>
+<td><code>inspect(hero.get());</code></td>
+</tr>
+<tr>
+<td>Take over ownership</td>
+<td><code>std::unique_ptr&lt;Player&gt;</code> by value</td>
+<td><code>adopt(std::move(hero));</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A function that only uses a <code>Player</code> has no business knowing how its caller stores it. Taking a reference keeps it usable with objects on the stack too.</p>
+<h2><code>std::shared_ptr</code>: shared ownership</h2>
+<p>Sometimes an object has several owners and no way to know which will finish with it last. A <code>shared_ptr</code> keeps a <strong>reference count</strong> of its owners and deletes the object when the count reaches zero.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">auto</span> texture{ std::make_shared&lt;<span class="tk-t">Texture</span>&gt;(<span class="tk-s">&quot;grass.png&quot;</span>) };    <span class="tk-c">// count is 1</span>
+{
+    <span class="tk-k">auto</span> alias{ texture };                                  <span class="tk-c">// count is 2</span>
+    std::cout &lt;&lt; texture.<span class="tk-f">use_count</span>() &lt;&lt; <span class="tk-s">'\n'</span>;               <span class="tk-c">// 2</span>
+}                                                           <span class="tk-c">// count is 1</span>
+<span class="tk-c">// when the last owner goes, the Texture is deleted</span></code></pre></div>
+<div class="codeblock diagram plain"><pre><code> sprite1 ─┐
+ sprite2 ─┼──▶ [ control block: count 3 ] ──▶ [ Texture ]
+ sprite3 ─┘
+
+ each copy adds 1, each destruction subtracts 1, and at 0 the object is deleted</code></pre></div>
+<p>It is not free: there is a separate <strong>control block</strong> holding the count, and updating the count must be safe across threads. Use it only when ownership really is shared. If one clear owner exists, use <code>unique_ptr</code> and give everyone else a reference.</p>
+<h2>Cycles and <code>std::weak_ptr</code></h2>
+<p>Reference counting has one failure mode.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Person</span>
+{
+    std::string name{};
+    std::shared_ptr&lt;<span class="tk-t">Person</span>&gt; partner{};
+};
+
+<span class="tk-k">auto</span> ann{ std::make_shared&lt;<span class="tk-t">Person</span>&gt;(<span class="tk-s">&quot;Ann&quot;</span>) };
+<span class="tk-k">auto</span> bob{ std::make_shared&lt;<span class="tk-t">Person</span>&gt;(<span class="tk-s">&quot;Bob&quot;</span>) };
+ann-&gt;partner = bob;
+bob-&gt;partner = ann;
+<span class="tk-c">// ann and bob go out of scope: each count drops to 1, never to 0. Both leak.</span></code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;Ann (count 1)&quot;] --&gt;|shared_ptr| B[&quot;Bob (count 1)&quot;]
+    B --&gt;|shared_ptr| A</pre></div>
+<p>Each keeps the other alive for ever. The fix is for one direction not to own. A <code>std::weak_ptr</code> refers to an object managed by <code>shared_ptr</code> <strong>without</strong> adding to the count.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Person</span>
+{
+    std::string name{};
+    std::weak_ptr&lt;<span class="tk-t">Person</span>&gt; partner{};
+};
+
+<span class="tk-k">if</span> (<span class="tk-k">auto</span> p{ ann-&gt;partner.<span class="tk-f">lock</span>() })
+{
+    std::cout &lt;&lt; p-&gt;name &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>A <code>weak_ptr</code> cannot be dereferenced directly, because the object might already be gone. <code>lock()</code> returns a <code>shared_ptr</code> that is either valid or empty, so the check and the access cannot be separated.</p>
+<p>The usual shape: a parent owns its children, and each child refers back to its parent with a <code>weak_ptr</code> or a plain pointer.</p>
+<h2>Summary</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th><code>unique_ptr</code></th>
+<th><code>shared_ptr</code></th>
+<th><code>weak_ptr</code></th>
+<th>Raw <code>T*</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Owns the object</td>
+<td>Yes, alone</td>
+<td>Yes, jointly</td>
+<td>No</td>
+<td>No, by convention</td>
+</tr>
+<tr>
+<td>Can be copied</td>
+<td>No, only moved</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Overhead</td>
+<td>None</td>
+<td>A control block and counting</td>
+<td>Small</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Deletes automatically</td>
+<td>Yes</td>
+<td>When the count reaches 0</td>
+<td></td>
+<td>No</td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout tip"><div class="callout-title"><span>The modern rules</span></div><div class="callout-body">
+<ul>
+<li>Do not write <code>new</code> or <code>delete</code> in ordinary code. Use <code>std::make_unique</code> and <code>std::make_shared</code>.</li>
+<li>Raw pointers and references are fine, as <strong>non-owning</strong> observers.</li>
+<li>Default to <code>unique_ptr</code>. Reach for <code>shared_ptr</code> only when you can explain why there are several owners.</li>
+</ul>
+</div></div>
+<p>A <code>unique_ptr</code> can also manage things other than memory, by giving it a function to call in place of <code>delete</code>. That function is a <strong>custom deleter</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::unique_ptr&lt;std::FILE, <span class="tk-k">int</span> (*)(std::FILE*)&gt; file{ std::<span class="tk-f">fopen</span>(<span class="tk-s">&quot;data.txt&quot;</span>, <span class="tk-s">&quot;r&quot;</span>), &amp;std::fclose };</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/7.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/7.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-05-move-semantics/"><span class="mono">previous</span><b>7.05 Move Semantics</b></a>
+      <a class="lp-next" href="../7-07-object-relationships/"><span class="mono">next</span><b>7.07 Object Relationships</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/7-06-smart-pointers"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

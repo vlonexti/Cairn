@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Constructors · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/6-02-constructors/">
+  <meta name="description" content="A constructor is a special member function that runs when an object is created and puts it in a valid state. Initialize members in a member initializer list…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Constructors · C++ · Xenon">
+  <meta property="og:description" content="A constructor is a special member function that runs when an object is created and puts it in a valid state. Initialize members in a member initializer list…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/6-02-constructors/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Constructors · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Constructors · C++ · Xenon">
+  <meta name="twitter:description" content="A constructor is a special member function that runs when an object is created and puts it in a valid state. Initialize members in a member initializer list…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Classes and Objects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Constructors</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 9 in milestone 6</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>constructor</strong> is a special member function that runs when an object is created and puts it in a valid state. Initialize members in a <strong>member initializer list</strong>. Know the default, delegating, converting (<code>explicit</code>) and copy constructors.</p>
+      <div class="prose">
+<h2>Born valid</h2>
+<p>If the data is private, how does an object get its starting values? Through a <strong>constructor</strong>: a member function with the same name as the class and no return type. It runs automatically whenever an object is created.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">Fraction</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Fraction</span>(<span class="tk-k">int</span> numerator, <span class="tk-k">int</span> denominator)
+        : m_numerator{ numerator }, m_denominator{ denominator }
+    {
+        <span class="tk-k">if</span> (m_denominator == <span class="tk-n">0</span>)
+        {
+            m_denominator = <span class="tk-n">1</span>;
+        }
+    }
+
+    <span class="tk-k">double</span> <span class="tk-f">value</span>() <span class="tk-k">const</span>
+    {
+        <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;<span class="tk-k">double</span>&gt;(m_numerator) / m_denominator;
+    }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_numerator{};
+    <span class="tk-k">int</span> m_denominator{ <span class="tk-n">1</span> };
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Fraction</span> half{ <span class="tk-n">1</span>, <span class="tk-n">2</span> };
+    std::cout &lt;&lt; half.<span class="tk-f">value</span>() &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 0.5</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Because construction always goes through this function, an invalid <code>Fraction</code> can never exist. The invariant holds from the first moment.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant Code as Fraction half{ 1, 2 }
+    participant Mem as memory
+    participant Ctor as the constructor
+    Code-&gt;&gt;Mem: reserve space for the object
+    Code-&gt;&gt;Ctor: call with 1 and 2
+    Ctor-&gt;&gt;Mem: initialize the members (initializer list)
+    Ctor-&gt;&gt;Ctor: run the body
+    Ctor--&gt;&gt;Code: the object is ready</pre></div>
+<h2>The member initializer list</h2>
+<p>The part after the colon is the <strong>member initializer list</strong>. It initializes each member directly.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">Fraction</span>(<span class="tk-k">int</span> n, <span class="tk-k">int</span> d) : m_numerator{ n }, m_denominator{ d } {}    <span class="tk-c">// initializes</span>
+<span class="tk-f">Fraction</span>(<span class="tk-k">int</span> n, <span class="tk-k">int</span> d) { m_numerator = n; m_denominator = d; }      <span class="tk-c">// initializes with defaults, then assigns</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Initializer list</th>
+<th>Assignment in the body</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Steps</td>
+<td>One</td>
+<td>Two: default-initialize, then overwrite</td>
+</tr>
+<tr>
+<td>Works for <code>const</code> members</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Works for reference members</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Works for members with no default constructor</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+</tbody></table>
+</div>
+<p>Use the list for initializing members. Use the body for anything else, such as validation.</p>
+<blockquote><p>[!warning] Members are initialized in the order they are <strong>declared</strong>
+The order you write them in the list is ignored. If one member&#39;s initializer uses another member, the declaration order decides whether that is safe. Keep the list in declaration order so the code says what actually happens.</p>
+</blockquote>
+<h2>Default constructor</h2>
+<p>A constructor that can be called with no arguments is the <strong>default constructor</strong>. It is what <code>Fraction f{};</code> uses.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Fraction</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Fraction</span>() = <span class="tk-k">default</span>;
+    <span class="tk-f">Fraction</span>(<span class="tk-k">int</span> numerator, <span class="tk-k">int</span> denominator = <span class="tk-n">1</span>)
+        : m_numerator{ numerator }, m_denominator{ denominator }
+    {
+    }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_numerator{ <span class="tk-n">0</span> };
+    <span class="tk-k">int</span> m_denominator{ <span class="tk-n">1</span> };
+};
+
+<span class="tk-t">Fraction</span> a{};        <span class="tk-c">// 0/1</span>
+<span class="tk-t">Fraction</span> b{ <span class="tk-n">5</span> };     <span class="tk-c">// 5/1</span>
+<span class="tk-t">Fraction</span> c{ <span class="tk-n">3</span>, <span class="tk-n">4</span> };  <span class="tk-c">// 3/4</span></code></pre></div>
+<p>If a class declares <strong>no</strong> constructors, the compiler supplies a default one. As soon as you write any constructor, it stops. <code>= default</code> asks for the compiler&#39;s version back; it uses the default member initializers.</p>
+<h2>Delegating constructors</h2>
+<p>One constructor can hand the work to another, so shared setup is written once.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Employee</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Employee</span>(std::string_view name, <span class="tk-k">int</span> id) : m_name{ name }, m_id{ id } {}
+    <span class="tk-f">Employee</span>(std::string_view name) : <span class="tk-t">Employee</span>{ name, <span class="tk-n">0</span> } {}
+
+<span class="tk-k">private</span>:
+    std::string m_name{};
+    <span class="tk-k">int</span> m_id{};
+};</code></pre></div>
+<h2>Converting constructors and <code>explicit</code></h2>
+<p>A constructor callable with one argument also defines an <strong>implicit conversion</strong> from that argument&#39;s type.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Meters</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Meters</span>(<span class="tk-k">double</span> value) : m_value{ value } {}
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">double</span> m_value{};
+};
+
+<span class="tk-k">void</span> <span class="tk-f">run</span>(<span class="tk-t">Meters</span> distance);
+
+<span class="tk-f">run</span>(<span class="tk-n">5.0</span>);    <span class="tk-c">// compiles: 5.0 is silently converted to a Meters</span></code></pre></div>
+<p>Occasionally that is what you want. More often it hides a mistake. <code>explicit</code> switches the implicit conversion off:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">explicit</span> <span class="tk-f">Meters</span>(<span class="tk-k">double</span> value) : m_value{ value } {}
+
+<span class="tk-f">run</span>(<span class="tk-n">5.0</span>);              <span class="tk-c">// error</span>
+<span class="tk-f">run</span>(<span class="tk-t">Meters</span>{ <span class="tk-n">5.0</span> });    <span class="tk-c">// fine: the conversion is visible</span></code></pre></div>
+<blockquote><p>[!tip] Make single-argument constructors <code>explicit</code> by default
+Remove it only when the conversion is natural and harmless, as with <code>std::string</code> from a string literal.</p>
+</blockquote>
+<h2>Copy constructor</h2>
+<p>Creating an object from another of the same type uses the <strong>copy constructor</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Fraction</span> a{ <span class="tk-n">1</span>, <span class="tk-n">2</span> };
+<span class="tk-t">Fraction</span> b{ a };    <span class="tk-c">// b is a copy of a</span></code></pre></div>
+<p>The compiler writes one for you that copies each member in turn. That is correct for classes like <code>Fraction</code>. It is wrong for classes that own a resource such as memory, which is the subject of <a href="../7-03-copy-semantics-shallow-vs-deep/">7.03 Copy Semantics — Shallow vs Deep</a>.</p>
+<h3>Copy elision</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Fraction</span> <span class="tk-f">make</span>()
+{
+    <span class="tk-k">return</span> <span class="tk-t">Fraction</span>{ <span class="tk-n">1</span>, <span class="tk-n">3</span> };
+}
+
+<span class="tk-t">Fraction</span> f{ <span class="tk-f">make</span>() };    <span class="tk-c">// no copy is made</span></code></pre></div>
+<p>The compiler constructs the result directly in <code>f</code>. Skipping the copy like this is <strong>copy elision</strong>, and in this form C++17 guarantees it. Returning objects by value is therefore cheap.</p>
+<h2>Temporary objects</h2>
+<p>An object can be created without a name, used once and discarded.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">print</span>(<span class="tk-t">Fraction</span>{ <span class="tk-n">2</span>, <span class="tk-n">3</span> });
+std::cout &lt;&lt; <span class="tk-t">Fraction</span>{ <span class="tk-n">1</span>, <span class="tk-n">2</span> }.<span class="tk-f">value</span>() &lt;&lt; <span class="tk-s">'\n'</span>;</code></pre></div>
+<p>A <strong>temporary</strong> lives until the end of the statement that created it.</p>
+<h2><code>constexpr</code> constructors</h2>
+<p>A constructor can be <code>constexpr</code>, which allows objects of the class to be built at compile time.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Color</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">constexpr</span> <span class="tk-f">Color</span>(<span class="tk-k">int</span> r, <span class="tk-k">int</span> g, <span class="tk-k">int</span> b) : m_r{ r }, m_g{ g }, m_b{ b } {}
+    <span class="tk-k">constexpr</span> <span class="tk-k">int</span> <span class="tk-f">red</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_r; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_r{};
+    <span class="tk-k">int</span> m_g{};
+    <span class="tk-k">int</span> m_b{};
+};
+
+<span class="tk-k">constexpr</span> <span class="tk-t">Color</span> orange{ <span class="tk-n">255</span>, <span class="tk-n">136</span>, <span class="tk-n">0</span> };</code></pre></div>
+<h2>Which constructor runs?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Constructor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>T t{};</code></td>
+<td>Default</td>
+</tr>
+<tr>
+<td><code>T t{ a, b };</code></td>
+<td>The one whose parameters match</td>
+</tr>
+<tr>
+<td><code>T t{ other };</code></td>
+<td>Copy</td>
+</tr>
+<tr>
+<td><code>T t = 5;</code></td>
+<td>Converting, unless it is <code>explicit</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-classes-and-objects/"><span class="mono">previous</span><b>6.01 Classes and Objects</b></a>
+      <a class="lp-next" href="../6-03-destructors-and-object-lifetime/"><span class="mono">next</span><b>6.03 Destructors and Object Lifetime</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/6-02-constructors"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

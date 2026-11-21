@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Integers · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/2-02-integers/">
+  <meta name="description" content="Integers hold whole numbers. Signed ones can be negative; unsigned ones cannot. Going past the limit is overflow : unsigned wraps round to the other end, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Integers · C++ · Xenon">
+  <meta property="og:description" content="Integers hold whole numbers. Signed ones can be negative; unsigned ones cannot. Going past the limit is overflow : unsigned wraps round to the other end, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/2-02-integers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Integers · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Integers · C++ · Xenon">
+  <meta name="twitter:description" content="Integers hold whole numbers. Signed ones can be negative; unsigned ones cannot. Going past the limit is overflow : unsigned wraps round to the other end, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Types and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Integers</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 9 in milestone 2</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">Integers hold whole numbers. <strong>Signed</strong> ones can be negative; <strong>unsigned</strong> ones cannot. Going past the limit is <strong>overflow</strong>: unsigned wraps round to the other end, and signed is undefined behaviour.</p>
+      <div class="prose">
+<h2>Signed and unsigned</h2>
+<p>An <strong>integer</strong> is a whole number. Every integer type comes in two versions.</p>
+<div class="codeblock diagram plain"><pre><code> 8 bits, signed    :  -128 ────────── 0 ────────── 127
+ 8 bits, unsigned  :                  0 ─────────────────────────── 255</code></pre></div>
+<p>Both have 256 values to spend. The <strong>signed</strong> version spends half of them below zero. The <strong>unsigned</strong> version starts at zero and reaches twice as high.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> temperature{ -<span class="tk-n">5</span> };             <span class="tk-c">// signed: this is the default</span>
+<span class="tk-k">unsigned</span> <span class="tk-k">int</span> population{ <span class="tk-n">8000</span> };   <span class="tk-c">// unsigned: never negative</span></code></pre></div>
+<h2>Overflow</h2>
+<p>What happens when a number goes past the end of its range? Think of a car&#39;s mileage counter rolling from 99999 back to 00000.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;unsigned: 255&quot;] --&gt;|&quot;+ 1&quot;| B[&quot;0&quot;]
+    C[&quot;unsigned: 0&quot;] --&gt;|&quot;- 1&quot;| D[&quot;4294967295&quot;]</pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">unsigned</span> <span class="tk-k">int</span> u{ <span class="tk-n">0</span> };
+    u = u - <span class="tk-n">1</span>;
+    std::cout &lt;&lt; u &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// 4294967295</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The two versions behave very differently here.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>What overflow does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Unsigned</strong></td>
+<td>Wraps round to the other end. Guaranteed, on every computer.</td>
+</tr>
+<tr>
+<td><strong>Signed</strong></td>
+<td><strong>Undefined behaviour.</strong> Anything may happen.</td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout danger"><div class="callout-title"><span>Signed overflow is undefined behaviour</span></div><div class="callout-body"><p><code>int big{ 2147483647 }; ++big;</code> has no defined result. In practice you often see a large negative number, but nothing promises that. If a value might pass two billion, use a bigger type.</p>
+</div></div>
+<h2>Why not use <code>unsigned</code> for anything that cannot be negative?</h2>
+<p>It sounds sensible: a count is never negative, so make it unsigned. In practice this causes more bugs than it prevents.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">unsigned</span> <span class="tk-k">int</span> items{ <span class="tk-n">3</span> };
+    <span class="tk-k">int</span> change{ -<span class="tk-n">1</span> };
+    std::cout &lt;&lt; (change &lt; items) &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// prints 0, meaning false</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>When signed and unsigned meet, the signed value is converted to unsigned. So <code>-1</code> becomes 4294967295, which is not less than 3.</p>
+<div class="callout tip"><div class="callout-title"><span>The rule this course follows</span></div><div class="callout-body"><p>Use plain <code>int</code> for counts and arithmetic. Keep <code>unsigned</code> for working with individual bits (<a href="../2-09-bit-manipulation/">2.09 Bit Manipulation</a>).</p>
+</div></div>
+<h2>Integers with an exact size</h2>
+<p>When you need a guaranteed size, <code>#include &lt;cstdint&gt;</code> gives you types with the number of bits in the name.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Bits</th>
+<th>Range</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::int8_t</code> / <code>std::uint8_t</code></td>
+<td>8</td>
+<td>-128 to 127 / 0 to 255</td>
+</tr>
+<tr>
+<td><code>std::int16_t</code> / <code>std::uint16_t</code></td>
+<td>16</td>
+<td>about ±32 thousand / 0 to 65,535</td>
+</tr>
+<tr>
+<td><code>std::int32_t</code> / <code>std::uint32_t</code></td>
+<td>32</td>
+<td>about ±2.1 billion / 0 to 4.2 billion</td>
+</tr>
+<tr>
+<td><code>std::int64_t</code> / <code>std::uint64_t</code></td>
+<td>64</td>
+<td>about ±9.2 billion billion</td>
+</tr>
+</tbody></table>
+</div>
+<p>One more turns up constantly: <code>std::size_t</code>. It is the unsigned type C++ uses for sizes, including the result of <code>sizeof</code>.</p>
+<div class="callout warning"><div class="callout-title"><span>The 8-bit types print as characters</span></div><div class="callout-body"><p><code>std::cout &lt;&lt; std::int8_t{ 65 };</code> prints <code>A</code>, not <code>65</code>. On most systems these types are really <code>char</code> underneath.</p>
+</div></div>
+<h2>Writing whole numbers in code</h2>
+<p>A value written directly in your code is called a <strong>literal</strong>. There are several ways to write an integer literal.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> decimal{ <span class="tk-n">255</span> };
+<span class="tk-k">int</span> hex{ <span class="tk-n">0xFF</span> };                    <span class="tk-c">// base 16, also 255</span>
+<span class="tk-k">int</span> binary{ <span class="tk-n">0b1111'1111</span> };          <span class="tk-c">// base 2, also 255</span>
+<span class="tk-k">int</span> million{ <span class="tk-n">1'000'000</span> };           <span class="tk-c">// ' is only there to help you read it</span>
+<span class="tk-k">long</span> <span class="tk-k">long</span> big{ <span class="tk-n">9'000'000'000LL</span> };   <span class="tk-c">// LL marks the literal as long long</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Prefix or suffix</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>0x</code></td>
+<td>hexadecimal (base 16)</td>
+</tr>
+<tr>
+<td><code>0b</code></td>
+<td>binary (base 2)</td>
+</tr>
+<tr>
+<td><code>&#39;</code> between digits</td>
+<td>a separator the compiler ignores</td>
+</tr>
+<tr>
+<td><code>LL</code> at the end</td>
+<td>this literal is a <code>long long</code></td>
+</tr>
+<tr>
+<td><code>u</code> at the end</td>
+<td>this literal is unsigned</td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout warning"><div class="callout-title"><span>A leading zero means octal</span></div><div class="callout-body"><p><code>017</code> is not seventeen. A literal starting with <code>0</code> is read in base 8, so it is 15. Never pad a number with zeros.</p>
+</div></div>
+<h2>Two reminders from Milestone 1</h2>
+<ul>
+<li>Dividing integers cuts off the decimals: <code>7 / 2</code> is <code>3</code>.</li>
+<li>With <code>%</code>, the sign of the result follows the left-hand side: <code>-7 % 3</code> is <code>-1</code>.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-memory-bits-and-fundamental-types/"><span class="mono">previous</span><b>2.01 Memory, Bits and Fundamental Types</b></a>
+      <a class="lp-next" href="../2-03-floating-point-numbers/"><span class="mono">next</span><b>2.03 Floating Point Numbers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/2-02-integers"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

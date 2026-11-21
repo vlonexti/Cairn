@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Metatables and Operators · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/5-01-metatables-and-operators/">
+  <meta name="description" content="What a metatable is, setmetatable and getmetatable, giving tables arithmetic with add and friends, comparisons with eq, lt and le, tostring, len, concat and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Metatables and Operators · Lua · Xenon">
+  <meta property="og:description" content="What a metatable is, setmetatable and getmetatable, giving tables arithmetic with add and friends, comparisons with eq, lt and le, tostring, len, concat and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/5-01-metatables-and-operators/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Metatables and Operators · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Metatables and Operators · Lua · Xenon">
+  <meta name="twitter:description" content="What a metatable is, setmetatable and getmetatable, giving tables arithmetic with add and friends, comparisons with eq, lt and le, tostring, len, concat and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Metatables and Objects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Metatables and Operators</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">What a metatable is, setmetatable and getmetatable, giving tables arithmetic with __add and friends, comparisons with __eq, __lt and __le, __tostring, __len, __concat and __call, and sharing one metatable between many tables.</p>
+      <div class="prose">
+<h2>Changing what operators do</h2>
+<p>Adding two tables is normally an error. A <strong>metatable</strong> is an ordinary table that changes how another table behaves: it holds <strong>metamethods</strong>, functions with special names that Lua calls when an operation would otherwise fail or needs a decision.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> mt = {}
+mt.__add = <span class="tk-k">function</span>(a, b)
+    <span class="tk-k">return</span> { x = a.x + b.x, y = a.y + b.y }
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> p = <span class="tk-f">setmetatable</span>({ x = <span class="tk-n">1</span>, y = <span class="tk-n">2</span> }, mt)
+<span class="tk-k">local</span> q = <span class="tk-f">setmetatable</span>({ x = <span class="tk-n">10</span>, y = <span class="tk-n">20</span> }, mt)
+<span class="tk-k">local</span> r = p + q
+<span class="tk-f">print</span>(r.x, r.y, <span class="tk-f">getmetatable</span>(p) == mt)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>11	22	true</code></pre></div>
+<p><code>setmetatable(t, mt)</code> gives <code>t</code> the metatable <code>mt</code> and returns <code>t</code>, so it fits on one line with the constructor. <code>getmetatable(t)</code> reads it back.</p>
+<p>When Lua sees <code>p + q</code> and <code>p</code> is not a number, it looks for <code>__add</code> in <code>p</code>&#39;s metatable, then in <code>q</code>&#39;s, and calls the first one it finds with both operands.</p>
+<h2>A small vector type</h2>
+<p>The usual pattern: one metatable for all values of the type, and a function that makes new ones.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Vec = {}
+Vec.__index = Vec        <span class="tk-c">-- explained in the next lesson</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">vec</span>(x, y) <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ x = x, y = y }, Vec) <span class="tk-k">end</span>
+
+Vec.__add = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> <span class="tk-f">vec</span>(a.x + b.x, a.y + b.y) <span class="tk-k">end</span>
+Vec.__sub = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> <span class="tk-f">vec</span>(a.x - b.x, a.y - b.y) <span class="tk-k">end</span>
+Vec.__mul = <span class="tk-k">function</span>(a, b)
+    <span class="tk-k">if</span> <span class="tk-f">type</span>(a) == <span class="tk-s">&quot;number&quot;</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-f">vec</span>(a * b.x, a * b.y) <span class="tk-k">end</span>
+    <span class="tk-k">if</span> <span class="tk-f">type</span>(b) == <span class="tk-s">&quot;number&quot;</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-f">vec</span>(a.x * b, a.y * b) <span class="tk-k">end</span>
+    <span class="tk-k">return</span> a.x * b.x + a.y * b.y            <span class="tk-c">-- two vectors: the dot product</span>
+<span class="tk-k">end</span>
+Vec.__unm = <span class="tk-k">function</span>(a) <span class="tk-k">return</span> <span class="tk-f">vec</span>(-a.x, -a.y) <span class="tk-k">end</span>
+Vec.__eq = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a.x == b.x <span class="tk-k">and</span> a.y == b.y <span class="tk-k">end</span>
+Vec.__tostring = <span class="tk-k">function</span>(a) <span class="tk-k">return</span> <span class="tk-s">&quot;(&quot;</span> .. a.x .. <span class="tk-s">&quot;, &quot;</span> .. a.y .. <span class="tk-s">&quot;)&quot;</span> <span class="tk-k">end</span>
+Vec.__len = <span class="tk-k">function</span>(a) <span class="tk-k">return</span> math.<span class="tk-f">sqrt</span>(a.x * a.x + a.y * a.y) <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> a, b = <span class="tk-f">vec</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>), <span class="tk-f">vec</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>)
+<span class="tk-f">print</span>(<span class="tk-f">tostring</span>(a + b), <span class="tk-f">tostring</span>(a - b), <span class="tk-f">tostring</span>(<span class="tk-n">2</span> * b), <span class="tk-f">tostring</span>(-a))
+<span class="tk-f">print</span>(a * b, #a, a == <span class="tk-f">vec</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>), a ~= b)
+<span class="tk-f">print</span>(a)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>(4, 6)	(2, 2)	(2, 4)	(-3, -4)
+11	5.0	true	true
+(3, 4)</code></pre></div>
+<p><code>print</code> calls <code>tostring</code>, which uses <code>__tostring</code>, so a vector prints nicely. <code>__eq</code> is only asked when both sides are tables (or both userdata); <code>a ~= b</code> is simply <code>not (a == b)</code>.</p>
+<h2>The metamethods</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Called for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>__add</code> <code>__sub</code> <code>__mul</code> <code>__div</code> <code>__mod</code> <code>__pow</code> <code>__unm</code> <code>__idiv</code></td>
+<td><code>+ - * / % ^</code>, unary <code>-</code>, <code>//</code></td>
+</tr>
+<tr>
+<td><code>__band</code> <code>__bor</code> <code>__bxor</code> <code>__shl</code> <code>__shr</code> <code>__bnot</code></td>
+<td>the bitwise operators <code>&amp; | ~ &lt;&lt; &gt;&gt; ~</code></td>
+</tr>
+<tr>
+<td><code>__concat</code></td>
+<td><code>..</code></td>
+</tr>
+<tr>
+<td><code>__len</code></td>
+<td><code>#</code></td>
+</tr>
+<tr>
+<td><code>__eq</code> <code>__lt</code> <code>__le</code></td>
+<td><code>==</code>, <code>&lt;</code> (and <code>&gt;</code>), <code>&lt;=</code> (and <code>&gt;=</code>)</td>
+</tr>
+<tr>
+<td><code>__call</code></td>
+<td>calling the table like a function</td>
+</tr>
+<tr>
+<td><code>__tostring</code></td>
+<td><code>tostring</code> and <code>print</code></td>
+</tr>
+<tr>
+<td><code>__index</code> <code>__newindex</code></td>
+<td>reading and writing missing keys (next lesson)</td>
+</tr>
+<tr>
+<td><code>__close</code> <code>__gc</code> <code>__mode</code> <code>__name</code> <code>__metatable</code></td>
+<td>resources, garbage collection, weak tables, names, protection</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Comparisons and sorting</h2>
+<p>With <code>__lt</code>, values can be compared with <code>&lt;</code>, which also lets <code>table.sort</code> sort them without a comparison function:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> Money = {}
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">money</span>(cents) <span class="tk-k">return</span> <span class="tk-f">setmetatable</span>({ cents = cents }, Money) <span class="tk-k">end</span>
+Money.__lt = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a.cents &lt; b.cents <span class="tk-k">end</span>
+Money.__le = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a.cents &lt;= b.cents <span class="tk-k">end</span>
+Money.__tostring = <span class="tk-k">function</span>(m) <span class="tk-k">return</span> string.<span class="tk-f">format</span>(<span class="tk-s">&quot;$%d.%02d&quot;</span>, m.cents // <span class="tk-n">100</span>, m.cents % <span class="tk-n">100</span>) <span class="tk-k">end</span>
+Money.__concat = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> <span class="tk-f">tostring</span>(a) .. <span class="tk-f">tostring</span>(b) <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> prices = { <span class="tk-f">money</span>(<span class="tk-n">450</span>), <span class="tk-f">money</span>(<span class="tk-n">99</span>), <span class="tk-f">money</span>(<span class="tk-n">1200</span>) }
+table.<span class="tk-f">sort</span>(prices)
+<span class="tk-f">print</span>(prices[<span class="tk-n">1</span>] .. <span class="tk-s">&quot; &lt; &quot;</span> .. prices[<span class="tk-n">2</span>] .. <span class="tk-s">&quot; &lt; &quot;</span> .. prices[<span class="tk-n">3</span>])
+<span class="tk-f">print</span>(<span class="tk-f">money</span>(<span class="tk-n">5</span>) &lt;= <span class="tk-f">money</span>(<span class="tk-n">5</span>), <span class="tk-f">money</span>(<span class="tk-n">7</span>) &gt; <span class="tk-f">money</span>(<span class="tk-n">3</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>$0.99 &lt; $4.50 &lt; $12.00
+true	true</code></pre></div>
+<p><code>__concat</code> receives the two operands, one of which may be a string, which is why it calls <code>tostring</code> on both.</p>
+<h2>Calling a table</h2>
+<p><code>__call</code> makes a table callable. The table itself arrives as the first argument:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> greeter = <span class="tk-f">setmetatable</span>({ greeting = <span class="tk-s">&quot;Hello&quot;</span> }, {
+    __call = <span class="tk-k">function</span>(<span class="tk-k">self</span>, name) <span class="tk-k">return</span> <span class="tk-k">self</span>.greeting .. <span class="tk-s">&quot;, &quot;</span> .. name .. <span class="tk-s">&quot;!&quot;</span> <span class="tk-k">end</span>,
+})
+<span class="tk-f">print</span>(<span class="tk-f">greeter</span>(<span class="tk-s">&quot;Ada&quot;</span>))
+greeter.greeting = <span class="tk-s">&quot;Hi&quot;</span>
+<span class="tk-f">print</span>(<span class="tk-f">greeter</span>(<span class="tk-s">&quot;Lua&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Hello, Ada!
+Hi, Lua!</code></pre></div>
+<h2>Only tables (from Lua)</h2>
+<p>From Lua code you can set metatables on tables only. Strings share one metatable set by the library, which is what makes <code>s:upper()</code> work: its <code>__index</code> is the <code>string</code> table.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-f">print</span>(<span class="tk-f">getmetatable</span>(<span class="tk-s">&quot;&quot;</span>).__index == string)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>true</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-utf-8-and-bytes/"><span class="mono">previous</span><b>4.05 UTF-8 and Bytes</b></a>
+      <a class="lp-next" href="../5-02-index-and-newindex/"><span class="mono">next</span><b>5.02 __index and __newindex</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/5-01-metatables-and-operators"></script>
+</body>
+</html>

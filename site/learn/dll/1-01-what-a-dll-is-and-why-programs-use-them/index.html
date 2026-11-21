@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>What a DLL Is and Why Programs Use Them · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/1-01-what-a-dll-is-and-why-programs-use-them/">
+  <meta name="description" content="A dynamic-link library is compiled code that is not part of your .exe but is joined to it when the program starts or while it runs. This lesson explains what…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What a DLL Is and Why Programs Use Them · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="A dynamic-link library is compiled code that is not part of your .exe but is joined to it when the program starts or while it runs. This lesson explains what…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/1-01-what-a-dll-is-and-why-programs-use-them/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="What a DLL Is and Why Programs Use Them · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What a DLL Is and Why Programs Use Them · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="A dynamic-link library is compiled code that is not part of your .exe but is joined to it when the program starts or while it runs. This lesson explains what…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>DLL Foundations</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">What a DLL Is and Why Programs Use Them</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 6 in milestone 1</span><span>7 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>dynamic-link library</strong> is compiled code that is not part of your <code>.exe</code> but is joined to it when the program starts or while it runs. This lesson explains what a DLL contains, how it differs from a static library, and the real reasons programs are split into them, along with the costs.</p>
+      <div class="prose">
+<h2>Code that lives in another file</h2>
+<p>Every Windows program you have built so far ends up as one <code>.exe</code>. The compiler turns each <code>.cpp</code> file into an object file, and the linker copies the code from every object file, and from every static library you use, into that one executable.</p>
+<p>A <strong>DLL</strong> (dynamic-link library) is the other choice. It is a file with the same format as an <code>.exe</code> (both are <strong>PE</strong> files, &quot;Portable Executable&quot;) that holds compiled functions and data but has no <code>main</code>. It cannot run by itself. Instead, a running program asks Windows to <strong>map the DLL into its memory</strong>, and from then on it can call the DLL&#39;s functions as if they were its own.</p>
+<p>Look at almost any program on your computer and you find DLLs next to it, and many more in <code>C:\Windows\System32</code>: <code>kernel32.dll</code>, <code>user32.dll</code>, <code>d3d11.dll</code>. Your own <code>Hello, world</code> already uses several. <code>std::cout</code> ends up calling <code>WriteFile</code> in <code>kernel32.dll</code>, and unless you link the C runtime statically, the C and C++ runtime themselves live in DLLs (<code>vcruntime140.dll</code>, <code>msvcp140.dll</code>, <code>ucrtbase.dll</code>).</p>
+<h2>Static library or DLL</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Static library (<code>.lib</code>)</th>
+<th>DLL (<code>.dll</code> plus its import <code>.lib</code>)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>When the code joins your program</td>
+<td>At <strong>link</strong> time, copied into the <code>.exe</code></td>
+<td>At <strong>load</strong> time or run time, mapped from the DLL file</td>
+</tr>
+<tr>
+<td>Files you ship</td>
+<td>Just the <code>.exe</code></td>
+<td>The <code>.exe</code> and every DLL it needs</td>
+</tr>
+<tr>
+<td>Update a bug fix in the library</td>
+<td>Rebuild and reship every program that uses it</td>
+<td>Replace the DLL; programs pick it up next time they start</td>
+</tr>
+<tr>
+<td>Two programs using it</td>
+<td>Each has its own copy on disk and in memory</td>
+<td>One copy on disk; Windows can <strong>share</strong> its code pages between processes</td>
+</tr>
+<tr>
+<td>Calling a function</td>
+<td>A direct call</td>
+<td>Usually an indirect call through a table (lesson 1.05)</td>
+</tr>
+<tr>
+<td>Can go missing</td>
+<td>No</td>
+<td>Yes: &quot;The code execution cannot proceed because X.dll was not found&quot;</td>
+</tr>
+</tbody></table>
+</div>
+<p>Neither is &quot;better&quot;. Lesson 4.05 comes back to choosing between them once you know all the costs.</p>
+<h2>Why programs use DLLs</h2>
+<p><strong>1. Sharing one copy.</strong> <code>user32.dll</code> is used by nearly every program. Windows loads its code once and maps the same physical memory pages into every process that uses it. Only pages a process writes to get private copies. With hundreds of processes, that saves a great deal of memory.</p>
+<p><strong>2. Updating parts separately.</strong> A graphics driver, a font engine or a game&#39;s audio library can be replaced without rebuilding the programs that use it, as long as the replacement keeps the same <strong>interface</strong> (milestone 3 is about keeping that promise).</p>
+<p><strong>3. Loading code you did not have at build time.</strong> A program can look in a folder, find DLLs it has never seen, load them and call into them. That is how plugin systems, mods and many editors work (lesson 5.01).</p>
+<p><strong>4. Reloading code while running.</strong> Game developers put gameplay code in a DLL, change it, rebuild it and swap it into the running game without restarting (lesson 5.03).</p>
+<p><strong>5. Language boundaries.</strong> A DLL with a plain C interface can be called from C#, Python, Rust or a scripting language. The C ABI is the common language they all speak.</p>
+<h2>The costs</h2>
+<ul>
+<li><strong>Distribution.</strong> Every DLL is a file that can be missing, the wrong version, or the wrong architecture (a 32-bit DLL cannot load into a 64-bit process).</li>
+<li><strong>A boundary.</strong> Memory, exceptions and C++ library types do not cross safely between modules built with different settings (lesson 2.05 and 2.06).</li>
+<li><strong>Start-up time.</strong> Each DLL must be found, mapped and connected when the program starts.</li>
+<li><strong>Security.</strong> If Windows looks for a DLL in the wrong place, it can load the wrong file. Lesson 4.02 shows how to load only the files you meant.</li>
+</ul>
+<h2>What is inside a DLL</h2>
+<p>Because it is a PE file, a DLL has the same parts as an <code>.exe</code>:</p>
+<div class="codeblock diagram plain"><pre><code>my_library.dll
+├── headers           which machine (x64), where each section goes, the entry point
+├── .text             machine code of the functions
+├── .rdata            read-only data, plus the EXPORT table: the names and addresses it offers
+├── .data             global variables
+├── import table      the DLLs and functions it needs in turn
+└── .reloc            how to fix addresses if it is loaded somewhere unexpected (lesson 1.02)</code></pre></div>
+<p>The <strong>export table</strong> is what makes a DLL a library: a list of names (and numbers, called ordinals) with the address of each function inside the file. A program that wants <code>AddNumbers</code> from <code>my_library.dll</code> looks that name up in the export table.</p>
+<div class="callout note"><div class="callout-title"><span>Build along in Visual Studio</span></div><div class="callout-body"><p>The lessons in this course describe Visual Studio projects you build on your own Windows machine: a DLL project and a program that uses it. The website&#39;s compiler builds single programs, so the practice tasks here check the logic behind each idea rather than building real DLLs.</p>
+</div></div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Thinking a DLL makes code faster</span></div><div class="callout-body"><p>Calls into a DLL go through an extra jump. Sharing memory helps the whole system, not one program&#39;s speed.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Shipping a program without its DLLs</span></div><div class="callout-body"><p>Run your program on a clean machine, or a fresh virtual machine, before you share it. Missing runtime DLLs are the most common cause of &quot;it works on my machine&quot;.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What can a DLL not do on its own?</div><ul><li>Run: it has no main and must be loaded into a process</li><li>Contain machine code</li><li>Contain global variables</li></ul><details><summary>Show the answer</summary><p><b>Run: it has no main and must be loaded into a process</b> A DLL is loaded into another program&#39;s process and called from there.</p></details></li><li><div class="q">Two programs use the same DLL. What does Windows share between them?</div><ul><li>The DLL&#39;s code pages in physical memory, until a process writes to a page</li><li>Their global variables</li><li>Their stacks</li></ul><details><summary>Show the answer</summary><p><b>The DLL&#39;s code pages in physical memory, until a process writes to a page</b> Code is read-only and shared; data written by a process becomes that process&#39;s own copy.</p></details></li><li><div class="q">Which table lists the functions a DLL offers to other modules?</div><ul><li>The export table</li><li>The import table</li><li>The relocation table</li></ul><details><summary>Show the answer</summary><p><b>The export table</b> Imports are what a module needs; exports are what it offers.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-how-the-loader-maps-a-dll-into-a-process/"><span class="mono">next</span><b>1.02 How the Loader Maps a DLL into a Process</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/1-01-what-a-dll-is-and-why-programs-use-them"></script>
+</body>
+</html>

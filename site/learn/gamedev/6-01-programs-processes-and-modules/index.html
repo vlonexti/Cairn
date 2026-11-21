@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Programs, Processes and Modules · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/6-01-programs-processes-and-modules/">
+  <meta name="description" content="A program is a file; a process is a running instance of one, with its own address space, threads and handles; a module is an executable or DLL loaded into a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Programs, Processes and Modules · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A program is a file; a process is a running instance of one, with its own address space, threads and handles; a module is an executable or DLL loaded into a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/6-01-programs-processes-and-modules/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Programs, Processes and Modules · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Programs, Processes and Modules · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A program is a file; a process is a running instance of one, with its own address space, threads and handles; a module is an executable or DLL loaded into a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Processes, Threads and Virtual Memory</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Programs, Processes and Modules</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 9 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A <strong>program</strong> is a file; a <strong>process</strong> is a running instance of one, with its own address space, threads and handles; a <strong>module</strong> is an executable or DLL loaded into a process. This lesson makes the distinction concrete by starting a child process, waiting for it, reading its exit code, and passing it a command line.</p>
+      <div class="prose">
+<h2>Three words, three things</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Is</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Program</strong></td>
+<td>A file on disk</td>
+<td><code>C:\Games\Dungeon\dungeon.exe</code></td>
+</tr>
+<tr>
+<td><strong>Process</strong></td>
+<td>A running instance: an address space, one or more threads, a handle table, a security token</td>
+<td>Two copies of <code>dungeon.exe</code> running are two processes</td>
+</tr>
+<tr>
+<td><strong>Module</strong></td>
+<td>An <code>.exe</code> or <code>.dll</code> mapped into a process</td>
+<td><code>dungeon.exe</code>, <code>kernel32.dll</code>, <code>plugin.dll</code> inside one process</td>
+</tr>
+</tbody></table>
+</div>
+<p>A process does not run code by itself. <strong>Threads</strong> run code; the process is the container that gives them memory and resources. Every process starts with one thread and may create more (lesson 6.05). When the last thread ends, or any thread calls <code>ExitProcess</code>, the process ends and Windows frees everything it held.</p>
+<h2>Starting another program</h2>
+<p>Games start other processes more often than you might think: a crash reporter, a launcher starting the game, an updater, a level editor launching the game to test a level. The function is <code>CreateProcessW</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::wstring commandLine{ <span class="tk-s">L&quot;cmd.exe /c exit 7&quot;</span> };      <span class="tk-c">// must be writable: CreateProcessW may modify it</span>
+
+    STARTUPINFOW startup{};
+    startup.cb = <span class="tk-k">sizeof</span>(startup);
+    PROCESS_INFORMATION info{};
+
+    <span class="tk-k">if</span> (!<span class="tk-f">CreateProcessW</span>(<span class="tk-k">nullptr</span>, commandLine.<span class="tk-f">data</span>(), <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>, FALSE, CREATE_NO_WINDOW,
+                        <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>, &amp;startup, &amp;info))
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;CreateProcessW failed: &quot;</span> &lt;&lt; <span class="tk-f">GetLastError</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    }
+
+    <span class="tk-f">WaitForSingleObject</span>(info.hProcess, INFINITE);            <span class="tk-c">// a process handle is signalled when it ends</span>
+    DWORD exitCode{ <span class="tk-n">0</span> };
+    <span class="tk-f">GetExitCodeProcess</span>(info.hProcess, &amp;exitCode);
+    std::cout &lt;&lt; <span class="tk-s">&quot;the child exited with code &quot;</span> &lt;&lt; exitCode &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-f">CloseHandle</span>(info.hThread);                                <span class="tk-c">// CreateProcessW gives you two handles:</span>
+    <span class="tk-f">CloseHandle</span>(info.hProcess);                               <span class="tk-c">// close both</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>the child exited with code 7</code></pre></div>
+<p>The pieces:</p>
+<ul>
+<li><strong>The command line</strong> is one string, not an array: the program name followed by its arguments. The new process splits it into <code>argv</code> itself. Arguments containing spaces must be quoted: <code>L&quot;\&quot;C:\\My Games\\editor.exe\&quot; --level \&quot;forest 2\&quot;&quot;</code>.</li>
+<li><strong><code>PROCESS_INFORMATION</code></strong> returns a handle to the new process, a handle to its first thread, and both ids. You own both handles and must close them, even if you do not need them.</li>
+<li><strong>Waiting.</strong> A process handle is a kernel object that becomes <strong>signalled</strong> when the process ends, so <code>WaitForSingleObject</code> waits for it. The exit code is whatever the child returned from <code>main</code> or passed to <code>ExitProcess</code>.</li>
+</ul>
+<p>Exit code 0 conventionally means success; anything else is an error number the program chose. Windows itself uses some large values: <code>0xC0000005</code> (3221225477) means the child crashed with an access violation.</p>
+<h2>Process ids and handles</h2>
+<p>A process has a <strong>process id</strong> (PID), a number unique among running processes, shown in Task Manager. A PID is not a handle: to do anything with a process you hold only the id of, you must open a handle to it with <code>OpenProcess</code>, asking for specific access rights, which Windows may refuse (lesson 6.08).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> DWORD myId{ <span class="tk-f">GetCurrentProcessId</span>() };
+    HANDLE me{ <span class="tk-f">OpenProcess</span>(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, myId) };
+    <span class="tk-k">wchar_t</span> path[MAX_PATH]{};
+    DWORD size{ MAX_PATH };
+    <span class="tk-k">const</span> <span class="tk-k">bool</span> ok{ me &amp;&amp; <span class="tk-f">QueryFullProcessImageNameW</span>(me, <span class="tk-n">0</span>, path, &amp;size) };
+    std::cout &lt;&lt; <span class="tk-s">&quot;opened myself and read my image name: &quot;</span> &lt;&lt; (ok ? <span class="tk-s">&quot;yes&quot;</span> : <span class="tk-s">&quot;no&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">if</span> (me) <span class="tk-f">CloseHandle</span>(me);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>opened myself and read my image name: yes</code></pre></div>
+<p><code>GetCurrentProcess()</code> returns a <strong>pseudo-handle</strong>, the special value -1, meaning &quot;the current process&quot;, which never needs closing.</p>
+<h2>Modules inside a process</h2>
+<p>Every process has at least one module, its <code>.exe</code>, and nearly always dozens of DLLs. Each module occupies its own range of the address space, starting at its <code>HMODULE</code> (lesson 5.08). Visual Studio&#39;s <strong>Modules</strong> window lists them while debugging; lesson 6.07 lists them from code.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    subgraph P[&quot;Process dungeon.exe, PID 18324&quot;]
+        T1[&quot;Thread 1 (main)&quot;]
+        T2[&quot;Thread 2 (audio)&quot;]
+        subgraph AS[&quot;Address space&quot;]
+            M1[&quot;dungeon.exe at 0x7FF6A1200000&quot;]
+            M2[&quot;kernel32.dll at 0x7FFE4C0A0000&quot;]
+            M3[&quot;plugin.dll at 0x7FFE2B110000&quot;]
+            H[&quot;Heaps, stacks, other memory&quot;]
+        end
+        HT[&quot;Handle table: files, events, threads&quot;]
+    end</pre></div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Passing a string literal as the command line</span></div><div class="callout-body"><p><code>CreateProcessW</code> may write into the buffer, so a literal crashes. Use a <code>std::wstring</code> or a <code>wchar_t</code> array.</p>
+</div></div>
+<blockquote><p>[!warning] Forgetting <code>info.hThread</code>
+Two handles come back, and both leak if not closed.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Unquoted paths with spaces</span></div><div class="callout-body"><p><code>C:\My Games\editor.exe</code> is read as the program <code>C:\My</code> with arguments. Quote the program name and any argument containing spaces.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Confusing a PID with a handle</span></div><div class="callout-body"><p>A PID identifies a process; to act on it you need a handle from <code>OpenProcess</code>.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Two copies of the same game are running. How many processes and how many program files are there?</div><ul><li>Two processes, one program file</li><li>One process, two program files</li><li>One process, one program file</li></ul><details><summary>Show the answer</summary><p><b>Two processes, one program file</b> Each running instance is its own process with its own address space.</p></details></li><li><div class="q">How do you wait for a child process to finish?</div><ul><li><code>WaitForSingleObject</code> on its process handle, which becomes signalled when it ends</li><li>Call <code>Sleep</code> until it disappears from Task Manager</li><li>Read its exit code in a loop</li></ul><details><summary>Show the answer</summary><p><b><code>WaitForSingleObject</code> on its process handle, which becomes signalled when it ends</b> Process handles are waitable kernel objects.</p></details></li><li><div class="q">A child process&#39;s exit code is 3221225477 (<code>0xC0000005</code>). What happened?</div><ul><li>It crashed with an access violation</li><li>It succeeded</li><li>It was closed by the user</li></ul><details><summary>Show the answer</summary><p><b>It crashed with an access violation</b> <code>0xC0000005</code> is the status code for an access violation.</p></details></li><li><div class="q">What is the difference between a process id and a process handle?</div><ul><li>The id names the process system-wide; a handle is a per-process reference with specific rights, obtained from <code>OpenProcess</code> or <code>CreateProcessW</code></li><li>They are the same number</li><li>Handles are only for threads</li></ul><details><summary>Show the answer</summary><p><b>The id names the process system-wide; a handle is a per-process reference with specific rights, obtained from <code>OpenProcess</code> or <code>CreateProcessW</code></b> Windows checks rights when the handle is opened.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-09-the-console-api/"><span class="mono">previous</span><b>5.09 The Console API</b></a>
+      <a class="lp-next" href="../6-02-virtual-address-spaces/"><span class="mono">next</span><b>6.02 Virtual Address Spaces</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/6-01-programs-processes-and-modules"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

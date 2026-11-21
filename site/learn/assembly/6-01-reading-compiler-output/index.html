@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Reading Compiler Output · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/6-01-reading-compiler-output/">
+  <meta name="description" content="Compiler output follows recognisable patterns. Leaf functions have no frame, xor zeroes, lea does arithmetic, and test, setcc and cmov replace branches.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Reading Compiler Output · Assembly · Xenon">
+  <meta property="og:description" content="Compiler output follows recognisable patterns. Leaf functions have no frame, xor zeroes, lea does arithmetic, and test, setcc and cmov replace branches.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/6-01-reading-compiler-output/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Reading Compiler Output · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reading Compiler Output · Assembly · Xenon">
+  <meta name="twitter:description" content="Compiler output follows recognisable patterns. Leaf functions have no frame, xor zeroes, lea does arithmetic, and test, setcc and cmov replace branches.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Real Programs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Reading Compiler Output</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Compiler output follows recognisable patterns. Leaf functions have no frame, xor zeroes, lea does arithmetic, and test, setcc and cmov replace branches. Division by a constant becomes a multiplication by a magic reciprocal, loops are rotated with one test in front, and simple loops over arrays are vectorised to work on 16 bytes at a time.</p>
+      <div class="prose">
+<h2>Where to look</h2>
+<p><code>gcc -O2 -S -masm=intel file.c</code> writes the assembly to <code>file.s</code>; <code>objdump -d -M intel program</code> disassembles a finished program; <strong>Compiler Explorer</strong> (godbolt.org) shows both live, colour-coded line by line. Its Intel syntax is the GNU assembler&#39;s, slightly different from NASM&#39;s: <code>QWORD PTR [rdi]</code> where NASM writes <code>qword [rdi]</code>, and <code>movabs</code> for a <code>mov</code> of a 64-bit constant.</p>
+<p>Everything below is real GCC 15 output at <code>-O2</code>.</p>
+<h2>Small functions</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">long</span> <span class="tk-f">times9</span>(<span class="tk-k">long</span> x) { <span class="tk-k">return</span> x * <span class="tk-n">9</span>; }
+<span class="tk-k">int</span> <span class="tk-f">is_even</span>(<span class="tk-k">int</span> x) { <span class="tk-k">return</span> x % <span class="tk-n">2</span> == <span class="tk-n">0</span>; }</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">times9:</span>
+        lea     <span class="tk-t">rax</span>, [<span class="tk-t">rdi</span>+<span class="tk-t">rdi</span>*<span class="tk-n">8</span>]        <span class="tk-c">; x + x*8: no multiply at all</span>
+        ret
+<span class="tk-f">is_even:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-t">edi</span>
+        not     <span class="tk-t">eax</span>                     <span class="tk-c">; flip the bits: the lowest is now 1 for even x</span>
+        and     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+        ret</code></pre></div>
+<p>No <code>push rbp</code>, no frame: a leaf function that keeps everything in registers needs none. Arguments arrive in <code>rdi</code> (<code>edi</code> for an <code>int</code>), the answer leaves in <code>rax</code> (<code>eax</code>).</p>
+<h2>Division by a constant</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">unsigned</span> <span class="tk-k">long</span> <span class="tk-f">div10</span>(<span class="tk-k">unsigned</span> <span class="tk-k">long</span> x) { <span class="tk-k">return</span> x / <span class="tk-n">10</span>; }</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">div10:</span>
+        movabs  <span class="tk-t">rax</span>, -<span class="tk-n">3689348814741910323</span>      <span class="tk-c">; 0xCCCCCCCCCCCCCCCD</span>
+        mul     <span class="tk-t">rdi</span>                            <span class="tk-c">; rdx:rax = x * that</span>
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rdx</span>                       <span class="tk-c">; keep the high 64 bits</span>
+        shr     <span class="tk-t">rax</span>, <span class="tk-n">3</span>
+        ret</code></pre></div>
+<p>No <code>div</code> anywhere. The constant is about 2⁶⁷ ÷ 10, so taking the high 64 bits of the product (that is, dividing by 2⁶⁴) and shifting right by 3 more divides by 2⁶⁷ × 10 ÷ 2⁶⁷: by 10. The constant is chosen so the result is exact for <strong>every</strong> 64-bit x. <code>mul</code> takes about 3 cycles; <code>div</code> takes 20 to 40. Signed division adds a correction for negative numbers:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">sdiv3:</span>                                         <span class="tk-c">; long sdiv3(long x) { return x / 3; }</span>
+        movabs  <span class="tk-t">rax</span>, <span class="tk-n">6148914691236517206</span>       <span class="tk-c">; 0x5555555555555556, about 2^64 / 3</span>
+        imul    <span class="tk-t">rdi</span>
+        sar     <span class="tk-t">rdi</span>, <span class="tk-n">63</span>                        <span class="tk-c">; -1 if x was negative, else 0</span>
+        mov     <span class="tk-t">rax</span>, <span class="tk-t">rdx</span>
+        sub     <span class="tk-t">rax</span>, <span class="tk-t">rdi</span>                       <span class="tk-c">; add 1 for negative x, to round towards zero</span>
+        ret</code></pre></div>
+<p>When you see a huge strange constant followed by <code>mul</code> or <code>imul</code> and a shift, think &quot;division&quot;.</p>
+<h2>Loops</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">long</span> <span class="tk-f">sum</span>(<span class="tk-k">const</span> <span class="tk-k">long</span> *v, <span class="tk-k">long</span> n)
+{
+    <span class="tk-k">long</span> t = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">long</span> i = <span class="tk-n">0</span>; i &lt; n; i++) t += v[i];
+    <span class="tk-k">return</span> t;
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">sum:</span>
+        test    <span class="tk-t">rsi</span>, <span class="tk-t">rsi</span>
+        jle     .L9                     <span class="tk-c">; n &lt;= 0: skip the loop entirely</span>
+        lea     <span class="tk-t">rdx</span>, [<span class="tk-t">rdi</span>+<span class="tk-t">rsi</span>*<span class="tk-n">8</span>]        <span class="tk-c">; end = v + n</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+<span class="tk-f">.L8:</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-k">QWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rdi</span>]    <span class="tk-c">; t += *v</span>
+        add     <span class="tk-t">rdi</span>, <span class="tk-n">8</span>                  <span class="tk-c">; v++</span>
+        cmp     <span class="tk-t">rdi</span>, <span class="tk-t">rdx</span>
+        jne     .L8
+        ret
+<span class="tk-f">.L9:</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+        ret</code></pre></div>
+<p>The index <code>i</code> has disappeared: GCC turned <code>v[i]</code> into a moving pointer and compares it with an end pointer. The loop is <strong>rotated</strong> (one test before it, one jump per round), exactly as lesson 3.02 described.</p>
+<h2>Vectorised loops</h2>
+<p>At <code>-O3</code> a simple loop over arrays becomes SIMD code that handles four <code>int</code>s per instruction (lesson 6.04):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">add</span>(<span class="tk-k">int</span> *<span class="tk-k">restrict</span> d, <span class="tk-k">const</span> <span class="tk-k">int</span> *<span class="tk-k">restrict</span> a, <span class="tk-k">const</span> <span class="tk-k">int</span> *<span class="tk-k">restrict</span> b)
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">1024</span>; i++) d[i] = a[i] + b[i];
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-f">add:</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+<span class="tk-f">.L2:</span>
+        movdqu  <span class="tk-t">xmm0</span>, XMMWORD <span class="tk-k">PTR</span> [<span class="tk-t">rdx</span>+<span class="tk-t">rax</span>]    <span class="tk-c">; 16 bytes of b: four ints</span>
+        movdqu  <span class="tk-t">xmm1</span>, XMMWORD <span class="tk-k">PTR</span> [<span class="tk-t">rsi</span>+<span class="tk-t">rax</span>]    <span class="tk-c">; four ints of a</span>
+        paddd   <span class="tk-t">xmm0</span>, <span class="tk-t">xmm1</span>                     <span class="tk-c">; four additions at once</span>
+        movups  XMMWORD <span class="tk-k">PTR</span> [<span class="tk-t">rdi</span>+<span class="tk-t">rax</span>], <span class="tk-t">xmm0</span>    <span class="tk-c">; store four results</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-n">16</span>
+        cmp     <span class="tk-t">rax</span>, <span class="tk-n">4096</span>
+        jne     .L2
+        ret</code></pre></div>
+<p>256 rounds instead of 1024. (<code>restrict</code> promises the arrays do not overlap; without it GCC would add a check.)</p>
+<h2>A reading checklist</h2>
+<ol>
+<li>Find the arguments: <code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code> (32-bit names for <code>int</code>s).</li>
+<li>Find the result: whatever ends up in <code>rax</code> before <code>ret</code>.</li>
+<li>Find the loops: backward jumps to a label.</li>
+<li>Name each register by what it holds (a pointer, a count, a total) and write it as a comment.</li>
+<li>Look for the patterns: <code>xor reg, reg</code> is 0, <code>lea</code> is arithmetic, a magic constant is a division, <code>cmov</code> and <code>set</code> are small <code>if</code>s.</li>
+</ol>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A function multiplies by 0xCCCCCCCCCCCCCCCD, keeps rdx and shifts right by 3. What does it compute?</div><ul><li>An unsigned division by 10</li><li>A multiplication by 10</li><li>A random number</li></ul><details><summary>Show the answer</summary><p><b>An unsigned division by 10</b> Magic reciprocal division.</p></details></li><li><div class="q">Why do optimised leaf functions often have no push rbp?</div><ul><li>They keep everything in registers and need no frame</li><li>push rbp is not allowed at -O2</li><li>The caller saves rbp for them</li></ul><details><summary>Show the answer</summary><p><b>They keep everything in registers and need no frame</b> Frames are only built when needed.</p></details></li><li><div class="q">In GCC&#39;s sum loop, what happened to the index i?</div><ul><li>It became a pointer moving through the array, compared with an end pointer</li><li>It is in rcx</li><li>It is on the stack</li></ul><details><summary>Show the answer</summary><p><b>It became a pointer moving through the array, compared with an end pointer</b> Compilers do this &quot;strength reduction&quot; all the time.</p></details></li><li><div class="q">What does paddd xmm0, xmm1 do?</div><ul><li>Four 32-bit additions in one instruction</li><li>One 128-bit addition</li><li>Adds two doubles</li></ul><details><summary>Show the answer</summary><p><b>Four 32-bit additions in one instruction</b> Lesson 6.04 is about SIMD.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-working-with-c/"><span class="mono">previous</span><b>5.05 Working with C</b></a>
+      <a class="lp-next" href="../6-02-parsing-and-printing-numbers/"><span class="mono">next</span><b>6.02 Parsing and Printing Numbers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/6-01-reading-compiler-output"></script>
+</body>
+</html>

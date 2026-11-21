@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Dates, Times and Culture · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/8-04-dates-times-and-culture/">
+  <meta name="description" content="Getting time and formatting right in .NET - DateTime and its Kind, DateTimeOffset for moments, DateOnly and TimeOnly for calendar values, TimeSpan and date…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dates, Times and Culture · C# · Xenon">
+  <meta property="og:description" content="Getting time and formatting right in .NET - DateTime and its Kind, DateTimeOffset for moments, DateOnly and TimeOnly for calendar values, TimeSpan and date…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/8-04-dates-times-and-culture/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Dates, Times and Culture · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dates, Times and Culture · C# · Xenon">
+  <meta name="twitter:description" content="Getting time and formatting right in .NET - DateTime and its Kind, DateTimeOffset for moments, DateOnly and TimeOnly for calendar values, TimeSpan and date…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>C# in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Dates, Times and Culture</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.04</b></span><span>4 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Getting time and formatting right in .NET - DateTime and its Kind, DateTimeOffset for moments, DateOnly and TimeOnly for calendar values, TimeSpan and date arithmetic, time zones with TimeZoneInfo, TimeProvider for testable code, and CultureInfo for numbers and dates that look right in every country and parse the same everywhere.</p>
+      <div class="prose">
+<h2>Which type?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You mean</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>an exact moment (a log entry, when an order was placed)</td>
+<td><code>DateTimeOffset</code> (or <code>DateTime</code> in UTC)</td>
+</tr>
+<tr>
+<td>a calendar date with no time (a birthday, a due date)</td>
+<td><code>DateOnly</code></td>
+</tr>
+<tr>
+<td>a time of day (opening hours)</td>
+<td><code>TimeOnly</code></td>
+</tr>
+<tr>
+<td>an amount of time (3 hours 20 minutes)</td>
+<td><code>TimeSpan</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><code>DateTime</code> is the oldest type and the most confusing, because the same type can mean three things, shown by its <code>Kind</code>: <code>Utc</code>, <code>Local</code> (the computer&#39;s time zone) or <code>Unspecified</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> utc = <span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">20</span>, <span class="tk-n">9</span>, <span class="tk-n">30</span>, <span class="tk-n">0</span>, <span class="tk-t">DateTimeKind</span>.<span class="tk-t">Utc</span>);
+<span class="tk-k">var</span> unspecified = <span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">20</span>, <span class="tk-n">9</span>, <span class="tk-n">30</span>, <span class="tk-n">0</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{utc:O} {utc.Kind}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{unspecified:O} {unspecified.Kind}&quot;</span>);</code></pre></div>
+<p>The <code>O</code> format (&quot;round-trip&quot;) writes ISO 8601 and keeps everything needed to read the value back.</p>
+<h2>DateTimeOffset: a moment with its offset</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> placed = <span class="tk-k">new</span> <span class="tk-f">DateTimeOffset</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">20</span>, <span class="tk-n">18</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-t">TimeSpan</span>.<span class="tk-f">FromHours</span>(<span class="tk-n">1</span>));   <span class="tk-c">// 18:00 in a UTC+1 country</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(placed);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(placed.<span class="tk-t">UtcDateTime</span>.<span class="tk-f">ToString</span>(<span class="tk-s">&quot;u&quot;</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(placed.<span class="tk-f">ToOffset</span>(<span class="tk-t">TimeSpan</span>.<span class="tk-f">FromHours</span>(-<span class="tk-n">5</span>)).<span class="tk-f">ToString</span>(<span class="tk-s">&quot;yyyy-MM-dd HH:mm zzz&quot;</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(placed == placed.<span class="tk-f">ToUniversalTime</span>());   <span class="tk-c">// true: the same moment</span></code></pre></div>
+<p>Two <code>DateTimeOffset</code> values are equal when they are the same moment, whatever their offsets. Store and send moments as UTC (or with their offset), and convert to local time only to show them.</p>
+<h2>Calendar values: DateOnly and TimeOnly</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> due = <span class="tk-k">new</span> <span class="tk-f">DateOnly</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">30</span>);
+<span class="tk-k">var</span> today = <span class="tk-k">new</span> <span class="tk-f">DateOnly</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">20</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{due.DayNumber - today.DayNumber} days left, due on a {due.DayOfWeek}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(due.<span class="tk-f">AddMonths</span>(<span class="tk-n">3</span>));          <span class="tk-c">// the end of the month is kept sensible: 28/02/2027 in some cultures</span>
+
+<span class="tk-k">var</span> opens = <span class="tk-k">new</span> <span class="tk-f">TimeOnly</span>(<span class="tk-n">9</span>, <span class="tk-n">0</span>);
+<span class="tk-k">var</span> closes = <span class="tk-k">new</span> <span class="tk-f">TimeOnly</span>(<span class="tk-n">17</span>, <span class="tk-n">30</span>);
+<span class="tk-k">var</span> now = <span class="tk-k">new</span> <span class="tk-f">TimeOnly</span>(<span class="tk-n">18</span>, <span class="tk-n">15</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(now.<span class="tk-f">IsBetween</span>(opens, closes) ? <span class="tk-s">&quot;open&quot;</span> : <span class="tk-s">&quot;closed&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(closes - opens);           <span class="tk-c">// 08:30:00</span></code></pre></div>
+<h2>Arithmetic</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> start = <span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">1</span>, <span class="tk-n">31</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-t">DateTimeKind</span>.<span class="tk-t">Utc</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(start.<span class="tk-f">AddMonths</span>(<span class="tk-n">1</span>).<span class="tk-f">ToString</span>(<span class="tk-s">&quot;yyyy-MM-dd&quot;</span>));      <span class="tk-c">// 2026-02-28: no 31st, so the last day</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(start.<span class="tk-f">AddDays</span>(<span class="tk-n">30</span>).<span class="tk-f">ToString</span>(<span class="tk-s">&quot;yyyy-MM-dd&quot;</span>));       <span class="tk-c">// 2026-03-02</span>
+
+<span class="tk-t">TimeSpan</span> t = <span class="tk-t">TimeSpan</span>.<span class="tk-f">FromMinutes</span>(<span class="tk-n">200</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{t.Hours}h {t.Minutes}m, {t.TotalHours:F2} hours in total&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">12</span>, <span class="tk-n">25</span>) - <span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">20</span>));</code></pre></div>
+<p><code>Hours</code> is the hours part (3); <code>TotalHours</code> is the whole length in hours (3.33). Mixing them up is a common bug.</p>
+<h2>Time zones</h2>
+<p>A time zone is more than an offset: it has rules for daylight saving time that change over the year and over history. <code>TimeZoneInfo</code> knows them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> london = <span class="tk-t">TimeZoneInfo</span>.<span class="tk-f">FindSystemTimeZoneById</span>(<span class="tk-s">&quot;Europe/London&quot;</span>);   <span class="tk-c">// IANA ids work on every system in .NET 6+</span>
+<span class="tk-k">var</span> moment = <span class="tk-k">new</span> <span class="tk-f">DateTimeOffset</span>(<span class="tk-n">2026</span>, <span class="tk-n">7</span>, <span class="tk-n">1</span>, <span class="tk-n">12</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-t">TimeSpan</span>.<span class="tk-t">Zero</span>);
+<span class="tk-k">var</span> there = <span class="tk-t">TimeZoneInfo</span>.<span class="tk-f">ConvertTime</span>(moment, london);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(there);      <span class="tk-c">// 01/07/2026 13:00:00 +01:00 (summer time)</span></code></pre></div>
+<p>Store the zone&#39;s id (<code>&quot;Europe/London&quot;</code>) with a future appointment, not just an offset, because the offset of a future date can change if the rules change.</p>
+<h2>Code that asks for the time</h2>
+<p><code>DateTime.Now</code> inside a method makes it impossible to test &quot;what happens at midnight&quot;. .NET 8 added <code>TimeProvider</code>: pass one in, use <code>TimeProvider.System</code> in the program, and a fake in tests.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">new</span> <span class="tk-f">Greeter</span>(<span class="tk-k">new</span> <span class="tk-f">FixedClock</span>(<span class="tk-k">new</span> <span class="tk-f">DateTimeOffset</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">20</span>, <span class="tk-n">8</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-t">TimeSpan</span>.<span class="tk-t">Zero</span>))).<span class="tk-f">Greet</span>());
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">new</span> <span class="tk-f">Greeter</span>(<span class="tk-t">TimeProvider</span>.<span class="tk-t">System</span>).<span class="tk-f">Greet</span>().<span class="tk-t">Length</span> &gt; <span class="tk-n">0</span>);
+
+<span class="tk-k">class</span> <span class="tk-f">Greeter</span>(<span class="tk-t">TimeProvider</span> clock)
+{
+    <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-f">Greet</span>() =&gt; clock.<span class="tk-f">GetUtcNow</span>().<span class="tk-t">Hour</span> &lt; <span class="tk-n">12</span> ? <span class="tk-s">&quot;Good morning&quot;</span> : <span class="tk-s">&quot;Good afternoon&quot;</span>;
+}
+
+<span class="tk-k">class</span> <span class="tk-f">FixedClock</span>(<span class="tk-t">DateTimeOffset</span> now) : <span class="tk-t">TimeProvider</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">override</span> <span class="tk-t">DateTimeOffset</span> <span class="tk-f">GetUtcNow</span>() =&gt; now;
+}</code></pre></div>
+<h2>Culture: how numbers and dates look</h2>
+<p><code>1234.5</code> is written <code>1,234.50</code> in the UK, <code>1.234,50</code> in Germany and <code>1 234,50</code> in France. Formatting and parsing use the <strong>current culture</strong> unless you say otherwise:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Globalization</span>;
+
+<span class="tk-k">double</span> price = <span class="tk-n">1234.5</span>;
+<span class="tk-k">var</span> date = <span class="tk-k">new</span> <span class="tk-f">DateTime</span>(<span class="tk-n">2026</span>, <span class="tk-n">11</span>, <span class="tk-n">20</span>);
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> name <span class="tk-k">in</span> <span class="tk-k">new</span>[] { <span class="tk-s">&quot;en-GB&quot;</span>, <span class="tk-s">&quot;de-DE&quot;</span>, <span class="tk-s">&quot;fr-FR&quot;</span>, <span class="tk-s">&quot;ja-JP&quot;</span> })
+{
+    <span class="tk-k">var</span> c = <span class="tk-t">CultureInfo</span>.<span class="tk-f">GetCultureInfo</span>(name);
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{name}: {price.ToString(&quot;</span>N2<span class="tk-s">&quot;, c)}  {date.ToString(&quot;</span>d<span class="tk-s">&quot;, c)}  {date.ToString(&quot;</span>MMMM<span class="tk-s">&quot;, c)}&quot;</span>);
+}</code></pre></div>
+<p>The rule that prevents the most bugs:</p>
+<ul>
+<li><strong>Show</strong> values to people with their culture (the default).</li>
+<li><strong>Store and exchange</strong> values (files, JSON, logs, URLs) with <code>CultureInfo.InvariantCulture</code>, or fixed formats like ISO 8601.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Globalization</span>;
+
+<span class="tk-k">string</span> saved = <span class="tk-n">3.75</span>.<span class="tk-f">ToString</span>(<span class="tk-t">CultureInfo</span>.<span class="tk-t">InvariantCulture</span>);           <span class="tk-c">// always &quot;3.75&quot;</span>
+<span class="tk-k">double</span> back = <span class="tk-k">double</span>.<span class="tk-f">Parse</span>(saved, <span class="tk-t">CultureInfo</span>.<span class="tk-t">InvariantCulture</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{saved} {back}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">double</span>.<span class="tk-f">TryParse</span>(<span class="tk-s">&quot;3,75&quot;</span>, <span class="tk-t">NumberStyles</span>.<span class="tk-t">Float</span>, <span class="tk-t">CultureInfo</span>.<span class="tk-t">InvariantCulture</span>, <span class="tk-k">out</span> _));   <span class="tk-c">// False</span></code></pre></div>
+<p>A program that saves <code>3,75</code> on a German computer and reads it back on an English one gets 375 or an error: that is the bug invariant culture prevents. String comparisons have the same choice: <code>StringComparison.Ordinal</code> for identifiers and keys, culture-aware comparison for sorting names for people.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/8.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/8.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-03-generic-math-and-static-abstract-members/"><span class="mono">previous</span><b>8.03 Generic Math and Static Abstract Members</b></a>
+      <a class="lp-next" href="../8-05-variance-and-advanced-generics/"><span class="mono">next</span><b>8.05 Variance and Advanced Generics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/8-04-dates-times-and-culture"></script>
+</body>
+</html>

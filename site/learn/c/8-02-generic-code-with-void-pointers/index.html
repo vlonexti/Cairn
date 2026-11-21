@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Generic Code with void Pointers · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/8-02-generic-code-with-void-pointers/">
+  <meta name="description" content="Writing one container or algorithm for every type in C - void pointers and element sizes, copying with memcpy, a generic swap, a growable vector that stores…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Generic Code with void Pointers · C · Xenon">
+  <meta property="og:description" content="Writing one container or algorithm for every type in C - void pointers and element sizes, copying with memcpy, a generic swap, a growable vector that stores…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/8-02-generic-code-with-void-pointers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Generic Code with void Pointers · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Generic Code with void Pointers · C · Xenon">
+  <meta name="twitter:description" content="Writing one container or algorithm for every type in C - void pointers and element sizes, copying with memcpy, a generic swap, a growable vector that stores…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Generic Code with void Pointers</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.02</b></span><span>2 of 6 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Writing one container or algorithm for every type in C - void pointers and element sizes, copying with memcpy, a generic swap, a growable vector that stores any element type, comparison callbacks as qsort and bsearch use them, the type safety you give up, and macros that give some of it back.</p>
+      <div class="prose">
+<h2>One function for every type</h2>
+<p>C has no templates or generics. Code that works for any type uses <code>void *</code>, a pointer to &quot;some bytes&quot;, together with the <strong>size</strong> of one element. The standard library&#39;s <code>qsort</code>, <code>bsearch</code>, <code>memcpy</code> and <code>memcmp</code> all work this way.</p>
+<h2>A generic swap</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;string.h&gt;</span>
+
+<span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">swap_any</span>(<span class="tk-k">void</span> *a, <span class="tk-k">void</span> *b, size_t size)
+{
+    <span class="tk-k">unsigned</span> <span class="tk-k">char</span> tmp[<span class="tk-n">64</span>];
+    <span class="tk-k">if</span> (size &gt; <span class="tk-k">sizeof</span> tmp) <span class="tk-k">return</span>;            <span class="tk-c">/* this version handles elements up to 64 bytes */</span>
+    <span class="tk-f">memcpy</span>(tmp, a, size);
+    <span class="tk-f">memcpy</span>(a, b, size);
+    <span class="tk-f">memcpy</span>(b, tmp, size);
+}
+
+<span class="tk-k">struct</span> point { <span class="tk-k">double</span> x, y; };
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">int</span> i = <span class="tk-n">1</span>, j = <span class="tk-n">2</span>;
+    <span class="tk-f">swap_any</span>(&amp;i, &amp;j, <span class="tk-k">sizeof</span> i);
+    <span class="tk-k">struct</span> point p = {<span class="tk-n">1</span>, <span class="tk-n">2</span>}, q = {<span class="tk-n">3</span>, <span class="tk-n">4</span>};
+    <span class="tk-f">swap_any</span>(&amp;p, &amp;q, <span class="tk-k">sizeof</span> p);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d %d | %.0f,%.0f %.0f,%.0f\n&quot;</span>, i, j, p.x, p.y, q.x, q.y);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The function never knows what it is swapping; it only moves bytes. <code>memcpy</code> is the safe way to copy an object&#39;s bytes regardless of type.</p>
+<h2>Pointer arithmetic on bytes</h2>
+<p>Arithmetic on a <code>void *</code> is not allowed in standard C (it has no size). Cast to <code>unsigned char *</code> (or <code>char *</code>) and step in bytes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">static</span> <span class="tk-k">void</span> *<span class="tk-f">element</span>(<span class="tk-k">void</span> *base, size_t index, size_t size)
+{
+    <span class="tk-k">return</span> (<span class="tk-k">unsigned</span> <span class="tk-k">char</span> *)base + index * size;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">double</span> values[] = {<span class="tk-n">1.5</span>, <span class="tk-n">2.5</span>, <span class="tk-n">3.5</span>};
+    <span class="tk-k">double</span> *second = <span class="tk-f">element</span>(values, <span class="tk-n">1</span>, <span class="tk-k">sizeof</span> values[<span class="tk-n">0</span>]);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%.1f\n&quot;</span>, *second);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<h2>A vector for any type</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+<span class="tk-p">#include &lt;string.h&gt;</span>
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> {
+    <span class="tk-k">unsigned</span> <span class="tk-k">char</span> *data;
+    size_t len, cap, elem;      <span class="tk-c">/* elem: the size of one element in bytes */</span>
+} <span class="tk-t">Vec</span>;
+
+<span class="tk-k">static</span> <span class="tk-t">Vec</span> <span class="tk-f">vec_new</span>(size_t elem) { <span class="tk-t">Vec</span> v = {<span class="tk-k">NULL</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, elem}; <span class="tk-k">return</span> v; }
+
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">vec_push</span>(<span class="tk-t">Vec</span> *v, <span class="tk-k">const</span> <span class="tk-k">void</span> *item)
+{
+    <span class="tk-k">if</span> (v-&gt;len == v-&gt;cap) {
+        size_t cap = v-&gt;cap ? v-&gt;cap * <span class="tk-n">2</span> : <span class="tk-n">4</span>;
+        <span class="tk-k">unsigned</span> <span class="tk-k">char</span> *p = <span class="tk-f">realloc</span>(v-&gt;data, cap * v-&gt;elem);
+        <span class="tk-k">if</span> (!p) <span class="tk-k">return</span> -<span class="tk-n">1</span>;
+        v-&gt;data = p;
+        v-&gt;cap = cap;
+    }
+    <span class="tk-f">memcpy</span>(v-&gt;data + v-&gt;len * v-&gt;elem, item, v-&gt;elem);
+    v-&gt;len++;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}
+
+<span class="tk-k">static</span> <span class="tk-k">void</span> *<span class="tk-f">vec_at</span>(<span class="tk-k">const</span> <span class="tk-t">Vec</span> *v, size_t i) { <span class="tk-k">return</span> i &lt; v-&gt;len ? v-&gt;data + i * v-&gt;elem : <span class="tk-k">NULL</span>; }
+
+<span class="tk-k">struct</span> player { <span class="tk-k">char</span> name[<span class="tk-n">16</span>]; <span class="tk-k">int</span> score; };
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-t">Vec</span> scores = <span class="tk-f">vec_new</span>(<span class="tk-k">sizeof</span>(<span class="tk-k">int</span>));
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt;= <span class="tk-n">10</span>; i++) { <span class="tk-k">int</span> sq = i * i; <span class="tk-f">vec_push</span>(&amp;scores, &amp;sq); }
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%zu ints, the 5th is %d\n&quot;</span>, scores.len, *(<span class="tk-k">int</span> *)<span class="tk-f">vec_at</span>(&amp;scores, <span class="tk-n">4</span>));
+
+    <span class="tk-t">Vec</span> players = <span class="tk-f">vec_new</span>(<span class="tk-k">sizeof</span>(<span class="tk-k">struct</span> player));
+    <span class="tk-k">struct</span> player a = {<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">91</span>}, b = {<span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-n">48</span>};
+    <span class="tk-f">vec_push</span>(&amp;players, &amp;a);
+    <span class="tk-f">vec_push</span>(&amp;players, &amp;b);
+    <span class="tk-k">struct</span> player *p = <span class="tk-f">vec_at</span>(&amp;players, <span class="tk-n">1</span>);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%s %d, out of range: %p\n&quot;</span>, p-&gt;name, p-&gt;score, <span class="tk-f">vec_at</span>(&amp;players, <span class="tk-n">9</span>));
+
+    <span class="tk-f">free</span>(scores.data);
+    <span class="tk-f">free</span>(players.data);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The vector stores <strong>copies</strong> of the elements. Storing pointers instead (<code>sizeof(struct player *)</code>) is also common, but then someone else must own and free the pointed-to objects.</p>
+<h2>Callbacks that compare</h2>
+<p><code>qsort</code> and <code>bsearch</code> take a comparison function with the signature <code>int (*)(const void *, const void *)</code>. It returns negative, zero or positive, like <code>strcmp</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+<span class="tk-p">#include &lt;string.h&gt;</span>
+
+<span class="tk-k">struct</span> player { <span class="tk-k">const</span> <span class="tk-k">char</span> *name; <span class="tk-k">int</span> score; };
+
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">by_score_desc</span>(<span class="tk-k">const</span> <span class="tk-k">void</span> *a, <span class="tk-k">const</span> <span class="tk-k">void</span> *b)
+{
+    <span class="tk-k">const</span> <span class="tk-k">struct</span> player *x = a, *y = b;
+    <span class="tk-k">return</span> (y-&gt;score &gt; x-&gt;score) - (y-&gt;score &lt; x-&gt;score);
+}
+
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">by_name</span>(<span class="tk-k">const</span> <span class="tk-k">void</span> *a, <span class="tk-k">const</span> <span class="tk-k">void</span> *b)
+{
+    <span class="tk-k">const</span> <span class="tk-k">struct</span> player *x = a, *y = b;
+    <span class="tk-k">return</span> <span class="tk-f">strcmp</span>(x-&gt;name, y-&gt;name);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">struct</span> player ps[] = {{<span class="tk-s">&quot;Cy&quot;</span>, <span class="tk-n">77</span>}, {<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">91</span>}, {<span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-n">48</span>}, {<span class="tk-s">&quot;Dee&quot;</span>, <span class="tk-n">91</span>}};
+    size_t n = <span class="tk-k">sizeof</span> ps / <span class="tk-k">sizeof</span> ps[<span class="tk-n">0</span>];
+
+    <span class="tk-f">qsort</span>(ps, n, <span class="tk-k">sizeof</span> ps[<span class="tk-n">0</span>], by_score_desc);
+    <span class="tk-k">for</span> (size_t i = <span class="tk-n">0</span>; i &lt; n; i++) <span class="tk-f">printf</span>(<span class="tk-s">&quot;%s %d  &quot;</span>, ps[i].name, ps[i].score);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;\n&quot;</span>);
+
+    <span class="tk-f">qsort</span>(ps, n, <span class="tk-k">sizeof</span> ps[<span class="tk-n">0</span>], by_name);
+    <span class="tk-k">struct</span> player key = {<span class="tk-s">&quot;Cy&quot;</span>, <span class="tk-n">0</span>};
+    <span class="tk-k">struct</span> player *found = <span class="tk-f">bsearch</span>(&amp;key, ps, n, <span class="tk-k">sizeof</span> ps[<span class="tk-n">0</span>], by_name);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;found %s with %d\n&quot;</span>, found ? found-&gt;name : <span class="tk-s">&quot;nobody&quot;</span>, found ? found-&gt;score : <span class="tk-n">0</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>(y &gt; x) - (y &lt; x)</code> gives -1, 0 or 1 without the overflow risk of subtracting. <code>bsearch</code> needs the array sorted by the <strong>same</strong> comparison it searches with.</p>
+<h2>The cost: no type checking</h2>
+<p>With <code>void *</code>, the compiler cannot catch <code>vec_push(&amp;scores, &amp;some_double)</code>: it copies 4 bytes of a double into an int slot, and you get nonsense. Defences:</p>
+<ul>
+<li>keep each generic container used for one type only, with a clear name (<code>Vec scores; /* of int */</code>);</li>
+<li>wrap it in small typed functions or macros:</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-p">#define</span> <span class="tk-f">DEFINE_STACK</span>(T, NAME)                                                    \
+    <span class="tk-k">typedef</span> <span class="tk-k">struct</span> { T *items; size_t len, cap; } NAME;                          \
+    <span class="tk-k">static</span> <span class="tk-k">int</span> NAME##<span class="tk-f">_push</span>(NAME *s, T value)                                     \
+    {                                                                            \
+        <span class="tk-k">if</span> (s-&gt;len == s-&gt;cap) {                                                  \
+            size_t cap = s-&gt;cap ? s-&gt;cap * <span class="tk-n">2</span> : <span class="tk-n">4</span>;                                \
+            T *p = <span class="tk-f">realloc</span>(s-&gt;items, cap * <span class="tk-k">sizeof</span> *p);                           \
+            <span class="tk-k">if</span> (!p) <span class="tk-k">return</span> -<span class="tk-n">1</span>;                                                   \
+            s-&gt;items = p;                                                        \
+            s-&gt;cap = cap;                                                        \
+        }                                                                        \
+        s-&gt;items[s-&gt;len++] = value;                                              \
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;                                                                \
+    }
+
+<span class="tk-f">DEFINE_STACK</span>(<span class="tk-k">double</span>, <span class="tk-t">DoubleStack</span>)
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-t">DoubleStack</span> s = {<span class="tk-n">0</span>};
+    <span class="tk-f">DoubleStack_push</span>(&amp;s, <span class="tk-n">1.5</span>);
+    <span class="tk-f">DoubleStack_push</span>(&amp;s, <span class="tk-n">2.5</span>);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%zu items, top %.1f\n&quot;</span>, s.len, s.items[s.len - <span class="tk-n">1</span>]);
+    <span class="tk-f">free</span>(s.items);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The macro writes a real, typed stack for each type you ask for, so the compiler checks every push. It is how many C libraries offer &quot;generic&quot; containers with type safety.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/8.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/8.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-01-dynamic-strings/"><span class="mono">previous</span><b>8.01 Dynamic Strings</b></a>
+      <a class="lp-next" href="../8-03-time-and-dates/"><span class="mono">next</span><b>8.03 Time and Dates</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/8-02-generic-code-with-void-pointers"></script>
+</body>
+</html>

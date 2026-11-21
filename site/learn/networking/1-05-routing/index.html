@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Routing · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/1-05-routing/">
+  <meta name="description" content="How a packet finds its way - the default gateway, routing tables and the longest-prefix match, hops and TTL, traceroute, and the difference between latency…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Routing · Networking · Xenon">
+  <meta property="og:description" content="How a packet finds its way - the default gateway, routing tables and the longest-prefix match, hops and TTL, traceroute, and the difference between latency…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/1-05-routing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Routing · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Routing · Networking · Xenon">
+  <meta name="twitter:description" content="How a packet finds its way - the default gateway, routing tables and the longest-prefix match, hops and TTL, traceroute, and the difference between latency…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>How Networks Work</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Routing</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.05</b></span><span>5 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How a packet finds its way - the default gateway, routing tables and the longest-prefix match, hops and TTL, traceroute, and the difference between latency and bandwidth that decides how networked programs feel.</p>
+      <div class="prose">
+<h2>Hop by hop</h2>
+<p>No device knows the whole route from your computer to a server on another continent. Each one only decides the <strong>next hop</strong>: which neighbour to hand the packet to. A packet crosses perhaps 10 to 20 <strong>routers</strong>, each making one local decision, and arrives.</p>
+<h2>Your machine&#39;s decision</h2>
+<p>Your computer&#39;s <strong>routing table</strong> (see it with <code>route print</code> in a Windows terminal) has a few entries, such as:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Destination</th>
+<th>Mask</th>
+<th>Gateway</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>192.168.1.0</td>
+<td>255.255.255.0</td>
+<td>on-link</td>
+<td>the local network: send directly</td>
+</tr>
+<tr>
+<td>127.0.0.0</td>
+<td>255.0.0.0</td>
+<td>on-link</td>
+<td>loopback</td>
+</tr>
+<tr>
+<td>0.0.0.0</td>
+<td>0.0.0.0</td>
+<td>192.168.1.1</td>
+<td><strong>everything else</strong>: send to the router</td>
+</tr>
+</tbody></table>
+</div>
+<p>The last line, a route matching every address, is the <strong>default route</strong>, and the router it names is the <strong>default gateway</strong>. Packets for the local network go straight to the device (its MAC address found with ARP); everything else goes to the gateway.</p>
+<h2>The longest-prefix match</h2>
+<p>When several routes match a destination, the <strong>most specific</strong> one, the one with the <strong>longest prefix</strong>, wins:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>routes:   10.0.0.0/8      -&gt; A
+          10.1.0.0/16     -&gt; B
+          10.1.2.0/24     -&gt; C
+          0.0.0.0/0       -&gt; default
+
+10.1.2.9   matches /8, /16, /24 and /0  -&gt; C (the /24 is longest)
+10.1.9.9   matches /8, /16 and /0       -&gt; B
+10.9.9.9   matches /8 and /0            -&gt; A
+8.8.8.8    matches only /0              -&gt; default</code></pre></div>
+<p>Every router does exactly this, with tables that in the internet&#39;s core hold close to a million routes, using specialised hardware to look them up at line rate.</p>
+<h2>TTL and traceroute</h2>
+<p>Each IP packet carries a <strong>time to live</strong> (TTL), a number every router decreases by one. When it reaches zero, the router drops the packet and sends back an ICMP &quot;time exceeded&quot; message. That prevents packets circling for ever when routes form a loop.</p>
+<p>It also gives a clever tool: <strong>traceroute</strong> (<code>tracert</code> on Windows) sends packets with TTL 1, 2, 3... Each router along the path drops one of them and reports back, revealing the route hop by hop with the time to each:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>  1     1 ms    192.168.1.1
+  2     9 ms    10.12.0.1
+  3    11 ms    core1.isp.example
+  ...
+ 12    89 ms    the server</code></pre></div>
+<h2>Latency and bandwidth</h2>
+<p>Two numbers describe a network path, and they are often confused:</p>
+<ul>
+<li><strong>Latency</strong>: how long a single packet takes to get there, usually measured as the <strong>round-trip time</strong> (RTT): there and back. Bounded below by the speed of light in fibre (about 200 km per millisecond): roughly 70 to 90 ms across the Atlantic and back, whatever you pay.</li>
+<li><strong>Bandwidth</strong>: how many bytes per second the path can carry.</li>
+</ul>
+<p>A file download depends mostly on bandwidth. A game, a remote desktop or a chat that waits for each reply depends mostly on <strong>latency</strong>: a protocol that needs 5 round trips to do something takes 5 × RTT, however fast the connection. Good protocol design reduces round trips: send several requests without waiting, combine handshakes, keep connections open.</p>
+<p><strong>Jitter</strong> (variation in latency) and <strong>packet loss</strong> complete the picture for real-time programs; milestone 6 shows how games hide all three.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/1.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/1.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-04-tcp-and-udp/"><span class="mono">previous</span><b>1.04 TCP and UDP</b></a>
+      <a class="lp-next" href="../2-01-the-socket-api/"><span class="mono">next</span><b>2.01 The Socket API</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/1-05-routing"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Capstone: A Memory Inspector with a Full Interface · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/18-01-capstone-a-memory-inspector-with-a-full-interface/">
+  <meta name="description" content="The first capstone joins chapters 6, 12 and 14 into one polished tool: a read-only memory inspector for programs you built yourself , with a Dear ImGui…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Capstone: A Memory Inspector with a Full Interface · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The first capstone joins chapters 6, 12 and 14 into one polished tool: a read-only memory inspector for programs you built yourself , with a Dear ImGui…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/18-01-capstone-a-memory-inspector-with-a-full-interface/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Capstone: A Memory Inspector with a Full Interface · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Capstone: A Memory Inspector with a Full Interface · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The first capstone joins chapters 6, 12 and 14 into one polished tool: a read-only memory inspector for programs you built yourself , with a Dear ImGui…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Capstone Projects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Capstone: A Memory Inspector with a Full Interface</h1>
+      <div class="readout lp-readout"><span>lesson <b>18.01</b></span><span>1 of 4 in milestone 18</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The first capstone joins chapters 6, 12 and 14 into one polished tool: a read-only memory inspector for <strong>programs you built yourself</strong>, with a Dear ImGui interface showing the region map, a hex view with typed overlays, snapshots with change highlighting, and the telemetry channel from chapter 12. This lesson gives the specification, an architecture, the milestones in order, the acceptance tests and stretch goals.</p>
+      <div class="prose">
+<h2>What you are building</h2>
+<p><strong>Xenon Inspector</strong> is a desktop tool for looking inside your own running programs while you develop them: Delve, the practice targets of lesson 9.10, and anything else you compile. It answers questions like &quot;what does this struct look like in memory right now?&quot;, &quot;which bytes changed when I picked up that item?&quot; and &quot;how is this program&#39;s address space laid out?&quot;.</p>
+<p>The ground rules from chapter 12 are part of the specification, not an afterthought:</p>
+<div class="callout important"><div class="callout-title"><span>Scope</span></div><div class="callout-body">
+<ul>
+<li>The inspector only opens processes whose executable lies under a folder you configure as your <strong>build output</strong> (for example <code>D:\dev\bin</code>), or processes it starts itself from there. It refuses anything else, with a message explaining why.</li>
+<li>It is <strong>read-only</strong>: it never writes to the target&#39;s memory.</li>
+<li>It uses documented APIs only (<code>OpenProcess</code> with <code>PROCESS_QUERY_INFORMATION | PROCESS_VM_READ</code>, <code>VirtualQueryEx</code>, <code>ReadProcessMemory</code>, the Tool Help snapshot functions) and needs no administrator rights.</li>
+</ul>
+</div></div>
+<h2>Features</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Shows</th>
+<th>Built in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Process picker</strong></td>
+<td>Running processes under the build folder, with a Launch button for executables there</td>
+<td>6.07, 12.01</td>
+</tr>
+<tr>
+<td><strong>Region map</strong></td>
+<td>Every region: base, size, state, protection, type, and the module it belongs to; filters and sorting</td>
+<td>6.04, 14.04</td>
+</tr>
+<tr>
+<td><strong>Hex view</strong></td>
+<td>Bytes of a selected address range, 16 per row with ASCII; Go to address; follows a pointer on double-click</td>
+<td>12.02</td>
+</tr>
+<tr>
+<td><strong>Typed overlay</strong></td>
+<td>A struct definition (from a small text file) laid over the hex view, showing each field&#39;s name, type and value</td>
+<td>2.06, 9.09</td>
+</tr>
+<tr>
+<td><strong>Snapshots</strong></td>
+<td>Take a snapshot of a range, take another later, and list and highlight the changed ranges</td>
+<td>the practice task</td>
+</tr>
+<tr>
+<td><strong>Telemetry</strong></td>
+<td>If the target publishes chapter 12&#39;s telemetry channel, its live values in a table</td>
+<td>12.04, 12.05</td>
+</tr>
+<tr>
+<td><strong>Settings</strong></td>
+<td>Build folder, refresh rate, window layout, persisted</td>
+<td>14.05</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Architecture</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    UI[&quot;ImGui panels&lt;br/&gt;(picker, regions, hex, overlay, snapshots, telemetry)&quot;] --&gt; M[&quot;Inspector model&lt;br/&gt;selected process, ranges, snapshots&quot;]
+    M --&gt; P[&quot;Process access layer&lt;br/&gt;scope check, OpenProcess, VirtualQueryEx,&lt;br/&gt;ReadProcessMemory, module list&quot;]
+    M --&gt; T[&quot;Struct definition parser&quot;]
+    M --&gt; D[&quot;Snapshot diff&quot;]
+    M --&gt; C[&quot;Telemetry reader (chapter 12)&quot;]
+    P --&gt; W[(&quot;Windows APIs&quot;)]</pre></div>
+<p>Keep the layers separate, as lesson 17.01 recommends: the struct parser and the snapshot diff are pure functions with unit tests; the process access layer is the only code that calls Windows; the panels only draw the model and send it commands. Then most of the program can be tested without a target running.</p>
+<h2>Milestones</h2>
+<p>Build it in order; each milestone is usable on its own.</p>
+<ol>
+<li><strong>Skeleton</strong>: the ImGui window from lesson 14.02 with an empty dock space, a settings file and the build-folder setting.</li>
+<li><strong>Process access</strong>: list processes, apply the scope check (resolve the executable path with <code>QueryFullProcessImageNameW</code>, then check it is under the build folder after normalising both), open with the minimum rights. Unit-test the path check with lesson 17.04&#39;s lessons about <code>..</code> and case.</li>
+<li><strong>Region map</strong>: the <code>VirtualQueryEx</code> walk from lesson 6.04 on the target, shown in a sortable table with module names.</li>
+<li><strong>Hex view</strong>: read on demand only the visible rows, handle unreadable pages (<code>ReadProcessMemory</code> fails or reads partially: show <code>??</code>), and refresh at the configured rate.</li>
+<li><strong>Snapshots and diff</strong>: copy a range, compare later, list changed ranges, highlight them in the hex view.</li>
+<li><strong>Typed overlay</strong>: parse definitions such as <code>struct Player { i32 health; f32 x; f32 y; u8 flags; }</code> with natural alignment (lesson 2.05) and show the values.</li>
+<li><strong>Telemetry</strong>: connect to the target&#39;s telemetry channel if it exists, and show its version check from lesson 12.06.</li>
+<li><strong>Hardening</strong>: lesson 12.07&#39;s checklist: the target exiting at any moment, huge regions, invalid addresses typed by the user, and a fuzz test of the struct parser (17.03).</li>
+</ol>
+<h2>Acceptance tests</h2>
+<p>The inspector is done when:</p>
+<ul>
+<li>it refuses a process outside the build folder, including one reached by a path with <code>..</code>, a different case, or a short 8.3 name;</li>
+<li>it shows Delve&#39;s region map and its main module&#39;s base matches the one Delve prints (lesson 6.09);</li>
+<li>the overlay of Delve&#39;s <code>Player</code> struct shows the health dropping when a monster hits;</li>
+<li>a snapshot diff around the inventory shows exactly the bytes that change when an item is picked up;</li>
+<li>closing Delve while the inspector is reading it gives a clear message, not a crash;</li>
+<li>the unit tests pass under AddressSanitizer;</li>
+<li>it never opens a handle with write or operation rights (verify with Process Explorer&#39;s handle view).</li>
+</ul>
+<h2>Stretch goals</h2>
+<ul>
+<li>Read the target&#39;s PDB with the DIA SDK or <code>dbghelp</code> to show real type names and fields instead of hand-written definitions.</li>
+<li>A &quot;watch list&quot; of addresses with a plot of each value over time (lesson 14.04).</li>
+<li>Export a snapshot and its overlay as a report for a bug ticket.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Reading huge ranges every frame</span></div><div class="callout-body"><p>Read only what is visible, and only at the refresh rate.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Mixing Windows calls into the UI code</span></div><div class="callout-body"><p>It makes the inspector untestable and the UI slow when a read blocks.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Loosening the scope check &quot;just for testing&quot;</span></div><div class="callout-body"><p>The rule is the feature. Keep test targets in the build folder.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why is the process scope check done on the full executable path after normalising it?</div><ul><li>So paths with <code>..</code>, different case or short names cannot get around it</li><li>Because process names are always unique</li><li>To make it faster</li></ul><details><summary>Show the answer</summary><p><b>So paths with <code>..</code>, different case or short names cannot get around it</b> The same lessons as safe path joining.</p></details></li><li><div class="q">Why read only the visible rows of the hex view?</div><ul><li>Reading large ranges from another process every frame is slow and unnecessary</li><li><code>ReadProcessMemory</code> can only read 16 bytes</li><li>The target would crash</li></ul><details><summary>Show the answer</summary><p><b>Reading large ranges from another process every frame is slow and unnecessary</b> Read what you show.</p></details></li><li><div class="q">Which access rights does the inspector need?</div><ul><li><code>PROCESS_QUERY_INFORMATION</code> and <code>PROCESS_VM_READ</code></li><li><code>PROCESS_ALL_ACCESS</code></li><li><code>PROCESS_VM_WRITE</code> and <code>PROCESS_VM_OPERATION</code></li></ul><details><summary>Show the answer</summary><p><b><code>PROCESS_QUERY_INFORMATION</code> and <code>PROCESS_VM_READ</code></b> The least rights for a read-only tool.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/18.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/18.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../17-08-shipping-and-maintaining-what-you-build/"><span class="mono">previous</span><b>17.08 Shipping and Maintaining What You Build</b></a>
+      <a class="lp-next" href="../18-02-capstone-a-moddable-game-with-a-plugin-system/"><span class="mono">next</span><b>18.02 Capstone: A Moddable Game with a Plugin System</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/18-01-capstone-a-memory-inspector-with-a-full-interface"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

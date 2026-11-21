@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Bit Scanning and Atomics · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/7-05-bit-scanning-and-atomics/">
+  <meta name="description" content="Instructions that work on single bits - popcnt, bsf, bsr, tzcnt and lzcnt, bt, bts, btr and btc - and the instructions behind every lock and atomic variable…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Bit Scanning and Atomics · Assembly · Xenon">
+  <meta property="og:description" content="Instructions that work on single bits - popcnt, bsf, bsr, tzcnt and lzcnt, bt, bts, btr and btc - and the instructions behind every lock and atomic variable…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/7-05-bit-scanning-and-atomics/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Bit Scanning and Atomics · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Bit Scanning and Atomics · Assembly · Xenon">
+  <meta name="twitter:description" content="Instructions that work on single bits - popcnt, bsf, bsr, tzcnt and lzcnt, bt, bts, btr and btc - and the instructions behind every lock and atomic variable…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Deeper Assembly</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Bit Scanning and Atomics</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.05</b></span><span>5 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Instructions that work on single bits - popcnt, bsf, bsr, tzcnt and lzcnt, bt, bts, btr and btc - and the instructions behind every lock and atomic variable - the lock prefix, xadd, xchg and cmpxchg - with a compare-and-swap loop and a spinlock.</p>
+      <div class="prose">
+<h2>Counting and finding bits</h2>
+<p>Lesson 2.03 handled bits with <code>and</code>, <code>or</code>, <code>shl</code> and loops. Modern x86 has single instructions for the common questions:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>popcnt rax, rdi</code></td>
+<td>how many bits of rdi are 1</td>
+</tr>
+<tr>
+<td><code>tzcnt rax, rdi</code></td>
+<td>how many 0 bits come before the lowest 1 (64 if rdi is 0)</td>
+</tr>
+<tr>
+<td><code>lzcnt rax, rdi</code></td>
+<td>how many 0 bits come before the highest 1 (64 if rdi is 0)</td>
+</tr>
+<tr>
+<td><code>bsf rax, rdi</code></td>
+<td>the position of the lowest 1 bit (undefined if rdi is 0: ZF is set)</td>
+</tr>
+<tr>
+<td><code>bsr rax, rdi</code></td>
+<td>the position of the highest 1 bit (undefined if rdi is 0)</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>tzcnt</code> and <code>lzcnt</code> are the newer, safer versions of <code>bsf</code> and <code>bsr</code> because they define the zero case.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">rbx</span>, 0b1011000          <span class="tk-c">; 88</span>
+        popcnt  <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_int               <span class="tk-c">; 3 bits set</span>
+        call    print_newline
+        tzcnt   <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_int               <span class="tk-c">; 3: the lowest 1 is bit 3</span>
+        call    print_newline
+        bsr     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_int               <span class="tk-c">; 6: the highest 1 is bit 6</span>
+        call    print_newline
+        lzcnt   <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_int               <span class="tk-c">; 57 leading zeros</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>The position of the highest set bit is ⌊log₂ n⌋, which makes <code>bsr</code> a fast integer logarithm, and <code>tzcnt</code> finds the next free slot in a bitmap of used and free slots in one step.</p>
+<h2>Testing and changing one bit</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bt rax, n</code></td>
+<td>copies bit n into the carry flag</td>
+</tr>
+<tr>
+<td><code>bts rax, n</code></td>
+<td>the same, then sets the bit</td>
+</tr>
+<tr>
+<td><code>btr rax, n</code></td>
+<td>the same, then clears it</td>
+</tr>
+<tr>
+<td><code>btc rax, n</code></td>
+<td>the same, then flips it</td>
+</tr>
+</tbody></table>
+</div>
+<p>Follow them with <code>jc</code> or <code>setc</code>. With a memory operand and a register bit number, <code>bt</code> can reach any bit of a large bitmap: <code>bt [rel bitmap], rcx</code>.</p>
+<h2>Why &quot;atomic&quot;</h2>
+<p>When two threads run <code>add [counter], 1</code> on different cores, each core reads the value, adds and writes it back; both can read the same old value and one increase is lost (the same race as in the C and C++ concurrency lessons). The <strong><code>lock</code> prefix</strong> makes a read-modify-write instruction <strong>atomic</strong>: no other core can touch that memory in the middle of it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        lock add <span class="tk-k">qword</span> [<span class="tk-k">rel</span> counter], <span class="tk-n">1</span>     <span class="tk-c">; safe from every thread</span>
+        lock inc <span class="tk-k">qword</span> [<span class="tk-k">rel</span> hits]
+        lock or  <span class="tk-k">qword</span> [<span class="tk-k">rel</span> flags], <span class="tk-n">4</span></code></pre></div>
+<h2>xadd, xchg and cmpxchg</h2>
+<p>Three instructions give the building blocks of every lock and lock-free structure:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>lock xadd [mem], rax</code></td>
+<td>adds rax to memory and puts the <strong>old</strong> value in rax: fetch-and-add</td>
+</tr>
+<tr>
+<td><code>xchg [mem], rax</code></td>
+<td>swaps them; with a memory operand it is always atomic, even without <code>lock</code></td>
+</tr>
+<tr>
+<td><code>lock cmpxchg [mem], rcx</code></td>
+<td>if memory equals rax, stores rcx there and sets ZF; otherwise loads memory into rax and clears ZF</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>cmpxchg</code> is <strong>compare-and-swap</strong>: &quot;change it only if nobody else did in the meantime&quot;. Wrapped in a loop it performs any update atomically:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+        <span class="tk-k">section</span> .data
+<span class="tk-f">best:</span>   <span class="tk-k">dq</span>      <span class="tk-n">40</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-c">; atomic_max: rdi = address of a qword, rsi = a candidate. Stores the candidate if it is larger.</span>
+<span class="tk-c">; Returns the value that was there before.</span>
+<span class="tk-f">atomic_max:</span>
+        mov     <span class="tk-t">rax</span>, [<span class="tk-t">rdi</span>]
+<span class="tk-f">.retry:</span> cmp     <span class="tk-t">rax</span>, <span class="tk-t">rsi</span>
+        jge     .done                   <span class="tk-c">; already at least as large</span>
+        lock cmpxchg [<span class="tk-t">rdi</span>], <span class="tk-t">rsi</span>         <span class="tk-c">; still rax? then store rsi</span>
+        jne     .retry                  <span class="tk-c">; someone changed it: rax now holds the new value, try again</span>
+<span class="tk-f">.done:</span>  ret
+
+<span class="tk-f">_start:</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> best]
+        mov     <span class="tk-t">esi</span>, <span class="tk-n">75</span>
+        call    atomic_max
+        mov     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> best]
+        call    print_int               <span class="tk-c">; 75</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<h2>A spinlock</h2>
+<p>The smallest lock: a qword that is 0 when free and 1 when taken.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; spin_lock: rdi = address of the lock</span>
+<span class="tk-f">spin_lock:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+<span class="tk-f">.try:</span>   xchg    [<span class="tk-t">rdi</span>], <span class="tk-t">rax</span>              <span class="tk-c">; take it, and see what it was</span>
+        test    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>
+        jz      .got                    <span class="tk-c">; it was free: we have it</span>
+<span class="tk-f">.wait:</span>  pause                           <span class="tk-c">; be kind to the other hyper-thread</span>
+        cmp     <span class="tk-k">qword</span> [<span class="tk-t">rdi</span>], <span class="tk-n">0</span>
+        jne     .wait                   <span class="tk-c">; spin on a plain read until it looks free</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+        jmp     .try
+<span class="tk-f">.got:</span>   ret
+
+<span class="tk-f">spin_unlock:</span>
+        mov     <span class="tk-k">qword</span> [<span class="tk-t">rdi</span>], <span class="tk-n">0</span>          <span class="tk-c">; a plain store releases on x86</span>
+        ret</code></pre></div>
+<p>Spinning on a plain read (instead of hammering <code>xchg</code>) keeps the cache line from bouncing between cores. Spinlocks suit very short critical sections; anything longer should use the operating system&#39;s locks, which put waiting threads to sleep.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/7.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/7.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-04-structures-and-data-layout/"><span class="mono">previous</span><b>7.04 Structures and Data Layout</b></a>
+      <a class="lp-next" href="../8-01-string-instructions/"><span class="mono">next</span><b>8.01 String Instructions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/7-05-bit-scanning-and-atomics"></script>
+</body>
+</html>

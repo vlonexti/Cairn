@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Static Members, Extension Methods and Namespaces · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/3-05-static-members-extension-methods-and-namespaces/">
+  <meta name="description" content="Static fields, properties, methods and constructors, static classes, constants and readonly fields, extension methods that add methods to existing types,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Static Members, Extension Methods and Namespaces · C# · Xenon">
+  <meta property="og:description" content="Static fields, properties, methods and constructors, static classes, constants and readonly fields, extension methods that add methods to existing types,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/3-05-static-members-extension-methods-and-namespaces/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Static Members, Extension Methods and Namespaces · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Static Members, Extension Methods and Namespaces · C# · Xenon">
+  <meta name="twitter:description" content="Static fields, properties, methods and constructors, static classes, constants and readonly fields, extension methods that add methods to existing types,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Object-Oriented C#</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Static Members, Extension Methods and Namespaces</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Static fields, properties, methods and constructors, static classes, constants and readonly fields, extension methods that add methods to existing types, namespaces and using directives, file-scoped namespaces, global usings, and organising a project into files.</p>
+      <div class="prose">
+<h2>Static members</h2>
+<p>A <strong>static</strong> member belongs to the class itself, not to any one object. There is exactly one of it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> a = <span class="tk-k">new</span> <span class="tk-f">Ticket</span>();
+<span class="tk-k">var</span> b = <span class="tk-k">new</span> <span class="tk-f">Ticket</span>();
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{a.Number} {b.Number} {Ticket.Issued}&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">Ticket</span>.<span class="tk-f">Describe</span>(b));
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Ticket</span>
+{
+    <span class="tk-k">private</span> <span class="tk-k">static</span> <span class="tk-k">int</span> _next = <span class="tk-n">1</span>;             <span class="tk-c">// shared by all tickets</span>
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-t">Issued</span> =&gt; _next - <span class="tk-n">1</span>;
+
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-t">Number</span> { <span class="tk-k">get</span>; } = _next++;     <span class="tk-c">// each ticket takes the next number</span>
+
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Describe</span>(<span class="tk-t">Ticket</span> t) =&gt; <span class="tk-s">$&quot;ticket #{t.Number}&quot;</span>;
+}</code></pre></div>
+<p>Static methods cannot use <code>this</code> or instance members, since there is no object. They suit operations that need only their parameters: <code>Math.Max</code>, <code>int.Parse</code>, <code>string.Join</code>, factory methods like <code>Money.FromCents(250)</code>.</p>
+<p>A <strong>static class</strong> has only static members and cannot be instantiated: <code>Math</code>, <code>Console</code>, <code>File</code>. Use one for groups of helper functions.</p>
+<p>Avoid mutable static data where you can: it is shared by the whole program (and every thread), which makes code hard to test.</p>
+<h2>const and readonly</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{Limits.MaxUsers} {Limits.StartedAt.Year &gt; 2000} {new Circle(2).Area:F2}&quot;</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">class</span> <span class="tk-t">Limits</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">const</span> <span class="tk-k">int</span> <span class="tk-t">MaxUsers</span> = <span class="tk-n">100</span>;                         <span class="tk-c">// fixed at compile time</span>
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">readonly</span> <span class="tk-t">DateTime</span> <span class="tk-t">StartedAt</span> = <span class="tk-t">DateTime</span>.<span class="tk-t">Now</span>;   <span class="tk-c">// set once, at run time</span>
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">Circle</span>(<span class="tk-k">double</span> r)
+{
+    <span class="tk-k">private</span> <span class="tk-k">readonly</span> <span class="tk-k">double</span> _radius = r;    <span class="tk-c">// can only be assigned in the declaration or constructor</span>
+    <span class="tk-k">public</span> <span class="tk-k">double</span> <span class="tk-t">Area</span> =&gt; <span class="tk-t">Math</span>.PI * _radius * _radius;
+}</code></pre></div>
+<p><code>const</code> works for numbers, <code>bool</code>, <code>char</code> and strings known when compiling. <code>readonly</code> fields can hold any value, decided when the program runs, and then never change.</p>
+<h2>Extension methods</h2>
+<p>An <strong>extension method</strong> adds a method to an existing type without changing it. It is a static method in a static class whose first parameter has <code>this</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;hello world&quot;</span>.<span class="tk-f">Capitalize</span>());
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;a long sentence that goes on&quot;</span>.<span class="tk-f">Truncate</span>(<span class="tk-n">10</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">new</span>[] { <span class="tk-n">3</span>, <span class="tk-n">8</span>, <span class="tk-n">1</span> }.<span class="tk-f">SecondLargest</span>());
+
+<span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">class</span> <span class="tk-t">StringExtensions</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Capitalize</span>(<span class="tk-k">this</span> <span class="tk-k">string</span> s) =&gt;
+        s.<span class="tk-t">Length</span> == <span class="tk-n">0</span> ? s : <span class="tk-k">char</span>.<span class="tk-f">ToUpper</span>(s[<span class="tk-n">0</span>]) + s[<span class="tk-n">1</span>..];
+
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Truncate</span>(<span class="tk-k">this</span> <span class="tk-k">string</span> s, <span class="tk-k">int</span> max) =&gt;
+        s.<span class="tk-t">Length</span> &lt;= max ? s : s[..(max - <span class="tk-n">1</span>)] + <span class="tk-s">&quot;…&quot;</span>;
+}
+
+<span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">class</span> <span class="tk-t">SequenceExtensions</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">SecondLargest</span>(<span class="tk-k">this</span> IEnumerable&lt;<span class="tk-k">int</span>&gt; values) =&gt;
+        values.<span class="tk-f">OrderDescending</span>().<span class="tk-f">Skip</span>(<span class="tk-n">1</span>).<span class="tk-f">First</span>();
+}</code></pre></div>
+<p>All of LINQ (<code>Where</code>, <code>Select</code>, ...) is extension methods on <code>IEnumerable&lt;T&gt;</code>. They are found when their namespace is imported with <code>using</code>.</p>
+<h2>Namespaces</h2>
+<p><strong>Namespaces</strong> group types and keep names from clashing: <code>System.Collections.Generic.List&lt;T&gt;</code>. A <code>using</code> directive lets you write the short name:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-c">// Models/Invoice.cs</span>
+<span class="tk-k">namespace</span> <span class="tk-t">Billing</span>.<span class="tk-t">Models</span>;          <span class="tk-c">// file-scoped namespace: applies to the whole file</span>
+
+<span class="tk-k">public</span> <span class="tk-k">record</span> <span class="tk-f">Invoice</span>(<span class="tk-k">string</span> <span class="tk-t">Id</span>, <span class="tk-k">decimal</span> <span class="tk-t">Total</span>);</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-c">// Program.cs</span>
+<span class="tk-k">using</span> <span class="tk-t">Billing</span>.<span class="tk-t">Models</span>;              <span class="tk-c">// now Invoice can be used directly</span>
+<span class="tk-k">using</span> <span class="tk-k">static</span> <span class="tk-t">System</span>.<span class="tk-t">Math</span>;          <span class="tk-c">// static members without the class name: Sqrt(2)</span>
+<span class="tk-k">using</span> <span class="tk-t">Json</span> = <span class="tk-t">System</span>.<span class="tk-t">Text</span>.<span class="tk-t">Json</span>.<span class="tk-t">JsonSerializer</span>;   <span class="tk-c">// an alias</span>
+
+<span class="tk-k">var</span> invoice = <span class="tk-k">new</span> <span class="tk-f">Invoice</span>(<span class="tk-s">&quot;INV-1&quot;</span>, <span class="tk-n">99.5m</span>);</code></pre></div>
+<p>Conventions:</p>
+<ul>
+<li>The namespace follows the folder: <code>Billing/Models/Invoice.cs</code> holds <code>namespace Billing.Models;</code>.</li>
+<li>One public type per file, with the file named after it.</li>
+<li>Projects add <strong>global usings</strong> for common namespaces (<code>System</code>, <code>System.Linq</code>, <code>System.Collections.Generic</code>...) with <code>&lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;</code>, so most files need few <code>using</code> lines. You can add your own in one file: <code>global using Billing.Models;</code>.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-interfaces/"><span class="mono">previous</span><b>3.04 Interfaces</b></a>
+      <a class="lp-next" href="../4-01-generics/"><span class="mono">next</span><b>4.01 Generics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/3-05-static-members-extension-methods-and-namespaces"></script>
+</body>
+</html>

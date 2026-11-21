@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Methods · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/2-01-methods/">
+  <meta name="description" content="Defining static methods with parameters and return types, void methods, calling methods, pass-by-value for primitives and references, overloading,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Methods · Java · Xenon">
+  <meta property="og:description" content="Defining static methods with parameters and return types, void methods, calling methods, pass-by-value for primitives and references, overloading,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/2-01-methods/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Methods · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Methods · Java · Xenon">
+  <meta name="twitter:description" content="Defining static methods with parameters and return types, void methods, calling methods, pass-by-value for primitives and references, overloading,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Methods, Arrays and Recursion</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Methods</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.01</b></span><span>1 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Defining static methods with parameters and return types, void methods, calling methods, pass-by-value for primitives and references, overloading, variable-length arguments, local variables and scope, returning early, and designing small methods that do one thing.</p>
+      <div class="prose">
+<h2>Defining methods</h2>
+<p>A <strong>method</strong> is a named block of code with <strong>parameters</strong> and a <strong>return type</strong>. Until classes and objects arrive in milestone 3, our methods are <code>static</code>: they belong to the class and are called by name.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">area</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">describe</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>));
+        <span class="tk-f">greet</span>(<span class="tk-s">&quot;Grace&quot;</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">isEven</span>(<span class="tk-n">10</span>) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-f">isEven</span>(<span class="tk-n">7</span>));
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">area</span>(<span class="tk-k">double</span> width, <span class="tk-k">double</span> height) {
+        <span class="tk-k">return</span> width * height;
+    }
+
+    <span class="tk-k">static</span> <span class="tk-t">String</span> <span class="tk-f">describe</span>(<span class="tk-t">String</span> name, <span class="tk-k">int</span> age) {
+        <span class="tk-k">return</span> name + <span class="tk-s">&quot; (&quot;</span> + age + <span class="tk-s">&quot;)&quot;</span>;
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">greet</span>(<span class="tk-t">String</span> name) {          <span class="tk-c">// void: returns nothing</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-s">&quot;Hello, &quot;</span> + name + <span class="tk-s">&quot;!&quot;</span>);
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">boolean</span> <span class="tk-f">isEven</span>(<span class="tk-k">int</span> n) {
+        <span class="tk-k">return</span> n % <span class="tk-n">2</span> == <span class="tk-n">0</span>;
+    }
+}</code></pre></div>
+<p>Every path through a non-void method must <code>return</code> a value of the declared type; the compiler checks this (&quot;missing return statement&quot;). A <code>return</code> can come early to stop the method at once:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">grade</span>(<span class="tk-n">95</span>) + <span class="tk-f">grade</span>(<span class="tk-n">72</span>) + <span class="tk-f">grade</span>(-<span class="tk-n">5</span>));
+    }
+
+    <span class="tk-k">static</span> <span class="tk-t">String</span> <span class="tk-f">grade</span>(<span class="tk-k">int</span> score) {
+        <span class="tk-k">if</span> (score &lt; <span class="tk-n">0</span> || score &gt; <span class="tk-n">100</span>) <span class="tk-k">return</span> <span class="tk-s">&quot;?&quot;</span>;
+        <span class="tk-k">if</span> (score &gt;= <span class="tk-n">90</span>) <span class="tk-k">return</span> <span class="tk-s">&quot;A&quot;</span>;
+        <span class="tk-k">if</span> (score &gt;= <span class="tk-n">70</span>) <span class="tk-k">return</span> <span class="tk-s">&quot;C&quot;</span>;
+        <span class="tk-k">return</span> <span class="tk-s">&quot;F&quot;</span>;
+    }
+}</code></pre></div>
+<h2>Pass by value</h2>
+<p>Java always passes <strong>copies of values</strong>. For a primitive, the method gets a copy of the number; changing the parameter does not change the caller&#39;s variable. For an object, the method gets a copy of the <strong>reference</strong>: it can change the object the reference points to, but not make the caller&#39;s variable point somewhere else.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">int</span> n = <span class="tk-n">1</span>;
+        <span class="tk-f">addOne</span>(n);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(n);              <span class="tk-c">// 1: addOne changed its own copy</span>
+
+        <span class="tk-k">int</span>[] numbers = {<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>};
+        <span class="tk-f">doubleAll</span>(numbers);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(numbers[<span class="tk-n">0</span>]);     <span class="tk-c">// 2: the array itself was changed</span>
+        <span class="tk-f">replace</span>(numbers);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(numbers[<span class="tk-n">0</span>]);     <span class="tk-c">// 2: replacing the parameter does not affect the caller</span>
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">addOne</span>(<span class="tk-k">int</span> x) { x = x + <span class="tk-n">1</span>; }
+
+    <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">doubleAll</span>(<span class="tk-k">int</span>[] values) {
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; values.length; i++) values[i] *= <span class="tk-n">2</span>;
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">replace</span>(<span class="tk-k">int</span>[] values) { values = <span class="tk-k">new</span> <span class="tk-k">int</span>[] {<span class="tk-n">100</span>, <span class="tk-n">200</span>}; }
+}</code></pre></div>
+<h2>Overloading</h2>
+<p>Methods may share a name when their parameter lists differ. The compiler picks the closest match:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">max</span>(<span class="tk-n">3</span>, <span class="tk-n">9</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">max</span>(<span class="tk-n">2.5</span>, <span class="tk-n">1.5</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">max</span>(<span class="tk-n">4</span>, <span class="tk-n">8</span>, <span class="tk-n">6</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">sum</span>() + <span class="tk-s">&quot; &quot;</span> + <span class="tk-f">sum</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-f">sum</span>(<span class="tk-k">new</span> <span class="tk-k">int</span>[] {<span class="tk-n">10</span>, <span class="tk-n">20</span>}));
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">max</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b) { <span class="tk-k">return</span> a &gt; b ? a : b; }
+    <span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">max</span>(<span class="tk-k">double</span> a, <span class="tk-k">double</span> b) { <span class="tk-k">return</span> a &gt; b ? a : b; }
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">max</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b, <span class="tk-k">int</span> c) { <span class="tk-k">return</span> <span class="tk-f">max</span>(<span class="tk-f">max</span>(a, b), c); }
+
+    <span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">sum</span>(<span class="tk-k">int</span>... numbers) {          <span class="tk-c">// varargs: any number of ints, as an array</span>
+        <span class="tk-k">int</span> total = <span class="tk-n">0</span>;
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> n : numbers) total += n;
+        <span class="tk-k">return</span> total;
+    }
+}</code></pre></div>
+<h2>Scope</h2>
+<p>A variable exists from its declaration to the end of the block <code>{ }</code> it is declared in. Parameters and variables of one method are invisible to other methods; the only way to share values is to pass them as arguments and return results.</p>
+<h2>Good methods</h2>
+<ul>
+<li>One method, one job, named with a verb: <code>calculateTotal</code>, <code>isValid</code>, <code>printReport</code>.</li>
+<li>Prefer methods that <strong>return</strong> results over methods that print them: a returned value can be tested, printed, or used in further calculations.</li>
+<li>Keep methods short. If you need a comment to explain a section of a method, that section probably wants to be its own method.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/2.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/2.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-05-control-flow/"><span class="mono">previous</span><b>1.05 Control Flow</b></a>
+      <a class="lp-next" href="../2-02-arrays/"><span class="mono">next</span><b>2.02 Arrays</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/2-01-methods"></script>
+</body>
+</html>

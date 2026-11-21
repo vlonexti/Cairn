@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Entities, Components and Systems · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/10-03-entities-components-and-systems/">
+  <meta name="description" content="How should a game represent its thousands of objects? Deep inheritance trees (Monster : Character : Entity) become rigid and slow. Many engines use…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Entities, Components and Systems · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="How should a game represent its thousands of objects? Deep inheritance trees (Monster : Character : Entity) become rigid and slow. Many engines use…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/10-03-entities-components-and-systems/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Entities, Components and Systems · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Entities, Components and Systems · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="How should a game represent its thousands of objects? Deep inheritance trees (Monster : Character : Entity) become rigid and slow. Many engines use…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Game Engine Architecture</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Entities, Components and Systems</h1>
+      <div class="readout lp-readout"><span>lesson <b>10.03</b></span><span>3 of 9 in milestone 10</span><span>6 min</span></div>
+      <p class="lp-summary">How should a game represent its thousands of objects? Deep inheritance trees (<code>Monster : Character : Entity</code>) become rigid and slow. Many engines use <strong>entity-component-system</strong> (ECS) design instead: an <strong>entity</strong> is just an id, <strong>components</strong> are plain data attached to it, and <strong>systems</strong> are loops over every entity with a given set of components. This lesson explains why, and builds a small ECS on the <strong>sparse set</strong> structure.</p>
+      <div class="prose">
+<h2>The trouble with deep hierarchies</h2>
+<p>The object-oriented first attempt at a game world looks like this:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    E[&quot;Entity&quot;] --&gt; C[&quot;Character&quot;]
+    E --&gt; P[&quot;Prop&quot;]
+    C --&gt; PL[&quot;Player&quot;]
+    C --&gt; M[&quot;Monster&quot;]
+    M --&gt; F[&quot;FlyingMonster&quot;]
+    P --&gt; B[&quot;Barrel&quot;]</pre></div>
+<p>Then the designers ask for a barrel that can fly, a monster that can be picked up like a prop, and a player who can turn into a barrel. Each request fits awkwardly into the tree, and features drift up into the base class until <code>Entity</code> has a hundred members, most unused by most objects. Performance suffers too: each object is a separate heap allocation with a vptr, updating them means a virtual call each, and their data is scattered (lessons 3.02, 3.05).</p>
+<h2>Composition: entities, components, systems</h2>
+<p>ECS splits things differently:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Is</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Entity</strong></td>
+<td>An id. Nothing else.</td>
+<td><code>Entity{ 42 }</code></td>
+</tr>
+<tr>
+<td><strong>Component</strong></td>
+<td>A small, plain struct of data, attached to an entity</td>
+<td><code>Position{ x, y }</code>, <code>Velocity{ vx, vy }</code>, <code>Health{ hp }</code>, <code>Sprite{ textureId }</code></td>
+</tr>
+<tr>
+<td><strong>System</strong></td>
+<td>A function that loops over every entity having certain components</td>
+<td>Movement: every entity with Position <strong>and</strong> Velocity</td>
+</tr>
+</tbody></table>
+</div>
+<p>A flying barrel is just an entity with <code>Position</code>, <code>Velocity</code>, <code>Sprite</code> and <code>Breakable</code>. A monster you can pick up has <code>Carryable</code> added. No class hierarchy has to change: behaviour comes from which components an entity has, and which systems act on them.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">movementSystem</span>(<span class="tk-t">World</span>&amp; world, <span class="tk-k">float</span> dt)
+{
+    <span class="tk-k">for</span> (<span class="tk-t">Entity</span> e : world.with&lt;<span class="tk-t">Position</span>, <span class="tk-t">Velocity</span>&gt;())
+    {
+        <span class="tk-t">Position</span>&amp; p{ world.get&lt;<span class="tk-t">Position</span>&gt;(e) };
+        <span class="tk-k">const</span> <span class="tk-t">Velocity</span>&amp; v{ world.get&lt;<span class="tk-t">Velocity</span>&gt;(e) };
+        p.x += v.vx * dt;
+        p.y += v.vy * dt;
+    }
+}</code></pre></div>
+<h2>Why it is fast</h2>
+<p>Each component type is stored in its own <strong>dense array</strong>: all <code>Position</code>s side by side, all <code>Velocity</code>s side by side. A system walks those arrays in order, which is exactly what caches and vectorisation want (lessons 2.07, 7.09): no pointer chasing, no virtual calls, every byte loaded is used. This layout is called <strong>data-oriented design</strong>, and it is the main reason large engines adopted ECS.</p>
+<h2>The sparse set</h2>
+<p>How do you store components so that you can (a) loop over all of them densely, (b) find an entity&#39;s component instantly, and (c) add and remove them cheaply? The usual answer is a <strong>sparse set</strong> per component type:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>sparse: indexed by entity id → position in the dense arrays (or &quot;none&quot;)
+        [0]: none   [1]: 0   [2]: none   [3]: 2   [4]: 1
+
+dense:  entity ids in order       [1]  [4]  [3]
+        components, same order    {P1} {P4} {P3}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>How</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Does entity e have it?</td>
+<td><code>sparse[e] != none</code></td>
+<td>Constant</td>
+</tr>
+<tr>
+<td>Get e&#39;s component</td>
+<td><code>components[sparse[e]]</code></td>
+<td>Constant</td>
+</tr>
+<tr>
+<td>Add to e</td>
+<td>Append to the dense arrays; <code>sparse[e] = new index</code></td>
+<td>Constant (amortised)</td>
+</tr>
+<tr>
+<td>Remove from e</td>
+<td>Swap-and-pop (lesson 3.07): move the last element into e&#39;s slot, fix the moved entity&#39;s sparse entry</td>
+<td>Constant</td>
+</tr>
+<tr>
+<td>Loop over all</td>
+<td>Walk the dense arrays</td>
+<td>Fast, contiguous</td>
+</tr>
+</tbody></table>
+</div>
+<p>It combines lesson 3.07&#39;s swap-and-pop with lesson 3.10&#39;s stable ids. The practice task builds one.</p>
+<h2>Systems that need several components</h2>
+<p><code>world.with&lt;Position, Velocity&gt;()</code> must find entities that have <strong>both</strong>. With sparse sets, loop over the <strong>smaller</strong> of the two sets and check the other with a constant-time lookup. Larger engines group entities by their exact set of components into <strong>archetypes</strong>, each stored as its own table, so every system&#39;s loop is a straight walk with no checks; that is how Unity&#39;s DOTS and the <code>flecs</code> library work. <code>EnTT</code>, a popular open-source C++ ECS, is built on sparse sets.</p>
+<h2>When not to use ECS</h2>
+<p>ECS shines with many similar objects and simple, repeated behaviour. For a game with a few dozen unique objects, or for one-off logic (a boss&#39;s scripted sequence, the user interface), plain classes are simpler and fine. Many shipped games mix both: an ECS for the crowd, ordinary objects for the rest.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Putting logic in components</span></div><div class="callout-body"><p>Components are data. Behaviour lives in systems.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Keeping pointers to components</span></div><div class="callout-body"><p>Removing another entity&#39;s component can move this one (swap-and-pop). Store the entity id and look the component up.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Adding or removing components while a system loops over them</span></div><div class="callout-body"><p>The arrays change under the loop. Queue structural changes and apply them after the system finishes.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">In ECS, what is an entity?</div><ul><li>Just an id that components are attached to</li><li>A class with virtual functions</li><li>A system</li></ul><details><summary>Show the answer</summary><p><b>Just an id that components are attached to</b> All its data lives in components; all behaviour in systems.</p></details></li><li><div class="q">Why are ECS systems often faster than looping over objects with virtual <code>update</code> functions?</div><ul><li>Each system walks contiguous arrays of plain data, with no virtual calls or pointer chasing</li><li>Systems run on the GPU</li><li>Components are smaller than objects</li></ul><details><summary>Show the answer</summary><p><b>Each system walks contiguous arrays of plain data, with no virtual calls or pointer chasing</b> Data-oriented layout suits caches and vectorisation.</p></details></li><li><div class="q">In a sparse set, how is a component removed in constant time?</div><ul><li>The last component is moved into its slot (swap-and-pop), and the moved entity&#39;s sparse entry is updated</li><li>All later components are shifted down</li><li>The slot is marked empty and skipped</li></ul><details><summary>Show the answer</summary><p><b>The last component is moved into its slot (swap-and-pop), and the moved entity&#39;s sparse entry is updated</b> The dense arrays stay dense.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/10.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/10.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../10-02-time-steps-and-frame-rates/"><span class="mono">previous</span><b>10.02 Time Steps and Frame Rates</b></a>
+      <a class="lp-next" href="../10-04-a-tour-of-the-rendering-pipeline/"><span class="mono">next</span><b>10.04 A Tour of the Rendering Pipeline</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/10-03-entities-components-and-systems"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

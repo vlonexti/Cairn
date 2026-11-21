@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Saving Progress and Settings · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/6-01-saving-progress-and-settings/">
+  <meta name="description" content="Players expect a game to remember their settings, their progress and their best scores. This lesson chooses what to save and where, writes simple versioned…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Saving Progress and Settings · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="Players expect a game to remember their settings, their progress and their best scores. This lesson chooses what to save and where, writes simple versioned…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/6-01-saving-progress-and-settings/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Saving Progress and Settings · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Saving Progress and Settings · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="Players expect a game to remember their settings, their progress and their best scores. This lesson chooses what to save and where, writes simple versioned…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>Finishing a Game</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Saving Progress and Settings</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 3 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Players expect a game to remember their settings, their progress and their best scores. This lesson chooses what to save and where, writes simple versioned text formats, saves safely so a crash never destroys a save, and keeps a high-score table.</p>
+      <div class="prose">
+<h2>What to save</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Examples</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Settings</strong></td>
+<td>Volumes, key bindings, window mode, screen shake on or off</td>
+<td>When changed</td>
+</tr>
+<tr>
+<td><strong>Progress</strong></td>
+<td>Levels unlocked, items collected, the current level and checkpoint</td>
+<td>At checkpoints, level ends and on quit</td>
+</tr>
+<tr>
+<td><strong>Records</strong></td>
+<td>High scores, best times, statistics</td>
+<td>When a record changes</td>
+</tr>
+</tbody></table>
+</div>
+<p>Save <strong>data</strong>, not objects: the level number and the player&#39;s health, not the <code>Player</code> object with its texture handles and pointers. Loading then rebuilds the objects from the data.</p>
+<h2>Where</h2>
+<p>Never write next to the <code>.exe</code>: on Windows, a game installed in <code>Program Files</code> is not allowed to. Each user has a folder for this, <code>%APPDATA%</code> (for example <code>C:\Users\Sam\AppData\Roaming\YourGame\</code>):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdlib&gt;</span>
+<span class="tk-p">#include &lt;filesystem&gt;</span>
+std::filesystem::path <span class="tk-f">saveFolder</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-k">char</span>* appData = std::<span class="tk-f">getenv</span>(<span class="tk-s">&quot;APPDATA&quot;</span>);               <span class="tk-c">// Windows</span>
+    std::filesystem::path dir = appData ? appData : <span class="tk-s">&quot;.&quot;</span>;
+    dir /= <span class="tk-s">&quot;XenonQuest&quot;</span>;
+    std::filesystem::<span class="tk-f">create_directories</span>(dir);
+    <span class="tk-k">return</span> dir;
+}</code></pre></div>
+<p>On Linux the convention is <code>~/.local/share/&lt;game&gt;</code>, on macOS <code>~/Library/Application Support/&lt;game&gt;</code>.</p>
+<h2>A simple format</h2>
+<p>A text file of <code>key=value</code> lines is readable, easy to debug and easy to extend:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>version=2
+music=70
+effects=85
+fullscreen=0
+key.jump=32</code></pre></div>
+<p>Rules that keep it robust:</p>
+<ul>
+<li><strong>Defaults first</strong>: start from default settings and overwrite only the keys that are present and valid. A missing or damaged line then simply keeps its default, and new settings added in an update work with old files.</li>
+<li><strong>Validate and clamp</strong> every value: a volume of 900 or a key code of -5 must not reach the game.</li>
+<li><strong>Ignore unknown keys</strong>, so an older game can read a newer file.</li>
+<li><strong>Version</strong> the file, so a later version can convert old data (a <strong>migration</strong>).</li>
+</ul>
+<h2>Saving safely</h2>
+<p>If the game crashes or the power fails halfway through writing, the save file is cut off and the player loses everything. Write to a temporary file first, then <strong>replace</strong> the old one in a single step:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">saveSafely</span>(<span class="tk-k">const</span> std::filesystem::path&amp; file, <span class="tk-k">const</span> std::string&amp; text)
+{
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> temp = file.<span class="tk-f">string</span>() + <span class="tk-s">&quot;.tmp&quot;</span>;
+    { std::ofstream out{ temp, std::ios::binary }; out &lt;&lt; text; }       <span class="tk-c">// closed (flushed) at the brace</span>
+    std::filesystem::<span class="tk-f">rename</span>(temp, file);                               <span class="tk-c">// replaces the old file</span>
+}</code></pre></div>
+<p>A rename within one folder is atomic on Windows and Linux: afterwards there is either the complete old file or the complete new one. Keeping the previous save as <code>save.bak</code> adds another layer of protection.</p>
+<h2>Detecting damage</h2>
+<p>A <strong>checksum</strong> stored with the data detects files that were cut off or damaged: compute a number from the content (such as FNV-1a, a few lines of code), write it on the last line, and when loading, recompute it and compare. On a mismatch, fall back to the backup or to defaults, and tell the player rather than crashing.</p>
+<p>A checksum is not protection against cheating: anyone can recompute it. For a single-player game that is fine; let players edit their saves if they want to.</p>
+<h2>High scores</h2>
+<p>A high-score table is a sorted list with a maximum length:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Score</span> { std::string name; <span class="tk-k">int</span> points; };
+<span class="tk-k">void</span> <span class="tk-f">addScore</span>(std::vector&lt;<span class="tk-t">Score</span>&gt;&amp; table, <span class="tk-t">Score</span> s)
+{
+    <span class="tk-k">auto</span> pos = std::<span class="tk-f">find_if</span>(table.<span class="tk-f">begin</span>(), table.<span class="tk-f">end</span>(), [&amp;](<span class="tk-k">const</span> <span class="tk-t">Score</span>&amp; t) { <span class="tk-k">return</span> s.points &gt; t.points; });
+    table.<span class="tk-f">insert</span>(pos, s);                     <span class="tk-c">// after equal scores: earlier players keep their place</span>
+    <span class="tk-k">if</span> (table.<span class="tk-f">size</span>() &gt; <span class="tk-n">10</span>) table.<span class="tk-f">pop_back</span>();
+}</code></pre></div>
+<p>Ask for the name (lesson 1.05&#39;s typed text) only when the score actually makes it into the table.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-render-textures-and-post-processing/"><span class="mono">previous</span><b>5.05 Render Textures and Post-Processing</b></a>
+      <a class="lp-next" href="../6-02-packaging-a-finished-game/"><span class="mono">next</span><b>6.02 Packaging a Finished Game</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/6-01-saving-progress-and-settings"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Snapshots and Delta Compression · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/6-02-snapshots-and-delta-compression/">
+  <meta name="description" content="Sending the world to clients efficiently - what goes in a snapshot, quantising floats into a few bits, sending only what changed against a baseline the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Snapshots and Delta Compression · Networking · Xenon">
+  <meta property="og:description" content="Sending the world to clients efficiently - what goes in a snapshot, quantising floats into a few bits, sending only what changed against a baseline the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/6-02-snapshots-and-delta-compression/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Snapshots and Delta Compression · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Snapshots and Delta Compression · Networking · Xenon">
+  <meta name="twitter:description" content="Sending the world to clients efficiently - what goes in a snapshot, quantising floats into a few bits, sending only what changed against a baseline the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Multiplayer Games</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Snapshots and Delta Compression</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Sending the world to clients efficiently - what goes in a snapshot, quantising floats into a few bits, sending only what changed against a baseline the client has acknowledged, change masks, and what happens when packets are lost.</p>
+      <div class="prose">
+<h2>A snapshot</h2>
+<p>A <strong>snapshot</strong> is the server&#39;s world state at one tick, as one client needs to see it: for each relevant entity, an id and the fields that matter (position, angle, health, animation). Sending it all, every time, is simple and robust: each snapshot stands alone, so a lost one does not matter. It is also big. Thirty players with 20 bytes each is 600 bytes, times 60 snapshots a second, times 30 clients: over 8 Mbit/s of upload for one server.</p>
+<p>Two techniques shrink it dramatically.</p>
+<h2>Quantisation</h2>
+<p>A <code>float</code> is 4 bytes with far more precision than a game needs. If the map is 0 to 1 000 units wide, storing the position as a 16-bit integer gives steps of 1 000 / 65 535 ≈ 0.015 units, invisible on screen:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::uint16_t <span class="tk-f">quantize</span>(<span class="tk-k">float</span> v, <span class="tk-k">float</span> min, <span class="tk-k">float</span> max)
+{
+    <span class="tk-k">const</span> <span class="tk-k">float</span> t{ (std::<span class="tk-f">clamp</span>(v, min, max) - min) / (max - min) };
+    <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;std::uint16_t&gt;(std::<span class="tk-f">lround</span>(t * <span class="tk-n">65535.0f</span>));
+}
+
+<span class="tk-k">float</span> <span class="tk-f">dequantize</span>(std::uint16_t q, <span class="tk-k">float</span> min, <span class="tk-k">float</span> max)
+{
+    <span class="tk-k">return</span> min + (max - min) * (q / <span class="tk-n">65535.0f</span>);
+}</code></pre></div>
+<p>The same idea everywhere: an angle in 8 or 10 bits, health as a byte, a boolean as a single bit. The error is at most half a step. Crucially, <strong>the server simulates with the quantised values</strong> too (or rounds its state the same way), so client and server agree exactly on what was sent.</p>
+<h2>Delta compression</h2>
+<p>Most of the world does not change from one snapshot to the next: a player standing still, a door that is closed. So send only the <strong>difference</strong> against a snapshot the client already has:</p>
+<ul>
+<li>The client acknowledges the snapshots it receives (milestone 5&#39;s acks).</li>
+<li>The server keeps the last few dozen snapshots per client and encodes each new one <strong>against the latest one the client acknowledged</strong>, the <strong>baseline</strong>.</li>
+<li>For each entity it writes the id and a <strong>change mask</strong>, one bit per field, followed by only the fields whose bit is set. Unchanged entities are left out entirely; new entities have every bit set; removed ones get a &quot;removed&quot; marker.</li>
+</ul>
+<p>The client reconstructs the new snapshot by copying the baseline and applying the changes. A typical scene shrinks from hundreds of bytes to tens.</p>
+<h2>When packets are lost</h2>
+<p>Delta compression against an <strong>acknowledged</strong> baseline stays correct under loss: if snapshots 101 to 103 are lost, the server simply keeps encoding against 100 (the last one acknowledged) until a newer one is acknowledged. Deltas grow a little while packets are being lost, and shrink again once acks get through.</p>
+<p>What must never happen is encoding against a snapshot the client might not have. Then the client applies changes to the wrong base and its world is silently wrong. If there is no usable baseline (a new client, or a baseline too old to keep), send a full snapshot.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-the-authoritative-server/"><span class="mono">previous</span><b>6.01 The Authoritative Server</b></a>
+      <a class="lp-next" href="../6-03-interpolation/"><span class="mono">next</span><b>6.03 Interpolation</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/6-02-snapshots-and-delta-compression"></script>
+</body>
+</html>

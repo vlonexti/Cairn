@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Encoding Jumps and Calls · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/4-02-encoding-jumps-and-calls/">
+  <meta name="description" content="How x64 encodes jumps and calls - short and near relative jumps, conditional jumps, relative calls, why the displacement counts from the end of the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Encoding Jumps and Calls · Reverse Engineering · Xenon">
+  <meta property="og:description" content="How x64 encodes jumps and calls - short and near relative jumps, conditional jumps, relative calls, why the displacement counts from the end of the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/4-02-encoding-jumps-and-calls/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Encoding Jumps and Calls · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Encoding Jumps and Calls · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="How x64 encodes jumps and calls - short and near relative jumps, conditional jumps, relative calls, why the displacement counts from the end of the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Patching Programs You Build</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Encoding Jumps and Calls</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How x64 encodes jumps and calls - short and near relative jumps, conditional jumps, relative calls, why the displacement counts from the end of the instruction, the 2 GB limit, and the absolute jumps used when a target is further away.</p>
+      <div class="prose">
+<h2>Relative, from the end</h2>
+<p>Almost every jump and call on x64 is <strong>relative</strong>: the instruction holds a signed distance, the <strong>displacement</strong>, and the target is</p>
+<blockquote><p>target = address of the <strong>next</strong> instruction + displacement</p>
+</blockquote>
+<p>The distance is counted from the end of the jump, not its start, because by the time the processor uses it, <code>rip</code> already points past the instruction.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Bytes</th>
+<th>Length</th>
+<th>Displacement</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>jmp short</code></td>
+<td><code>EB dd</code></td>
+<td>2</td>
+<td>8-bit, −128 to +127</td>
+</tr>
+<tr>
+<td><code>jmp near</code></td>
+<td><code>E9 dd dd dd dd</code></td>
+<td>5</td>
+<td>32-bit</td>
+</tr>
+<tr>
+<td><code>jcc short</code></td>
+<td><code>70+cc dd</code></td>
+<td>2</td>
+<td>8-bit</td>
+</tr>
+<tr>
+<td><code>jcc near</code></td>
+<td><code>0F 80+cc dd dd dd dd</code></td>
+<td>6</td>
+<td>32-bit</td>
+</tr>
+<tr>
+<td><code>call</code></td>
+<td><code>E8 dd dd dd dd</code></td>
+<td>5</td>
+<td>32-bit</td>
+</tr>
+</tbody></table>
+</div>
+<p>Example: a <code>jmp</code> at <code>0x1400010A0</code> to <code>0x140001200</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>next instruction = 0x1400010A0 + 5 = 0x1400010A5
+displacement     = 0x140001200 - 0x1400010A5 = 0x15B
+bytes            = E9 5B 01 00 00</code></pre></div>
+<p>Backwards jumps have negative displacements in two&#39;s complement: <code>EB FE</code> is a jump to itself (−2), an infinite loop; <code>E9 00 00 00 00</code> jumps to the next instruction, which does nothing.</p>
+<p>Because displacements are relative, a block of code containing only relative jumps <strong>between its own instructions</strong> can be moved anywhere and still works; a relative jump or call <strong>to outside</strong> the block points somewhere else once it is moved. That fact drives lessons 4.03 and 4.04.</p>
+<h2>The 2 GB limit</h2>
+<p>A 32-bit displacement reaches about ±2 GB. Inside one module that is plenty. But code you allocate at run time with <code>VirtualAlloc</code> may land anywhere in the 128 TB address space, too far for <code>E9</code>. Then you need an <strong>absolute</strong> jump:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; 14 bytes: jump to the 8-byte address stored right after the instruction</span>
+FF <span class="tk-n">25</span> <span class="tk-n">00</span> <span class="tk-n">00</span> <span class="tk-n">00</span> <span class="tk-n">00</span>          jmp <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rip</span>+<span class="tk-n">0</span>]
+xx xx xx xx xx xx xx xx    <span class="tk-c">; the absolute target address</span></code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code><span class="tk-c">; 12 bytes, but it destroys rax</span>
+<span class="tk-n">48</span> B8 xx xx xx xx xx xx xx xx    mov <span class="tk-t">rax</span>, imm64
+FF E0                            jmp <span class="tk-t">rax</span></code></pre></div>
+<p>The first form changes no registers, which is why hooking libraries use it. Alternatively, allocate your new code <strong>within 2 GB</strong> of the module (<code>VirtualAlloc</code> with an address hint near it), so a 5-byte <code>E9</code> reaches it.</p>
+<h2>Calls through memory</h2>
+<p>Calls to imported functions are not relative calls to the function; they are indirect calls through the import address table:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>FF <span class="tk-n">15</span> xx xx xx xx          call <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rip</span>+disp32]    <span class="tk-c">; the IAT slot</span></code></pre></div>
+<p>The displacement here gives the address of the <strong>slot</strong>, also counted from the end of the instruction (6 bytes long); the slot holds the function&#39;s address. Virtual calls are <code>FF 50 xx</code> / <code>FF 90 xx xx xx xx</code> (<code>call qword ptr [rax+disp]</code>) and friends.</p>
+<h2>Encoding in code</h2>
+<p>Choosing the shortest encoding that reaches:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::vector&lt;std::uint8_t&gt; <span class="tk-f">encodeJump</span>(std::uint64_t from, std::uint64_t to)
+{
+    <span class="tk-k">const</span> std::int64_t shortDisp{ <span class="tk-k">static_cast</span>&lt;std::int64_t&gt;(to - (from + <span class="tk-n">2</span>)) };
+    <span class="tk-k">if</span> (shortDisp &gt;= -<span class="tk-n">128</span> &amp;&amp; shortDisp &lt;= <span class="tk-n">127</span>) <span class="tk-k">return</span> { <span class="tk-n">0xEB</span>, <span class="tk-k">static_cast</span>&lt;std::uint8_t&gt;(shortDisp) };
+    <span class="tk-k">const</span> std::int64_t nearDisp{ <span class="tk-k">static_cast</span>&lt;std::int64_t&gt;(to - (from + <span class="tk-n">5</span>)) };
+    <span class="tk-k">if</span> (nearDisp &gt;= INT32_MIN &amp;&amp; nearDisp &lt;= INT32_MAX) { <span class="tk-c">/* E9 + 4 bytes of nearDisp, little-endian */</span> }
+    <span class="tk-c">/* otherwise FF 25 00 00 00 00 + 8 bytes of `to` */</span>
+}</code></pre></div>
+<p>Note that the two candidate displacements are computed from <strong>different</strong> ends: <code>from + 2</code> for the short form, <code>from + 5</code> for the near one.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-patching-instructions/"><span class="mono">previous</span><b>4.01 Patching Instructions</b></a>
+      <a class="lp-next" href="../4-03-code-caves/"><span class="mono">next</span><b>4.03 Code Caves</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/4-02-encoding-jumps-and-calls"></script>
+</body>
+</html>

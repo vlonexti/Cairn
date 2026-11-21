@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Async Generators and Iteration · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/8-02-async-generators-and-iteration/">
+  <meta name="description" content="Data that arrives a piece at a time - async iterables and for await...of, async generator functions with async function , paging through an API lazily,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Async Generators and Iteration · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="Data that arrives a piece at a time - async iterables and for await...of, async generator functions with async function , paging through an API lazily,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/8-02-async-generators-and-iteration/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Async Generators and Iteration · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Async Generators and Iteration · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="Data that arrives a piece at a time - async iterables and for await...of, async generator functions with async function , paging through an API lazily,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>JavaScript in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Async Generators and Iteration</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.02</b></span><span>2 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Data that arrives a piece at a time - async iterables and for await...of, async generator functions with async function*, paging through an API lazily, transforming async streams with small helper generators, stopping early with break and return, and the Symbol.asyncIterator protocol.</p>
+      <div class="prose">
+<h2>A loop that waits</h2>
+<p>Lesson 3.04 showed generators: functions that <code>yield</code> values one by one to a <code>for...of</code> loop. Lesson 4.03 showed <code>await</code>. Put them together and you get a loop whose values arrive <strong>over time</strong>: pages from an API, lines from a file, messages from a socket.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> sleep = ms =&gt; <span class="tk-k">new</span> <span class="tk-f">Promise</span>(r =&gt; <span class="tk-f">setTimeout</span>(r, ms));
+
+<span class="tk-k">async</span> <span class="tk-k">function</span>* <span class="tk-f">countdown</span>(<span class="tk-k">from</span>) {
+  <span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-k">from</span>; i &gt; <span class="tk-n">0</span>; i--) {
+    <span class="tk-k">await</span> <span class="tk-f">sleep</span>(<span class="tk-n">10</span>);
+    <span class="tk-k">yield</span> i;
+  }
+}
+
+(<span class="tk-k">async</span> () =&gt; {
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> n <span class="tk-k">of</span> <span class="tk-f">countdown</span>(<span class="tk-n">3</span>)) console.<span class="tk-f">log</span>(n);
+  console.<span class="tk-f">log</span>(<span class="tk-s">&quot;lift off&quot;</span>);
+})();</code></pre></div>
+<p><code>async function*</code> declares an <strong>async generator</strong>. It can <code>await</code> inside, and each <code>yield</code> hands one value to the loop. <code>for await...of</code> waits for each value before running the body.</p>
+<h2>Paging through an API, lazily</h2>
+<p>Many APIs return results a page at a time with a &quot;next&quot; cursor. An async generator hides the pages, so the caller sees one stream of items:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> pages = { start: { items: [<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>], next: <span class="tk-s">&quot;p2&quot;</span> }, p2: { items: [<span class="tk-n">4</span>, <span class="tk-n">5</span>], next: <span class="tk-s">&quot;p3&quot;</span> }, p3: { items: [<span class="tk-n">6</span>], next: <span class="tk-k">null</span> } };
+<span class="tk-k">let</span> requests = <span class="tk-n">0</span>;
+<span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">fetchPage</span>(cursor) {
+  requests++;
+  <span class="tk-k">await</span> <span class="tk-k">new</span> <span class="tk-f">Promise</span>(r =&gt; <span class="tk-f">setTimeout</span>(r, <span class="tk-n">5</span>));
+  <span class="tk-k">return</span> pages[cursor];
+}
+
+<span class="tk-k">async</span> <span class="tk-k">function</span>* <span class="tk-f">allItems</span>() {
+  <span class="tk-k">let</span> cursor = <span class="tk-s">&quot;start&quot;</span>;
+  <span class="tk-k">while</span> (cursor) {
+    <span class="tk-k">const</span> page = <span class="tk-k">await</span> <span class="tk-f">fetchPage</span>(cursor);
+    <span class="tk-k">yield</span>* page.items;          <span class="tk-c">// yield each item of the page</span>
+    cursor = page.next;
+  }
+}
+
+(<span class="tk-k">async</span> () =&gt; {
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> item <span class="tk-k">of</span> <span class="tk-f">allItems</span>()) {
+    console.<span class="tk-f">log</span>(<span class="tk-s">&quot;item&quot;</span>, item);
+    <span class="tk-k">if</span> (item === <span class="tk-n">4</span>) <span class="tk-k">break</span>;      <span class="tk-c">// stop early</span>
+  }
+  console.<span class="tk-f">log</span>(<span class="tk-s">&quot;requests made:&quot;</span>, requests);
+})();</code></pre></div>
+<p>Because the generator is lazy, stopping at 4 means page 3 is never requested. <code>break</code> (or <code>return</code>, or an exception) in a <code>for await</code> loop also tells the generator to finish, running any <code>finally</code> block inside it, so it can close connections.</p>
+<h2>Helpers for streams</h2>
+<p>Small async generators that take a stream and give back a changed one can be chained like array methods:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">async</span> <span class="tk-k">function</span>* <span class="tk-f">map</span>(source, fn) {
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> x <span class="tk-k">of</span> source) <span class="tk-k">yield</span> <span class="tk-f">fn</span>(x);
+}
+<span class="tk-k">async</span> <span class="tk-k">function</span>* <span class="tk-f">filter</span>(source, test) {
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> x <span class="tk-k">of</span> source) <span class="tk-k">if</span> (<span class="tk-f">test</span>(x)) <span class="tk-k">yield</span> x;
+}
+<span class="tk-k">async</span> <span class="tk-k">function</span>* <span class="tk-f">take</span>(source, n) {
+  <span class="tk-k">if</span> (n &lt;= <span class="tk-n">0</span>) <span class="tk-k">return</span>;
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> x <span class="tk-k">of</span> source) {
+    <span class="tk-k">yield</span> x;
+    <span class="tk-k">if</span> (--n === <span class="tk-n">0</span>) <span class="tk-k">return</span>;
+  }
+}
+<span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">toArray</span>(source) {
+  <span class="tk-k">const</span> out = [];
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> x <span class="tk-k">of</span> source) out.<span class="tk-f">push</span>(x);
+  <span class="tk-k">return</span> out;
+}
+
+<span class="tk-k">async</span> <span class="tk-k">function</span>* <span class="tk-f">numbers</span>() {
+  <span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-n">1</span>; ; i++) <span class="tk-k">yield</span> i;       <span class="tk-c">// endless</span>
+}
+
+(<span class="tk-k">async</span> () =&gt; {
+  <span class="tk-k">const</span> result = <span class="tk-k">await</span> <span class="tk-f">toArray</span>(<span class="tk-f">take</span>(<span class="tk-f">filter</span>(<span class="tk-f">map</span>(<span class="tk-f">numbers</span>(), x =&gt; x * x), x =&gt; x % <span class="tk-n">2</span> === <span class="tk-n">1</span>), <span class="tk-n">4</span>));
+  console.<span class="tk-f">log</span>(result);       <span class="tk-c">// [ 1, 9, 25, 49 ]</span>
+})();</code></pre></div>
+<p>Working on an endless source is only possible because each step pulls one value at a time.</p>
+<h2>for await over ordinary promises</h2>
+<p><code>for await</code> also accepts a normal array of promises, waiting for each in order:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> later = (v, ms) =&gt; <span class="tk-k">new</span> <span class="tk-f">Promise</span>(r =&gt; <span class="tk-f">setTimeout</span>(() =&gt; <span class="tk-f">r</span>(v), ms));
+(<span class="tk-k">async</span> () =&gt; {
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> v <span class="tk-k">of</span> [<span class="tk-f">later</span>(<span class="tk-s">&quot;a&quot;</span>, <span class="tk-n">30</span>), <span class="tk-f">later</span>(<span class="tk-s">&quot;b&quot;</span>, <span class="tk-n">10</span>)]) console.<span class="tk-f">log</span>(v);   <span class="tk-c">// a, then b</span>
+})();</code></pre></div>
+<p>To handle results <strong>as they finish</strong> rather than in order, use <code>Promise.race</code> in a loop, or a library helper; <code>for await</code> keeps the order you gave.</p>
+<h2>The protocol</h2>
+<p>An object is async-iterable when it has a <code>[Symbol.asyncIterator]()</code> method returning an object with an async <code>next()</code> that resolves to <code>{ value, done }</code>. Async generators build this for you, but you can write it by hand:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> ticker = {
+  [Symbol.asyncIterator]() {
+    <span class="tk-k">let</span> n = <span class="tk-n">0</span>;
+    <span class="tk-k">return</span> {
+      <span class="tk-k">async</span> <span class="tk-f">next</span>() {
+        <span class="tk-k">await</span> <span class="tk-k">new</span> <span class="tk-f">Promise</span>(r =&gt; <span class="tk-f">setTimeout</span>(r, <span class="tk-n">5</span>));
+        <span class="tk-k">return</span> n &lt; <span class="tk-n">3</span> ? { value: n++, done: <span class="tk-k">false</span> } : { value: <span class="tk-k">undefined</span>, done: <span class="tk-k">true</span> };
+      },
+    };
+  },
+};
+(<span class="tk-k">async</span> () =&gt; {
+  <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> t <span class="tk-k">of</span> ticker) console.<span class="tk-f">log</span>(<span class="tk-s">&quot;tick&quot;</span>, t);
+})();</code></pre></div>
+<p>Node.js streams, <code>fs.promises</code> file handles (<code>file.readLines()</code>), and the browser&#39;s <code>ReadableStream</code> are all async-iterable.</p>
+<h2>Errors</h2>
+<p>An error thrown inside an async generator comes out of the <code>for await</code> loop, where an ordinary <code>try</code>/<code>catch</code> handles it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">async</span> <span class="tk-k">function</span>* <span class="tk-f">risky</span>() {
+  <span class="tk-k">yield</span> <span class="tk-n">1</span>;
+  <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">Error</span>(<span class="tk-s">&quot;connection lost&quot;</span>);
+}
+(<span class="tk-k">async</span> () =&gt; {
+  <span class="tk-k">try</span> {
+    <span class="tk-k">for</span> <span class="tk-k">await</span> (<span class="tk-k">const</span> x <span class="tk-k">of</span> <span class="tk-f">risky</span>()) console.<span class="tk-f">log</span>(x);
+  } <span class="tk-k">catch</span> (e) {
+    console.<span class="tk-f">log</span>(<span class="tk-s">&quot;caught:&quot;</span>, e.message);
+  }
+})();</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/8.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/8.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-01-binary-data-with-typed-arrays/"><span class="mono">previous</span><b>8.01 Binary Data with Typed Arrays</b></a>
+      <a class="lp-next" href="../8-03-cancelling-work-with-abortcontroller/"><span class="mono">next</span><b>8.03 Cancelling Work with AbortController</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/8-02-async-generators-and-iteration"></script>
+</body>
+</html>

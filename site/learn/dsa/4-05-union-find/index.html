@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Union-Find · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/4-05-union-find/">
+  <meta name="description" content="Tracking groups that merge - the disjoint-set problem, a forest of parent pointers, find and union, union by size or rank, path compression, the nearly…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Union-Find · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Tracking groups that merge - the disjoint-set problem, a forest of parent pointers, find and union, union by size or rank, path compression, the nearly…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/4-05-union-find/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Union-Find · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Union-Find · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Tracking groups that merge - the disjoint-set problem, a forest of parent pointers, find and union, union by size or rank, path compression, the nearly…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Trees</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Union-Find</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 5 in milestone 4</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Tracking groups that merge - the disjoint-set problem, a forest of parent pointers, find and union, union by size or rank, path compression, the nearly constant inverse-Ackermann bound, counting components and component sizes, and applications such as connectivity, image regions, percolation and (in lesson 5.04) Kruskal&#39;s algorithm.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>Imagine a network of computers where cables are added one at a time, and at any moment you may be asked: &quot;can computer 17 reach computer 42?&quot;. Or pixels in an image being merged into regions, or friends forming groups. Each case is a collection of <strong>disjoint sets</strong> that only ever <strong>merge</strong>:</p>
+<ul>
+<li><strong>union(a, b)</strong>: merge the set containing a with the set containing b,</li>
+<li><strong>find(a)</strong>: which set is a in? Two elements are connected if they have the same answer.</li>
+</ul>
+<p>Searching the graph for every question is O(n) or more. <strong>Union-find</strong> (also called a disjoint-set union, DSU) answers both operations in <strong>practically constant time</strong>.</p>
+<h2>A forest of parent pointers</h2>
+<p>Each set is a tree, and each element points to its <strong>parent</strong>; a root points to itself and acts as the set&#39;s <strong>representative</strong>. <code>find</code> follows parent pointers up to the root. <code>union</code> finds both roots and makes one the parent of the other.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart BT
+    b((1)) --&gt; a((0))
+    c((2)) --&gt; a
+    d((3)) --&gt; b
+    f((5)) --&gt; e((4))
+    g((6)) --&gt; e</pre></div>
+<p>Here {0, 1, 2, 3} and {4, 5, 6} are two sets, with roots 0 and 4. Elements are numbered 0 to n − 1, so the parents fit in a <code>std::vector&lt;int&gt;</code>.</p>
+<h2>Two improvements</h2>
+<p>Done naively, the trees can become long chains, and <code>find</code> degrades to O(n). Two simple tricks fix that.</p>
+<p><strong>Union by size</strong>: when merging, attach the root of the <strong>smaller</strong> tree under the root of the larger one. A node&#39;s depth then grows only when its tree at least doubles in size, so no tree is deeper than log₂ n. (Union by <strong>rank</strong>, an upper bound on the height, works the same way.)</p>
+<p><strong>Path compression</strong>: during <code>find</code>, once the root is known, point every node on the way <strong>directly at the root</strong>. Later finds for any of them take one step.</p>
+<p>With both, any sequence of m operations on n elements takes O(m · α(n)), where α is the <strong>inverse Ackermann function</strong>. It grows so slowly that α(n) ≤ 4 for any n that could ever fit in a computer: effectively constant.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;numeric&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">UnionFind</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">UnionFind</span>(<span class="tk-k">int</span> n) : <span class="tk-f">parent_</span>(n), <span class="tk-f">size_</span>(n, <span class="tk-n">1</span>), <span class="tk-f">components_</span>(n)
+    {
+        std::<span class="tk-f">iota</span>(parent_.<span class="tk-f">begin</span>(), parent_.<span class="tk-f">end</span>(), <span class="tk-n">0</span>);          <span class="tk-c">// everyone starts as their own root</span>
+    }
+
+    <span class="tk-k">int</span> <span class="tk-f">find</span>(<span class="tk-k">int</span> x)
+    {
+        <span class="tk-k">int</span> root = x;
+        <span class="tk-k">while</span> (parent_[root] != root) root = parent_[root];
+        <span class="tk-k">while</span> (parent_[x] != root)                             <span class="tk-c">// path compression</span>
+        {
+            <span class="tk-k">int</span> next = parent_[x];
+            parent_[x] = root;
+            x = next;
+        }
+        <span class="tk-k">return</span> root;
+    }
+
+    <span class="tk-k">bool</span> <span class="tk-f">unite</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b)
+    {
+        a = <span class="tk-f">find</span>(a);
+        b = <span class="tk-f">find</span>(b);
+        <span class="tk-k">if</span> (a == b) <span class="tk-k">return</span> <span class="tk-k">false</span>;                               <span class="tk-c">// already in the same set</span>
+        <span class="tk-k">if</span> (size_[a] &lt; size_[b]) std::<span class="tk-f">swap</span>(a, b);               <span class="tk-c">// union by size: b is the smaller tree</span>
+        parent_[b] = a;
+        size_[a] += size_[b];
+        --components_;
+        <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+
+    <span class="tk-k">bool</span> <span class="tk-f">connected</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b) { <span class="tk-k">return</span> <span class="tk-f">find</span>(a) == <span class="tk-f">find</span>(b); }
+    <span class="tk-k">int</span> <span class="tk-f">sizeOf</span>(<span class="tk-k">int</span> x) { <span class="tk-k">return</span> size_[<span class="tk-f">find</span>(x)]; }
+    <span class="tk-k">int</span> <span class="tk-f">components</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> components_; }
+
+<span class="tk-k">private</span>:
+    std::vector&lt;<span class="tk-k">int</span>&gt; parent_, size_;
+    <span class="tk-k">int</span> components_;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">UnionFind</span> <span class="tk-f">uf</span>(<span class="tk-n">10</span>);
+    std::vector&lt;std::pair&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;&gt; cables{ { <span class="tk-n">0</span>, <span class="tk-n">1</span> }, { <span class="tk-n">2</span>, <span class="tk-n">3</span> }, { <span class="tk-n">1</span>, <span class="tk-n">3</span> }, { <span class="tk-n">5</span>, <span class="tk-n">6</span> }, { <span class="tk-n">7</span>, <span class="tk-n">8</span> }, { <span class="tk-n">8</span>, <span class="tk-n">9</span> }, { <span class="tk-n">2</span>, <span class="tk-n">0</span> } };
+    <span class="tk-k">for</span> (<span class="tk-k">auto</span> [a, b] : cables)
+        std::cout &lt;&lt; <span class="tk-s">&quot;unite(&quot;</span> &lt;&lt; a &lt;&lt; <span class="tk-s">&quot;, &quot;</span> &lt;&lt; b &lt;&lt; <span class="tk-s">&quot;) &quot;</span> &lt;&lt; (uf.<span class="tk-f">unite</span>(a, b) ? <span class="tk-s">&quot;merged&quot;</span> : <span class="tk-s">&quot;already together&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;connected(0, 3)? &quot;</span> &lt;&lt; uf.<span class="tk-f">connected</span>(<span class="tk-n">0</span>, <span class="tk-n">3</span>) &lt;&lt; <span class="tk-s">&quot;, connected(4, 5)? &quot;</span> &lt;&lt; uf.<span class="tk-f">connected</span>(<span class="tk-n">4</span>, <span class="tk-n">5</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; uf.<span class="tk-f">components</span>() &lt;&lt; <span class="tk-s">&quot; groups; the group of 9 has &quot;</span> &lt;&lt; uf.<span class="tk-f">sizeOf</span>(<span class="tk-n">9</span>) &lt;&lt; <span class="tk-s">&quot; members\n&quot;</span>;
+}</code></pre></div>
+<p><code>unite</code> returning <code>false</code> when the two are already connected is useful: in a graph, it means the new edge closes a <strong>cycle</strong>.</p>
+<h2>What it can and cannot do</h2>
+<p>Union-find answers &quot;are these connected?&quot; and &quot;how big is this group?&quot; but not &quot;<strong>how</strong> are they connected?&quot; (the path) and it cannot <strong>split</strong> sets: there is no efficient &quot;un-union&quot;. For paths, use graph search (lesson 5.01). If edges are removed over time, a common trick is to process the operations <strong>backwards</strong>, so removals become unions.</p>
+<h2>Applications</h2>
+<ul>
+<li><strong>Dynamic connectivity</strong>: networks, friend groups, &quot;are these two accounts linked?&quot;.</li>
+<li><strong>Image processing</strong>: labelling connected regions of pixels (unite each pixel with matching neighbours).</li>
+<li><strong>Percolation</strong>: in a grid of open and blocked cells, does water flow from the top to the bottom? Unite open neighbours, plus a virtual &quot;top&quot; and &quot;bottom&quot; node; it percolates when top and bottom are connected. Physicists use this to study phase transitions.</li>
+<li><strong>Kruskal&#39;s minimum spanning tree</strong> (lesson 5.04): add edges cheapest first, skipping any edge whose ends are already connected.</li>
+<li><strong>Grouping equivalences</strong>: merging accounts that share an email, or variables known to be equal in a compiler.</li>
+</ul>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does find(x) return?</div><ul><li>The root of x&#39;s tree, which represents its whole set</li><li>x&#39;s parent</li><li>The size of x&#39;s set</li><li>Whether x has been united with anything</li></ul><details><summary>Show the answer</summary><p><b>The root of x&#39;s tree, which represents its whole set</b> Two elements are in the same set exactly when they have the same root.</p></details></li><li><div class="q">What does union by size do?</div><ul><li>Attaches the larger tree under the smaller one</li><li>Attaches the smaller tree&#39;s root under the larger tree&#39;s root</li><li>Sorts the elements by size</li><li>Splits sets that grow too large</li></ul><details><summary>Show the answer</summary><p><b>Attaches the smaller tree&#39;s root under the larger tree&#39;s root</b> A node only gets deeper when its tree at least doubles, so depths stay O(log n).</p></details></li><li><div class="q">unite(a, b) returns false because a and b are already connected. In a graph built edge by edge, what does that tell you?</div><ul><li>The graph is disconnected</li><li>The edge (a, b) closes a cycle</li><li>a and b are the same node</li><li>The union-find is broken</li></ul><details><summary>Show the answer</summary><p><b>The edge (a, b) closes a cycle</b> There was already a path between a and b; the new edge makes a second one.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>Union-find maintains disjoint sets under merging: <code>find</code> gives a set&#39;s root, <code>unite</code> links two roots.</li>
+<li>Union by size (or rank) keeps trees shallow; path compression flattens them as they are used.</li>
+<li>Together they make each operation O(α(n)), effectively constant.</li>
+<li>It answers connectivity and group sizes, detects cycles, and powers Kruskal&#39;s algorithm, but cannot split sets or report paths.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-fenwick-and-segment-trees/"><span class="mono">previous</span><b>4.04 Fenwick and Segment Trees</b></a>
+      <a class="lp-next" href="../5-01-graphs-and-breadth-first-search/"><span class="mono">next</span><b>5.01 Graphs and Breadth-First Search</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/4-05-union-find"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

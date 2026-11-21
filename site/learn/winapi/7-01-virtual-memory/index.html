@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Virtual Memory · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/7-01-virtual-memory/">
+  <meta name="description" content="Managing memory a page at a time - reserving address space and committing pages with VirtualAlloc, page size and allocation granularity, protection flags and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Virtual Memory · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="Managing memory a page at a time - reserving address space and committing pages with VirtualAlloc, page size and allocation granularity, protection flags and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/7-01-virtual-memory/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Virtual Memory · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Virtual Memory · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="Managing memory a page at a time - reserving address space and committing pages with VirtualAlloc, page size and allocation granularity, protection flags and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Deeper into the System</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Virtual Memory</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.01</b></span><span>1 of 6 in milestone 7</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Managing memory a page at a time - reserving address space and committing pages with VirtualAlloc, page size and allocation granularity, protection flags and VirtualProtect, asking about memory with VirtualQuery, decommitting and releasing with VirtualFree, guard pages, and a buffer that grows without moving.</p>
+      <div class="prose">
+<h2>Below new and malloc</h2>
+<p><code>new</code>, <code>malloc</code> and the C++ containers get their memory from a <strong>heap</strong>, which in turn gets it from the operating system in big pieces. <code>VirtualAlloc</code> is that lower layer: it hands out memory in whole <strong>pages</strong>, with control over two things the heap hides:</p>
+<ul>
+<li><strong>Reserving</strong> address space (claiming a range of addresses, with no memory behind it yet) is separate from <strong>committing</strong> it (backing pages with real memory or the page file).</li>
+<li>Each page has a <strong>protection</strong>: readable, writable, executable, or none.</li>
+</ul>
+<p>The Pointers and Memory course covers the ideas; this lesson is the Windows API for them.</p>
+<h2>Sizes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>SYSTEM_INFO info{};
+<span class="tk-f">GetSystemInfo</span>(&amp;info);
+<span class="tk-c">// info.dwPageSize                 4096 on x64: the unit of commit and protection</span>
+<span class="tk-c">// info.dwAllocationGranularity    65536: reservations start at multiples of 64 KB</span></code></pre></div>
+<p>A reservation&#39;s base address is always a multiple of the <strong>allocation granularity</strong> (64 KB), and its size is rounded up to whole pages. Committing, decommitting and protecting work on whole <strong>pages</strong>: a call covering part of a page affects all of it.</p>
+<h2>Reserve, then commit</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">constexpr</span> SIZE_T reserveSize{ <span class="tk-n">1ull</span> &lt;&lt; <span class="tk-n">30</span> };                       <span class="tk-c">// 1 GB of addresses, no memory used yet</span>
+<span class="tk-k">auto</span>* base{ <span class="tk-k">static_cast</span>&lt;std::byte*&gt;(<span class="tk-f">VirtualAlloc</span>(<span class="tk-k">nullptr</span>, reserveSize, MEM_RESERVE, PAGE_NOACCESS)) };
+<span class="tk-k">if</span> (!base) <span class="tk-k">return</span> <span class="tk-f">GetLastError</span>();
+
+<span class="tk-c">// Later, when the first 64 KB are needed:</span>
+<span class="tk-k">if</span> (!<span class="tk-f">VirtualAlloc</span>(base, <span class="tk-n">64</span> * <span class="tk-n">1024</span>, MEM_COMMIT, PAGE_READWRITE)) <span class="tk-k">return</span> <span class="tk-f">GetLastError</span>();
+base[<span class="tk-n">0</span>] = std::byte{ <span class="tk-n">1</span> };                                        <span class="tk-c">// fine: committed and writable</span>
+<span class="tk-c">// base[64 * 1024] = ...;                                        // access violation: reserved only</span></code></pre></div>
+<p><code>MEM_RESERVE | MEM_COMMIT</code> does both at once, which is what most callers want for a plain block. Committed pages read as zero until written.</p>
+<p>Reserving a large range and committing as you go gives a <strong>buffer that grows without ever moving</strong>: pointers into it stay valid, unlike a <code>std::vector</code> that reallocates. Large arrays, arenas and the stack of every thread work this way.</p>
+<h2>Protection</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Access</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PAGE_NOACCESS</code></td>
+<td>none: any access faults</td>
+</tr>
+<tr>
+<td><code>PAGE_READONLY</code></td>
+<td>read</td>
+</tr>
+<tr>
+<td><code>PAGE_READWRITE</code></td>
+<td>read and write</td>
+</tr>
+<tr>
+<td><code>PAGE_EXECUTE_READ</code></td>
+<td>read and run code</td>
+</tr>
+<tr>
+<td><code>PAGE_EXECUTE_READWRITE</code></td>
+<td>all three (avoid: it defeats a basic security protection)</td>
+</tr>
+<tr>
+<td><code>PAGE_GUARD</code> (combined with one of the above)</td>
+<td>the first access raises a one-time <code>STATUS_GUARD_PAGE_VIOLATION</code>, then the page behaves normally</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>VirtualProtect(address, size, newProtect, &amp;oldProtect)</code> changes the protection of committed pages and <strong>must</strong> be given a place for the old value. Making data read-only after setting it up catches stray writes immediately, as an access violation at the bug instead of corruption found later.</p>
+<h2>Asking about memory</h2>
+<p><code>VirtualQuery(address, &amp;mbi, sizeof mbi)</code> describes the run of pages starting at the page containing <code>address</code> that all share the same state and protection:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BaseAddress</code>, <code>RegionSize</code></td>
+<td>where this run starts and how long it is</td>
+</tr>
+<tr>
+<td><code>AllocationBase</code>, <code>AllocationProtect</code></td>
+<td>the reservation it belongs to, and that reservation&#39;s original protection</td>
+</tr>
+<tr>
+<td><code>State</code></td>
+<td><code>MEM_COMMIT</code>, <code>MEM_RESERVE</code> or <code>MEM_FREE</code></td>
+</tr>
+<tr>
+<td><code>Protect</code></td>
+<td>the protection of committed pages</td>
+</tr>
+</tbody></table>
+</div>
+<p>Walking a process&#39;s memory with repeated <code>VirtualQuery</code> calls (address = previous base + size) lists every region; debuggers and memory profilers do exactly this, and practice 7.01 simulates it.</p>
+<h2>Giving memory back</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">VirtualFree</span>(base, <span class="tk-n">64</span> * <span class="tk-n">1024</span>, MEM_DECOMMIT);        <span class="tk-c">// the pages go back to reserved</span>
+<span class="tk-f">VirtualFree</span>(base, <span class="tk-n">0</span>, MEM_RELEASE);                 <span class="tk-c">// the whole reservation; size MUST be 0</span></code></pre></div>
+<p><code>MEM_RELEASE</code> takes the <strong>base address</strong> the reservation started at and a size of <strong>0</strong>; anything else fails with <code>ERROR_INVALID_PARAMETER</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/7.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/7.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-project-a-file-finder/"><span class="mono">previous</span><b>6.03 Project: A File Finder</b></a>
+      <a class="lp-next" href="../7-02-the-console/"><span class="mono">next</span><b>7.02 The Console</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/7-01-virtual-memory"></script>
+</body>
+</html>

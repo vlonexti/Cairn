@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Undefined Behavior and Object Lifetime · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/13-01-undefined-behavior-and-object-lifetime/">
+  <meta name="description" content="The compiler optimizes on the assumption that your program has no undefined behaviour . Break that assumption and it may delete checks, reorder code, or…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Undefined Behavior and Object Lifetime · C++ · Xenon">
+  <meta property="og:description" content="The compiler optimizes on the assumption that your program has no undefined behaviour . Break that assumption and it may delete checks, reorder code, or…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/13-01-undefined-behavior-and-object-lifetime/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Undefined Behavior and Object Lifetime · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Undefined Behavior and Object Lifetime · C++ · Xenon">
+  <meta name="twitter:description" content="The compiler optimizes on the assumption that your program has no undefined behaviour . Break that assumption and it may delete checks, reorder code, or…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Expert C++</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Undefined Behavior and Object Lifetime</h1>
+      <div class="readout lp-readout"><span>lesson <b>13.01</b></span><span>1 of 10 in milestone 13</span><span>7 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">The compiler optimizes on the assumption that your program has <strong>no undefined behaviour</strong>. Break that assumption and it may delete checks, reorder code, or mis-compile something far from the fault. This lesson is the full catalogue, the rules of object lifetime, and the tools that keep you inside the lines.</p>
+      <div class="prose">
+<h2>Why it is worse than a crash</h2>
+<p><a href="../1-10-compiler-settings-build-configurations-and-undefined-behavio/">1.10 Compiler Settings, Build Configurations and Undefined Behavior</a> described undefined behaviour as &quot;the rules say nothing about what happens&quot;. The practical consequence is sharper: an optimizer is entitled to assume it <strong>never</strong> happens, and to reason from that.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> table[<span class="tk-n">4</span>]{};
+
+<span class="tk-k">bool</span> <span class="tk-f">exists</span>(<span class="tk-k">int</span> value)
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt;= <span class="tk-n">4</span>; ++i)      <span class="tk-c">// off by one: reads table[4]</span>
+    {
+        <span class="tk-k">if</span> (table[i] == value)
+        {
+            <span class="tk-k">return</span> <span class="tk-k">true</span>;
+        }
+    }
+    <span class="tk-k">return</span> <span class="tk-k">false</span>;
+}</code></pre></div>
+<p>Reading <code>table[4]</code> is undefined. So a conforming optimizer may conclude that the loop must return before <code>i</code> reaches 4, which means it always returns <code>true</code>, and compile the whole function to <code>return true;</code>. Real compilers have done exactly this.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">check</span>(<span class="tk-k">int</span>* p)
+{
+    <span class="tk-k">const</span> <span class="tk-k">int</span> x{ *p };      <span class="tk-c">// dereferenced: so the compiler may assume p is not null</span>
+    <span class="tk-k">if</span> (p == <span class="tk-k">nullptr</span>)       <span class="tk-c">// therefore this test is &quot;always false&quot; and is removed</span>
+    {
+        <span class="tk-k">return</span>;
+    }
+    <span class="tk-f">use</span>(x);
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;The code contains&lt;br/&gt;undefined behaviour&quot;] --&gt; B[&quot;The optimizer assumes&lt;br/&gt;it cannot occur&quot;]
+    B --&gt; C[&quot;It derives facts that&lt;br/&gt;are false at run time&quot;]
+    C --&gt; D[&quot;Checks are deleted and code reordered,&lt;br/&gt;often far from the original fault&quot;]</pre></div>
+<p>Two properties make it treacherous. The effect can appear <strong>before</strong> the offending operation executes, because the whole function was compiled under the false assumption. And it changes with optimization level, compiler version and unrelated edits.</p>
+<h2>The catalogue</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Arithmetic</strong></td>
+<td>Signed integer overflow; division by zero; shifting by a negative amount or by the width of the type or more; <code>INT_MIN / -1</code></td>
+</tr>
+<tr>
+<td><strong>Memory</strong></td>
+<td>Out-of-bounds access; dereferencing null; use after free; double delete; mismatched <code>new[]</code> and <code>delete</code></td>
+</tr>
+<tr>
+<td><strong>Lifetime</strong></td>
+<td>Dangling references and pointers; returning a reference to a local; using an object after its destructor has run</td>
+</tr>
+<tr>
+<td><strong>Initialization</strong></td>
+<td>Reading an uninitialized variable</td>
+</tr>
+<tr>
+<td><strong>Type punning</strong></td>
+<td>Accessing an object through a pointer to an unrelated type; reading the inactive member of a union</td>
+</tr>
+<tr>
+<td><strong>Concurrency</strong></td>
+<td>Data races</td>
+</tr>
+<tr>
+<td><strong>Library preconditions</strong></td>
+<td><code>v[v.size()]</code>; <code>front()</code> on an empty container; a comparator for <code>std::sort</code> that is not a consistent ordering; modifying a key in a <code>std::set</code></td>
+</tr>
+<tr>
+<td><strong>Others</strong></td>
+<td>Flowing off the end of a non-<code>void</code> function; modifying a <code>const</code> object; violating the One Definition Rule</td>
+</tr>
+</tbody></table>
+</div>
+<p>The standard distinguishes three weaker cousins:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Implementation-defined</strong></td>
+<td>The compiler chooses and documents it</td>
+<td><code>sizeof(int)</code></td>
+</tr>
+<tr>
+<td><strong>Unspecified</strong></td>
+<td>One of several allowed results, undocumented</td>
+<td>The order in which function arguments are evaluated</td>
+</tr>
+<tr>
+<td><strong>Erroneous</strong> (C++26)</td>
+<td>Wrong, but with bounded, defined consequences</td>
+<td>Reading an uninitialized local, from C++26</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Strict aliasing and type punning</h2>
+<p>The <strong>strict aliasing rule</strong>: an object may be accessed only through an expression of its own type (with a few allowances for <code>const</code>, signedness and base classes). It lets the compiler assume that a <code>float*</code> and an <code>int*</code> never refer to the same memory, which enables important optimizations.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">float</span> f{ <span class="tk-n">1.0f</span> };
+std::uint32_t bad{ *<span class="tk-k">reinterpret_cast</span>&lt;std::uint32_t*&gt;(&amp;f) };    <span class="tk-c">// undefined: aliasing violation</span>
+
+std::uint32_t good{ std::bit_cast&lt;std::uint32_t&gt;(f) };         <span class="tk-c">// defined, and constexpr</span>
+
+std::uint32_t older{};
+std::<span class="tk-f">memcpy</span>(&amp;older, &amp;f, <span class="tk-k">sizeof</span> older);                         <span class="tk-c">// the pre-C++20 way</span></code></pre></div>
+<p>Reinterpreting the bits of one type as another is <strong>type punning</strong>. <code>std::bit_cast</code> and <code>std::memcpy</code> both copy the representation into a fresh object of the target type, and compilers turn either into a single move instruction.</p>
+<p>One exception is always allowed: any object&#39;s bytes may be examined through a pointer to <code>char</code>, <code>unsigned char</code> or <code>std::byte</code>.</p>
+<h2>Object lifetime</h2>
+<p>Memory existing is not the same as an object existing.</p>
+<div class="codeblock diagram plain"><pre><code> storage obtained ─▶ [ lifetime: initialization complete ... destructor begins ] ─▶ storage released
+                      ▲ the object may be used only inside this window ▲</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Lifetime</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Storage is obtained, and initialization finishes</td>
+<td>Begins</td>
+</tr>
+<tr>
+<td>The destructor starts, or the storage is released or reused</td>
+<td>Ends</td>
+</tr>
+</tbody></table>
+</div>
+<p>Using an object outside its lifetime is undefined, even when the bytes are still there and look intact. You can control the two halves separately:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">alignas</span>(<span class="tk-t">Widget</span>) std::byte buffer[<span class="tk-k">sizeof</span>(<span class="tk-t">Widget</span>)];
+
+<span class="tk-t">Widget</span>* w{ std::<span class="tk-f">construct_at</span>(<span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-t">Widget</span>*&gt;(buffer), arguments) };    <span class="tk-c">// lifetime begins</span>
+std::<span class="tk-f">destroy_at</span>(w);                                                              <span class="tk-c">// lifetime ends</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Facility</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::construct_at</code>, <code>std::destroy_at</code></td>
+<td>Begin and end a lifetime in existing storage: <a href="../13-03-custom-memory-placement-new-allocators-and-pmr/">13.03 Custom Memory: Placement new, Allocators and PMR</a></td>
+</tr>
+<tr>
+<td>Implicit-lifetime types</td>
+<td>Simple types (scalars, trivial structs, arrays of them) come into existence in storage from <code>malloc</code> or after a <code>memcpy</code> without explicit construction</td>
+</tr>
+<tr>
+<td><code>std::start_lifetime_as&lt;T&gt;(p)</code> (C++23)</td>
+<td>Declares that bytes received from a file or the network are a <code>T</code></td>
+</tr>
+<tr>
+<td><code>std::launder</code></td>
+<td>Obtains a usable pointer in rare cases where storage is reused for an object with <code>const</code> or reference members</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Temporaries</h2>
+<p>A temporary lives until the end of the full expression that created it. One rule extends that: binding a temporary <strong>directly</strong> to a <code>const</code> reference (or an rvalue reference) keeps it alive as long as the reference.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>const std::string&amp; r{ std::string{ &quot;hi&quot; } };</code></td>
+<td>Fine: the lifetime is extended to that of <code>r</code></td>
+</tr>
+<tr>
+<td><code>std::string_view sv{ std::string{ &quot;temp&quot; } };</code></td>
+<td>Dangles at the end of the statement: a view is not a reference binding</td>
+</tr>
+<tr>
+<td><code>auto&amp; first{ std::vector{ 1, 2, 3 }[0] };</code></td>
+<td>Dangles: the reference binds to an element, not to the temporary</td>
+</tr>
+<tr>
+<td><code>const auto&amp; n{ makePlayer().name() };</code></td>
+<td>Dangles if <code>name()</code> returns a reference into the temporary</td>
+</tr>
+</tbody></table>
+</div>
+<p>Extension applies only to the temporary itself, not to things reached through it.</p>
+<h2>Defences</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Catches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>AddressSanitizer</td>
+<td>Out-of-bounds access, use after free, leaks</td>
+</tr>
+<tr>
+<td>UndefinedBehaviorSanitizer</td>
+<td>Overflow, invalid shifts, null dereference, misalignment</td>
+</tr>
+<tr>
+<td>ThreadSanitizer</td>
+<td>Data races</td>
+</tr>
+<tr>
+<td>Constant evaluation</td>
+<td>The compiler <strong>rejects</strong> undefined behaviour inside a <code>constexpr</code> evaluation: <a href="../11-04-compile-time-programming-constexpr-consteval-constinit/">11.04 Compile-Time Programming — constexpr, consteval, constinit</a></td>
+</tr>
+<tr>
+<td>A hardened standard library</td>
+<td>Bounds checks on <code>operator[]</code>, <code>front()</code> and iterators. Xenon&#39;s Debug build has these on.</td>
+</tr>
+<tr>
+<td>Warnings and static analysis</td>
+<td>Many patterns, before the program runs: <a href="../13-09-testing-sanitizers-static-analysis-and-tooling/">13.09 Testing, Sanitizers, Static Analysis and Tooling</a></td>
+</tr>
+</tbody></table>
+</div>
+<p>No tool finds everything. The durable defence is habit: prefer the constructs that cannot go wrong (<code>std::vector::at</code>, ranges, smart pointers, <code>std::bit_cast</code>, RAII), so that the dangerous ones are rare and visible.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/13.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/13.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../12-07-coroutines-cpp20-and-std-generator-cpp23/"><span class="mono">previous</span><b>12.07 Coroutines (C++20) and std::generator (C++23)</b></a>
+      <a class="lp-next" href="../13-02-memory-layout-alignment-unions-and-bit-fields/"><span class="mono">next</span><b>13.02 Memory Layout, Alignment, Unions and Bit Fields</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/13-01-undefined-behavior-and-object-lifetime"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

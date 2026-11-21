@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Complexity and Big O · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/1-01-complexity-and-big-o/">
+  <meta name="description" content="How to describe an algorithm's speed independently of the computer - counting basic steps, Big O and its relatives Omega and Theta, the common growth…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Complexity and Big O · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="How to describe an algorithm's speed independently of the computer - counting basic steps, Big O and its relatives Omega and Theta, the common growth…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/1-01-complexity-and-big-o/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Complexity and Big O · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Complexity and Big O · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="How to describe an algorithm's speed independently of the computer - counting basic steps, Big O and its relatives Omega and Theta, the common growth…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Complexity and Linear Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Complexity and Big O</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 5 in milestone 1</span><span>8 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How to describe an algorithm&#39;s speed independently of the computer - counting basic steps, Big O and its relatives Omega and Theta, the common growth classes, analysing sequential, nested and halving loops, best, worst and average cases, amortised cost, and space complexity.</p>
+      <div class="prose">
+<h2>Why count instead of time?</h2>
+<p>A stopwatch tells you how long one program took on one computer with one input. It cannot tell you what happens when the input is a thousand times bigger, and it changes with the compiler, the processor and whatever else is running. To compare <strong>algorithms</strong> we count how the number of basic steps grows with the size of the input, called <code>n</code>.</p>
+<p>A basic step is anything that takes a fixed amount of time: an arithmetic operation, a comparison, reading or writing one array element, a function call.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> steps = <span class="tk-n">0</span>;
+
+<span class="tk-k">bool</span> <span class="tk-f">contains</span>(<span class="tk-k">const</span> std::vector&lt;<span class="tk-k">int</span>&gt;&amp; values, <span class="tk-k">int</span> target)
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> v : values)
+    {
+        ++steps;                       <span class="tk-c">// one comparison per element</span>
+        <span class="tk-k">if</span> (v == target) <span class="tk-k">return</span> <span class="tk-k">true</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-k">false</span>;
+}
+
+<span class="tk-k">bool</span> <span class="tk-f">hasDuplicate</span>(<span class="tk-k">const</span> std::vector&lt;<span class="tk-k">int</span>&gt;&amp; values)
+{
+    <span class="tk-k">for</span> (std::size_t i = <span class="tk-n">0</span>; i &lt; values.<span class="tk-f">size</span>(); ++i)
+        <span class="tk-k">for</span> (std::size_t j = i + <span class="tk-n">1</span>; j &lt; values.<span class="tk-f">size</span>(); ++j)
+        {
+            ++steps;                   <span class="tk-c">// one comparison per pair</span>
+            <span class="tk-k">if</span> (values[i] == values[j]) <span class="tk-k">return</span> <span class="tk-k">true</span>;
+        }
+    <span class="tk-k">return</span> <span class="tk-k">false</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> n : { <span class="tk-n">10</span>, <span class="tk-n">100</span>, <span class="tk-n">1000</span> })
+    {
+        std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">data</span>(n);
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; n; ++i) data[i] = i;
+
+        steps = <span class="tk-n">0</span>;
+        <span class="tk-f">contains</span>(data, -<span class="tk-n">1</span>);
+        <span class="tk-k">int</span> linear = steps;
+
+        steps = <span class="tk-n">0</span>;
+        <span class="tk-f">hasDuplicate</span>(data);
+        std::cout &lt;&lt; <span class="tk-s">&quot;n = &quot;</span> &lt;&lt; n &lt;&lt; <span class="tk-s">&quot;: contains &quot;</span> &lt;&lt; linear &lt;&lt; <span class="tk-s">&quot; steps, hasDuplicate &quot;</span> &lt;&lt; steps &lt;&lt; <span class="tk-s">&quot; steps\n&quot;</span>;
+    }
+}</code></pre></div>
+<p>Ten times more data means ten times more work for <code>contains</code>, but about a hundred times more for <code>hasDuplicate</code>. That <strong>growth rate</strong> is what Big O describes.</p>
+<h2>Big O</h2>
+<p>We say an algorithm is <strong>O(f(n))</strong> if, for large enough <code>n</code>, its number of steps is at most some constant times <code>f(n)</code>. Two rules make this easy to use:</p>
+<ol>
+<li><strong>Drop constant factors.</strong> <code>3n + 5</code> steps is O(n). The constant depends on the machine; the growth does not.</li>
+<li><strong>Keep only the fastest-growing term.</strong> <code>n²/2 + 100n</code> is O(n²): for big <code>n</code>, the <code>n²</code> part dominates everything else.</li>
+</ol>
+<p><code>hasDuplicate</code> does <code>(n−1) + (n−2) + ... + 1 = n(n−1)/2</code> comparisons in the worst case, so it is O(n²).</p>
+<p>Big O is an <strong>upper bound</strong>. Two relatives complete the picture:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Notation</th>
+<th>Meaning</th>
+<th>Informally</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>O(f)</td>
+<td>grows no faster than f</td>
+<td>&quot;at most&quot;</td>
+</tr>
+<tr>
+<td>Ω(f) (Omega)</td>
+<td>grows at least as fast as f</td>
+<td>&quot;at least&quot;</td>
+</tr>
+<tr>
+<td>Θ(f) (Theta)</td>
+<td>both: grows exactly like f</td>
+<td>&quot;exactly&quot;</td>
+</tr>
+</tbody></table>
+</div>
+<p>In everyday use people say &quot;O(n)&quot; when they mean Θ(n), the tight bound. This course does the same unless the difference matters.</p>
+<h2>The common growth classes</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Name</th>
+<th>Example</th>
+<th>n = 1,000,000</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>O(1)</td>
+<td>constant</td>
+<td><code>v[i]</code>, <code>push_back</code> (amortised)</td>
+<td>1</td>
+</tr>
+<tr>
+<td>O(log n)</td>
+<td>logarithmic</td>
+<td>binary search</td>
+<td>20</td>
+</tr>
+<tr>
+<td>O(n)</td>
+<td>linear</td>
+<td>scanning a vector</td>
+<td>10⁶</td>
+</tr>
+<tr>
+<td>O(n log n)</td>
+<td>linearithmic</td>
+<td>good sorting</td>
+<td>2 × 10⁷</td>
+</tr>
+<tr>
+<td>O(n²)</td>
+<td>quadratic</td>
+<td>comparing every pair</td>
+<td>10¹²</td>
+</tr>
+<tr>
+<td>O(2ⁿ)</td>
+<td>exponential</td>
+<td>trying every subset</td>
+<td>more than the atoms in the universe</td>
+</tr>
+</tbody></table>
+</div>
+<p>A modern computer does very roughly 10⁸ to 10⁹ simple steps per second. So for a million items, O(n log n) finishes in a fraction of a second, while O(n²) takes many minutes. <strong>Choosing the right growth class matters far more than tuning code.</strong></p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">xychart-beta
+    title &quot;Steps as n grows&quot;
+    x-axis &quot;n&quot; [1, 2, 4, 8, 16, 32]
+    y-axis &quot;steps&quot; 0 --&gt; 1100
+    line [1, 2, 4, 8, 16, 32]
+    line [0, 2, 8, 24, 64, 160]
+    line [1, 4, 16, 64, 256, 1024]</pre></div>
+<p>The three lines are <code>n</code>, <code>n log n</code> and <code>n²</code>.</p>
+<h2>Analysing code</h2>
+<p><strong>Sequential parts add</strong>, and the bigger one wins: an O(n) loop followed by an O(n²) loop is O(n²).</p>
+<p><strong>Nested loops multiply</strong>: a loop of <code>n</code> iterations, each doing O(n) work, is O(n²). Watch for hidden loops: <code>std::find</code>, <code>v.erase(v.begin())</code>, <code>s.substr</code> and copying a vector are all O(n) themselves.</p>
+<p><strong>Halving gives a logarithm.</strong> If each step cuts the remaining work in half, there are about log₂ n steps:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (<span class="tk-k">long</span> <span class="tk-k">long</span> n : { <span class="tk-n">8LL</span>, <span class="tk-n">1000LL</span>, <span class="tk-n">1000000LL</span>, <span class="tk-n">1000000000000LL</span> })
+    {
+        <span class="tk-k">int</span> steps = <span class="tk-n">0</span>;
+        <span class="tk-k">for</span> (<span class="tk-k">long</span> <span class="tk-k">long</span> i = n; i &gt; <span class="tk-n">1</span>; i /= <span class="tk-n">2</span>) ++steps;
+        std::cout &lt;&lt; n &lt;&lt; <span class="tk-s">&quot; halves to 1 in &quot;</span> &lt;&lt; steps &lt;&lt; <span class="tk-s">&quot; steps\n&quot;</span>;
+    }
+}</code></pre></div>
+<p>A trillion takes only 39 halvings. Logarithmic algorithms barely notice the size of their input.</p>
+<p><strong>Recursion</strong>: count the calls and the work per call. A function that calls itself twice on inputs of size <code>n − 1</code> makes about 2ⁿ calls, which is why the naive Fibonacci in lesson 6.02 is so slow.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the Big O of a loop <code>for (int i = 0; i &lt; n; ++i)</code> containing <code>for (int j = 0; j &lt; 10; ++j)</code>?</div><ul><li>O(n)</li><li>O(n²)</li><li>O(10n²)</li><li>O(log n)</li></ul><details><summary>Show the answer</summary><p><b>O(n)</b> The inner loop always runs 10 times, a constant. 10n steps is O(n).</p></details></li><li><div class="q">A function does <code>for (int i = 1; i &lt; n; i *= 2)</code> and, inside, <code>for (int j = 0; j &lt; n; ++j)</code>. What is its complexity?</div><ul><li>O(n²)</li><li>O(n log n)</li><li>O(log n)</li><li>O(n)</li></ul><details><summary>Show the answer</summary><p><b>O(n log n)</b> The outer loop runs about log₂ n times and the inner one n times per outer iteration.</p></details></li><li><div class="q">Which is true of 5n² + 1000n + 7?</div><ul><li>It is O(n) because 1000n is the biggest term for small n</li><li>It is O(n²) and also Θ(n²)</li><li>It is O(1000n)</li><li>It is only O(n³)</li></ul><details><summary>Show the answer</summary><p><b>It is O(n²) and also Θ(n²)</b> For large n the n² term dominates. It is also O(n³), since Big O is only an upper bound, but Θ(n²) is the tight answer.</p></details></li></ol></div>
+<h2>Best, worst and average case</h2>
+<p>The same algorithm can take different times on different inputs of the same size. <code>contains</code> finds the target in the first slot in the best case (O(1)) and scans everything in the worst case (O(n)). On average, if the target is equally likely to be anywhere, it looks at about half: still O(n).</p>
+<ul>
+<li><strong>Worst case</strong> is the usual guarantee, and the default meaning of &quot;this algorithm is O(...)&quot;.</li>
+<li><strong>Average case</strong> matters for algorithms like quicksort and hash tables, whose worst case is rare.</li>
+<li><strong>Best case</strong> is rarely useful on its own.</li>
+</ul>
+<h2>Amortised cost</h2>
+<p>Some operations are usually cheap but occasionally expensive. <code>std::vector::push_back</code> normally writes one element, but when the vector is full it allocates a bigger block and copies everything. Because the capacity <strong>doubles</strong>, the copies over <code>n</code> pushes add up to less than <code>2n</code>: the cost is <strong>amortised O(1)</strong> per push. Lesson 1.03 builds such a vector and counts the copies.</p>
+<p>Amortised is not the same as average: it is a guarantee about any sequence of operations, with no luck involved.</p>
+<h2>Space complexity</h2>
+<p>Memory is analysed the same way. <code>hasDuplicate</code> uses O(1) extra space. Sorting a copy first and then comparing neighbours makes it O(n log n) in time but O(n) in extra space. Recursion uses stack space: a recursion <code>n</code> levels deep uses O(n) memory even if it allocates nothing.</p>
+<p>Often you can trade one for the other: a hash set finds duplicates in O(n) time using O(n) space.</p>
+<h2>Summary</h2>
+<ul>
+<li>Count basic steps as a function of <code>n</code>; drop constants and lower-order terms.</li>
+<li>O is an upper bound, Ω a lower bound, Θ both.</li>
+<li>Sequential code adds, nested loops multiply, halving gives log n.</li>
+<li>Worst case is the default guarantee; amortised cost averages over a sequence of operations.</li>
+<li>Space is analysed the same way, and recursion depth counts.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-measuring-real-performance/"><span class="mono">next</span><b>1.02 Measuring Real Performance</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/1-01-complexity-and-big-o"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

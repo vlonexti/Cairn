@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Errors and pcall · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/6-01-errors-and-pcall/">
+  <meta name="description" content="Raising errors with error and assert, the level argument that says whose fault it is, catching errors with pcall, error values that are tables, xpcall with a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Errors and pcall · Lua · Xenon">
+  <meta property="og:description" content="Raising errors with error and assert, the level argument that says whose fault it is, catching errors with pcall, error values that are tables, xpcall with a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/6-01-errors-and-pcall/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Errors and pcall · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Errors and pcall · Lua · Xenon">
+  <meta name="twitter:description" content="Raising errors with error and assert, the level argument that says whose fault it is, catching errors with pcall, error values that are tables, xpcall with a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Lua in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Errors and pcall</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Raising errors with error and assert, the level argument that says whose fault it is, catching errors with pcall, error values that are tables, xpcall with a traceback, and the nil-plus-message convention for errors that are expected.</p>
+      <div class="prose">
+<h2>Raising an error</h2>
+<p><code>error(message)</code> stops the current function and every caller, all the way up, unless something catches it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">withdraw</span>(balance, amount)
+    <span class="tk-k">if</span> amount &gt; balance <span class="tk-k">then</span>
+        <span class="tk-f">error</span>(<span class="tk-s">&quot;not enough money&quot;</span>)
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> balance - amount
+<span class="tk-k">end</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">withdraw</span>(<span class="tk-n">100</span>, <span class="tk-n">30</span>))
+<span class="tk-f">print</span>(<span class="tk-f">withdraw</span>(<span class="tk-n">100</span>, <span class="tk-n">300</span>))
+<span class="tk-f">print</span>(<span class="tk-s">&quot;not reached&quot;</span>)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>70
+lua: main.lua:3: not enough money
+stack traceback:
+	[C]: in function 'error'
+	main.lua:3: in local 'withdraw'
+	main.lua:9: in main chunk</code></pre></div>
+<p>Lua adds the position to a string message. The second argument, the <strong>level</strong>, says which position: <code>1</code> (the default) is the line with <code>error</code>, <code>2</code> is the line that called this function. For a function that checks its arguments, level 2 is right, because the mistake is the caller&#39;s:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">sqrt_of</span>(n)
+    <span class="tk-k">if</span> <span class="tk-f">type</span>(n) ~= <span class="tk-s">&quot;number&quot;</span> <span class="tk-k">then</span> <span class="tk-f">error</span>(<span class="tk-s">&quot;sqrt_of needs a number, got &quot;</span> .. <span class="tk-f">type</span>(n), <span class="tk-n">2</span>) <span class="tk-k">end</span>
+    <span class="tk-k">return</span> math.<span class="tk-f">sqrt</span>(n)
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">pcall</span>(sqrt_of, <span class="tk-s">&quot;nine&quot;</span>))
+<span class="tk-f">print</span>(<span class="tk-f">pcall</span>(<span class="tk-k">function</span>()
+    <span class="tk-k">local</span> root = <span class="tk-f">sqrt_of</span>(<span class="tk-s">&quot;nine&quot;</span>)
+    <span class="tk-k">return</span> root
+<span class="tk-k">end</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>false	sqrt_of needs a number, got string
+false	main.lua:7: sqrt_of needs a number, got string</code></pre></div>
+<p>The first call came straight from <code>pcall</code>, which is C code with no line number, so there was no position to add. The second came from line 7. (Had that line been <code>return sqrt_of(&quot;nine&quot;)</code>, a tail call, the caller&#39;s frame would already be gone, and again no position would be added.)</p>
+<h2>assert</h2>
+<p><code>assert(value, message)</code> raises an error when the value is false or nil, and otherwise returns <strong>all</strong> its arguments. That makes it perfect for wrapping calls that return <code>nil, message</code> on failure:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> n = <span class="tk-f">assert</span>(<span class="tk-f">tonumber</span>(<span class="tk-s">&quot;42&quot;</span>), <span class="tk-s">&quot;not a number&quot;</span>)
+<span class="tk-f">print</span>(n + <span class="tk-n">1</span>)
+<span class="tk-k">local</span> f = <span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;settings.txt&quot;</span>, <span class="tk-s">&quot;w&quot;</span>))
+f:<span class="tk-f">write</span>(<span class="tk-s">&quot;volume=11\n&quot;</span>)
+f:<span class="tk-f">close</span>()
+<span class="tk-f">print</span>(<span class="tk-f">assert</span>(io.<span class="tk-f">open</span>(<span class="tk-s">&quot;settings.txt&quot;</span>)):<span class="tk-f">read</span>(<span class="tk-s">&quot;a&quot;</span>))
+<span class="tk-f">print</span>(<span class="tk-f">pcall</span>(assert, <span class="tk-k">false</span>, <span class="tk-s">&quot;it was false&quot;</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>43
+volume=11
+
+false	it was false</code></pre></div>
+<h2>Catching errors with pcall</h2>
+<p><code>pcall(f, args...)</code> (&quot;protected call&quot;) calls <code>f</code> and catches any error in it. It returns <code>true</code> followed by <code>f</code>&#39;s results, or <code>false</code> and the error:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">parse_age</span>(text)
+    <span class="tk-k">local</span> n = <span class="tk-f">tonumber</span>(text)
+    <span class="tk-k">if</span> <span class="tk-k">not</span> n <span class="tk-k">then</span> <span class="tk-f">error</span>(<span class="tk-s">&quot;'&quot;</span> .. text .. <span class="tk-s">&quot;' is not a number&quot;</span>, <span class="tk-n">0</span>) <span class="tk-k">end</span>
+    <span class="tk-k">if</span> n &lt; <span class="tk-n">0</span> <span class="tk-k">or</span> n &gt; <span class="tk-n">150</span> <span class="tk-k">then</span> <span class="tk-f">error</span>(<span class="tk-s">&quot;age out of range: &quot;</span> .. n, <span class="tk-n">0</span>) <span class="tk-k">end</span>
+    <span class="tk-k">return</span> math.<span class="tk-f">floor</span>(n)
+<span class="tk-k">end</span>
+
+<span class="tk-k">for</span> _, input <span class="tk-k">in</span> <span class="tk-f">ipairs</span>({ <span class="tk-s">&quot;42&quot;</span>, <span class="tk-s">&quot;abc&quot;</span>, <span class="tk-s">&quot;-5&quot;</span>, <span class="tk-s">&quot;33.9&quot;</span> }) <span class="tk-k">do</span>
+    <span class="tk-k">local</span> ok, result = <span class="tk-f">pcall</span>(parse_age, input)
+    <span class="tk-k">if</span> ok <span class="tk-k">then</span>
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;age&quot;</span>, result)
+    <span class="tk-k">else</span>
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;error&quot;</span>, result)
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>age	42
+error	'abc' is not a number
+error	age out of range: -5
+age	33</code></pre></div>
+<p>Level <code>0</code> means &quot;add no position&quot;, which suits messages meant for a user. Catch errors where you can <strong>do</strong> something about them (ask again, skip a line, show a message), not everywhere.</p>
+<h2>Errors as tables</h2>
+<p><code>error</code> accepts any value, not just strings. A table can carry a kind, a code, or the bad input, and the catcher can look at it. Lua adds no position to a table:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">load_level</span>(n)
+    <span class="tk-k">if</span> n &gt; <span class="tk-n">3</span> <span class="tk-k">then</span>
+        <span class="tk-f">error</span>({ kind = <span class="tk-s">&quot;missing&quot;</span>, level = n })
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> <span class="tk-s">&quot;level &quot;</span> .. n .. <span class="tk-s">&quot; loaded&quot;</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">for</span> _, n <span class="tk-k">in</span> <span class="tk-f">ipairs</span>({ <span class="tk-n">2</span>, <span class="tk-n">7</span> }) <span class="tk-k">do</span>
+    <span class="tk-k">local</span> ok, err = <span class="tk-f">pcall</span>(load_level, n)
+    <span class="tk-k">if</span> ok <span class="tk-k">then</span>
+        <span class="tk-f">print</span>(err)
+    <span class="tk-k">elseif</span> <span class="tk-f">type</span>(err) == <span class="tk-s">&quot;table&quot;</span> <span class="tk-k">and</span> err.kind == <span class="tk-s">&quot;missing&quot;</span> <span class="tk-k">then</span>
+        <span class="tk-f">print</span>(<span class="tk-s">&quot;no level &quot;</span> .. err.level .. <span class="tk-s">&quot;, starting level 1&quot;</span>)
+    <span class="tk-k">else</span>
+        <span class="tk-f">error</span>(err, <span class="tk-n">0</span>)    <span class="tk-c">-- not ours: pass it on</span>
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>level 2 loaded
+no level 7, starting level 1</code></pre></div>
+<h2>xpcall and tracebacks</h2>
+<p><code>pcall</code> throws away the call stack, so you lose <em>where</em> the error happened. <code>xpcall(f, handler, args...)</code> calls the handler <strong>at the point of the error</strong>, before the stack unwinds, which is where <code>debug.traceback</code> can still see it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">inner</span>() <span class="tk-k">local</span> t = <span class="tk-k">nil</span>; <span class="tk-k">return</span> t.field <span class="tk-k">end</span>
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">outer</span>() <span class="tk-k">local</span> v = <span class="tk-f">inner</span>(); <span class="tk-k">return</span> v <span class="tk-k">end</span>
+
+<span class="tk-k">local</span> ok, report = <span class="tk-f">xpcall</span>(outer, <span class="tk-k">function</span>(err)
+    <span class="tk-k">return</span> debug.<span class="tk-f">traceback</span>(<span class="tk-s">&quot;caught: &quot;</span> .. <span class="tk-f">tostring</span>(err), <span class="tk-n">2</span>)
+<span class="tk-k">end</span>)
+<span class="tk-f">print</span>(ok)
+<span class="tk-f">print</span>(report)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>false
+caught: main.lua:1: attempt to index a nil value (local 't')
+stack traceback:
+	main.lua:1: in upvalue 'inner'
+	main.lua:2: in function &lt;main.lua:2&gt;
+	[C]: in function 'xpcall'
+	main.lua:4: in main chunk</code></pre></div>
+<p>Programs that embed Lua run scripts this way, so a crashing script shows a useful report instead of taking the whole application down.</p>
+<h2>Two kinds of failure</h2>
+<p>Lua&#39;s own libraries use two conventions, and your code should too:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Convention</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A <strong>bug</strong> (wrong type, impossible state)</td>
+<td>raise an error</td>
+<td><code>string.rep(nil)</code>, <code>error(&quot;...&quot;)</code></td>
+</tr>
+<tr>
+<td>An <strong>expected</strong> failure (missing file, bad user input)</td>
+<td>return <code>nil</code> and a message</td>
+<td><code>io.open</code>, <code>tonumber</code>, <code>utf8.len</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">find_user</span>(users, name)
+    <span class="tk-k">for</span> _, u <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(users) <span class="tk-k">do</span>
+        <span class="tk-k">if</span> u.name == name <span class="tk-k">then</span> <span class="tk-k">return</span> u <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> <span class="tk-k">nil</span>, <span class="tk-s">&quot;no user called &quot;</span> .. name
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> users = { { name = <span class="tk-s">&quot;ada&quot;</span>, admin = <span class="tk-k">true</span> } }
+<span class="tk-k">local</span> u, err = <span class="tk-f">find_user</span>(users, <span class="tk-s">&quot;bob&quot;</span>)
+<span class="tk-f">print</span>(u, err)
+<span class="tk-f">print</span>(<span class="tk-f">find_user</span>(users, <span class="tk-s">&quot;ada&quot;</span>).admin)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>nil	no user called bob
+true</code></pre></div>
+<p>The caller decides: check the <code>nil</code>, or wrap the call in <code>assert</code> to turn the failure into an error.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-modules/"><span class="mono">previous</span><b>5.05 Modules</b></a>
+      <a class="lp-next" href="../6-02-iterators-and-the-generic-for/"><span class="mono">next</span><b>6.02 Iterators and the Generic for</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/6-01-errors-and-pcall"></script>
+</body>
+</html>

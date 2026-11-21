@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Command-Line Arguments and the Environment · Assembly · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/assembly/8-05-command-line-arguments-and-the-environment/">
+  <meta name="description" content="What a Linux program finds on its stack at start - argc, the argv pointers and the zero that ends them, the environment strings after them, walking them in…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Command-Line Arguments and the Environment · Assembly · Xenon">
+  <meta property="og:description" content="What a Linux program finds on its stack at start - argc, the argv pointers and the zero that ends them, the environment strings after them, walking them in…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/assembly/8-05-command-line-arguments-and-the-environment/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Command-Line Arguments and the Environment · Assembly · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Command-Line Arguments and the Environment · Assembly · Xenon">
+  <meta name="twitter:description" content="What a Linux program finds on its stack at start - argc, the argv pointers and the zero that ends them, the environment strings after them, walking them in…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/assembly.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Assembly</a><span>/</span><span>Assembly in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Command-Line Arguments and the Environment</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.05</b></span><span>5 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">What a Linux program finds on its stack at _start - argc, the argv pointers and the zero that ends them, the environment strings after them, walking them in assembly, comparing a string prefix to find a variable such as HOME, turning arguments into numbers, and setting the exit code that scripts check.</p>
+      <div class="prose">
+<h2>The stack at _start</h2>
+<p>When Linux starts a program, the kernel puts information on the stack before the first instruction runs. At <code>_start</code>, <code>rsp</code> points at:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>address</th>
+<th>holds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>[rsp]</code></td>
+<td><code>argc</code>, the number of arguments (including the program&#39;s name)</td>
+</tr>
+<tr>
+<td><code>[rsp + 8]</code></td>
+<td><code>argv[0]</code>, a pointer to the program&#39;s name</td>
+</tr>
+<tr>
+<td><code>[rsp + 16]</code></td>
+<td><code>argv[1]</code>, the first real argument</td>
+</tr>
+<tr>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr>
+<td><code>[rsp + 8 × (argc + 1)]</code></td>
+<td>0, the end of <code>argv</code></td>
+</tr>
+<tr>
+<td>after that</td>
+<td>pointers to the environment strings <code>&quot;NAME=value&quot;</code>, then 0</td>
+</tr>
+</tbody></table>
+</div>
+<p>Each pointer leads to a zero-terminated string. <code>_start</code> is not a function (nothing called it), so there is no return address; read these before pushing anything.</p>
+<h2>Printing the arguments</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .data
+<span class="tk-f">count_msg:</span> <span class="tk-k">db</span>   <span class="tk-s">&quot;arguments: &quot;</span>, <span class="tk-n">0</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">r12</span>, [<span class="tk-t">rsp</span>]              <span class="tk-c">; argc</span>
+        lea     <span class="tk-t">r13</span>, [<span class="tk-t">rsp</span> + <span class="tk-n">8</span>]          <span class="tk-c">; &amp;argv[0]</span>
+
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> count_msg]
+        call    print_str
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">r12</span>
+        call    print_int
+        call    print_newline
+
+        xor     <span class="tk-t">ebx</span>, <span class="tk-t">ebx</span>
+<span class="tk-f">.next:</span>  cmp     <span class="tk-t">rbx</span>, <span class="tk-t">r12</span>
+        jge     .done
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rbx</span>
+        call    print_int
+        mov     <span class="tk-t">edi</span>, <span class="tk-s">':'</span>
+        call    print_char
+        mov     <span class="tk-t">edi</span>, <span class="tk-s">' '</span>
+        call    print_char
+        mov     <span class="tk-t">rdi</span>, [<span class="tk-t">r13</span> + <span class="tk-t">rbx</span>*<span class="tk-n">8</span>]      <span class="tk-c">; argv[i]</span>
+        call    print_str
+        call    print_newline
+        inc     <span class="tk-t">rbx</span>
+        jmp     .next
+<span class="tk-f">.done:</span>
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>On this site, the Run options let you give arguments; without any, <code>argc</code> is 1 and only the program&#39;s name is printed. In a terminal, <code>./program one &quot;two words&quot;</code> gives <code>argc</code> = 3, and the quotes keep <code>two words</code> together as one argument.</p>
+<h2>The environment</h2>
+<p>The environment strings start right after the zero that ends <code>argv</code>. To find one variable, compare the start of each string with <code>&quot;NAME=&quot;</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .data
+<span class="tk-f">want:</span>   <span class="tk-k">db</span>      <span class="tk-s">&quot;PATH=&quot;</span>, <span class="tk-n">0</span>
+<span class="tk-f">label:</span>  <span class="tk-k">db</span>      <span class="tk-s">&quot;PATH is: &quot;</span>, <span class="tk-n">0</span>
+<span class="tk-f">none:</span>   <span class="tk-k">db</span>      <span class="tk-s">&quot;not set&quot;</span>, <span class="tk-n">0</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">starts_with:</span>                            <span class="tk-c">; rdi = text, rsi = prefix; rax = 1 if text starts with prefix</span>
+<span class="tk-f">.loop:</span>  movzx   <span class="tk-t">eax</span>, <span class="tk-k">byte</span> [<span class="tk-t">rsi</span>]
+        test    <span class="tk-t">al</span>, <span class="tk-t">al</span>
+        jz      .yes                    <span class="tk-c">; reached the end of the prefix</span>
+        cmp     <span class="tk-t">al</span>, [<span class="tk-t">rdi</span>]
+        jne     .no
+        inc     <span class="tk-t">rdi</span>
+        inc     <span class="tk-t">rsi</span>
+        jmp     .loop
+<span class="tk-f">.yes:</span>   mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+        ret
+<span class="tk-f">.no:</span>    xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+        ret
+
+<span class="tk-f">_start:</span>
+        mov     <span class="tk-t">rax</span>, [<span class="tk-t">rsp</span>]              <span class="tk-c">; argc</span>
+        lea     <span class="tk-t">rbx</span>, [<span class="tk-t">rsp</span> + <span class="tk-n">8</span> + <span class="tk-t">rax</span>*<span class="tk-n">8</span> + <span class="tk-n">8</span>]   <span class="tk-c">; skip argc, the argv pointers and their zero</span>
+<span class="tk-f">.scan:</span>  mov     <span class="tk-t">r12</span>, [<span class="tk-t">rbx</span>]
+        test    <span class="tk-t">r12</span>, <span class="tk-t">r12</span>
+        jz      .missing
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">r12</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> want]
+        call    starts_with
+        test    <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+        jnz     .found
+        add     <span class="tk-t">rbx</span>, <span class="tk-n">8</span>
+        jmp     .scan
+<span class="tk-f">.found:</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> label]
+        call    print_str
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-t">r12</span> + <span class="tk-n">5</span>]          <span class="tk-c">; the value, just after &quot;PATH=&quot;</span>
+        call    print_str
+        call    print_newline
+        jmp     .exit
+<span class="tk-f">.missing:</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> none]
+        call    print_str
+        call    print_newline
+<span class="tk-f">.exit:</span>  mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>The runner on this site starts programs with an almost empty environment, so the value may be blank here; in a terminal you see your real <code>PATH</code>.</p>
+<p>The comparison stops at the end of the prefix, so <code>PATH=</code> does not match a variable called <code>PATHEXT=</code> by accident, because <code>=</code> must match too.</p>
+<h2>Numbers from arguments</h2>
+<p>Arguments are always text. Parse them with the same digit loop as lesson 6.02:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .data
+<span class="tk-f">sample:</span> <span class="tk-k">db</span>      <span class="tk-s">&quot;-250&quot;</span>, <span class="tk-n">0</span>
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">parse_int:</span>                              <span class="tk-c">; rdi = string; rax = value, rdx = 1 if valid</span>
+        xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+        xor     <span class="tk-t">ecx</span>, <span class="tk-t">ecx</span>                <span class="tk-c">; 1 if negative</span>
+        cmp     <span class="tk-k">byte</span> [<span class="tk-t">rdi</span>], <span class="tk-s">'-'</span>
+        jne     .digits
+        mov     <span class="tk-t">ecx</span>, <span class="tk-n">1</span>
+        inc     <span class="tk-t">rdi</span>
+<span class="tk-f">.digits:</span>
+        movzx   <span class="tk-t">edx</span>, <span class="tk-k">byte</span> [<span class="tk-t">rdi</span>]
+        test    <span class="tk-t">dl</span>, <span class="tk-t">dl</span>
+        jz      .end
+        sub     <span class="tk-t">edx</span>, <span class="tk-s">'0'</span>
+        cmp     <span class="tk-t">edx</span>, <span class="tk-n">9</span>
+        ja      .bad                    <span class="tk-c">; not a digit</span>
+        imul    <span class="tk-t">rax</span>, <span class="tk-t">rax</span>, <span class="tk-n">10</span>
+        add     <span class="tk-t">rax</span>, <span class="tk-t">rdx</span>
+        inc     <span class="tk-t">rdi</span>
+        jmp     .digits
+<span class="tk-f">.end:</span>   test    <span class="tk-t">ecx</span>, <span class="tk-t">ecx</span>
+        jz      .ok
+        neg     <span class="tk-t">rax</span>
+<span class="tk-f">.ok:</span>    mov     <span class="tk-t">edx</span>, <span class="tk-n">1</span>
+        ret
+<span class="tk-f">.bad:</span>   xor     <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+        xor     <span class="tk-t">edx</span>, <span class="tk-t">edx</span>
+        ret
+
+<span class="tk-f">_start:</span>
+        lea     <span class="tk-t">rdi</span>, [<span class="tk-k">rel</span> sample]
+        call    parse_int
+        mov     <span class="tk-t">rdi</span>, <span class="tk-t">rax</span>
+        call    print_int               <span class="tk-c">; -250</span>
+        call    print_newline
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+<p>With real arguments, pass <code>[r13 + 8]</code> (<code>argv[1]</code>) instead of <code>sample</code>, after checking that <code>argc</code> is at least 2.</p>
+<h2>The exit code</h2>
+<p>The number in <code>rdi</code> for the <code>exit</code> system call is what the shell sees in <code>$?</code>. Scripts depend on it: 0 for success, anything else for failure. A tool that was called wrongly usually prints a short usage message to <strong>standard error</strong> (file descriptor 2) and exits with 2. Run this one here without arguments and the result shows the message and exit code 2:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>        <span class="tk-k">global</span>  _start
+
+        <span class="tk-k">section</span> .data
+<span class="tk-f">usage:</span>  <span class="tk-k">db</span>      <span class="tk-s">&quot;usage: tool NUMBER&quot;</span>, <span class="tk-n">10</span>
+usage_len <span class="tk-k">equ</span>   $ - usage
+
+        <span class="tk-k">section</span> .text
+<span class="tk-f">_start:</span>
+        cmp     <span class="tk-k">qword</span> [<span class="tk-t">rsp</span>], <span class="tk-n">2</span>          <span class="tk-c">; argc &lt; 2: no NUMBER given</span>
+        jge     .ok
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">1</span>                  <span class="tk-c">; write(2, usage, usage_len)</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">2</span>
+        lea     <span class="tk-t">rsi</span>, [<span class="tk-k">rel</span> usage]
+        mov     <span class="tk-t">edx</span>, usage_len
+        syscall
+        mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        mov     <span class="tk-t">edi</span>, <span class="tk-n">2</span>
+        syscall
+<span class="tk-f">.ok:</span>    mov     <span class="tk-t">eax</span>, <span class="tk-n">60</span>
+        xor     <span class="tk-t">edi</span>, <span class="tk-t">edi</span>
+        syscall</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/assembly/l/8.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/assembly/l/8.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-04-memory-from-the-kernel/"><span class="mono">previous</span><b>8.04 Memory from the Kernel</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/assembly/8-05-command-line-arguments-and-the-environment"></script>
+</body>
+</html>

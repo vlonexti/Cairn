@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Exceptions · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/4-03-exceptions/">
+  <meta name="description" content="Throwing and catching exceptions, the common exception types, catch order and exception filters, finally, rethrowing with throw versus throw ex, custom…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Exceptions · C# · Xenon">
+  <meta property="og:description" content="Throwing and catching exceptions, the common exception types, catch order and exception filters, finally, rethrowing with throw versus throw ex, custom…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/4-03-exceptions/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Exceptions · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Exceptions · C# · Xenon">
+  <meta name="twitter:description" content="Throwing and catching exceptions, the common exception types, catch order and exception filters, finally, rethrowing with throw versus throw ex, custom…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Generics, Delegates and Errors</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Exceptions</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.03</b></span><span>3 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Throwing and catching exceptions, the common exception types, catch order and exception filters, finally, rethrowing with throw versus throw ex, custom exception classes with inner exceptions, guard clauses and ArgumentException helpers, and when to use Try methods or result types instead.</p>
+      <div class="prose">
+<h2>throw and catch</h2>
+<p>When a method cannot do its job, it <strong>throws</strong> an exception. The exception travels up the call stack until a <code>catch</code> handles it; if nothing does, the program stops and prints the exception and its <strong>stack trace</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">foreach</span> (<span class="tk-k">string</span> input <span class="tk-k">in</span> <span class="tk-k">new</span>[] { <span class="tk-s">&quot;42&quot;</span>, <span class="tk-s">&quot;abc&quot;</span>, <span class="tk-s">&quot;99999999999&quot;</span>, <span class="tk-s">&quot;-5&quot;</span> })
+{
+    <span class="tk-k">try</span>
+    {
+        <span class="tk-k">int</span> age = <span class="tk-f">ParseAge</span>(input);
+        <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;age {age}&quot;</span>);
+    }
+    <span class="tk-k">catch</span> (<span class="tk-t">FormatException</span>)
+    {
+        <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;'{input}' is not a number&quot;</span>);
+    }
+    <span class="tk-k">catch</span> (<span class="tk-t">OverflowException</span>)
+    {
+        <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;'{input}' is far too big&quot;</span>);
+    }
+    <span class="tk-k">catch</span> (<span class="tk-t">ArgumentOutOfRangeException</span> e)
+    {
+        <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(e.<span class="tk-t">Message</span>);
+    }
+}
+
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">ParseAge</span>(<span class="tk-k">string</span> text)
+{
+    <span class="tk-k">int</span> age = <span class="tk-k">int</span>.<span class="tk-f">Parse</span>(text);           <span class="tk-c">// throws FormatException or OverflowException</span>
+    <span class="tk-k">if</span> (age &lt; <span class="tk-n">0</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">ArgumentOutOfRangeException</span>(<span class="tk-f">nameof</span>(text), age, <span class="tk-s">&quot;age cannot be negative&quot;</span>);
+    <span class="tk-k">return</span> age;
+}</code></pre></div>
+<p>Catch blocks are tried in order; put specific types before general ones (<code>Exception</code> last).</p>
+<h2>Common exception types</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>Thrown when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ArgumentException</code>, <code>ArgumentNullException</code>, <code>ArgumentOutOfRangeException</code></td>
+<td>A method was given a bad argument</td>
+</tr>
+<tr>
+<td><code>InvalidOperationException</code></td>
+<td>The object is not in a state where this call makes sense</td>
+</tr>
+<tr>
+<td><code>NullReferenceException</code></td>
+<td>A member of <code>null</code> was used (a bug: fix it, do not catch it)</td>
+</tr>
+<tr>
+<td><code>IndexOutOfRangeException</code>, <code>KeyNotFoundException</code></td>
+<td>A missing index or key</td>
+</tr>
+<tr>
+<td><code>FormatException</code>, <code>OverflowException</code></td>
+<td>Parsing failed</td>
+</tr>
+<tr>
+<td><code>IOException</code>, <code>FileNotFoundException</code></td>
+<td>File and stream problems</td>
+</tr>
+<tr>
+<td><code>NotSupportedException</code>, <code>NotImplementedException</code></td>
+<td>The operation is not supported / not written yet</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Guard clauses</h2>
+<p>Check arguments at the start of public methods, so a mistake is reported where it happens:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Ratio</span>(<span class="tk-n">6</span>, <span class="tk-n">3</span>));
+<span class="tk-k">try</span> { <span class="tk-f">Ratio</span>(<span class="tk-n">1</span>, <span class="tk-n">0</span>); } <span class="tk-k">catch</span> (<span class="tk-t">ArgumentException</span> e) { <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(e.<span class="tk-t">Message</span>); }
+<span class="tk-k">try</span> { <span class="tk-f">Greet</span>(<span class="tk-k">null</span>!); } <span class="tk-k">catch</span> (<span class="tk-t">ArgumentNullException</span> e) { <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(e.<span class="tk-t">ParamName</span>); }
+
+<span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">Ratio</span>(<span class="tk-k">double</span> part, <span class="tk-k">double</span> whole)
+{
+    <span class="tk-t">ArgumentOutOfRangeException</span>.<span class="tk-f">ThrowIfZero</span>(whole);
+    <span class="tk-k">return</span> part / whole;
+}
+
+<span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Greet</span>(<span class="tk-k">string</span> name)
+{
+    <span class="tk-t">ArgumentNullException</span>.<span class="tk-f">ThrowIfNull</span>(name);
+    <span class="tk-t">ArgumentException</span>.<span class="tk-f">ThrowIfNullOrWhiteSpace</span>(name);
+    <span class="tk-k">return</span> <span class="tk-s">$&quot;Hello, {name}&quot;</span>;
+}</code></pre></div>
+<h2>finally and filters</h2>
+<p><code>finally</code> runs whether or not an exception happened: the place for clean-up (lesson 4.04 shows <code>using</code>, which does this for you). An <strong>exception filter</strong> <code>when (...)</code> catches only some exceptions of a type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span> attempts = <span class="tk-n">0</span>;
+<span class="tk-k">try</span>
+{
+    attempts++;
+    <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">HttpLikeException</span>(<span class="tk-n">503</span>);
+}
+<span class="tk-k">catch</span> (<span class="tk-t">HttpLikeException</span> e) <span class="tk-k">when</span> (e.<span class="tk-t">Status</span> &gt;= <span class="tk-n">500</span>)
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;server error {e.Status}, attempt {attempts}: worth retrying&quot;</span>);
+}
+<span class="tk-k">finally</span>
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;finished&quot;</span>);
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">HttpLikeException</span>(<span class="tk-k">int</span> status) : <span class="tk-f">Exception</span>(<span class="tk-s">$&quot;HTTP {status}&quot;</span>)
+{
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-t">Status</span> { <span class="tk-k">get</span>; } = status;
+}</code></pre></div>
+<h2>Custom exceptions</h2>
+<p>Define your own exception when callers need to tell your failure apart from others. Derive from <code>Exception</code>, end the name with <code>Exception</code>, and pass on the <strong>inner exception</strong> when wrapping another one:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">try</span>
+{
+    <span class="tk-f">LoadSettings</span>(<span class="tk-s">&quot;{ broken&quot;</span>);
+}
+<span class="tk-k">catch</span> (<span class="tk-t">ConfigException</span> e)
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{e.Message} &lt;- {e.InnerException?.GetType().Name}&quot;</span>);
+}
+
+<span class="tk-k">static</span> <span class="tk-t">Dictionary</span>&lt;<span class="tk-k">string</span>, <span class="tk-k">string</span>&gt; <span class="tk-f">LoadSettings</span>(<span class="tk-k">string</span> json)
+{
+    <span class="tk-k">try</span>
+    {
+        <span class="tk-k">return</span> <span class="tk-t">System</span>.<span class="tk-t">Text</span>.<span class="tk-t">Json</span>.<span class="tk-t">JsonSerializer</span>.<span class="tk-t">Deserialize</span>&lt;<span class="tk-t">Dictionary</span>&lt;<span class="tk-k">string</span>, <span class="tk-k">string</span>&gt;&gt;(json)!;
+    }
+    <span class="tk-k">catch</span> (<span class="tk-t">System</span>.<span class="tk-t">Text</span>.<span class="tk-t">Json</span>.<span class="tk-t">JsonException</span> e)
+    {
+        <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">ConfigException</span>(<span class="tk-s">&quot;settings file is not valid JSON&quot;</span>, e);
+    }
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-f">ConfigException</span>(<span class="tk-k">string</span> message, <span class="tk-t">Exception</span>? inner = <span class="tk-k">null</span>) : <span class="tk-f">Exception</span>(message, inner);</code></pre></div>
+<h2>Rethrowing</h2>
+<p>To let an exception continue after logging it, write <code>throw;</code>. Writing <code>throw e;</code> restarts the stack trace at that line and hides where the problem really was.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">catch</span> (IOException e)
+{
+    logger.<span class="tk-f">Log</span>(e);
+    <span class="tk-k">throw</span>;            <span class="tk-c">// not: throw e;</span>
+}</code></pre></div>
+<h2>When not to throw</h2>
+<p>Exceptions are for <strong>exceptional</strong> situations: bugs, broken files, lost connections. They are slow-ish and make control flow hard to follow when used for ordinary outcomes. When failure is normal (the user typed something wrong, a key may be missing), prefer:</p>
+<ul>
+<li>a <code>Try</code> method: <code>bool TryParse(string s, out int value)</code>, <code>dict.TryGetValue(...)</code>;</li>
+<li>a nullable result: <code>User? FindUser(string id)</code>;</li>
+<li>a result type: <code>record Result&lt;T&gt;(bool Ok, T? Value, string? Error)</code>.</li>
+</ul>
+<p>Never catch an exception just to ignore it (<code>catch { }</code>): it hides bugs. Catch only what you can handle, at the level that knows what to do about it.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/4.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/4.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-02-delegates-lambdas-and-events/"><span class="mono">previous</span><b>4.02 Delegates, Lambdas and Events</b></a>
+      <a class="lp-next" href="../4-04-idisposable-and-using/"><span class="mono">next</span><b>4.04 IDisposable and using</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/4-03-exceptions"></script>
+</body>
+</html>

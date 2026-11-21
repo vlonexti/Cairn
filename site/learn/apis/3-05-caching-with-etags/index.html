@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Caching with ETags · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/3-05-caching-with-etags/">
+  <meta name="description" content="Not asking for what you already have - HTTP caching headers as an API client uses them, Cache-Control max-age and no-store, ETags with If-None-Match and the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Caching with ETags · Working with APIs · Xenon">
+  <meta property="og:description" content="Not asking for what you already have - HTTP caching headers as an API client uses them, Cache-Control max-age and no-store, ETags with If-None-Match and the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/3-05-caching-with-etags/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Caching with ETags · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Caching with ETags · Working with APIs · Xenon">
+  <meta name="twitter:description" content="Not asking for what you already have - HTTP caching headers as an API client uses them, Cache-Control max-age and no-store, ETags with If-None-Match and the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Paging, Rate Limits and Retries</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Caching with ETags</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Not asking for what you already have - HTTP caching headers as an API client uses them, Cache-Control max-age and no-store, ETags with If-None-Match and the 304 Not Modified answer, Last-Modified, and a small client-side cache that saves requests and rate limit.</p>
+      <div class="prose">
+<h2>Why cache</h2>
+<p>Much API data changes rarely: a user&#39;s profile, a product catalogue, configuration. Fetching it again and again wastes time and rate limit. HTTP has caching built in, and many APIs support it.</p>
+<h2>Freshness: Cache-Control</h2>
+<p>The response says how long it may be reused without asking again:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>Cache-Control: max-age=300</code></pre></div>
+<p>For the next 300 seconds, use your stored copy without a request. Other directives: <strong><code>no-cache</code></strong> (you may store it but must check with the server before each use), <strong><code>no-store</code></strong> (do not keep it at all: often on personal or secret data), <code>private</code> (only the end client may cache it, not shared proxies).</p>
+<h2>Validation: ETags</h2>
+<p>After the copy goes stale, you can ask cheaply whether it changed. The original response carried an <strong>ETag</strong>, a version identifier for that content:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>HTTP/1.1 200 OK
+ETag: &quot;v42-a7f3&quot;
+Cache-Control: max-age=60</code></pre></div>
+<p>Next time, send it back:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>GET /v1/catalogue
+If-None-Match: &quot;v42-a7f3&quot;</code></pre></div>
+<ul>
+<li>If nothing changed, the server answers <strong>304 Not Modified</strong> with no body: reuse your copy (and its new freshness headers, if any). Many APIs do not count 304s against your rate limit, or count them less.</li>
+<li>If it changed, you get a normal 200 with the new body and a new ETag.</li>
+</ul>
+<p><code>Last-Modified</code> and <code>If-Modified-Since</code> work the same way with dates; ETags are more precise. Send the ETag <strong>exactly</strong> as received, quotes and <code>W/</code> prefix included.</p>
+<h2>A small client cache</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>entry = cache.<span class="tk-f">get</span>(url)
+<span class="tk-k">if</span> entry <span class="tk-k">and</span> <span class="tk-f">clock</span>() &lt; entry.fresh_until:
+    <span class="tk-k">return</span> entry.body                                   <span class="tk-c"># no request at all</span>
+headers = {<span class="tk-s">&quot;If-None-Match&quot;</span>: entry.etag} <span class="tk-k">if</span> entry <span class="tk-k">and</span> entry.etag <span class="tk-k">else</span> {}
+status, resp_headers, body = transport.<span class="tk-f">send</span>(<span class="tk-s">&quot;GET&quot;</span>, url, headers)
+<span class="tk-k">if</span> status == <span class="tk-n">304</span> <span class="tk-k">and</span> entry:
+    entry.fresh_until = <span class="tk-f">clock</span>() + <span class="tk-f">max_age</span>(resp_headers)
+    <span class="tk-k">return</span> entry.body
+<span class="tk-k">if</span> status == <span class="tk-n">200</span> <span class="tk-k">and</span> <span class="tk-s">&quot;no-store&quot;</span> <span class="tk-k">not</span> <span class="tk-k">in</span> <span class="tk-f">cache_control</span>(resp_headers):
+    cache[url] = <span class="tk-f">Entry</span>(body, resp_headers.<span class="tk-f">get</span>(<span class="tk-s">&quot;ETag&quot;</span>), <span class="tk-f">clock</span>() + <span class="tk-f">max_age</span>(resp_headers))
+<span class="tk-k">return</span> body</code></pre></div>
+<p>Practice 3.05 builds this with every rule spelled out. A real program would also bound the cache&#39;s size and key it by anything that changes the response (query parameters, the <code>Accept</code> header, the user).</p>
+<h2>Caching your own results</h2>
+<p>Beyond HTTP caching, cache <strong>derived</strong> data in your program: the list of countries you fetched at startup, a lookup from user id to name. Give each cache entry a time to live, and invalidate it when you change the data yourself through the API.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-idempotency-keys-and-timeouts/"><span class="mono">previous</span><b>3.04 Idempotency Keys and Timeouts</b></a>
+      <a class="lp-next" href="../4-01-webhooks-versus-polling/"><span class="mono">next</span><b>4.01 Webhooks versus Polling</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/3-05-caching-with-etags"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Watching Behaviour from Outside · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/3-04-watching-behaviour-from-outside/">
+  <meta name="description" content="Learning what a program does without a debugger - Process Monitor's file and registry log and its filters, API Monitor, network captures with Wireshark,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Watching Behaviour from Outside · Reverse Engineering · Xenon">
+  <meta property="og:description" content="Learning what a program does without a debugger - Process Monitor's file and registry log and its filters, API Monitor, network captures with Wireshark,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/3-04-watching-behaviour-from-outside/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Watching Behaviour from Outside · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Watching Behaviour from Outside · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="Learning what a program does without a debugger - Process Monitor's file and registry log and its filters, API Monitor, network captures with Wireshark,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Dynamic Analysis</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Watching Behaviour from Outside</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.04</b></span><span>4 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Learning what a program does without a debugger - Process Monitor&#39;s file and registry log and its filters, API Monitor, network captures with Wireshark, Event Tracing for Windows, and Sysmon - and reading their logs systematically.</p>
+      <div class="prose">
+<h2>Behaviour first</h2>
+<p>Before reading a program&#39;s code you can learn a lot by just watching it from outside: which files it opens, which registry keys it reads, which servers it talks to, which processes it starts. <strong>Behavioural analysis</strong> needs no understanding of the code, is hard for a program to notice, and often answers the question outright: &quot;where does it keep its settings?&quot; is answered by one Process Monitor capture.</p>
+<h2>Process Monitor</h2>
+<p>Process Monitor (Sysinternals, <code>procmon.exe</code>) records every file system, registry, process and thread event on the system, with the process, the path, the result and details.</p>
+<p>A capture is enormous, so the skill is <strong>filtering</strong> (Filter &gt; Filter...):</p>
+<ul>
+<li><code>Process Name is Inventory.exe</code> then Include: only your target.</li>
+<li><code>Operation is WriteFile</code>: only writes.</li>
+<li><code>Path contains \Saves\</code>: only one folder.</li>
+<li><code>Result is NAME NOT FOUND</code>: things the program looked for and did not find, which reveals optional configuration files, missing DLLs and plugins it would load if they existed.</li>
+</ul>
+<p>Useful columns and tools: <strong>Path</strong>, <strong>Result</strong>, <strong>Detail</strong> (offsets and lengths of reads and writes); Tools &gt; <strong>File Summary</strong> and <strong>Registry Summary</strong> to count accesses per path; double-click an event to see its <strong>call stack</strong> (with symbols for system DLLs), which shows the code in the program that caused it.</p>
+<p>Logs can be saved as CSV (File &gt; Save, Comma-Separated Values), which is the format of this lesson&#39;s practice:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>&quot;Time of Day&quot;,&quot;Process Name&quot;,&quot;PID&quot;,&quot;Operation&quot;,&quot;Path&quot;,&quot;Result&quot;,&quot;Detail&quot;
+&quot;10:14:02.1234567&quot;,&quot;Inventory.exe&quot;,&quot;4120&quot;,&quot;CreateFile&quot;,&quot;C:\Users\sam\AppData\Roaming\Inventory\config.ini&quot;,&quot;SUCCESS&quot;,&quot;Desired Access: Generic Read&quot;</code></pre></div>
+<h2>API Monitor</h2>
+<p>API Monitor (rohitab.com) logs calls to Windows API functions with their <strong>arguments and return values</strong>: every <code>RegQueryValueExW</code> with the key and value name, every <code>connect</code> with the address. It shows what Process Monitor cannot see, such as calls that do not touch files or the registry (cryptography, window messages, time).</p>
+<h2>Network captures</h2>
+<p><strong>Wireshark</strong> captures network traffic and decodes hundreds of protocols. Filters such as <code>ip.addr == 192.168.1.20 &amp;&amp; tcp.port == 7777</code> narrow it to one conversation; Follow &gt; TCP Stream shows the whole exchange as text or hex. For a program&#39;s own custom protocol you see only bytes, which is where lesson 6.03 picks up. Encrypted traffic (HTTPS, TLS) shows only the handshake and sizes, unless the program is yours and you can log its keys.</p>
+<h2>Event Tracing for Windows</h2>
+<p><strong>ETW</strong> is the logging system built into Windows itself: the kernel and many components publish events (process starts, image loads, network, disk, the .NET runtime...). Tools such as Windows Performance Recorder, PerfView and <code>logman</code> capture them with very little overhead. <strong>Sysmon</strong> (Sysinternals) is a service that logs selected ETW-based events to the Windows event log permanently: process creation with full command lines and hashes, network connections, file creation. Security teams use it constantly, and it is a good way to watch a program over hours.</p>
+<h2>Reading logs systematically</h2>
+<p>Behaviour logs are only useful if you summarise them. A good habit for each capture:</p>
+<ol>
+<li>Filter to the target process (and its children: the <code>PID</code> of processes it started).</li>
+<li>List the <strong>distinct</strong> files written, files read, registry keys read and written, and network endpoints.</li>
+<li>Note the <strong>failures</strong> (<code>NAME NOT FOUND</code>, <code>ACCESS DENIED</code>): they show what the program expected to exist.</li>
+<li>Record the sequence of the important operations: what it reads at start-up, what it writes when you press Save.</li>
+</ol>
+<p>The practice builds exactly that summary from a Process Monitor CSV.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/3.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/3.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-03-finding-where-data-lives/"><span class="mono">previous</span><b>3.03 Finding Where Data Lives</b></a>
+      <a class="lp-next" href="../3-05-comparing-runs/"><span class="mono">next</span><b>3.05 Comparing Runs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/3-04-watching-behaviour-from-outside"></script>
+</body>
+</html>

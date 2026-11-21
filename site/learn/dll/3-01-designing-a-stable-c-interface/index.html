@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Designing a Stable C Interface · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/3-01-designing-a-stable-c-interface/">
+  <meta name="description" content="A library that other programs depend on for years needs an interface that can grow without breaking them. The standard shape is a set of extern &quot;C&quot; functions…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Designing a Stable C Interface · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="A library that other programs depend on for years needs an interface that can grow without breaking them. The standard shape is a set of extern &quot;C&quot; functions…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/3-01-designing-a-stable-c-interface/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Designing a Stable C Interface · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Designing a Stable C Interface · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="A library that other programs depend on for years needs an interface that can grow without breaking them. The standard shape is a set of extern &quot;C&quot; functions…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Stable Interfaces</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Designing a Stable C Interface</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 6 in milestone 3</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">A library that other programs depend on for years needs an interface that can grow without breaking them. The standard shape is a set of <code>extern &quot;C&quot;</code> functions around <strong>opaque handles</strong>, with a consistent naming scheme and clear ownership. This lesson designs one from scratch and lists the rules that keep it stable.</p>
+      <div class="prose">
+<h2>What &quot;stable&quot; means</h2>
+<p>A DLL interface has two kinds of compatibility:</p>
+<ul>
+<li><strong>Source compatibility</strong>: code written against version 1&#39;s header still compiles with version 2&#39;s.</li>
+<li><strong>Binary compatibility</strong> (the <strong>ABI</strong>): a program <strong>already built</strong> against version 1 still works when you replace the DLL with version 2, without recompiling.</li>
+</ul>
+<p>Binary compatibility is the one DLLs are about, and it is much stricter. Changing a function&#39;s parameter from <code>int</code> to <code>long long</code> is fine for source code (it still compiles) and fatal for binaries (the old program passes 4 bytes; the new DLL reads 8).</p>
+<h2>The opaque handle</h2>
+<p>The core idea: the library&#39;s types are <strong>never</strong> visible to callers. They get a pointer to a type they cannot see inside.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// xenon.h, the public header</span>
+<span class="tk-p">#pragma</span> once
+<span class="tk-p">#include &lt;stdint.h&gt;</span>
+
+<span class="tk-p">#ifdef</span> __cplusplus
+<span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> {
+<span class="tk-p">#endif</span>
+
+<span class="tk-k">typedef</span> <span class="tk-k">struct</span> xenon_world xenon_world;        <span class="tk-c">// opaque: declared, never defined here</span>
+
+XENON_API <span class="tk-k">int</span>  <span class="tk-f">xenon_world_create</span>(xenon_world** out);
+XENON_API <span class="tk-k">void</span> <span class="tk-f">xenon_world_destroy</span>(xenon_world* world);
+
+XENON_API <span class="tk-k">int</span>  <span class="tk-f">xenon_world_add_stone</span>(xenon_world* world, int32_t x, int32_t y, int32_t weight);
+XENON_API <span class="tk-k">int</span>  <span class="tk-f">xenon_world_stone_count</span>(<span class="tk-k">const</span> xenon_world* world, int32_t* out);
+XENON_API <span class="tk-k">int</span>  <span class="tk-f">xenon_world_tallest</span>(<span class="tk-k">const</span> xenon_world* world, int32_t* x, int32_t* y, int32_t* height);
+
+<span class="tk-p">#ifdef</span> __cplusplus
+}
+<span class="tk-p">#endif</span></code></pre></div>
+<p>Inside the DLL:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// xenon.cpp</span>
+<span class="tk-k">struct</span> xenon_world               <span class="tk-c">// the real definition, only here</span>
+{
+    std::unordered_map&lt;<span class="tk-t">Point</span>, std::vector&lt;<span class="tk-k">int</span>&gt;, <span class="tk-t">PointHash</span>&gt; stacks;
+    <span class="tk-k">int</span> stoneCount{ <span class="tk-n">0</span> };
+};</code></pre></div>
+<p>Because callers never see the definition, you can change it in every version: add members, reorder them, swap the <code>unordered_map</code> for a grid. Their compiled code only stores a pointer.</p>
+<h2>Naming</h2>
+<p>Exported names share one flat namespace in the process. Prefix everything with the library&#39;s name, and name functions <code>&lt;library&gt;_&lt;type&gt;_&lt;verb&gt;</code>:</p>
+<ul>
+<li><code>xenon_world_create</code>, <code>xenon_world_destroy</code></li>
+<li><code>xenon_world_add_stone</code>, <code>xenon_world_stone_count</code></li>
+</ul>
+<p>Callers can guess names, and nothing collides with another library&#39;s <code>create</code>.</p>
+<h2>Fixed-size types</h2>
+<p><code>int</code> is 32 bits on Windows today, but <code>long</code> is 32 bits on Windows and 64 bits on Linux. For anything that crosses the boundary, use the <code>&lt;stdint.h&gt;</code> types whose size is part of their name: <code>int32_t</code>, <code>uint64_t</code>, <code>uint8_t</code>. Use <code>size_t</code> only when you mean &quot;a size in this process&quot;. Avoid <code>bool</code> in C interfaces (its size has varied between compilers); use <code>int32_t</code> with 0 and 1.</p>
+<h2>Results and outputs</h2>
+<p>Every function that can fail returns a result code, and returns values through <strong>out-parameters</strong>. That keeps one shape everywhere:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>int32_t count{ <span class="tk-n">0</span> };
+<span class="tk-k">if</span> (<span class="tk-f">xenon_world_stone_count</span>(world, &amp;count) != XENON_OK) { <span class="tk-c">/* handle it */</span> }</code></pre></div>
+<p>Lesson 3.02 designs the result codes and adds error messages.</p>
+<h2>The stability rules</h2>
+<p>Once version 1 is published:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You may</th>
+<th>You may not</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Add new functions</td>
+<td>Remove or rename a function</td>
+</tr>
+<tr>
+<td>Add new result codes (callers must treat unknown codes as failure)</td>
+<td>Change a function&#39;s parameters or return type</td>
+</tr>
+<tr>
+<td>Change anything behind an opaque handle</td>
+<td>Change the layout of a struct callers can see (lesson 3.03 shows the safe way to grow one)</td>
+</tr>
+<tr>
+<td>Add a new enum value at the end</td>
+<td>Change the meaning or number of an existing enum value</td>
+</tr>
+<tr>
+<td>Fix bugs</td>
+<td>Change documented behaviour callers rely on</td>
+</tr>
+</tbody></table>
+</div>
+<p>If you truly must break one of these, it is a new major version (lesson 3.05), often with a new DLL name (<code>xenon2.dll</code>) so both can be installed side by side.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Putting a struct definition in the public header &quot;just for convenience&quot;</span></div><div class="callout-body"><p>Callers&#39; code now knows its size and layout, so it can never change. Keep it opaque, or version it (lesson 3.03).</p>
+</div></div>
+<blockquote><p>[!warning] Using <code>long</code> or <code>bool</code> in the interface
+Their sizes are not the same everywhere. Use <code>int32_t</code>, <code>int64_t</code>, and <code>int32_t</code> for true/false.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is binary compatibility?</div><ul><li>Programs already compiled against the old DLL keep working with the new one, without recompiling</li><li>The new header still compiles with old code</li><li>Both DLLs have the same file size</li></ul><details><summary>Show the answer</summary><p><b>Programs already compiled against the old DLL keep working with the new one, without recompiling</b> It is the promise a DLL interface makes.</p></details></li><li><div class="q">Why can a library change everything behind an opaque handle?</div><ul><li>Callers only hold a pointer and never see the type&#39;s size or members</li><li>Because handles are integers</li><li>Because the compiler checks the layout at run time</li></ul><details><summary>Show the answer</summary><p><b>Callers only hold a pointer and never see the type&#39;s size or members</b> Their compiled code does not depend on the definition.</p></details></li><li><div class="q">Which change breaks binary compatibility?</div><ul><li>Changing a parameter from int32_t to int64_t</li><li>Adding a new function</li><li>Adding members to an opaque struct</li></ul><details><summary>Show the answer</summary><p><b>Changing a parameter from int32_t to int64_t</b> Old programs still pass 4 bytes where the new DLL reads 8.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-06-exceptions-and-cpp-types-at-the-boundary/"><span class="mono">previous</span><b>2.06 Exceptions and C++ Types at the Boundary</b></a>
+      <a class="lp-next" href="../3-02-error-reporting-across-a-c-api/"><span class="mono">next</span><b>3.02 Error Reporting Across a C API</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/3-01-designing-a-stable-c-interface"></script>
+</body>
+</html>

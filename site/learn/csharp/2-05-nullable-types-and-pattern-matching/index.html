@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Nullable Types and Pattern Matching · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/2-05-nullable-types-and-pattern-matching/">
+  <meta name="description" content="null and nullable reference types, the warnings that catch null bugs, the operators ?. ?? and ??=, nullable value types like int?, tuples, and pattern…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Nullable Types and Pattern Matching · C# · Xenon">
+  <meta property="og:description" content="null and nullable reference types, the warnings that catch null bugs, the operators ?. ?? and ??=, nullable value types like int?, tuples, and pattern…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/2-05-nullable-types-and-pattern-matching/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nullable Types and Pattern Matching · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Nullable Types and Pattern Matching · C# · Xenon">
+  <meta name="twitter:description" content="null and nullable reference types, the warnings that catch null bugs, the operators ?. ?? and ??=, nullable value types like int?, tuples, and pattern…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Methods and Collections</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Nullable Types and Pattern Matching</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">null and nullable reference types, the warnings that catch null bugs, the operators ?. ?? and ??=, nullable value types like int?, tuples, and pattern matching with is, switch expressions, type, relational, logical, property and list patterns.</p>
+      <div class="prose">
+<h2>null</h2>
+<p>A reference-type variable can hold <strong>null</strong>: no object at all. Using a member of null throws <code>NullReferenceException</code>, one of the most common crashes in any program.</p>
+<p>Modern C# projects turn on <strong>nullable reference types</strong> (<code>&lt;Nullable&gt;enable&lt;/Nullable&gt;</code>, the default for new projects). Then <code>string</code> means &quot;never null&quot; and <code>string?</code> means &quot;may be null&quot;, and the compiler warns when you use a <code>string?</code> without checking:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">string</span>? middleName = <span class="tk-f">GetMiddleName</span>();
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(middleName.<span class="tk-t">Length</span>);     <span class="tk-c">// warning CS8602: Dereference of a possibly null reference.</span>
+<span class="tk-k">if</span> (middleName != <span class="tk-k">null</span>) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(middleName.<span class="tk-t">Length</span>);   <span class="tk-c">// fine: checked first</span></code></pre></div>
+<p>Treat these warnings as errors: each one is a possible crash.</p>
+<h2>Null operators</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">string</span>? name = <span class="tk-k">null</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(name?.<span class="tk-t">Length</span>);          <span class="tk-c">// ?. gives null instead of throwing (prints an empty line)</span>
+<span class="tk-k">int</span> length = name?.<span class="tk-t">Length</span> ?? <span class="tk-n">0</span>;           <span class="tk-c">// ?? supplies a fallback for null</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(length);
+name ??= <span class="tk-s">&quot;anonymous&quot;</span>;                     <span class="tk-c">// assign only if null</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(name);
+<span class="tk-k">string</span>[]? tags = <span class="tk-k">null</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(tags?[<span class="tk-n">0</span>] ?? <span class="tk-s">&quot;no tags&quot;</span>);</code></pre></div>
+<p>The <code>!</code> operator (<code>name!.Length</code>) tells the compiler &quot;this is not null&quot;; it changes nothing at run time, so use it only when you are sure.</p>
+<h2>Nullable value types</h2>
+<p>Value types cannot be null, unless you add <code>?</code>: <code>int?</code> holds an int or null. It suits &quot;no value yet&quot; or &quot;not given&quot;:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span>? score = <span class="tk-k">null</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(score.<span class="tk-t">HasValue</span>);
+score = <span class="tk-n">42</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(score.<span class="tk-t">Value</span> + <span class="tk-n">1</span>);
+<span class="tk-k">int</span>? missing = <span class="tk-k">null</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>((missing ?? -<span class="tk-n">1</span>) + <span class="tk-s">&quot; &quot;</span> + (missing + <span class="tk-n">5</span> == <span class="tk-k">null</span>));   <span class="tk-c">// arithmetic with null gives null</span></code></pre></div>
+<h2>Tuples</h2>
+<p>A <strong>tuple</strong> groups a few values without declaring a type, handy for returning several results:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> (min, max) = <span class="tk-f">MinMax</span>([<span class="tk-n">4</span>, <span class="tk-n">9</span>, <span class="tk-n">1</span>, <span class="tk-n">7</span>]);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{min} {max}&quot;</span>);
+(<span class="tk-k">string</span> <span class="tk-t">Name</span>, <span class="tk-k">int</span> <span class="tk-t">Age</span>) person = (<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(person.<span class="tk-t">Name</span>);
+
+<span class="tk-k">static</span> (<span class="tk-k">int</span> <span class="tk-t">Min</span>, <span class="tk-k">int</span> <span class="tk-t">Max</span>) <span class="tk-f">MinMax</span>(<span class="tk-k">int</span>[] values) =&gt; (values.<span class="tk-f">Min</span>(), values.<span class="tk-f">Max</span>());</code></pre></div>
+<h2>Pattern matching</h2>
+<p><code>is</code> tests a value against a <strong>pattern</strong>, and can capture it in a variable:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">object</span>[] things = [<span class="tk-n">42</span>, <span class="tk-s">&quot;hello&quot;</span>, <span class="tk-n">3.5</span>, <span class="tk-k">null</span>!, <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">int</span>&gt; { <span class="tk-n">1</span>, <span class="tk-n">2</span> }];
+<span class="tk-k">foreach</span> (<span class="tk-k">object</span> thing <span class="tk-k">in</span> things)
+{
+    <span class="tk-k">if</span> (thing <span class="tk-k">is</span> <span class="tk-k">int</span> n &amp;&amp; n &gt; <span class="tk-n">40</span>) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;a big int {n}&quot;</span>);
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (thing <span class="tk-k">is</span> <span class="tk-k">string</span> s) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;a string of length {s.Length}&quot;</span>);
+    <span class="tk-k">else</span> <span class="tk-k">if</span> (thing <span class="tk-k">is</span> <span class="tk-k">null</span>) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;null&quot;</span>);
+    <span class="tk-k">else</span> <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;something else: {thing.GetType().Name}&quot;</span>);
+}</code></pre></div>
+<p><strong>Switch expressions</strong> combine patterns into a value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Classify</span>(-<span class="tk-n">5</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Classify</span>(<span class="tk-n">0</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Classify</span>(<span class="tk-n">7</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Classify</span>(<span class="tk-n">150</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Shipping</span>(<span class="tk-k">new</span> <span class="tk-f">Order</span>(<span class="tk-n">30</span>, <span class="tk-s">&quot;NL&quot;</span>, <span class="tk-k">false</span>)));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Shipping</span>(<span class="tk-k">new</span> <span class="tk-f">Order</span>(<span class="tk-n">120</span>, <span class="tk-s">&quot;NL&quot;</span>, <span class="tk-k">false</span>)));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Shipping</span>(<span class="tk-k">new</span> <span class="tk-f">Order</span>(<span class="tk-n">10</span>, <span class="tk-s">&quot;US&quot;</span>, <span class="tk-k">true</span>)));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-f">Describe</span>([<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>]) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-f">Describe</span>([]) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-f">Describe</span>([<span class="tk-n">7</span>]));
+
+<span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Classify</span>(<span class="tk-k">int</span> n) =&gt; n <span class="tk-k">switch</span>
+{
+    &lt; <span class="tk-n">0</span> =&gt; <span class="tk-s">&quot;negative&quot;</span>,
+    <span class="tk-n">0</span> =&gt; <span class="tk-s">&quot;zero&quot;</span>,
+    &gt; <span class="tk-n">0</span> and &lt;= <span class="tk-n">100</span> =&gt; <span class="tk-s">&quot;small&quot;</span>,
+    _ =&gt; <span class="tk-s">&quot;large&quot;</span>,
+};
+
+<span class="tk-k">static</span> <span class="tk-k">decimal</span> <span class="tk-f">Shipping</span>(<span class="tk-t">Order</span> o) =&gt; o <span class="tk-k">switch</span>
+{
+    { <span class="tk-t">Express</span>: <span class="tk-k">true</span> } =&gt; <span class="tk-n">25m</span>,                       <span class="tk-c">// property pattern</span>
+    { <span class="tk-t">Total</span>: &gt;= <span class="tk-n">100</span> } =&gt; <span class="tk-n">0m</span>,
+    { <span class="tk-t">Country</span>: <span class="tk-s">&quot;NL&quot;</span> or <span class="tk-s">&quot;BE&quot;</span> } =&gt; <span class="tk-n">4.95m</span>,
+    _ =&gt; <span class="tk-n">12m</span>,
+};
+
+<span class="tk-k">static</span> <span class="tk-k">string</span> <span class="tk-f">Describe</span>(<span class="tk-k">int</span>[] xs) =&gt; xs <span class="tk-k">switch</span>
+{
+    [] =&gt; <span class="tk-s">&quot;empty&quot;</span>,
+    [<span class="tk-k">var</span> only] =&gt; <span class="tk-s">$&quot;one item {only}&quot;</span>,
+    [<span class="tk-k">var</span> first, .., <span class="tk-k">var</span> last] =&gt; <span class="tk-s">$&quot;from {first} to {last}&quot;</span>,   <span class="tk-c">// list pattern</span>
+};
+
+<span class="tk-k">record</span> <span class="tk-f">Order</span>(<span class="tk-k">decimal</span> <span class="tk-t">Total</span>, <span class="tk-k">string</span> <span class="tk-t">Country</span>, <span class="tk-k">bool</span> <span class="tk-t">Express</span>);</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Matches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>42</code>, <code>&quot;NL&quot;</code>, <code>null</code></td>
+<td>That constant</td>
+</tr>
+<tr>
+<td><code>int n</code>, <code>string s</code></td>
+<td>That type, captured in a variable</td>
+</tr>
+<tr>
+<td><code>&lt; 0</code>, <code>&gt;= 1 and &lt;= 5</code></td>
+<td>Relational, combined with <code>and</code>, <code>or</code>, <code>not</code></td>
+</tr>
+<tr>
+<td><code>{ Total: &gt;= 100 }</code></td>
+<td>Objects whose properties match</td>
+</tr>
+<tr>
+<td><code>[var a, .., var z]</code></td>
+<td>Arrays and lists by shape</td>
+</tr>
+<tr>
+<td><code>_</code></td>
+<td>Anything (the discard)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Arms are tried from top to bottom; the compiler warns when a switch expression does not cover every possible value, and when an arm can never be reached.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-linq/"><span class="mono">previous</span><b>2.04 LINQ</b></a>
+      <a class="lp-next" href="../3-01-classes-and-properties/"><span class="mono">next</span><b>3.01 Classes and Properties</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/2-05-nullable-types-and-pattern-matching"></script>
+</body>
+</html>

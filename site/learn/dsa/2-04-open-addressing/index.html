@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Open Addressing · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/2-04-open-addressing/">
+  <meta name="description" content="Hash tables that keep entries directly in the array - linear probing, why erasing needs tombstones (or backward-shift deletion), primary clustering and the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Open Addressing · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Hash tables that keep entries directly in the array - linear probing, why erasing needs tombstones (or backward-shift deletion), primary clustering and the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/2-04-open-addressing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Open Addressing · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Open Addressing · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Hash tables that keep entries directly in the array - linear probing, why erasing needs tombstones (or backward-shift deletion), primary clustering and the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Searching and Hashing</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Open Addressing</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Hash tables that keep entries directly in the array - linear probing, why erasing needs tombstones (or backward-shift deletion), primary clustering and the expected probe counts, quadratic probing and double hashing, keeping the load factor below about 0.7, Robin Hood hashing, and power-of-two tables with a mixing step.</p>
+      <div class="prose">
+<h2>No chains at all</h2>
+<p><strong>Open addressing</strong> stores every entry directly in the table&#39;s array. When a key&#39;s home slot is taken, the table <strong>probes</strong> other slots in a fixed order until it finds the key or an empty slot. There are no lists and no per-entry allocations, so the whole table is one contiguous block: cache-friendly and fast.</p>
+<h2>Linear probing</h2>
+<p>The simplest probe sequence tries the next slot, then the next, wrapping around at the end:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>slot = hash(key) % m,  then (slot + 1) % m,  (slot + 2) % m, ...</code></pre></div>
+<ul>
+<li><strong>find</strong>: probe from the home slot until you find the key (found) or an <strong>empty</strong> slot (not there).</li>
+<li><strong>insert</strong>: probe until you find the key (update it) or an empty slot (put it there).</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;optional&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">ProbingMap</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">ProbingMap</span>(std::size_t capacity) : <span class="tk-f">slots_</span>(capacity) {}
+
+    <span class="tk-k">void</span> <span class="tk-f">put</span>(<span class="tk-k">int</span> key, std::string value)
+    {
+        std::size_t i = <span class="tk-f">home</span>(key);
+        <span class="tk-k">while</span> (slots_[i] &amp;&amp; slots_[i]-&gt;key != key) i = (i + <span class="tk-n">1</span>) % slots_.<span class="tk-f">size</span>();
+        <span class="tk-k">if</span> (!slots_[i]) ++size_;
+        slots_[i] = <span class="tk-t">Entry</span>{ key, std::<span class="tk-f">move</span>(value) };
+    }
+
+    <span class="tk-k">const</span> std::string* <span class="tk-f">get</span>(<span class="tk-k">int</span> key) <span class="tk-k">const</span>
+    {
+        <span class="tk-k">for</span> (std::size_t i = <span class="tk-f">home</span>(key); slots_[i]; i = (i + <span class="tk-n">1</span>) % slots_.<span class="tk-f">size</span>())
+            <span class="tk-k">if</span> (slots_[i]-&gt;key == key) <span class="tk-k">return</span> &amp;slots_[i]-&gt;value;
+        <span class="tk-k">return</span> <span class="tk-k">nullptr</span>;
+    }
+
+    <span class="tk-k">void</span> <span class="tk-f">show</span>() <span class="tk-k">const</span>
+    {
+        <span class="tk-k">for</span> (std::size_t i = <span class="tk-n">0</span>; i &lt; slots_.<span class="tk-f">size</span>(); ++i)
+            std::cout &lt;&lt; i &lt;&lt; <span class="tk-s">&quot;: &quot;</span> &lt;&lt; (slots_[i] ? std::<span class="tk-f">to_string</span>(slots_[i]-&gt;key) + <span class="tk-s">&quot; &quot;</span> + slots_[i]-&gt;value : <span class="tk-s">&quot;-&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">struct</span> <span class="tk-t">Entry</span> { <span class="tk-k">int</span> key; std::string value; };
+    std::size_t <span class="tk-f">home</span>(<span class="tk-k">int</span> key) <span class="tk-k">const</span> { <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;std::size_t&gt;(key) % slots_.<span class="tk-f">size</span>(); }
+
+    std::vector&lt;std::optional&lt;<span class="tk-t">Entry</span>&gt;&gt; slots_;
+    std::size_t size_ = <span class="tk-n">0</span>;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">ProbingMap</span> <span class="tk-f">m</span>(<span class="tk-n">10</span>);                               <span class="tk-c">// a real table would grow; this one stays small to show the slots</span>
+    m.<span class="tk-f">put</span>(<span class="tk-n">12</span>, <span class="tk-s">&quot;a&quot;</span>);                                 <span class="tk-c">// home 2</span>
+    m.<span class="tk-f">put</span>(<span class="tk-n">22</span>, <span class="tk-s">&quot;b&quot;</span>);                                 <span class="tk-c">// home 2: taken, goes to 3</span>
+    m.<span class="tk-f">put</span>(<span class="tk-n">3</span>, <span class="tk-s">&quot;c&quot;</span>);                                  <span class="tk-c">// home 3: taken, goes to 4</span>
+    m.<span class="tk-f">put</span>(<span class="tk-n">19</span>, <span class="tk-s">&quot;d&quot;</span>);                                 <span class="tk-c">// home 9</span>
+    m.<span class="tk-f">put</span>(<span class="tk-n">29</span>, <span class="tk-s">&quot;e&quot;</span>);                                 <span class="tk-c">// home 9: taken, wraps to 0</span>
+    m.<span class="tk-f">show</span>();
+    std::cout &lt;&lt; <span class="tk-s">&quot;get(3) = &quot;</span> &lt;&lt; *m.<span class="tk-f">get</span>(<span class="tk-n">3</span>) &lt;&lt; <span class="tk-s">&quot;, get(32) found? &quot;</span> &lt;&lt; (m.<span class="tk-f">get</span>(<span class="tk-n">32</span>) != <span class="tk-k">nullptr</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p>Keys 22 and 3 never had the same home slot, yet 3 was pushed along by 22. Runs of occupied slots grow and merge: this is <strong>primary clustering</strong>, linear probing&#39;s weakness.</p>
+<h2>Deleting needs tombstones</h2>
+<p>You cannot simply empty a slot when erasing. In the table above, erasing 22 and leaving slot 3 empty would break <code>get(3)</code>: the key 3 has home slot 3, the probe finds that slot empty and stops, and wrongly concludes 3 is absent, although it sits one slot further on, in slot 4. Erasing 12 the same way would hide 22, and through it 3 as well.</p>
+<p>The usual fix is a <strong>tombstone</strong>: mark the slot &quot;deleted&quot;. Searches skip over tombstones (the key could be further along); inserts may reuse them. Tombstones count towards the load when deciding to rehash, and a rehash clears them all.</p>
+<p>Linear probing also allows <strong>backward-shift deletion</strong>: after emptying a slot, walk forward through the run and move back any entry whose home slot is at or before the hole. No tombstones are needed, at the cost of a slightly more complex erase.</p>
+<h2>How full can it get?</h2>
+<p>For linear probing with a good hash and load factor α (now at most 1, since each slot holds one entry), the expected number of probes is about:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>α</th>
+<th>Successful search</th>
+<th>Unsuccessful search or insert</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0.5</td>
+<td>1.5</td>
+<td>2.5</td>
+</tr>
+<tr>
+<td>0.7</td>
+<td>2.2</td>
+<td>6.1</td>
+</tr>
+<tr>
+<td>0.9</td>
+<td>5.5</td>
+<td>50.5</td>
+</tr>
+</tbody></table>
+</div>
+<p>(The formulas are ½(1 + 1/(1−α)) and ½(1 + 1/(1−α)²), from Knuth.) Performance falls off a cliff as the table fills, so open-addressing tables rehash at a load factor around <strong>0.5 to 0.875</strong>, depending on the design.</p>
+<h2>Other probe sequences</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Scheme</th>
+<th>Probe i</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Linear</td>
+<td><code>home + i</code></td>
+<td>Best cache behaviour; suffers primary clustering</td>
+</tr>
+<tr>
+<td>Quadratic</td>
+<td><code>home + i²</code> (or <code>+ (i + i²)/2</code>)</td>
+<td>Breaks up runs; with a power-of-two table and the triangular form, it visits every slot</td>
+</tr>
+<tr>
+<td>Double hashing</td>
+<td><code>home + i × h₂(key)</code></td>
+<td>A second hash sets each key&#39;s step; the least clustering, but each probe jumps in memory</td>
+</tr>
+</tbody></table>
+</div>
+<p>Modern high-performance tables mostly use linear probing (or probing in groups of 16 slots checked at once with SIMD instructions, as Abseil&#39;s and Boost&#39;s flat maps do), because the cache matters more than clustering.</p>
+<h2>Robin Hood hashing</h2>
+<p><strong>Robin Hood hashing</strong> is linear probing with one rule: during insertion, if the entry being inserted is further from its home slot than the entry occupying the current slot, they <strong>swap</strong>, and the insertion continues with the evicted entry. &quot;Take from the rich (close to home) and give to the poor (far from home).&quot; The variance of probe lengths drops sharply, and searches can stop early once they pass entries closer to home than the key would be.</p>
+<h2>Power-of-two tables</h2>
+<p>Computing <code>% m</code> is a slow division. Many tables use a power-of-two size and take <code>hash &amp; (m - 1)</code>, which keeps only the low bits. That only works if the low bits are well mixed, so such tables first scramble the hash, for example with a multiply by a large odd constant (Fibonacci hashing) or a few xor-shift-multiply steps:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdint&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+std::uint64_t <span class="tk-f">mix</span>(std::uint64_t x)              <span class="tk-c">// the finaliser of SplitMix64</span>
+{
+    x ^= x &gt;&gt; <span class="tk-n">30</span>; x *= <span class="tk-n">0xbf58476d1ce4e5b9ULL</span>;
+    x ^= x &gt;&gt; <span class="tk-n">27</span>; x *= <span class="tk-n">0x94d049bb133111ebULL</span>;
+    x ^= x &gt;&gt; <span class="tk-n">31</span>;
+    <span class="tk-k">return</span> x;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> std::uint64_t mask = <span class="tk-n">16</span> - <span class="tk-n">1</span>;               <span class="tk-c">// 16 slots</span>
+    std::cout &lt;&lt; <span class="tk-s">&quot;keys 0, 16, 32, 48 without mixing go to slots&quot;</span>;
+    <span class="tk-k">for</span> (std::uint64_t k : { <span class="tk-n">0</span>, <span class="tk-n">16</span>, <span class="tk-n">32</span>, <span class="tk-n">48</span> }) std::cout &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; (k &amp; mask);
+    std::cout &lt;&lt; <span class="tk-s">&quot;\nwith mixing:&quot;</span>;
+    <span class="tk-k">for</span> (std::uint64_t k : { <span class="tk-n">0</span>, <span class="tk-n">16</span>, <span class="tk-n">32</span>, <span class="tk-n">48</span> }) std::cout &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; (<span class="tk-f">mix</span>(k) &amp; mask);
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<p><code>std::hash&lt;int&gt;</code> on the major standard libraries simply returns the number itself, which is fine for <code>std::unordered_map</code> (prime bucket counts, or its own mixing) but would be a disaster in a power-of-two open-addressing table without a mixing step.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">In linear probing, why can&#39;t erase simply mark the slot empty?</div><ul><li>Empty slots are not allowed</li><li>A later search for a key that was pushed past this slot would stop at the gap and miss it</li><li>It would leak memory</li><li>The load factor would become negative</li></ul><details><summary>Show the answer</summary><p><b>A later search for a key that was pushed past this slot would stop at the gap and miss it</b> Searches stop at the first empty slot, so a hole breaks every probe sequence that ran through it.</p></details></li><li><div class="q">An open-addressing table has load factor 0.9. What happens?</div><ul><li>Nothing: it is still O(1) with a small constant</li><li>Unsuccessful searches and inserts need around 50 probes on average with linear probing</li><li>The table cannot accept any more entries</li><li>It switches to chaining automatically</li></ul><details><summary>Show the answer</summary><p><b>Unsuccessful searches and inserts need around 50 probes on average with linear probing</b> Probe counts grow like 1/(1-α)²; real tables rehash well before this.</p></details></li><li><div class="q">Why do many fast hash tables prefer linear probing despite primary clustering?</div><ul><li>Consecutive slots share cache lines, so a few extra probes cost almost nothing</li><li>Linear probing never has collisions</li><li>It needs no hash function</li><li>Quadratic probing does not work with integers</li></ul><details><summary>Show the answer</summary><p><b>Consecutive slots share cache lines, so a few extra probes cost almost nothing</b> Memory access, not probe count, dominates the cost on modern hardware.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>Open addressing stores entries in the array and probes for a free slot on collision.</li>
+<li>Linear probing is the most cache-friendly but clusters; quadratic probing and double hashing spread entries more.</li>
+<li>Erasing needs tombstones (or backward-shift deletion) so searches still work.</li>
+<li>Probe counts grow like 1/(1−α)²: keep the load factor well below 1.</li>
+<li>Robin Hood hashing evens out probe lengths; power-of-two tables need a mixing step.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-hash-tables-with-chaining/"><span class="mono">previous</span><b>2.03 Hash Tables with Chaining</b></a>
+      <a class="lp-next" href="../2-05-choosing-a-container/"><span class="mono">next</span><b>2.05 Choosing a Container</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/2-04-open-addressing"></script>
+</body>
+</html>

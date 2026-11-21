@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Linked Lists from Scratch · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/3-06-linked-lists-from-scratch/">
+  <meta name="description" content="A linked list stores each element in its own node, and each node points to the next. Inserting and removing anywhere is cheap, but finding anything means…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Linked Lists from Scratch · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A linked list stores each element in its own node, and each node points to the next. Inserting and removing anywhere is cheap, but finding anything means…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/3-06-linked-lists-from-scratch/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Linked Lists from Scratch · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Linked Lists from Scratch · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A linked list stores each element in its own node, and each node points to the next. Inserting and removing anywhere is cheap, but finding anything means…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Pointers, References and Data Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Linked Lists from Scratch</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.06</b></span><span>6 of 10 in milestone 3</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A <strong>linked list</strong> stores each element in its own node, and each node points to the next. Inserting and removing anywhere is cheap, but finding anything means following pointers one at a time. Building one by hand is the best practice there is for pointers, and it explains why games use them rarely and carefully.</p>
+      <div class="prose">
+<h2>Nodes and links</h2>
+<p>An array keeps its elements side by side. A linked list scatters them: each element sits in a separately allocated <strong>node</strong>, together with a pointer to the next node. The list itself only remembers the first node, the <strong>head</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> value;
+    <span class="tk-t">Node</span>* next;       <span class="tk-c">// nullptr in the last node</span>
+};</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    H[&quot;head&quot;] --&gt; A[&quot;value 7&lt;br/&gt;next&quot;]
+    A --&gt; B[&quot;value 3&lt;br/&gt;next&quot;]
+    B --&gt; C[&quot;value 9&lt;br/&gt;next = nullptr&quot;]</pre></div>
+<p>Walking the list means following <code>next</code> until it is null:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Node</span>
+{
+    <span class="tk-k">int</span> value;
+    <span class="tk-t">Node</span>* next;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Node</span> c{ <span class="tk-n">9</span>, <span class="tk-k">nullptr</span> };
+    <span class="tk-t">Node</span> b{ <span class="tk-n">3</span>, &amp;c };
+    <span class="tk-t">Node</span> a{ <span class="tk-n">7</span>, &amp;b };
+    <span class="tk-t">Node</span>* head{ &amp;a };
+
+    <span class="tk-k">for</span> (<span class="tk-t">Node</span>* n{ head }; n != <span class="tk-k">nullptr</span>; n = n-&gt;next)
+        std::cout &lt;&lt; n-&gt;value &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>7 3 9 </code></pre></div>
+<h2>Inserting</h2>
+<p>Adding at the front takes a constant amount of work, however long the list is: make a node, point it at the old head, make it the new head.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">pushFront</span>(<span class="tk-t">Node</span>*&amp; head, <span class="tk-k">int</span> value)
+{
+    head = <span class="tk-k">new</span> <span class="tk-t">Node</span>{ value, head };
+}</code></pre></div>
+<p>Inserting after a node you already have is just as cheap: two pointer writes, no elements moved. Compare an array, where inserting at the front means shifting every element along by one.</p>
+<h2>Removing, and the pointer-to-pointer trick</h2>
+<p>Removing a node means making whatever pointed at it point at its successor instead. The first node is pointed at by <code>head</code>; every other node is pointed at by the previous node&#39;s <code>next</code>. Treating those two cases separately is clumsy:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// Clumsy: a special case for the head.</span>
+<span class="tk-k">void</span> <span class="tk-f">removeFirstClumsy</span>(<span class="tk-t">Node</span>*&amp; head, <span class="tk-k">int</span> value)
+{
+    <span class="tk-k">if</span> (head &amp;&amp; head-&gt;value == value) { <span class="tk-t">Node</span>* dead{ head }; head = head-&gt;next; <span class="tk-k">delete</span> dead; <span class="tk-k">return</span>; }
+    <span class="tk-k">for</span> (<span class="tk-t">Node</span>* n{ head }; n &amp;&amp; n-&gt;next; n = n-&gt;next)
+        <span class="tk-k">if</span> (n-&gt;next-&gt;value == value) { <span class="tk-t">Node</span>* dead{ n-&gt;next }; n-&gt;next = dead-&gt;next; <span class="tk-k">delete</span> dead; <span class="tk-k">return</span>; }
+}</code></pre></div>
+<p>The neat way is to walk with a <strong>pointer to the link</strong> itself, a <code>Node**</code> (lesson 3.01). It starts at <code>&amp;head</code> and moves to <code>&amp;node-&gt;next</code>. Whichever link it holds, removing the node it points at is the same one line:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">removeFirst</span>(<span class="tk-t">Node</span>*&amp; head, <span class="tk-k">int</span> value)
+{
+    <span class="tk-k">for</span> (<span class="tk-t">Node</span>** link{ &amp;head }; *link != <span class="tk-k">nullptr</span>; link = &amp;(*link)-&gt;next)
+    {
+        <span class="tk-k">if</span> ((*link)-&gt;value == value)
+        {
+            <span class="tk-t">Node</span>* dead{ *link };
+            *link = dead-&gt;next;      <span class="tk-c">// whoever pointed at dead now skips it</span>
+            <span class="tk-k">delete</span> dead;
+            <span class="tk-k">return</span>;
+        }
+    }
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    H[&quot;head&quot;] --&gt; A[&quot;7&quot;]
+    A --&gt;|&quot;link points at this next&quot;| B[&quot;3 (dead)&quot;]
+    B --&gt; C[&quot;9&quot;]
+    A -.-&gt;|&quot;*link = dead-&gt;next&quot;| C</pre></div>
+<p>This is one of the few places where <code>**</code> makes code shorter and clearer, and it is a classic interview question. The practice task asks you to write it.</p>
+<h2>The cost: walking is slow</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Array / <code>std::vector</code></th>
+<th>Linked list</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Get element number <code>i</code></td>
+<td>One calculation</td>
+<td>Follow <code>i</code> pointers</td>
+</tr>
+<tr>
+<td>Insert or remove at the front</td>
+<td>Move every element</td>
+<td>Two pointer writes</td>
+</tr>
+<tr>
+<td>Insert or remove in the middle, given its position</td>
+<td>Move the elements after it</td>
+<td>Two pointer writes</td>
+</tr>
+<tr>
+<td>Loop over everything</td>
+<td>Walks memory in order</td>
+<td>Jumps around the heap: one cache miss per node, likely</td>
+</tr>
+<tr>
+<td>Extra memory</td>
+<td>None</td>
+<td>One pointer (8 bytes) per element, plus allocator overhead</td>
+</tr>
+</tbody></table>
+</div>
+<p>That last-but-one row usually decides it. Looping over a <code>std::vector&lt;int&gt;</code> of a million elements reads contiguous memory the processor can stream in. Looping over a list of a million nodes follows a million dependent pointers into scattered heap blocks (lesson 3.02&#39;s pointer chasing). In practice the vector is often ten times faster or more, even for workloads with many inserts, because shifting contiguous memory is so cheap.</p>
+<p>So the standard advice is: <strong>default to <code>std::vector</code></strong>. Use a list only when you have measured a reason.</p>
+<h2>Where lists do appear in games</h2>
+<ul>
+<li><strong>Intrusive lists</strong>: the <code>next</code> pointer lives inside an object that already exists for another reason, such as all the enemies in one grid cell of a spatial partition. No extra allocations, and an object can unlink itself in constant time.</li>
+<li><strong>Free lists</strong> in pools (lesson 3.10): unused slots point to the next unused slot, so allocating is &quot;take the head&quot;.</li>
+<li><strong>Engines&#39; own systems</strong>, such as lists of timers or render commands, often allocated from an arena so the nodes are close together anyway.</li>
+</ul>
+<p>The standard library has <code>std::list</code> (doubly linked) and <code>std::forward_list</code> (singly linked) if you need one.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Using a node after deleting it</span></div><div class="callout-body"><p>In <code>n = n-&gt;next</code> after <code>delete n</code>, the read is from freed memory. Save <code>next</code> first.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Losing the rest of the list</span></div><div class="callout-body"><p>Overwriting <code>head</code> before saving the old head leaks every node. Draw the arrows before writing the code.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Forgetting to free the nodes</span></div><div class="callout-body"><p>A list built with <code>new</code> needs a loop that deletes every node, or nodes owned by <code>std::unique_ptr</code>.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the cost of reading the 1000th element of a linked list?</div><ul><li>One memory read</li><li>Following 999 <code>next</code> pointers from the head</li><li>Sorting the list first</li></ul><details><summary>Show the answer</summary><p><b>Following 999 <code>next</code> pointers from the head</b> There is no index arithmetic: the only way to a node is through the ones before it.</p></details></li><li><div class="q">In <code>removeFirst</code>, why does <code>link</code> have type <code>Node**</code>?</div><ul><li>It points at the link (either <code>head</code> or some node&#39;s <code>next</code>) that may need to change</li><li>Because nodes are stored in a two-dimensional array</li><li>To make the function faster</li></ul><details><summary>Show the answer</summary><p><b>It points at the link (either <code>head</code> or some node&#39;s <code>next</code>) that may need to change</b> Changing a pointer requires its address. <code>*link = dead-&gt;next</code> updates whichever pointer pointed at the dead node.</p></details></li><li><div class="q">Why is a <code>std::vector</code> usually faster to loop over than a linked list with the same elements?</div><ul><li>Its elements are contiguous, so the processor reads them in order from cache; list nodes are scattered and each step depends on the last</li><li>Vectors use less memory per element because they compress values</li><li>Linked lists must be sorted</li></ul><details><summary>Show the answer</summary><p><b>Its elements are contiguous, so the processor reads them in order from cache; list nodes are scattered and each step depends on the last</b> Contiguous memory is streamed efficiently; pointer chasing waits on memory at every step.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/3.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/3.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-virtual-functions-and-vtables-in-memory/"><span class="mono">previous</span><b>3.05 Virtual Functions and Vtables in Memory</b></a>
+      <a class="lp-next" href="../3-07-how-std-vector-really-works/"><span class="mono">next</span><b>3.07 How std::vector Really Works</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/3-06-linked-lists-from-scratch"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

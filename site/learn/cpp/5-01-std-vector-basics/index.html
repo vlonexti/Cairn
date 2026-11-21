@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>std::vector Basics · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/5-01-std-vector-basics/">
+  <meta name="description" content="std::vector&lt;T is a resizable list of elements stored side by side in memory. Reach elements with v[i] (fast, unchecked) or v.at(i) (checked). It is the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="std::vector Basics · C++ · Xenon">
+  <meta property="og:description" content="std::vector&lt;T is a resizable list of elements stored side by side in memory. Reach elements with v[i] (fast, unchecked) or v.at(i) (checked). It is the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/5-01-std-vector-basics/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="std::vector Basics · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="std::vector Basics · C++ · Xenon">
+  <meta name="twitter:description" content="std::vector&lt;T is a resizable list of elements stored side by side in memory. Reach elements with v[i] (fast, unchecked) or v.at(i) (checked). It is the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Containers and Algorithms</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">std::vector Basics</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 11 in milestone 5</span><span>5 min</span><span><b>4</b> practice tasks</span></div>
+      <p class="lp-summary"><code>std::vector&lt;T&gt;</code> is a <strong>resizable list</strong> of elements stored side by side in memory. Reach elements with <code>v[i]</code> (fast, unchecked) or <code>v.at(i)</code> (checked). It is the container to reach for first.</p>
+      <div class="prose">
+<h2>Many values of one type</h2>
+<p>A program that handles a hundred scores does not want a hundred variables. A <strong>container</strong> holds a collection of values under one name, and <code>std::vector</code> is the standard general-purpose one.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;vector&gt;</span>
+
+std::vector&lt;<span class="tk-k">int</span>&gt; scores{ <span class="tk-n">90</span>, <span class="tk-n">72</span>, <span class="tk-n">85</span>, <span class="tk-n">64</span> };</code></pre></div>
+<div class="codeblock diagram plain"><pre><code> index:     0      1      2      3
+         ┌──────┬──────┬──────┬──────┐
+ scores: │  90  │  72  │  85  │  64  │     scores.size() is 4
+         └──────┴──────┴──────┴──────┘</code></pre></div>
+<p>The type in angle brackets is the <strong>element type</strong>. <code>std::vector</code> is a template (<a href="../4-02-function-templates/">4.02 Function Templates</a>), which is why one container works for any type.</p>
+<p>The elements sit next to each other in one block of memory. They are <strong>contiguous</strong>, and that is what makes a vector fast: the address of element <code>i</code> is a single calculation, and the processor reads neighbouring memory quickly.</p>
+<h2>Creating a vector</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::vector&lt;int&gt; a{};</code></td>
+<td>Empty</td>
+</tr>
+<tr>
+<td><code>std::vector&lt;int&gt; b{ 1, 2, 3 };</code></td>
+<td>Three elements: 1, 2, 3</td>
+</tr>
+<tr>
+<td><code>std::vector&lt;int&gt; c(5);</code></td>
+<td>Five elements, all 0</td>
+</tr>
+<tr>
+<td><code>std::vector&lt;int&gt; d(5, 7);</code></td>
+<td>Five elements, all 7</td>
+</tr>
+<tr>
+<td><code>std::vector e{ 1.5, 2.5 };</code></td>
+<td>Element type deduced: <code>std::vector&lt;double&gt;</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout warning"><div class="callout-title"><span>Braces and parentheses mean different things here</span></div><div class="callout-body"><p><code>std::vector&lt;int&gt; v{ 5 };</code> is <strong>one</strong> element with the value 5.
+<code>std::vector&lt;int&gt; v(5);</code> is <strong>five</strong> elements, all zero.
+Braces list the contents. Parentheses give a count. This is the one place in the course where you must use parentheses on purpose.</p>
+</div></div>
+<h2>Reaching the elements</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+<th>If the index is out of range</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>v[i]</code></td>
+<td>Element <code>i</code></td>
+<td>Undefined behaviour: no check is made</td>
+</tr>
+<tr>
+<td><code>v.at(i)</code></td>
+<td>Element <code>i</code></td>
+<td>Throws a <code>std::out_of_range</code> error</td>
+</tr>
+<tr>
+<td><code>v.front()</code></td>
+<td>The first element</td>
+<td>Undefined behaviour if empty</td>
+</tr>
+<tr>
+<td><code>v.back()</code></td>
+<td>The last element</td>
+<td>Undefined behaviour if empty</td>
+</tr>
+<tr>
+<td><code>v.size()</code></td>
+<td>The number of elements</td>
+<td></td>
+</tr>
+<tr>
+<td><code>v.empty()</code></td>
+<td>Whether the size is 0</td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<p>Valid indexes run from <code>0</code> to <code>v.size() - 1</code>.</p>
+<blockquote><p>[!tip] Xenon&#39;s Debug build checks <code>v[i]</code> for you
+In a Debug build the standard library verifies indexes and stops the program with a clear message. In Release that check is gone, so the habit of staying in range has to be yours.</p>
+</blockquote>
+<h2>Adding and removing</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; v{ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> };
+    v.<span class="tk-f">push_back</span>(<span class="tk-n">4</span>);             <span class="tk-c">// 1 2 3 4</span>
+    v.<span class="tk-f">pop_back</span>();               <span class="tk-c">// 1 2 3</span>
+    v.<span class="tk-f">insert</span>(v.<span class="tk-f">begin</span>(), <span class="tk-n">0</span>);     <span class="tk-c">// 0 1 2 3</span>
+    v.<span class="tk-f">erase</span>(v.<span class="tk-f">begin</span>() + <span class="tk-n">1</span>);     <span class="tk-c">// 0 2 3</span>
+    v.<span class="tk-f">resize</span>(<span class="tk-n">5</span>);                <span class="tk-c">// 0 2 3 0 0</span>
+    std::cout &lt;&lt; v.<span class="tk-f">size</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    v.<span class="tk-f">clear</span>();                  <span class="tk-c">// empty</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Effect</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>push_back(x)</code></td>
+<td>Add at the end</td>
+<td>Fast</td>
+</tr>
+<tr>
+<td><code>pop_back()</code></td>
+<td>Remove the last</td>
+<td>Fast</td>
+</tr>
+<tr>
+<td><code>insert(position, x)</code></td>
+<td>Insert before a position</td>
+<td>Slow in the middle: every later element shifts along</td>
+</tr>
+<tr>
+<td><code>erase(position)</code></td>
+<td>Remove at a position</td>
+<td>Slow in the middle, for the same reason</td>
+</tr>
+<tr>
+<td><code>resize(n)</code></td>
+<td>Change the size to <code>n</code></td>
+<td>Adds default values or drops the tail</td>
+</tr>
+<tr>
+<td><code>clear()</code></td>
+<td>Remove everything</td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<p><code>v.begin()</code> is the position of the first element, so <code>v.begin() + 1</code> is the position of index 1. Positions like these are <strong>iterators</strong>, covered in <a href="../5-06-iterators-and-stl-algorithms/">5.06 Iterators and STL Algorithms</a>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;1 2 3&quot;] --&gt;|&quot;push_back(4)&quot;| B[&quot;1 2 3 4&quot;]
+    B --&gt;|&quot;pop_back()&quot;| C[&quot;1 2 3&quot;]
+    C --&gt;|&quot;insert(begin, 0)&quot;| D[&quot;0 1 2 3&quot;]</pre></div>
+<h2>Vectors and functions</h2>
+<p>A vector may hold millions of elements. Passing it by value copies all of them.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">double</span> <span class="tk-f">average</span>(<span class="tk-k">const</span> std::vector&lt;<span class="tk-k">int</span>&gt;&amp; v)    <span class="tk-c">// reads: const reference</span>
+{
+    <span class="tk-k">if</span> (v.<span class="tk-f">empty</span>())
+    {
+        <span class="tk-k">return</span> <span class="tk-n">0.0</span>;
+    }
+    <span class="tk-k">int</span> sum{ <span class="tk-n">0</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : v)
+    {
+        sum += x;
+    }
+    <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;<span class="tk-k">double</span>&gt;(sum) / <span class="tk-k">static_cast</span>&lt;<span class="tk-k">double</span>&gt;(v.<span class="tk-f">size</span>());
+}
+
+<span class="tk-k">void</span> <span class="tk-f">addBonus</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; v, <span class="tk-k">int</span> bonus)    <span class="tk-c">// modifies: reference</span>
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span>&amp; x : v)
+    {
+        x += bonus;
+    }
+}
+
+std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">makeRange</span>(<span class="tk-k">int</span> n)    <span class="tk-c">// creates: return by value</span>
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; result{};
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; n; ++i)
+    {
+        result.<span class="tk-f">push_back</span>(i);
+    }
+    <span class="tk-k">return</span> result;
+}</code></pre></div>
+<p>Returning a vector by value is cheap: the contents are handed over, not copied. The mechanism is explained in <a href="../7-05-move-semantics/">7.05 Move Semantics</a>.</p>
+<h2>Vectors of structs</h2>
+<p>The element type can be anything, including your own types.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Item</span>
+{
+    std::string name{};
+    <span class="tk-k">double</span> price{};
+};
+
+std::vector&lt;<span class="tk-t">Item</span>&gt; cart{ { <span class="tk-s">&quot;Milk&quot;</span>, <span class="tk-n">1.99</span> }, { <span class="tk-s">&quot;Bread&quot;</span>, <span class="tk-n">2.49</span> } };
+cart.<span class="tk-f">push_back</span>({ <span class="tk-s">&quot;Eggs&quot;</span>, <span class="tk-n">3.10</span> });
+std::cout &lt;&lt; cart[<span class="tk-n">2</span>].name &lt;&lt; <span class="tk-s">'\n'</span>;    <span class="tk-c">// Eggs</span></code></pre></div>
+<p>A vector of structs is the workhorse data structure of most programs.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>4 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-07-auto-type-deduction-and-type-aliases/"><span class="mono">previous</span><b>4.07 auto, Type Deduction and Type Aliases</b></a>
+      <a class="lp-next" href="../5-02-looping-over-containers/"><span class="mono">next</span><b>5.02 Looping Over Containers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/5-01-std-vector-basics"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

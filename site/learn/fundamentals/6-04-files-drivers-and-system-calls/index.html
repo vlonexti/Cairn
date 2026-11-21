@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Files, Drivers and System Calls · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/6-04-files-drivers-and-system-calls/">
+  <meta name="description" content="A disk only stores numbered blocks; the file system turns them into named files in folders. Drivers let the kernel talk to each kind of device. Programs…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Files, Drivers and System Calls · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="A disk only stores numbered blocks; the file system turns them into named files in folders. Drivers let the kernel talk to each kind of device. Programs…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/6-04-files-drivers-and-system-calls/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Files, Drivers and System Calls · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Files, Drivers and System Calls · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="A disk only stores numbered blocks; the file system turns them into named files in folders. Drivers let the kernel talk to each kind of device. Programs…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Operating Systems and Modern Computers</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Files, Drivers and System Calls</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 6 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A disk only stores numbered blocks; the file system turns them into named files in folders. Drivers let the kernel talk to each kind of device. Programs reach both through system calls - open, read, write, close - and running a program is itself a system call that loads an executable file into a new process.</p>
+      <div class="prose">
+<h2>Disks store blocks, not files</h2>
+<p>An SSD or hard drive only knows how to store and fetch <strong>blocks</strong>: fixed-size chunks (often 4 KiB) with numbers, 0, 1, 2, and so on. It has no idea what a file or a folder is.</p>
+<p>The <strong>file system</strong> is the kernel&#39;s way of organising blocks into files:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>It keeps track of</th>
+<th>So that</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Which blocks hold each file&#39;s bytes</td>
+<td>a file can be spread over many blocks, anywhere on the disk</td>
+</tr>
+<tr>
+<td>Each file&#39;s name, size, dates and permissions</td>
+<td><code>ls -l</code> or Explorer can show them</td>
+</tr>
+<tr>
+<td>Folders (directories), which are lists of names</td>
+<td>paths like <code>/home/ada/notes.txt</code> or <code>C:\Users\Ada\notes.txt</code> can be followed</td>
+</tr>
+<tr>
+<td>Which blocks are free</td>
+<td>new files can be written</td>
+</tr>
+</tbody></table>
+</div>
+<p>Common file systems: <strong>NTFS</strong> (Windows), <strong>APFS</strong> (macOS), <strong>ext4</strong> (Linux), <strong>FAT32</strong> and <strong>exFAT</strong> (USB sticks and memory cards, readable everywhere).</p>
+<p>Deleting a file usually just marks its blocks as free; the bytes stay until something overwrites them, which is why deleted files can sometimes be recovered.</p>
+<h2>Drivers</h2>
+<p>Every model of disk, graphics card, Wi-Fi chip or printer is controlled differently. A <strong>driver</strong> is the piece of kernel-mode code that knows how to talk to one kind of device and presents it to the rest of the kernel in a standard way. Install a new graphics card and you install its driver; the kernel and every app then use it through the same interface as any other.</p>
+<h2>System calls: the programmer&#39;s door</h2>
+<p>Programs reach files, devices and everything else through <strong>system calls</strong>. On Linux, a few of the most used:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Number (x86-64)</th>
+<th>Name</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td><code>read</code></td>
+<td>read bytes from an open file or device</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>write</code></td>
+<td>write bytes</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>open</code></td>
+<td>open a file by name, get back a small number: a <strong>file descriptor</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>close</code></td>
+<td>close it</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>mmap</code></td>
+<td>map memory pages into the process</td>
+</tr>
+<tr>
+<td>57</td>
+<td><code>fork</code></td>
+<td>make a copy of this process</td>
+</tr>
+<tr>
+<td>59</td>
+<td><code>execve</code></td>
+<td>replace this process&#39;s program with another</td>
+</tr>
+<tr>
+<td>60</td>
+<td><code>exit</code></td>
+<td>end the process</td>
+</tr>
+</tbody></table>
+</div>
+<p>A <strong>file descriptor</strong> is just a number the kernel gives back to name an open file. Every process starts with three already open: <strong>0</strong> is standard input, <strong>1</strong> standard output, <strong>2</strong> standard error. That is why <code>write(1, ...)</code> prints (5.06): standard output is just file 1, and it might be a terminal, a file, or a pipe to another program - the program does not need to know which.</p>
+<p>Windows has the same ideas with different names (<code>CreateFile</code>, <code>ReadFile</code>, <code>WriteFile</code>, handles instead of descriptors), and programs normally reach them through Windows&#39; own libraries rather than raw system call numbers.</p>
+<p>In Python, <code>open</code>, <code>read</code> and <code>write</code> are thin wrappers around these calls:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">with</span> <span class="tk-f">open</span>(<span class="tk-s">&quot;notes.txt&quot;</span>, <span class="tk-s">&quot;w&quot;</span>) <span class="tk-k">as</span> f:     <span class="tk-c"># open(): a system call; the kernel gives back a descriptor</span>
+    f.<span class="tk-f">write</span>(<span class="tk-s">&quot;first line\n&quot;</span>)           <span class="tk-c"># write(): copies bytes into the file system</span>
+<span class="tk-k">with</span> <span class="tk-f">open</span>(<span class="tk-s">&quot;notes.txt&quot;</span>) <span class="tk-k">as</span> f:
+    <span class="tk-f">print</span>(f.<span class="tk-f">read</span>(), end=<span class="tk-s">&quot;&quot;</span>)           <span class="tk-c"># read() from the file, then write() to descriptor 1</span></code></pre></div>
+<h2>Running a program</h2>
+<p>Starting a program is a system call too. On Linux, a shell runs <code>python3 main.py</code> like this:</p>
+<ol>
+<li><code>fork</code>: copy the shell&#39;s process. Now there are two.</li>
+<li>In the copy, <code>execve(&quot;/usr/bin/python3&quot;, ...)</code>: the kernel reads the executable file (an ELF file, 3.05), sets up fresh virtual memory (6.03), maps the code and data into it, sets the program counter to the program&#39;s entry point, and lets the scheduler (6.02) run it.</li>
+<li>The original shell waits until the new process calls <code>exit</code>, then prints its prompt again.</li>
+</ol>
+<p>Windows does the equivalent in one call (<code>CreateProcess</code>). Either way, the operating system turns a file of bytes into a running process.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does a disk itself know about files?</div><ul><li>Nothing: it stores numbered blocks; the file system organises them into files and folders</li><li>It keeps a list of file names</li><li>It stores one file per block</li></ul><details><summary>Show the answer</summary><p><b>Nothing: it stores numbered blocks; the file system organises them into files and folders</b> The file system is kernel software that tracks which blocks belong to which file.</p></details></li><li><div class="q">What is file descriptor 1?</div><ul><li>The first file you opened</li><li>Standard output</li><li>Standard input</li></ul><details><summary>Show the answer</summary><p><b>Standard output</b> 0 is standard input, 1 standard output, 2 standard error.</p></details></li><li><div class="q">What does a driver do?</div><ul><li>Lets the kernel control one kind of device through a standard interface</li><li>Drives the computer&#39;s fan</li><li>Runs apps faster</li></ul><details><summary>Show the answer</summary><p><b>Lets the kernel control one kind of device through a standard interface</b> Every device model speaks differently; its driver translates.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-virtual-memory/"><span class="mono">previous</span><b>6.03 Virtual Memory</b></a>
+      <a class="lp-next" href="../6-05-booting-from-power-button-to-desktop/"><span class="mono">next</span><b>6.05 Booting: From Power Button to Desktop</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/6-04-files-drivers-and-system-calls"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Networking course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/">
+  <meta name="description" content="From packets and sockets to HTTP, packet captures and multiplayer games. How computers talk across networks, and how to write programs that do it: layers and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Networking course · Xenon">
+  <meta property="og:description" content="From packets and sockets to HTTP, packet captures and multiplayer games. How computers talk across networks, and how to write programs that do it: layers and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Networking course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Networking course · Xenon">
+  <meta name="twitter:description" content="From packets and sockets to HTTP, packet captures and multiplayer games. How computers talk across networks, and how to write programs that do it: layers and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Networking</span></div>
+    <h1 class="display">Networking</h1>
+    <div class="readout lp-readout"><span><b>6</b> milestones</span><span><b>30</b> lessons</span><span><b>30</b> practice tasks</span><span><b>30</b> projects</span></div>
+    <p class="lp-lede">How computers talk across networks, and how to write programs that do it: layers and packets, IP addresses and subnets, DNS, TCP and UDP, routing, the socket API, byte order, serving many connections, HTTP by hand, URLs, a tiny web server and what TLS does, capturing and decoding packets from Ethernet up, reliable messaging over UDP with sequence numbers and acknowledgements, and the techniques behind multiplayer games: snapshots, delta compression, interpolation, client-side prediction and lag compensation. It assumes the C++ course.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-layers-and-packets/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/networking">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> How Networks Work</h2>
+      <p class="lp-ms-blurb">Layers and packets, IP addresses, subnets and NAT, DNS, what TCP and UDP promise, and how routing gets a packet across the world.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-layers-and-packets/"><span class="mono">1.01</span><span class="t">Layers and Packets</span><span class="n">1 task</span></a></li>
+        <li><a href="1-02-addresses-subnets-and-nat/"><span class="mono">1.02</span><span class="t">Addresses, Subnets and NAT</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-dns/"><span class="mono">1.03</span><span class="t">DNS</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-tcp-and-udp/"><span class="mono">1.04</span><span class="t">TCP and UDP</span><span class="n">1 task</span></a></li>
+        <li><a href="1-05-routing/"><span class="mono">1.05</span><span class="t">Routing</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Sockets</h2>
+      <p class="lp-ms-blurb">The socket API, a TCP client and server, partial sends and receives, network byte order and packet layouts, serving many connections with an event loop, and UDP.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-the-socket-api/"><span class="mono">2.01</span><span class="t">The Socket API</span><span class="n">1 task</span></a></li>
+        <li><a href="2-02-a-tcp-client-and-server/"><span class="mono">2.02</span><span class="t">A TCP Client and Server</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-byte-order-and-packet-layouts/"><span class="mono">2.03</span><span class="t">Byte Order and Packet Layouts</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-serving-many-connections/"><span class="mono">2.04</span><span class="t">Serving Many Connections</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-udp-sockets/"><span class="mono">2.05</span><span class="t">UDP Sockets</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> HTTP by Hand</h2>
+      <p class="lp-ms-blurb">How HTTP works, parsing requests and responses including chunked bodies, URLs and percent-encoding, a tiny web server that cannot be tricked into serving other files, and what TLS adds.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-how-http-works/"><span class="mono">3.01</span><span class="t">How HTTP Works</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-parsing-http-messages/"><span class="mono">3.02</span><span class="t">Parsing HTTP Messages</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-urls-and-encoding/"><span class="mono">3.03</span><span class="t">URLs and Encoding</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-a-tiny-web-server/"><span class="mono">3.04</span><span class="t">A Tiny Web Server</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-https-and-tls/"><span class="mono">3.05</span><span class="t">HTTPS and TLS</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Capturing and Reading Packets</h2>
+      <p class="lp-ms-blurb">Packet capture with Wireshark, the pcap file format, Ethernet, IPv4 and IPv6, TCP and UDP headers and checksums, following a TCP conversation, and reading DNS and TLS inside captures.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-packet-capture/"><span class="mono">4.01</span><span class="t">Packet Capture</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-ethernet-and-ip-headers/"><span class="mono">4.02</span><span class="t">Ethernet and IP Headers</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-tcp-and-udp-headers/"><span class="mono">4.03</span><span class="t">TCP and UDP Headers</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-following-a-tcp-conversation/"><span class="mono">4.04</span><span class="t">Following a TCP Conversation</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-reading-protocols-in-captures/"><span class="mono">4.05</span><span class="t">Reading Protocols in Captures</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Reliability over UDP</h2>
+      <p class="lp-ms-blurb">Why games use UDP, sequence numbers that wrap around, acknowledgement bitfields, round-trip time estimates, resending what matters, and fragmentation and bandwidth.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-why-games-use-udp/"><span class="mono">5.01</span><span class="t">Why Games Use UDP</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-sequence-numbers-that-wrap/"><span class="mono">5.02</span><span class="t">Sequence Numbers That Wrap</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-acknowledgement-bitfields/"><span class="mono">5.03</span><span class="t">Acknowledgement Bitfields</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-round-trips-and-resending/"><span class="mono">5.04</span><span class="t">Round Trips and Resending</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-fragmentation-and-bandwidth/"><span class="mono">5.05</span><span class="t">Fragmentation and Bandwidth</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Multiplayer Games</h2>
+      <p class="lp-ms-blurb">The authoritative server and its tick, snapshots and delta compression, interpolation, client-side prediction and reconciliation, and lag compensation.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-the-authoritative-server/"><span class="mono">6.01</span><span class="t">The Authoritative Server</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-snapshots-and-delta-compression/"><span class="mono">6.02</span><span class="t">Snapshots and Delta Compression</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-interpolation/"><span class="mono">6.03</span><span class="t">Interpolation</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-prediction-and-reconciliation/"><span class="mono">6.04</span><span class="t">Prediction and Reconciliation</span><span class="n">1 task</span></a></li>
+        <li><a href="6-05-lag-compensation/"><span class="mono">6.05</span><span class="t">Lag Compensation</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking"></script>
+</body>
+</html>

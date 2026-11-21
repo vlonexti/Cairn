@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Virtual Functions and Vtables in Memory · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/3-05-virtual-functions-and-vtables-in-memory/">
+  <meta name="description" content="A virtual call picks the function to run from the object's real type, at run time. Compilers do it with a vtable : a table of function pointers, one per…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Virtual Functions and Vtables in Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A virtual call picks the function to run from the object's real type, at run time. Compilers do it with a vtable : a table of function pointers, one per…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/3-05-virtual-functions-and-vtables-in-memory/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Virtual Functions and Vtables in Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Virtual Functions and Vtables in Memory · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A virtual call picks the function to run from the object's real type, at run time. Compilers do it with a vtable : a table of function pointers, one per…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Pointers, References and Data Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Virtual Functions and Vtables in Memory</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 10 in milestone 3</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A <code>virtual</code> call picks the function to run from the object&#39;s real type, at run time. Compilers do it with a <strong>vtable</strong>: a table of function pointers, one per class, and a hidden <strong>vptr</strong> in every object pointing at its class&#39;s table. This lesson shows the layout, walks through a virtual call step by step, and explains what it costs.</p>
+      <div class="prose">
+<h2>The problem virtual functions solve</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Entity</span>
+{
+    <span class="tk-k">virtual</span> ~<span class="tk-f">Entity</span>() = <span class="tk-k">default</span>;
+    <span class="tk-k">virtual</span> <span class="tk-k">void</span> <span class="tk-f">update</span>() { std::cout &lt;&lt; <span class="tk-s">&quot;entity idles\n&quot;</span>; }
+    <span class="tk-k">virtual</span> <span class="tk-k">int</span> <span class="tk-f">damage</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> <span class="tk-n">0</span>; }
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">Goblin</span> : <span class="tk-t">Entity</span>
+{
+    <span class="tk-k">void</span> <span class="tk-f">update</span>() <span class="tk-k">override</span> { std::cout &lt;&lt; <span class="tk-s">&quot;goblin sneaks\n&quot;</span>; }
+    <span class="tk-k">int</span> <span class="tk-f">damage</span>() <span class="tk-k">const</span> <span class="tk-k">override</span> { <span class="tk-k">return</span> <span class="tk-n">4</span>; }
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">Dragon</span> : <span class="tk-t">Entity</span>
+{
+    <span class="tk-k">void</span> <span class="tk-f">update</span>() <span class="tk-k">override</span> { std::cout &lt;&lt; <span class="tk-s">&quot;dragon breathes fire\n&quot;</span>; }
+    <span class="tk-k">int</span> <span class="tk-f">damage</span>() <span class="tk-k">const</span> <span class="tk-k">override</span> { <span class="tk-k">return</span> <span class="tk-n">40</span>; }
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;std::unique_ptr&lt;<span class="tk-t">Entity</span>&gt;&gt; world;
+    world.<span class="tk-f">push_back</span>(std::make_unique&lt;<span class="tk-t">Goblin</span>&gt;());
+    world.<span class="tk-f">push_back</span>(std::make_unique&lt;<span class="tk-t">Dragon</span>&gt;());
+    world.<span class="tk-f">push_back</span>(std::make_unique&lt;<span class="tk-t">Entity</span>&gt;());
+
+    <span class="tk-k">int</span> total{ <span class="tk-n">0</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; e : world)
+    {
+        e-&gt;<span class="tk-f">update</span>();               <span class="tk-c">// which update? decided by the object, at run time</span>
+        total += e-&gt;<span class="tk-f">damage</span>();
+    }
+    std::cout &lt;&lt; <span class="tk-s">&quot;total damage &quot;</span> &lt;&lt; total &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>goblin sneaks
+dragon breathes fire
+entity idles
+total damage 44</code></pre></div>
+<p>The loop only knows it has an <code>Entity*</code>. The compiler cannot know, when it compiles <code>e-&gt;update()</code>, which function to call: that depends on the object at run time. So it cannot emit <code>call Goblin::update</code>. It needs a way to look the function up.</p>
+<h2>One table per class, one pointer per object</h2>
+<p>For every class with virtual functions, the compiler builds a <strong>vtable</strong>: an array of function pointers, one slot per virtual function, stored in the read-only <code>.rdata</code> section. Every object of that class gets a hidden first member, the <strong>vptr</strong>, holding the address of its class&#39;s vtable. The constructor sets it.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph OBJ[&quot;Objects (heap)&quot;]
+        G[&quot;Goblin object&lt;br/&gt;+0 vptr&lt;br/&gt;+8 data...&quot;]
+        D[&quot;Dragon object&lt;br/&gt;+0 vptr&lt;br/&gt;+8 data...&quot;]
+        G2[&quot;another Goblin&lt;br/&gt;+0 vptr&quot;]
+    end
+    subgraph VT[&quot;Vtables (.rdata)&quot;]
+        GV[&quot;Goblin vtable&lt;br/&gt;[0] ~Goblin&lt;br/&gt;[1] Goblin::update&lt;br/&gt;[2] Goblin::damage&quot;]
+        DV[&quot;Dragon vtable&lt;br/&gt;[0] ~Dragon&lt;br/&gt;[1] Dragon::update&lt;br/&gt;[2] Dragon::damage&quot;]
+    end
+    G --&gt; GV
+    G2 --&gt; GV
+    D --&gt; DV</pre></div>
+<p>Every <code>Goblin</code> shares the one Goblin vtable. Slots are in the order the virtual functions were first declared in the base class, so <code>update</code> is in the same slot in every class&#39;s table. That is the key: the caller knows the <strong>slot number</strong> at compile time, even though it does not know the class.</p>
+<h2>A virtual call, step by step</h2>
+<p><code>e-&gt;update()</code> compiles to roughly this (MSVC x64, with <code>e</code> in <code>rcx</code>):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>mov  <span class="tk-t">rax</span>, <span class="tk-k">QWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rcx</span>]        <span class="tk-c">; 1. read the vptr from offset 0 of the object</span>
+call <span class="tk-k">QWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rax</span>+<span class="tk-n">8</span>]           <span class="tk-c">; 2. read slot 1 of the vtable, and call that address</span></code></pre></div>
+<ol>
+<li>Load the vptr from the object.</li>
+<li>Load the function pointer from the vtable at <code>slot × 8</code>. Here slot 1, offset 8, because slot 0 holds the destructor.</li>
+<li>Call it, with the object&#39;s address still in <code>rcx</code> as <code>this</code>.</li>
+</ol>
+<p>Two memory reads and an indirect call. That is all &quot;dynamic dispatch&quot; is.</p>
+<h2>Seeing the vptr</h2>
+<p>The vptr is ordinary memory. Implementation details like this should never be relied on in real code, but looking at them once makes the idea concrete:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdint&gt;</span>
+<span class="tk-p">#include &lt;cstring&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Entity</span> { <span class="tk-k">virtual</span> ~<span class="tk-f">Entity</span>() = <span class="tk-k">default</span>; <span class="tk-k">virtual</span> <span class="tk-k">int</span> <span class="tk-f">damage</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> <span class="tk-n">0</span>; } };
+<span class="tk-k">struct</span> <span class="tk-t">Goblin</span> : <span class="tk-t">Entity</span> { <span class="tk-k">int</span> <span class="tk-f">damage</span>() <span class="tk-k">const</span> <span class="tk-k">override</span> { <span class="tk-k">return</span> <span class="tk-n">4</span>; } };
+<span class="tk-k">struct</span> <span class="tk-t">Dragon</span> : <span class="tk-t">Entity</span> { <span class="tk-k">int</span> <span class="tk-f">damage</span>() <span class="tk-k">const</span> <span class="tk-k">override</span> { <span class="tk-k">return</span> <span class="tk-n">40</span>; } };
+
+std::uintptr_t <span class="tk-f">vptrOf</span>(<span class="tk-k">const</span> <span class="tk-k">void</span>* object)
+{
+    std::uintptr_t vptr{};
+    std::<span class="tk-f">memcpy</span>(&amp;vptr, object, <span class="tk-k">sizeof</span> vptr);    <span class="tk-c">// the first 8 bytes of the object</span>
+    <span class="tk-k">return</span> vptr;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Goblin</span> a, b;
+    <span class="tk-t">Dragon</span> c;
+    std::cout &lt;&lt; <span class="tk-s">&quot;two goblins share a vtable: &quot;</span> &lt;&lt; (<span class="tk-f">vptrOf</span>(&amp;a) == <span class="tk-f">vptrOf</span>(&amp;b)) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;a dragon has a different one: &quot;</span> &lt;&lt; (<span class="tk-f">vptrOf</span>(&amp;a) != <span class="tk-f">vptrOf</span>(&amp;c)) &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;sizeof(Goblin) = &quot;</span> &lt;&lt; <span class="tk-k">sizeof</span>(<span class="tk-t">Goblin</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>two goblins share a vtable: 1
+a dragon has a different one: 1
+sizeof(Goblin) = 8</code></pre></div>
+<p><code>Goblin</code> has no data members, yet it is 8 bytes: just the vptr. In the Visual Studio debugger, expanding an object shows the vptr as <code>__vfptr</code>, and expanding that lists the vtable&#39;s entries with their function names.</p>
+<p>This is also why the first 8 bytes of many objects in a memory view look like an address inside the program&#39;s image: they are vptrs into <code>.rdata</code>. Chapter 9 uses vtables to discover the classes in a compiled program, because each vtable is a list of a class&#39;s virtual functions.</p>
+<h2>Construction and destruction</h2>
+<p>The vptr changes while an object is being built. During the <code>Entity</code> part of constructing a <code>Goblin</code>, the vptr points at <code>Entity</code>&#39;s vtable; only when the <code>Goblin</code> constructor body runs does it point at <code>Goblin</code>&#39;s. So <strong>a virtual call inside a constructor or destructor calls the version for the class currently being built</strong>, not the most derived one. This surprises people once, and then they remember it.</p>
+<p>It is also why a base class used through pointers needs a <strong>virtual destructor</strong>. <code>delete e</code> on an <code>Entity*</code> calls the destructor through the vtable; without <code>virtual</code>, only <code>~Entity</code> runs and the <code>Dragon</code> part is never destroyed.</p>
+<h2>The cost</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Cost</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Memory</td>
+<td>8 bytes per object for the vptr, one small table per class</td>
+</tr>
+<tr>
+<td>Each call</td>
+<td>Two dependent loads and an indirect call</td>
+</tr>
+<tr>
+<td>Optimisation</td>
+<td>The compiler usually cannot inline a virtual call</td>
+</tr>
+</tbody></table>
+</div>
+<p>For a few hundred calls per frame, none of this matters. For millions (every particle, every tile), it can. Engines often avoid virtual calls in the hottest loops by keeping objects of one type together in arrays and processing each array with ordinary calls. Chapter 10&#39;s entity-component designs are partly a response to this.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Forgetting the virtual destructor</span></div><div class="callout-body"><p>Deleting a derived object through a base pointer without one is undefined behaviour and usually leaks the derived part.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Calling virtual functions from constructors</span></div><div class="callout-body"><p>They do not dispatch to the derived class yet. Move such work to a separate <code>init</code> step if needed.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Misspelling an override</span></div><div class="callout-body"><p>Without <code>override</code>, a typo in the name or a missing <code>const</code> silently creates a new function instead of overriding. Always write <code>override</code>.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Copying objects with vptrs as raw bytes</span></div><div class="callout-body"><p>Saving them to a file or <code>memcpy</code>-ing into unrelated memory copies an address that means nothing elsewhere.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Where is the vptr stored?</div><ul><li>In each object, normally at offset 0</li><li>In each class&#39;s vtable</li><li>In a global list of objects</li></ul><details><summary>Show the answer</summary><p><b>In each object, normally at offset 0</b> Every object of a class with virtual functions carries its own vptr, set by its constructor.</p></details></li><li><div class="q">Two <code>Goblin</code> objects exist. How many Goblin vtables are there?</div><ul><li>One, shared by both</li><li>Two, one per object</li><li>None until a virtual function is called</li></ul><details><summary>Show the answer</summary><p><b>One, shared by both</b> The vtable belongs to the class and lives in <code>.rdata</code>. Objects only hold pointers to it.</p></details></li><li><div class="q">What does <code>call QWORD PTR [rax+8]</code> do in a virtual call?</div><ul><li>Calls the function at address 8</li><li>Reads the function pointer in slot 1 of the vtable that <code>rax</code> points at, and calls it</li><li>Jumps forward 8 bytes</li></ul><details><summary>Show the answer</summary><p><b>Reads the function pointer in slot 1 of the vtable that <code>rax</code> points at, and calls it</b> <code>rax</code> holds the vptr; <code>[rax+8]</code> is the second 8-byte entry of the table.</p></details></li><li><div class="q">A virtual function is called from inside the base class&#39;s constructor while a <code>Dragon</code> is being built. Which version runs?</div><ul><li>The base class&#39;s version</li><li><code>Dragon</code>&#39;s version</li><li>Neither: it is a compile error</li></ul><details><summary>Show the answer</summary><p><b>The base class&#39;s version</b> During the base constructor the vptr still points at the base class&#39;s vtable.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-function-pointers-and-callbacks/"><span class="mono">previous</span><b>3.04 Function Pointers and Callbacks</b></a>
+      <a class="lp-next" href="../3-06-linked-lists-from-scratch/"><span class="mono">next</span><b>3.06 Linked Lists from Scratch</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/3-05-virtual-functions-and-vtables-in-memory"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

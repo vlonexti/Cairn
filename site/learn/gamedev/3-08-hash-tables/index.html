@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Hash Tables · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/3-08-hash-tables/">
+  <meta name="description" content="A hash table finds a value by its key in about the same time however many entries it holds. A hash function turns the key into a number that picks a bucket ,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hash Tables · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A hash table finds a value by its key in about the same time however many entries it holds. A hash function turns the key into a number that picks a bucket ,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/3-08-hash-tables/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Hash Tables · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hash Tables · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A hash table finds a value by its key in about the same time however many entries it holds. A hash function turns the key into a number that picks a bucket ,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Pointers, References and Data Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Hash Tables</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.08</b></span><span>8 of 10 in milestone 3</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A <strong>hash table</strong> finds a value by its key in about the same time however many entries it holds. A <strong>hash function</strong> turns the key into a number that picks a <strong>bucket</strong>, and the table only has to look in that one place. This lesson explains hashing, collisions and load factor, compares <code>std::unordered_map</code> with <code>std::map</code>, and shows where games use them.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>A game has 5,000 item definitions and looks them up by name: &quot;iron_sword&quot;, &quot;health_potion&quot;. Searching a vector of them means comparing names one by one, up to 5,000 comparisons per lookup. A sorted vector with binary search needs about 13. A hash table usually needs one or two.</p>
+<h2>The idea: compute where it goes</h2>
+<p>A <strong>hash function</strong> turns a key into a number, its <strong>hash</strong>. The table keeps an array of <strong>buckets</strong> and stores each entry in bucket number <code>hash % bucketCount</code>. To find a key, compute its hash, go straight to that bucket, and look only there.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    K1[&quot;'iron_sword'&quot;] --&gt;|&quot;hash = 9312…&quot;| B3[&quot;bucket 3&quot;]
+    K2[&quot;'health_potion'&quot;] --&gt;|&quot;hash = 4410…&quot;| B6[&quot;bucket 6&quot;]
+    K3[&quot;'rope'&quot;] --&gt;|&quot;hash = 7781…&quot;| B3
+    subgraph T[&quot;8 buckets&quot;]
+        B0[&quot;0&quot;]
+        B3
+        B6
+    end</pre></div>
+<p>A good hash function has two properties:</p>
+<ul>
+<li><strong>Deterministic</strong>: the same key always gives the same hash.</li>
+<li><strong>Well spread</strong>: similar keys give very different hashes, so entries scatter evenly over the buckets.</li>
+</ul>
+<p>Here is a simple, widely used string hash, <strong>FNV-1a</strong>. It mixes each byte in with an XOR, then multiplies by a carefully chosen prime to spread the bits:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdint&gt;</span>
+<span class="tk-p">#include &lt;format&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string_view&gt;</span>
+
+std::uint32_t <span class="tk-f">fnv1a</span>(std::string_view text)
+{
+    std::uint32_t hash{ <span class="tk-n">2166136261u</span> };          <span class="tk-c">// the FNV &quot;offset basis&quot;</span>
+    <span class="tk-k">for</span> (<span class="tk-k">unsigned</span> <span class="tk-k">char</span> c : text)
+    {
+        hash ^= c;
+        hash *= <span class="tk-n">16777619u</span>;                        <span class="tk-c">// the FNV prime</span>
+    }
+    <span class="tk-k">return</span> hash;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">char</span>* key : { <span class="tk-s">&quot;iron_sword&quot;</span>, <span class="tk-s">&quot;iron_swore&quot;</span>, <span class="tk-s">&quot;health_potion&quot;</span>, <span class="tk-s">&quot;&quot;</span> })
+        std::cout &lt;&lt; std::<span class="tk-f">format</span>(<span class="tk-s">&quot;{:&gt;14} -&gt; 0x{:08X}  bucket {}\n&quot;</span>, key, <span class="tk-f">fnv1a</span>(key), <span class="tk-f">fnv1a</span>(key) % <span class="tk-n">8</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>    iron_sword -&gt; 0xAB515E15  bucket 5
+    iron_swore -&gt; 0xAA515C82  bucket 2
+ health_potion -&gt; 0xA92D125F  bucket 7
+               -&gt; 0x811C9DC5  bucket 5</code></pre></div>
+<p>A change in the last letter moves the key to a different bucket. Notice, though, that <code>iron_sword</code> and <code>iron_swore</code> share some hex digits: FNV-1a is simple and fast, and the last byte it sees is only mixed in lightly. Hash tables that need better spreading run a short final &quot;mixing&quot; step over the result, like the <code>hash</code> function in this lesson&#39;s practice task. Games often hash asset names once, at build time, and refer to assets by the 32-bit hash at run time: comparing two numbers is much cheaper than comparing two strings.</p>
+<h2>Collisions</h2>
+<p>Different keys can land in the same bucket: there are endlessly many possible keys and only so many buckets. This is a <strong>collision</strong>, and every hash table has a strategy for it.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>How it works</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Separate chaining</strong></td>
+<td>Each bucket holds a small linked list of the entries that landed there</td>
+<td><code>std::unordered_map</code></td>
+</tr>
+<tr>
+<td><strong>Open addressing</strong></td>
+<td>Entries live directly in the bucket array; on a collision, try the next bucket (or another probe sequence) until a free one is found</td>
+<td>Many fast game-engine and third-party hash maps</td>
+</tr>
+</tbody></table>
+</div>
+<p>A lookup computes the hash, goes to the bucket, then compares keys until it finds a match. With a good hash and enough buckets, that is one or two comparisons.</p>
+<h2>Load factor and rehashing</h2>
+<p>The <strong>load factor</strong> is entries divided by buckets. As it rises, collisions become common and lookups slow down. So when the load factor passes a limit (1.0 for <code>std::unordered_map</code> by default), the table <strong>rehashes</strong>: it allocates more buckets and reinserts every entry, because <code>hash % bucketCount</code> changes when <code>bucketCount</code> does. Like <code>vector</code> growth, this is expensive once and cheap on average, and <code>reserve(n)</code> avoids it if you know the size in advance.</p>
+<h2>std::unordered_map and std::map</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;map&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;unordered_map&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::unordered_map&lt;std::string, <span class="tk-k">int</span>&gt; prices{ { <span class="tk-s">&quot;rope&quot;</span>, <span class="tk-n">5</span> }, { <span class="tk-s">&quot;lantern&quot;</span>, <span class="tk-n">12</span> }, { <span class="tk-s">&quot;sword&quot;</span>, <span class="tk-n">40</span> } };
+    prices[<span class="tk-s">&quot;shield&quot;</span>] = <span class="tk-n">30</span>;                         <span class="tk-c">// insert</span>
+    <span class="tk-k">if</span> (<span class="tk-k">auto</span> it{ prices.<span class="tk-f">find</span>(<span class="tk-s">&quot;lantern&quot;</span>) }; it != prices.<span class="tk-f">end</span>())
+        std::cout &lt;&lt; <span class="tk-s">&quot;lantern costs &quot;</span> &lt;&lt; it-&gt;second &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;contains torch: &quot;</span> &lt;&lt; prices.<span class="tk-f">contains</span>(<span class="tk-s">&quot;torch&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    std::map&lt;std::string, <span class="tk-k">int</span>&gt; sorted{ prices.<span class="tk-f">begin</span>(), prices.<span class="tk-f">end</span>() };
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; [name, price] : sorted) std::cout &lt;&lt; name &lt;&lt; <span class="tk-s">' '</span>;   <span class="tk-c">// always in key order</span>
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>lantern costs 12
+contains torch: 0
+lantern rope shield sword </code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th><code>std::unordered_map</code></th>
+<th><code>std::map</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Structure</td>
+<td>Hash table</td>
+<td>Balanced binary tree (lesson 3.09)</td>
+</tr>
+<tr>
+<td>Lookup</td>
+<td>About constant time on average</td>
+<td>Grows with the logarithm of the size</td>
+</tr>
+<tr>
+<td>Iteration order</td>
+<td>Unspecified, changes as it grows</td>
+<td>Sorted by key</td>
+</tr>
+<tr>
+<td>Key needs</td>
+<td>A hash and <code>==</code></td>
+<td><code>&lt;</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Pick <code>unordered_map</code> for fast lookup, <code>map</code> when you need the keys in order. Both allocate a node per entry, so neither is especially cache friendly; performance-sensitive engines often use open-addressing tables instead.</p>
+<h2>Where games use hashing</h2>
+<ul>
+<li><strong>Asset and string lookup</strong> by name or by precomputed hash.</li>
+<li><strong>Spatial hashing</strong>: hash a grid cell&#39;s <code>(x, y)</code> to find the objects near a point without a grid for the whole world.</li>
+<li><strong>Caches</strong>: remember the result of an expensive calculation keyed by its inputs.</li>
+<li><strong>Detecting change</strong>: hash a save file or a block of data and compare hashes. (Hashes for this need to be strong; FNV-1a is fine for spotting accidents, not for detecting deliberate tampering.)</li>
+</ul>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Relying on <code>unordered_map</code> iteration order
+It can differ between runs, compilers and sizes. Sort the keys, or use <code>std::map</code>, when order matters, such as when writing a save file.</p>
+</blockquote>
+<blockquote><p>[!warning] Using <code>operator[]</code> to check whether a key exists
+<code>m[key]</code> inserts a default value if the key is missing. Use <code>find</code> or <code>contains</code>.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Keeping pointers or iterators across a rehash</span></div><div class="callout-body"><p>Rehashing invalidates iterators (though <code>unordered_map</code> keeps pointers to elements valid, since each lives in its own node).</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does a hash table do with a key&#39;s hash?</div><ul><li>Uses it to choose a bucket, so the lookup only searches that bucket</li><li>Stores the hash instead of the key</li><li>Sorts the entries by hash</li></ul><details><summary>Show the answer</summary><p><b>Uses it to choose a bucket, so the lookup only searches that bucket</b> <code>hash % bucketCount</code> picks the bucket; only the entries there are compared.</p></details></li><li><div class="q">Two different keys land in the same bucket. What is that called?</div><ul><li>A rehash</li><li>A collision</li><li>Undefined behaviour</li></ul><details><summary>Show the answer</summary><p><b>A collision</b> Collisions are normal; the table&#39;s strategy (chaining or probing) handles them.</p></details></li><li><div class="q">Why does a hash table rehash when its load factor gets high?</div><ul><li>Too many entries per bucket means more collisions and slower lookups, so it adds buckets and redistributes the entries</li><li>To sort its entries</li><li>To free memory</li></ul><details><summary>Show the answer</summary><p><b>Too many entries per bucket means more collisions and slower lookups, so it adds buckets and redistributes the entries</b> Keeping entries per bucket low keeps lookups near constant time.</p></details></li><li><div class="q">You need to print all items in alphabetical order. Which container fits best?</div><ul><li><code>std::unordered_map&lt;std::string, Item&gt;</code></li><li><code>std::map&lt;std::string, Item&gt;</code></li><li>Either; they iterate the same way</li></ul><details><summary>Show the answer</summary><p><b><code>std::map&lt;std::string, Item&gt;</code></b> <code>std::map</code> keeps its keys sorted; <code>unordered_map</code> has no meaningful order.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/3.08">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/3.08">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-07-how-std-vector-really-works/"><span class="mono">previous</span><b>3.07 How std::vector Really Works</b></a>
+      <a class="lp-next" href="../3-09-trees-and-graphs/"><span class="mono">next</span><b>3.09 Trees and Graphs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/3-08-hash-tables"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

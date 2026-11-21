@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Software Integrity, Anti-Tamper and Fair Play · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/17-06-software-integrity-anti-tamper-and-fair-play/">
+  <meta name="description" content="This course taught how programs look from the inside, which is also how cheats and tampering work. This lesson takes the defender's side: why a game can…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Software Integrity, Anti-Tamper and Fair Play · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="This course taught how programs look from the inside, which is also how cheats and tampering work. This lesson takes the defender's side: why a game can…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/17-06-software-integrity-anti-tamper-and-fair-play/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Software Integrity, Anti-Tamper and Fair Play · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Software Integrity, Anti-Tamper and Fair Play · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="This course taught how programs look from the inside, which is also how cheats and tampering work. This lesson takes the defender's side: why a game can…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Testing, Security and Reliability</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Software Integrity, Anti-Tamper and Fair Play</h1>
+      <div class="readout lp-readout"><span>lesson <b>17.06</b></span><span>6 of 8 in milestone 17</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">This course taught how programs look from the inside, which is also how cheats and tampering work. This lesson takes the defender&#39;s side: why a game can never fully trust the client, why <strong>server authority</strong> is the foundation of fair online play, how to verify the integrity of your own files and updates with hashes and code signing, what client-side anti-tamper can and cannot do, and the legal, ethical and privacy limits that apply to both sides.</p>
+      <div class="prose">
+<h2>The client is in the player&#39;s hands</h2>
+<p>Every technique in chapters 5 to 16 works on a program running on your own machine: reading its memory, changing its code, injecting a DLL, inspecting its traffic. A player can do all of that to a game on <strong>their</strong> machine. That leads to the most important rule of game security:</p>
+<div class="callout important"><div class="callout-title"><span>Never trust the client</span></div><div class="callout-body"><p>Anything that runs on the player&#39;s computer can be read and changed by the player. Decisions that affect other players must be made, or at least checked, somewhere the player does not control.</p>
+</div></div>
+<p>Client-side protection can make tampering slower and more obvious; it cannot make it impossible. Fair play in online games rests on design first and detection second.</p>
+<h2>Server authority</h2>
+<p>In an <strong>authoritative server</strong> design, clients send <strong>inputs</strong> (&quot;move forward&quot;, &quot;fire at this direction&quot;) and the server runs the simulation and decides the results. A modified client can still send inputs, but it cannot directly set its health, teleport, or award itself a score.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">sequenceDiagram
+    participant C as Client
+    participant S as Server (authoritative)
+    C-&gt;&gt;S: input: move right, tick 1042
+    S-&gt;&gt;S: validate: speed, collisions, cooldowns
+    S-&gt;&gt;S: simulate the tick
+    S--&gt;&gt;C: state: position, health, events
+    Note over C: the client predicts locally for smoothness,&lt;br/&gt;then corrects to the server's state</pre></div>
+<p>What the server validates:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Physics limits</strong></td>
+<td>A move longer than maximum speed times elapsed time is clamped or rejected (the practice task)</td>
+</tr>
+<tr>
+<td><strong>Rates and cooldowns</strong></td>
+<td>No more shots than the weapon&#39;s fire rate allows</td>
+</tr>
+<tr>
+<td><strong>Visibility</strong></td>
+<td>The server sends a player only what that player could legitimately see, so there is nothing hidden in memory to reveal</td>
+</tr>
+<tr>
+<td><strong>Game rules</strong></td>
+<td>Items can only be used if owned; doors only opened if unlocked</td>
+</tr>
+<tr>
+<td><strong>Plausibility over time</strong></td>
+<td>Statistics that are consistently beyond human limits are flagged for review, never banned automatically</td>
+</tr>
+</tbody></table>
+</div>
+<p>For single-score games like Delve&#39;s leaderboard, the equivalent is submitting a <strong>replay</strong> (the seed and the inputs) instead of a score; the server re-simulates it deterministically and computes the score itself (the leaderboard threat in lesson 17.05).</p>
+<h2>Integrity of your own files</h2>
+<p>Separately from cheating, you need to know the code and data you ship are the code and data that run, and that updates come from you:</p>
+<ul>
+<li><strong>Hash manifests</strong>: a list of every shipped file with its SHA-256 hash. The launcher or updater checks files against it, which catches corruption and incomplete updates (lesson 3.08&#39;s checksums, made cryptographic).</li>
+<li><strong>Code signing</strong>: an Authenticode signature on your executables and DLLs (and the manifest) proves who published them and that they were not changed. Windows shows the publisher and SmartScreen builds reputation from it; drivers must be signed to load at all (lesson 16.01).</li>
+<li><strong>Signed updates</strong>: an updater verifies the signature of a downloaded update before installing it, so a compromised download server cannot push malicious code.</li>
+<li><strong>Safe loading</strong>: load DLLs only from your own folder with full paths (lesson 13.04), so a planted DLL is not picked up instead.</li>
+</ul>
+<h2>What client-side anti-tamper does</h2>
+<p>Commercial games add protection on the client. Understanding its purpose, at a high level, helps you design around it and judge its trade-offs:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Measure</th>
+<th>Purpose</th>
+<th>Limit</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Integrity checks</strong> of the game&#39;s own code and data</td>
+<td>Detect modified files or patched code</td>
+<td>Runs on the same machine it is protecting</td>
+</tr>
+<tr>
+<td><strong>Obfuscation</strong></td>
+<td>Make analysis (chapter 9) slower</td>
+<td>Slows, never prevents</td>
+</tr>
+<tr>
+<td><strong>Detecting debuggers and injected modules</strong></td>
+<td>Notice the tools of chapters 8 and 13</td>
+<td>False positives on legitimate software</td>
+</tr>
+<tr>
+<td><strong>Kernel-mode components</strong></td>
+<td>Observe from a more privileged level</td>
+<td>Very high trust demanded from players; a driver bug crashes their machine (chapter 16)</td>
+</tr>
+</tbody></table>
+</div>
+<p>The cost side matters: kernel-level anti-cheat asks players to trust your code with full control of their computer, and some players reasonably refuse. Collect only what is needed, document what is collected, and remove the component when the game is uninstalled.</p>
+<h2>The rules for both sides</h2>
+<ul>
+<li><strong>Terms of service and the law</strong> apply. Modifying or analysing a game you do not own can break its licence, and creating or selling cheats for online games has led to lawsuits. Cheating in online games harms other players, and this course does not teach it.</li>
+<li><strong>Fair-play enforcement must be fair</strong>: decisions reviewed by humans, an appeal process, and evidence kept (the repudiation row in 17.05).</li>
+<li><strong>Privacy</strong>: anti-cheat that scans the player&#39;s machine is handling personal data and falls under laws such as the GDPR.</li>
+<li><strong>Single-player modding</strong> is a different matter: it harms no one, and many developers support it with official tools (chapter 13).</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Trusting client-reported results</span></div><div class="callout-body"><p>&quot;The client says it hit for 9999 damage&quot; must never be believed.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Sending hidden information to clients</span></div><div class="callout-body"><p>If the client receives every enemy position, a modified client can show them. Send only what can be seen.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Relying on obfuscation instead of design</span></div><div class="callout-body"><p>Obfuscation buys time. Server authority removes whole classes of cheats.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why can client-side protection never fully stop tampering?</div><ul><li>It runs on the player&#39;s own machine, which they control completely</li><li>Because clients are always slower than servers</li><li>It can, if it is obfuscated enough</li></ul><details><summary>Show the answer</summary><p><b>It runs on the player&#39;s own machine, which they control completely</b> Protection there can only raise the cost.</p></details></li><li><div class="q">In an authoritative-server design, what do clients send?</div><ul><li>Their inputs, which the server validates and simulates to decide the results</li><li>Their positions and health, which the server trusts</li><li>Nothing; the server guesses</li></ul><details><summary>Show the answer</summary><p><b>Their inputs, which the server validates and simulates to decide the results</b> The server owns the game state.</p></details></li><li><div class="q">What does code signing an update prove?</div><ul><li>Who published it and that it has not been changed since signing</li><li>That it has no bugs</li><li>That it runs faster</li></ul><details><summary>Show the answer</summary><p><b>Who published it and that it has not been changed since signing</b> The updater checks the signature before installing.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/17.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/17.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../17-05-threat-modelling/"><span class="mono">previous</span><b>17.05 Threat Modelling</b></a>
+      <a class="lp-next" href="../17-07-performance-without-guessing/"><span class="mono">next</span><b>17.07 Performance Without Guessing</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/17-06-software-integrity-anti-tamper-and-fair-play"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

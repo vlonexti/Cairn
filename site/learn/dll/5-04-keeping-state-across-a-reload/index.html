@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Keeping State Across a Reload · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/5-04-keeping-state-across-a-reload/">
+  <meta name="description" content="Hot reload is only useful if the game keeps its state - the player's position, the enemies, the score - while the code changes. This lesson shows the two…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Keeping State Across a Reload · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="Hot reload is only useful if the game keeps its state - the player's position, the enemies, the score - while the code changes. This lesson shows the two…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/5-04-keeping-state-across-a-reload/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Keeping State Across a Reload · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Keeping State Across a Reload · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="Hot reload is only useful if the game keeps its state - the player's position, the enemies, the score - while the code changes. This lesson shows the two…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Plugins and Hot Reload</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Keeping State Across a Reload</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Hot reload is only useful if the game keeps its state - the player&#39;s position, the enemies, the score - while the code changes. This lesson shows the two strategies, <strong>host-owned memory</strong> and <strong>save and restore</strong>, and how to handle the hard case: a reload that changes the layout of the state itself.</p>
+      <div class="prose">
+<h2>Strategy 1: the host owns the memory</h2>
+<p>The simplest and fastest approach, popularised by Casey Muratori&#39;s <em>Handmade Hero</em>: the host allocates one big block of memory at start-up and hands it to the DLL every frame. The DLL keeps <strong>all</strong> of its state in that block, and none in its own globals:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> game_memory
+{
+    uint64_t size;
+    <span class="tk-k">void</span>*    storage;       <span class="tk-c">// allocated by the host once, never freed until exit</span>
+    <span class="tk-k">bool</span>     initialised;   <span class="tk-c">// false the first time</span>
+};
+
+<span class="tk-k">extern</span> <span class="tk-s">&quot;C&quot;</span> <span class="tk-f">__declspec</span>(dllexport) <span class="tk-k">void</span> <span class="tk-f">game_update</span>(game_memory* memory, <span class="tk-k">const</span> game_input* input, <span class="tk-k">float</span> dt)
+{
+    <span class="tk-k">auto</span>* state{ <span class="tk-k">static_cast</span>&lt;<span class="tk-t">GameState</span>*&gt;(memory-&gt;storage) };
+    <span class="tk-k">if</span> (!memory-&gt;initialised) { <span class="tk-k">new</span> (state) <span class="tk-t">GameState</span>{}; memory-&gt;initialised = <span class="tk-k">true</span>; }
+    state-&gt;player.x += input-&gt;moveX * dt;
+}</code></pre></div>
+<p>When the DLL is swapped, the block is untouched, so the new code finds the state exactly as the old code left it.</p>
+<p>The rules that make it work:</p>
+<ul>
+<li><code>GameState</code> is <strong>plain data</strong>: no virtual functions (their vptrs would point into the old DLL), no <code>std::string</code> or <code>std::vector</code> whose memory came from the old DLL&#39;s heap if it used its own CRT. Arrays with fixed sizes, plain structs, indices instead of pointers into code.</li>
+<li>Memory that the game needs to grow comes from a simple <strong>arena</strong> inside the block, not from <code>new</code>.</li>
+<li>No pointers to functions or string literals of the DLL are stored in the state.</li>
+</ul>
+<h2>Strategy 2: save and restore</h2>
+<p>If the state has to contain richer C++ objects, the DLL can instead write its state to bytes just before it is unloaded and read it back after the new one is loaded:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// in the DLL's table</span>
+<span class="tk-f">uint64_t</span> (*save_state)(<span class="tk-k">void</span>* buffer, uint64_t capacity);   <span class="tk-c">// returns bytes needed</span>
+<span class="tk-f">int32_t</span>  (*load_state)(<span class="tk-k">const</span> <span class="tk-k">void</span>* buffer, uint64_t size);</code></pre></div>
+<p>The host calls <code>save_state</code> on the old DLL, unloads it, loads the new one and calls <code>load_state</code>. Slower, but it handles any state, and the same code doubles as your save-game system.</p>
+<h2>When the layout changes</h2>
+<p>Both strategies face the same hard case: you add a member to <code>GameState</code>, or change a type. The new code then reads the old bytes with the new layout, which is lesson 3.03&#39;s versioned-struct problem in another form. The same solution works:</p>
+<ul>
+<li>Put a <strong>version number</strong> (and size) at the start of the saved state or the memory block.</li>
+<li>When the new code sees an <strong>older version</strong>, it <strong>migrates</strong>: reads the old layout, fills new fields with defaults, writes the new layout.</li>
+<li>When it sees a version it cannot read, it <strong>starts fresh</strong> rather than reading garbage, and logs why.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">StateHeader</span> { uint32_t version; uint32_t size; };
+
+<span class="tk-c">// version 1: { int32_t x, y; }    version 2: { int32_t x, y; int32_t health; }</span>
+<span class="tk-k">if</span> (header.version == <span class="tk-n">1</span>) { <span class="tk-c">/* copy x, y; health = 100; */</span> }
+<span class="tk-k">else</span> <span class="tk-k">if</span> (header.version == <span class="tk-n">2</span>) { <span class="tk-c">/* read as is */</span> }
+<span class="tk-k">else</span> { <span class="tk-c">/* unknown: start a new game */</span> }</code></pre></div>
+<p>Many developers simply restart when the state layout changes, and reload freely for everything else. A version number makes that decision automatic instead of a crash.</p>
+<h2>What hot reload is good for, and what not</h2>
+<p>Excellent for: tuning movement and feel, fixing gameplay bugs while reproducing them, iterating on enemy behaviour, UI layout. Poor for: changes to data the host owns, changes to the host itself, and big structural changes, which still need a restart.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>A static variable inside the gameplay DLL</span></div><div class="callout-body"><p>It resets on every reload. Move it into the state.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Reading old state with a new layout</span></div><div class="callout-body"><p>Values land in the wrong fields. Version the state and migrate or start fresh.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why must game state kept in host memory have no virtual functions?</div><ul><li>Each object&#39;s vptr would point into the old, unloaded DLL</li><li>Virtual functions are too slow for games</li><li>The host cannot allocate them</li></ul><details><summary>Show the answer</summary><p><b>Each object&#39;s vptr would point into the old, unloaded DLL</b> Plain data survives the swap; code pointers do not.</p></details></li><li><div class="q">The state gained a new field and the new DLL finds version 1 data. What should it do?</div><ul><li>Migrate: read the old layout, give the new field a default, write the new layout</li><li>Read it with the new layout</li><li>Crash, to make the developer restart</li></ul><details><summary>Show the answer</summary><p><b>Migrate: read the old layout, give the new field a default, write the new layout</b> A version number turns layout changes into a decision instead of garbage.</p></details></li><li><div class="q">Which strategy also works as a save-game system?</div><ul><li>Save and restore through save_state and load_state</li><li>Host-owned memory</li><li>Neither</li></ul><details><summary>Show the answer</summary><p><b>Save and restore through save_state and load_state</b> The DLL serialises its state to bytes.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-hot-reloading-code/"><span class="mono">previous</span><b>5.03 Hot Reloading Code</b></a>
+      <a class="lp-next" href="../5-05-capstone-a-moddable-game/"><span class="mono">next</span><b>5.05 Capstone: A Moddable Game</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/5-04-keeping-state-across-a-reload"></script>
+</body>
+</html>

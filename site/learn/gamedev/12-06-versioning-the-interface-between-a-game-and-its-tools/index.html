@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Versioning the Interface Between a Game and Its Tools · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/12-06-versioning-the-interface-between-a-game-and-its-tools/">
+  <meta name="description" content="The game will change: new fields in the telemetry, new commands on the pipe. Tools built for last month's game should keep working, and new tools should cope…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Versioning the Interface Between a Game and Its Tools · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The game will change: new fields in the telemetry, new commands on the pipe. Tools built for last month's game should keep working, and new tools should cope…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/12-06-versioning-the-interface-between-a-game-and-its-tools/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Versioning the Interface Between a Game and Its Tools · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Versioning the Interface Between a Game and Its Tools · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The game will change: new fields in the telemetry, new commands on the pipe. Tools built for last month's game should keep working, and new tools should cope…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Inspection and Debugging Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Versioning the Interface Between a Game and Its Tools</h1>
+      <div class="readout lp-readout"><span>lesson <b>12.06</b></span><span>6 of 7 in milestone 12</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The game will change: new fields in the telemetry, new commands on the pipe. Tools built for last month&#39;s game should keep working, and new tools should cope with old games. This lesson designs for that: <strong>append-only</strong> layouts with a size field, version and capability checks, feature flags, and the rules that let both sides evolve without breaking each other.</p>
+      <div class="prose">
+<h2>Why interfaces need versions</h2>
+<p>A tool and a game are built separately, often by different people, and updated at different times. Every shared structure and message format is an <strong>interface</strong>, and like lesson 4.05&#39;s DLL interfaces, changing it carelessly breaks whoever is on the other side:</p>
+<ul>
+<li>Insert a field in the middle of the telemetry struct, and every older tool reads the wrong offsets: health shows the floor number.</li>
+<li>Rename a pipe command, and old tools send commands the game no longer understands.</li>
+</ul>
+<p>The goal is <strong>compatibility in both directions</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Should</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>New tool, old game</td>
+<td>Read what the old game provides; hide features it lacks</td>
+</tr>
+<tr>
+<td>Old tool, new game</td>
+<td>Keep working with the fields it knows; ignore new ones</td>
+</tr>
+<tr>
+<td>Truly incompatible change</td>
+<td>Be detected and reported clearly, never misread</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Rule 1: append, never insert or reorder</h2>
+<p>Add new fields only at the <strong>end</strong> of a structure. Then every field keeps its offset forever, and an older tool reading the beginning of a newer block reads exactly what it expects.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">TelemetryV2</span>                <span class="tk-c">// version 2 = version 1 + new fields at the end</span>
+{
+    <span class="tk-c">// ---- version 1: never change these ----</span>
+    std::uint32_t magic, version, size;
+    std::atomic&lt;std::uint32_t&gt; sequence;
+    std::uint64_t frame;
+    <span class="tk-k">float</span> frameMs;
+    std::int32_t floor, playerX, playerY, playerHp, playerMaxHp, monstersAlive;
+    std::uint32_t turn;
+    <span class="tk-c">// ---- added in version 2 ----</span>
+    std::uint32_t features;       <span class="tk-c">// capability flags, below</span>
+    <span class="tk-k">float</span> cpuMs;                  <span class="tk-c">// time spent in update</span>
+    std::int32_t itemsOnFloor;
+};</code></pre></div>
+<p>Removing a field becomes &quot;stop updating it&quot; (leave it in place, write 0), never actually deleting it.</p>
+<h2>Rule 2: the size field tells the reader what exists</h2>
+<p>The header&#39;s <code>size</code> is the size of the struct <strong>the writer</strong> used. A reader then knows exactly which fields are present:</p>
+<ul>
+<li>A field whose end offset is within <code>size</code> exists and is valid.</li>
+<li>A field beyond <code>size</code> does not exist in this game: show &quot;not available&quot;.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">has</span>(<span class="tk-k">const</span> <span class="tk-t">TelemetryHeader</span>&amp; h, std::size_t fieldOffset, std::size_t fieldSize)
+{
+    <span class="tk-k">return</span> fieldOffset + fieldSize &lt;= h.size;
+}
+<span class="tk-c">// has(header, offsetof(TelemetryV2, cpuMs), sizeof(float))  -&gt; is CPU time published?</span></code></pre></div>
+<p>The reader copies <code>min(h.size, sizeof(its own struct))</code> bytes and zero-fills the rest, so an old tool reading a new game copies only what it knows, and a new tool reading an old game gets zeros it knows not to trust.</p>
+<h2>Rule 3: major and minor versions</h2>
+<p>Some changes cannot be made compatible (a field&#39;s meaning changes, units change from pixels to tiles). Split the version into <strong>major</strong> and <strong>minor</strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Change</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fields added at the end</td>
+<td>Minor + 1: compatible, nothing breaks</td>
+</tr>
+<tr>
+<td>Meaning or layout of existing data changed</td>
+<td>Major + 1: incompatible; tools for the old major must refuse</td>
+</tr>
+</tbody></table>
+</div>
+<p>A tool accepts any minor version of the majors it supports, and clearly reports &quot;this game uses telemetry format 3.x; this tool supports 2.x&quot; otherwise. The practice task implements this decision.</p>
+<h2>Rule 4: feature flags for optional things</h2>
+<p>Not everything is &quot;present or not&quot; by version. A <code>features</code> bit field (lesson 1.02&#39;s bits) says which optional parts the game actually provides right now: <code>0x1</code> &quot;AI debug data&quot;, <code>0x2</code> &quot;physics counters&quot;. Tools show panels only for set flags. It also lets a shipping build publish less than a development build of the same version.</p>
+<h2>Messages on pipes</h2>
+<p>The same rules apply to messages (lesson 12.01&#39;s pipes):</p>
+<ul>
+<li>Every message starts with a <strong>type</strong> and a <strong>length</strong>, so a reader can skip types it does not know.</li>
+<li>New message types get new numbers; old numbers are never reused for different meanings.</li>
+<li>On connecting, each side sends a <strong>hello</strong> with its version and features, and both use the common subset.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Inserting a field in the middle &quot;where it belongs&quot;</span></div><div class="callout-body"><p>Every later field moves, and every older tool misreads them. Append.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Reading fields beyond the writer&#39;s size</span></div><div class="callout-body"><p>They contain whatever is in memory there, or nothing. Check against <code>size</code>.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Silently accepting an unknown major version</span></div><div class="callout-body"><p>Refuse with a clear message; misread data is worse than none.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Where must new fields go in a shared structure?</div><ul><li>At the end, so every existing field keeps its offset</li><li>Wherever they fit best</li><li>At the start</li></ul><details><summary>Show the answer</summary><p><b>At the end, so every existing field keeps its offset</b> Inserting moves later fields and breaks older readers.</p></details></li><li><div class="q">A tool&#39;s struct is 64 bytes; the game&#39;s header says size 48. What does that mean?</div><ul><li>The game is older: fields past byte 48 do not exist there and must be treated as unavailable</li><li>The game is newer</li><li>The data is corrupt</li></ul><details><summary>Show the answer</summary><p><b>The game is older: fields past byte 48 do not exist there and must be treated as unavailable</b> The size field tells the reader what the writer provided.</p></details></li><li><div class="q">When must the major version change?</div><ul><li>When existing data changes meaning or layout, so older readers would misread it</li><li>Whenever a field is added</li><li>Every release</li></ul><details><summary>Show the answer</summary><p><b>When existing data changes meaning or layout, so older readers would misread it</b> Additions at the end only need a minor version.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/12.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/12.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../12-05-a-live-stats-panel-for-your-game/"><span class="mono">previous</span><b>12.05 A Live Stats Panel for Your Game</b></a>
+      <a class="lp-next" href="../12-07-testing-and-hardening-a-tool/"><span class="mono">next</span><b>12.07 Testing and Hardening a Tool</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/12-06-versioning-the-interface-between-a-game-and-its-tools"></script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>x64 for Readers · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/2-01-x64-for-readers/">
+  <meta name="description" content="The x64 you need to read compiled code rather than write it - registers and their smaller parts, the handful of instructions that make up most programs,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="x64 for Readers · Reverse Engineering · Xenon">
+  <meta property="og:description" content="The x64 you need to read compiled code rather than write it - registers and their smaller parts, the handful of instructions that make up most programs,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/2-01-x64-for-readers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="x64 for Readers · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="x64 for Readers · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="The x64 you need to read compiled code rather than write it - registers and their smaller parts, the handful of instructions that make up most programs,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Reading Disassembly</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">x64 for Readers</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.01</b></span><span>1 of 5 in milestone 2</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The x64 you need to read compiled code rather than write it - registers and their smaller parts, the handful of instructions that make up most programs, flags and conditional jumps, and the Microsoft x64 calling convention that tells you where every argument and return value is.</p>
+      <div class="prose">
+<h2>Reading, not writing</h2>
+<p>Writing assembly means choosing instructions. Reading it means recognising patterns quickly, and compiled code uses a surprisingly small set of them. This lesson is a refresher aimed at reading the output of MSVC, in the <strong>Intel syntax</strong> that Visual Studio, x64dbg, WinDbg and Ghidra all show: destination first.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>mov <span class="tk-t">rax</span>, <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">10h</span>]    <span class="tk-c">; rax = the 8 bytes at rcx + 0x10</span></code></pre></div>
+<p>(Disassemblers write hex either as <code>10h</code> or <code>0x10</code>. They mean the same.)</p>
+<h2>Registers</h2>
+<p>Sixteen 64-bit general registers. Each has smaller views of its low part:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>64</th>
+<th>32</th>
+<th>16</th>
+<th>8</th>
+<th>Usual role in compiled code</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rax</code></td>
+<td><code>eax</code></td>
+<td><code>ax</code></td>
+<td><code>al</code></td>
+<td>return value, scratch</td>
+</tr>
+<tr>
+<td><code>rcx</code></td>
+<td><code>ecx</code></td>
+<td><code>cx</code></td>
+<td><code>cl</code></td>
+<td>1st argument, <code>this</code></td>
+</tr>
+<tr>
+<td><code>rdx</code></td>
+<td><code>edx</code></td>
+<td><code>dx</code></td>
+<td><code>dl</code></td>
+<td>2nd argument</td>
+</tr>
+<tr>
+<td><code>rbx</code></td>
+<td><code>ebx</code></td>
+<td><code>bx</code></td>
+<td><code>bl</code></td>
+<td>kept across calls</td>
+</tr>
+<tr>
+<td><code>rsp</code></td>
+<td><code>esp</code></td>
+<td><code>sp</code></td>
+<td><code>spl</code></td>
+<td>stack pointer</td>
+</tr>
+<tr>
+<td><code>rbp</code></td>
+<td><code>ebp</code></td>
+<td><code>bp</code></td>
+<td><code>bpl</code></td>
+<td>kept across calls, sometimes frame pointer</td>
+</tr>
+<tr>
+<td><code>rsi</code>, <code>rdi</code></td>
+<td><code>esi</code>, <code>edi</code></td>
+<td></td>
+<td></td>
+<td>kept across calls; string copies</td>
+</tr>
+<tr>
+<td><code>r8</code>, <code>r9</code></td>
+<td><code>r8d</code>, <code>r9d</code></td>
+<td><code>r8w</code></td>
+<td><code>r8b</code></td>
+<td>3rd and 4th arguments</td>
+</tr>
+<tr>
+<td><code>r10</code>, <code>r11</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td>scratch</td>
+</tr>
+<tr>
+<td><code>r12</code> to <code>r15</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td>kept across calls</td>
+</tr>
+</tbody></table>
+</div>
+<p>Plus <code>rip</code>, the instruction pointer, and sixteen 128-bit <code>xmm0</code> to <code>xmm15</code> registers for floating point and SIMD.</p>
+<p>One rule catches everyone: <strong>writing a 32-bit register clears the top 32 bits</strong> of the 64-bit one. <code>mov eax, 1</code> sets all of <code>rax</code> to 1, and <code>xor eax, eax</code> is the compiler&#39;s favourite way to zero <code>rax</code> (it is shorter than <code>xor rax, rax</code>). Writing 8 or 16-bit parts leaves the rest alone.</p>
+<h2>The instructions you will see most</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mov a, b</code></td>
+<td>copy</td>
+</tr>
+<tr>
+<td><code>movzx</code>, <code>movsx</code>, <code>movsxd</code></td>
+<td>copy a small value into a bigger register, zero- or sign-extending</td>
+</tr>
+<tr>
+<td><code>lea a, [expr]</code></td>
+<td>compute the address expression, <strong>without</strong> reading memory; also used for arithmetic: <code>lea eax, [rcx+rcx*4]</code> is <code>eax = ecx * 5</code></td>
+</tr>
+<tr>
+<td><code>add</code>, <code>sub</code>, <code>imul</code>, <code>neg</code>, <code>inc</code>, <code>dec</code></td>
+<td>arithmetic</td>
+</tr>
+<tr>
+<td><code>and</code>, <code>or</code>, <code>xor</code>, <code>not</code>, <code>shl</code>, <code>shr</code>, <code>sar</code></td>
+<td>bits; <code>sar</code> is a signed shift, often division by a power of two</td>
+</tr>
+<tr>
+<td><code>cmp a, b</code></td>
+<td>compute <code>a - b</code>, set the flags, keep nothing else</td>
+</tr>
+<tr>
+<td><code>test a, b</code></td>
+<td>compute <code>a &amp; b</code>, set the flags; <code>test eax, eax</code> asks &quot;is eax zero (or negative)?&quot;</td>
+</tr>
+<tr>
+<td><code>jcc target</code></td>
+<td>jump if a condition holds (table below)</td>
+</tr>
+<tr>
+<td><code>jmp target</code></td>
+<td>jump always</td>
+</tr>
+<tr>
+<td><code>call target</code>, <code>ret</code></td>
+<td>function call and return</td>
+</tr>
+<tr>
+<td><code>push</code>, <code>pop</code></td>
+<td>save and restore registers on the stack</td>
+</tr>
+<tr>
+<td><code>cmovcc</code>, <code>setcc</code></td>
+<td>conditional move or set a byte from the flags, without jumping</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Flags and conditional jumps</h2>
+<p><code>cmp</code> and <code>test</code> set flags; the conditional jump that follows reads them. The jump names say whether the comparison was <strong>signed</strong> or <strong>unsigned</strong>, which tells you the type of the variables:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Signed</th>
+<th>Unsigned</th>
+<th>After <code>cmp a, b</code>, jumps if</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>jl</code></td>
+<td><code>jb</code></td>
+<td>a &lt; b</td>
+</tr>
+<tr>
+<td><code>jle</code></td>
+<td><code>jbe</code></td>
+<td>a &lt;= b</td>
+</tr>
+<tr>
+<td><code>jg</code></td>
+<td><code>ja</code></td>
+<td>a &gt; b</td>
+</tr>
+<tr>
+<td><code>jge</code></td>
+<td><code>jae</code></td>
+<td>a &gt;= b</td>
+</tr>
+<tr>
+<td><code>je</code> / <code>jz</code></td>
+<td></td>
+<td>a == b</td>
+</tr>
+<tr>
+<td><code>jne</code> / <code>jnz</code></td>
+<td></td>
+<td>a != b</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>jl</code>/<code>jg</code> mean the source compared <code>int</code>s; <code>jb</code>/<code>ja</code> mean <code>unsigned</code>, sizes or pointers. A bounds check written as one unsigned comparison, <code>cmp ecx, 10; jae out_of_range</code>, catches negative indexes too, because they look huge when unsigned.</p>
+<h2>The Microsoft x64 calling convention</h2>
+<p>Every function call on 64-bit Windows follows one convention, so you always know where the arguments are:</p>
+<ul>
+<li>The <strong>first four</strong> arguments go in <strong><code>rcx</code>, <code>rdx</code>, <code>r8</code>, <code>r9</code></strong>, or in <code>xmm0</code> to <code>xmm3</code> if they are <code>float</code> or <code>double</code>. The position counts, not the type: in <code>f(int a, double b, int c)</code>, <code>a</code> is in <code>rcx</code>, <code>b</code> in <code>xmm1</code>, <code>c</code> in <code>r8</code>.</li>
+<li>Further arguments go on the stack. The caller always reserves 32 bytes of <strong>shadow space</strong> just above the return address for the callee to save the four register arguments in, so the 5th argument is at <strong><code>[rsp+28h]</code></strong> on entry to the function (8 for the return address, 0x20 of shadow space), the 6th at <code>[rsp+30h]</code>, and so on.</li>
+<li>The <strong>return value</strong> comes back in <code>rax</code>, or <code>xmm0</code> for floating point.</li>
+<li><code>rax</code>, <code>rcx</code>, <code>rdx</code>, <code>r8</code> to <code>r11</code> and <code>xmm0</code> to <code>xmm5</code> are <strong>volatile</strong>: a call may destroy them. <code>rbx</code>, <code>rbp</code>, <code>rdi</code>, <code>rsi</code>, <code>r12</code> to <code>r15</code> and <code>xmm6</code> to <code>xmm15</code> are <strong>non-volatile</strong>: a function that uses them must save and restore them, which is exactly what its prologue&#39;s pushes are.</li>
+<li>For a member function, <code>this</code> is the hidden first argument, in <code>rcx</code>.</li>
+</ul>
+<p>So when you see a call, look just before it for writes to <code>rcx</code>, <code>rdx</code>, <code>r8</code> and <code>r9</code>: those are its arguments. Just after it, a read of <code>eax</code> or <code>rax</code> is using its result.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>mov <span class="tk-t">r8d</span>, <span class="tk-n">3</span>              <span class="tk-c">; third argument: 3</span>
+lea <span class="tk-t">rdx</span>, [<span class="tk-t">rsp</span>+<span class="tk-n">40h</span>]      <span class="tk-c">; second argument: the address of a local</span>
+mov <span class="tk-t">rcx</span>, <span class="tk-t">rbx</span>            <span class="tk-c">; first argument: whatever rbx holds</span>
+call ReadConfig
+test <span class="tk-t">eax</span>, <span class="tk-t">eax</span>           <span class="tk-c">; did it return 0?</span>
+je failed</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/2.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/2.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-05-triage-first-impressions-of-a-binary/"><span class="mono">previous</span><b>1.05 Triage - First Impressions of a Binary</b></a>
+      <a class="lp-next" href="../2-02-recognising-functions/"><span class="mono">next</span><b>2.02 Recognising Functions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/2-01-x64-for-readers"></script>
+</body>
+</html>

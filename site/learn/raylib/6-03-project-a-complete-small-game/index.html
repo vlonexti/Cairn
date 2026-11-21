@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Project: A Complete Small Game · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/6-03-project-a-complete-small-game/">
+  <meta name="description" content="Put the whole course together into one finished game - choosing a scope you can finish, the order to build it in, data-driven waves and levels, the polish…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Project: A Complete Small Game · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="Put the whole course together into one finished game - choosing a scope you can finish, the order to build it in, data-driven waves and levels, the polish…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/6-03-project-a-complete-small-game/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Project: A Complete Small Game · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Project: A Complete Small Game · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="Put the whole course together into one finished game - choosing a scope you can finish, the order to build it in, data-driven waves and levels, the polish…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>Finishing a Game</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Project: A Complete Small Game</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.03</b></span><span>3 of 3 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Put the whole course together into one finished game - choosing a scope you can finish, the order to build it in, data-driven waves and levels, the polish that makes it feel complete, and a checklist for release. The example is a top-down arena survival game.</p>
+      <div class="prose">
+<h2>Finishing is the skill</h2>
+<p>Most first games are never finished: the idea grows faster than the code. The goal of this project is a <strong>small game that is complete</strong>: a title screen, a game that starts, gets harder and ends, a game-over screen with a score, settings that are remembered, sound, and a build someone else can play.</p>
+<p>The example here is an <strong>arena survival</strong> game: the player moves around a single arena with the keyboard or a gamepad and shoots in the direction they aim; enemies arrive in waves; each wave is harder; the score is the number of waves survived and enemies defeated. It uses almost every lesson, and is small enough to finish in a few weekends. Choose your own idea if you prefer, but keep it to <strong>one mechanic, one screen-sized world and one goal</strong>.</p>
+<h2>The pieces and where they come from</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Lessons</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Loop, frame time, input with bindings</td>
+<td>1.02 - 1.05</td>
+</tr>
+<tr>
+<td>Sprites and animations for the player and enemies</td>
+<td>2.01, 2.02</td>
+</tr>
+<tr>
+<td>Interface: score, health bar, wave number, menus</td>
+<td>2.03</td>
+</tr>
+<tr>
+<td>Sounds with variation, music, volume settings</td>
+<td>2.04</td>
+</tr>
+<tr>
+<td>Title, game, pause and game-over screens with fades</td>
+<td>2.05</td>
+</tr>
+<tr>
+<td>Circle collisions, a grid for many bullets and enemies</td>
+<td>3.01, 3.05</td>
+</tr>
+<tr>
+<td>Fixed time step</td>
+<td>3.04</td>
+</tr>
+<tr>
+<td>Camera with shake</td>
+<td>4.01</td>
+</tr>
+<tr>
+<td>Particles for hits and deaths</td>
+<td>4.03</td>
+</tr>
+<tr>
+<td>Enemy state machine: approach, wind-up, charge</td>
+<td>4.04</td>
+</tr>
+<tr>
+<td>Flow field so enemies go around obstacles</td>
+<td>4.05</td>
+</tr>
+<tr>
+<td>Post-processing: a vignette, a red flash when hurt</td>
+<td>5.04, 5.05</td>
+</tr>
+<tr>
+<td>Settings and high scores saved safely</td>
+<td>6.01</td>
+</tr>
+<tr>
+<td>Release and web builds</td>
+<td>6.02</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Waves as data</h2>
+<p>Hard-coding &quot;wave 3 has five chargers&quot; makes balancing slow. Describe waves as <strong>data</strong> in a text file that the game reads:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code># time  kind     count  interval
+wave 1
+0       walker   4      1.0
+6       walker   4      0.5
+wave 2
+0       walker   6      0.6
+3       charger  2      2.0</code></pre></div>
+<p>Each line is a <strong>spawn group</strong>: starting at <code>time</code> seconds into the wave, spawn <code>count</code> enemies of <code>kind</code>, one every <code>interval</code> seconds. The game asks &quot;which enemies spawn between the last frame and this one?&quot; and the answer comes straight from the data. You can rebalance without recompiling, and even reload the file while the game runs. The practice builds this spawner.</p>
+<p>Difficulty should rise in steps with pauses between them: tension, then relief. After the hand-made waves, generate more by scaling counts and shortening intervals.</p>
+<h2>Order to build in</h2>
+<ol>
+<li><strong>The toy</strong>: a player that moves and shoots in an empty arena. Make it feel good before anything else: speed, acceleration, the bullet&#39;s speed, a sound and a particle burst for every shot.</li>
+<li><strong>Something to shoot</strong>: one enemy type, collision, health, dying.</li>
+<li><strong>A game</strong>: waves from the data file, a score, losing.</li>
+<li><strong>Screens</strong>: title, pause, game over with the score, play again (reset everything, lesson 2.05).</li>
+<li><strong>Variety</strong>: a second and a third enemy type with different behaviour.</li>
+<li><strong>Polish</strong>: shake, hit flash, hit stop, death particles, music, a vignette.</li>
+<li><strong>Remembering</strong>: settings and the high-score table.</li>
+<li><strong>Release</strong>: icon, release build, clean-machine test, web build, itch.io page.</li>
+</ol>
+<p>At every step the game runs, and you can stop and still have something to show.</p>
+<h2>The release checklist</h2>
+<ul>
+<li><input disabled="" type="checkbox"> It starts with a title screen and can be quit from the menu.</li>
+<li><input disabled="" type="checkbox"> Every input has a keyboard and a gamepad binding, and the controls are shown somewhere.</li>
+<li><input disabled="" type="checkbox"> Pause works and stops everything, including timers and spawns.</li>
+<li><input disabled="" type="checkbox"> Play again resets everything.</li>
+<li><input disabled="" type="checkbox"> Music and effects volumes are separate, saved, and applied at start-up.</li>
+<li><input disabled="" type="checkbox"> Screen shake and flashes can be turned off.</li>
+<li><input disabled="" type="checkbox"> The window can be resized or made fullscreen, and the game still fits.</li>
+<li><input disabled="" type="checkbox"> Settings and scores are in <code>%APPDATA%</code>, saved safely.</li>
+<li><input disabled="" type="checkbox"> It runs from a zip on a clean machine.</li>
+<li><input disabled="" type="checkbox"> Someone who has never seen it played it without your help.</li>
+</ul>
+<p>The last one matters most: watch a friend play without saying anything. Every place they hesitate is something to make clearer.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/6.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/6.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-02-packaging-a-finished-game/"><span class="mono">previous</span><b>6.02 Packaging a Finished Game</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/6-03-project-a-complete-small-game"></script>
+</body>
+</html>

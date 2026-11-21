@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Iterators and the Generic for · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/6-02-iterators-and-the-generic-for/">
+  <meta name="description" content="How for ... in really works with an iterator function, writing iterators as closures, stateless iterators like ipairs, next, iterating in sorted order,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Iterators and the Generic for · Lua · Xenon">
+  <meta property="og:description" content="How for ... in really works with an iterator function, writing iterators as closures, stateless iterators like ipairs, next, iterating in sorted order,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/6-02-iterators-and-the-generic-for/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Iterators and the Generic for · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Iterators and the Generic for · Lua · Xenon">
+  <meta name="twitter:description" content="How for ... in really works with an iterator function, writing iterators as closures, stateless iterators like ipairs, next, iterating in sorted order,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Lua in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Iterators and the Generic for</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.02</b></span><span>2 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How for ... in really works with an iterator function, writing iterators as closures, stateless iterators like ipairs, next, iterating in sorted order, io.lines for reading input, and the __pairs gone from 5.4.</p>
+      <div class="prose">
+<h2>What for ... in does</h2>
+<p><code>for k, v in pairs(t)</code> is a <strong>generic for</strong>. It works with any <strong>iterator</strong>: a function that returns the next values each time it is called, and <code>nil</code> when there are no more. The loop calls it again and again until it gets <code>nil</code>.</p>
+<p>The simplest iterators are closures:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">count_to</span>(n)
+    <span class="tk-k">local</span> i = <span class="tk-n">0</span>
+    <span class="tk-k">return</span> <span class="tk-k">function</span>()
+        i = i + <span class="tk-n">1</span>
+        <span class="tk-k">if</span> i &lt;= n <span class="tk-k">then</span> <span class="tk-k">return</span> i <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">for</span> x <span class="tk-k">in</span> <span class="tk-f">count_to</span>(<span class="tk-n">3</span>) <span class="tk-k">do</span> io.<span class="tk-f">write</span>(x, <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()
+
+<span class="tk-k">local</span> next_number = <span class="tk-f">count_to</span>(<span class="tk-n">2</span>)
+<span class="tk-f">print</span>(<span class="tk-f">next_number</span>(), <span class="tk-f">next_number</span>(), <span class="tk-f">next_number</span>())</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1 2 3 
+1	2</code></pre></div>
+<p><code>count_to(3)</code> returns the iterator; the loop calls it until it returns nothing. (The third call of <code>next_number</code> returns no value at all, so <code>print</code> gets only two values. A <code>for</code> loop treats &quot;nothing&quot; as <code>nil</code> and stops.)</p>
+<h2>Useful iterators</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">range</span>(from, to, step)
+    step = step <span class="tk-k">or</span> <span class="tk-n">1</span>
+    <span class="tk-k">local</span> i = from - step
+    <span class="tk-k">return</span> <span class="tk-k">function</span>()
+        i = i + step
+        <span class="tk-k">if</span> (step &gt; <span class="tk-n">0</span> <span class="tk-k">and</span> i &lt;= to) <span class="tk-k">or</span> (step &lt; <span class="tk-n">0</span> <span class="tk-k">and</span> i &gt;= to) <span class="tk-k">then</span> <span class="tk-k">return</span> i <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">chars</span>(s)
+    <span class="tk-k">local</span> i = <span class="tk-n">0</span>
+    <span class="tk-k">return</span> <span class="tk-k">function</span>()
+        i = i + <span class="tk-n">1</span>
+        <span class="tk-k">if</span> i &lt;= #s <span class="tk-k">then</span> <span class="tk-k">return</span> i, s:<span class="tk-f">sub</span>(i, i) <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">filtered</span>(list, keep)
+    <span class="tk-k">local</span> i = <span class="tk-n">0</span>
+    <span class="tk-k">return</span> <span class="tk-k">function</span>()
+        <span class="tk-k">repeat</span> i = i + <span class="tk-n">1</span> <span class="tk-k">until</span> list[i] == <span class="tk-k">nil</span> <span class="tk-k">or</span> <span class="tk-f">keep</span>(list[i])
+        <span class="tk-k">return</span> list[i]
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">for</span> n <span class="tk-k">in</span> <span class="tk-f">range</span>(<span class="tk-n">10</span>, <span class="tk-n">0</span>, -<span class="tk-n">5</span>) <span class="tk-k">do</span> io.<span class="tk-f">write</span>(n, <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()
+<span class="tk-k">for</span> pos, ch <span class="tk-k">in</span> <span class="tk-f">chars</span>(<span class="tk-s">&quot;Lua&quot;</span>) <span class="tk-k">do</span> io.<span class="tk-f">write</span>(pos, ch, <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()
+<span class="tk-k">for</span> n <span class="tk-k">in</span> <span class="tk-f">filtered</span>({ <span class="tk-n">3</span>, <span class="tk-n">8</span>, <span class="tk-n">1</span>, <span class="tk-n">6</span>, <span class="tk-n">7</span> }, <span class="tk-k">function</span>(x) <span class="tk-k">return</span> x &gt; <span class="tk-n">4</span> <span class="tk-k">end</span>) <span class="tk-k">do</span> io.<span class="tk-f">write</span>(n, <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>10 5 0 
+1L 2u 3a 
+8 6 7 </code></pre></div>
+<h2>Sorted pairs</h2>
+<p><code>pairs</code> has no order. An iterator can collect and sort the keys first, then hand them out in order:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">sorted_pairs</span>(t)
+    <span class="tk-k">local</span> keys = {}
+    <span class="tk-k">for</span> k <span class="tk-k">in</span> <span class="tk-f">pairs</span>(t) <span class="tk-k">do</span> keys[#keys + <span class="tk-n">1</span>] = k <span class="tk-k">end</span>
+    table.<span class="tk-f">sort</span>(keys, <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> <span class="tk-f">tostring</span>(a) &lt; <span class="tk-f">tostring</span>(b) <span class="tk-k">end</span>)
+    <span class="tk-k">local</span> i = <span class="tk-n">0</span>
+    <span class="tk-k">return</span> <span class="tk-k">function</span>()
+        i = i + <span class="tk-n">1</span>
+        <span class="tk-k">local</span> k = keys[i]
+        <span class="tk-k">if</span> k ~= <span class="tk-k">nil</span> <span class="tk-k">then</span> <span class="tk-k">return</span> k, t[k] <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">for</span> name, score <span class="tk-k">in</span> <span class="tk-f">sorted_pairs</span>({ zed = <span class="tk-n">3</span>, amy = <span class="tk-n">9</span>, kim = <span class="tk-n">5</span> }) <span class="tk-k">do</span> <span class="tk-f">print</span>(name, score) <span class="tk-k">end</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>amy	9
+kim	5
+zed	3</code></pre></div>
+<h2>Stateless iterators</h2>
+<p>The full rule is that <code>for vars in f, state, start do</code> calls <code>f(state, control)</code> each round, where <code>control</code> is the first value of the last round. <code>pairs</code> and <code>ipairs</code> return all three, so they need no closure:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">iter</span>(t, i)
+    i = i + <span class="tk-n">1</span>
+    <span class="tk-k">if</span> t[i] ~= <span class="tk-k">nil</span> <span class="tk-k">then</span> <span class="tk-k">return</span> i, t[i] <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">my_ipairs</span>(t) <span class="tk-k">return</span> iter, t, <span class="tk-n">0</span> <span class="tk-k">end</span>
+
+<span class="tk-k">for</span> i, v <span class="tk-k">in</span> <span class="tk-f">my_ipairs</span>({ <span class="tk-s">&quot;a&quot;</span>, <span class="tk-s">&quot;b&quot;</span>, <span class="tk-s">&quot;c&quot;</span> }) <span class="tk-k">do</span> io.<span class="tk-f">write</span>(i, v, <span class="tk-s">&quot; &quot;</span>) <span class="tk-k">end</span>
+<span class="tk-f">print</span>()
+
+<span class="tk-f">print</span>(<span class="tk-f">next</span>({ <span class="tk-n">10</span> }))
+<span class="tk-f">print</span>(<span class="tk-f">next</span>({}))
+<span class="tk-k">for</span> k, v <span class="tk-k">in</span> next, { x = <span class="tk-n">1</span> } <span class="tk-k">do</span> <span class="tk-f">print</span>(k, v) <span class="tk-k">end</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1a 2b 3c 
+1	10
+nil
+x	1</code></pre></div>
+<p><code>next(t, k)</code> returns the key after <code>k</code> (and its value), and <code>next(t)</code> the first one. <code>pairs(t)</code> is simply <code>next, t, nil</code>. <code>next(t) == nil</code> is the standard test for an empty table.</p>
+<h2>Reading input line by line</h2>
+<p><code>io.lines()</code> is an iterator over the lines of standard input; <code>io.lines(name)</code> over a file&#39;s lines:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> total, count = <span class="tk-n">0</span>, <span class="tk-n">0</span>
+<span class="tk-k">for</span> line <span class="tk-k">in</span> io.<span class="tk-f">lines</span>() <span class="tk-k">do</span>
+    <span class="tk-k">local</span> n = <span class="tk-f">tonumber</span>(line)
+    <span class="tk-k">if</span> n <span class="tk-k">then</span>
+        total = total + n
+        count = count + <span class="tk-n">1</span>
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(count .. <span class="tk-s">&quot; numbers, total &quot;</span> .. total)</code></pre></div>
+<p>When you press <strong>Run</strong>, type numbers one per line; the program sees the end of input when you press <strong>Ctrl+D</strong>. In the practice tasks the input is all given at once, and the loop ends after the last line.</p>
+<p><code>io.lines()</code> can also take formats: <code>for a, b in io.lines(name, &quot;n&quot;, &quot;n&quot;)</code> reads two numbers per round.</p>
+<h2>Changing a table while iterating</h2>
+<p>With <code>pairs</code>, you may change or remove (set to nil) <strong>existing</strong> keys during the loop, but you must not <strong>add</strong> new keys: the order is then undefined and keys may be skipped or repeated. Collect the new keys in another table and add them after the loop.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/6.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/6.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-01-errors-and-pcall/"><span class="mono">previous</span><b>6.01 Errors and pcall</b></a>
+      <a class="lp-next" href="../6-03-coroutines/"><span class="mono">next</span><b>6.03 Coroutines</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/6-02-iterators-and-the-generic-for"></script>
+</body>
+</html>

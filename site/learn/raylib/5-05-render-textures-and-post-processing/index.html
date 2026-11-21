@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Render Textures and Post-Processing · Game Programming with raylib · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/raylib/5-05-render-textures-and-post-processing/">
+  <meta name="description" content="Drawing into a texture instead of the screen opens up a lot - pixel-perfect scaling, minimaps, split screens, and post-processing effects applied to the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Render Textures and Post-Processing · Game Programming with raylib · Xenon">
+  <meta property="og:description" content="Drawing into a texture instead of the screen opens up a lot - pixel-perfect scaling, minimaps, split screens, and post-processing effects applied to the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/raylib/5-05-render-textures-and-post-processing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Render Textures and Post-Processing · Game Programming with raylib · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Render Textures and Post-Processing · Game Programming with raylib · Xenon">
+  <meta name="twitter:description" content="Drawing into a texture instead of the screen opens up a lot - pixel-perfect scaling, minimaps, split screens, and post-processing effects applied to the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/raylib.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Programming with raylib</a><span>/</span><span>3D and Shaders</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Render Textures and Post-Processing</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Drawing into a texture instead of the screen opens up a lot - pixel-perfect scaling, minimaps, split screens, and post-processing effects applied to the whole frame such as vignettes, colour grading, blur and scanlines.</p>
+      <div class="prose">
+<h2>Drawing into a texture</h2>
+<p>A <strong>render texture</strong> is a texture you can draw into, like an off-screen window:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">RenderTexture2D</span> target = <span class="tk-f">LoadRenderTexture</span>(<span class="tk-n">320</span>, <span class="tk-n">180</span>);
+
+<span class="tk-c">// each frame:</span>
+<span class="tk-f">BeginTextureMode</span>(target);
+    <span class="tk-f">ClearBackground</span>(BLACK);
+    <span class="tk-f">drawWorld</span>();                         <span class="tk-c">// everything goes into the texture</span>
+<span class="tk-f">EndTextureMode</span>();
+
+<span class="tk-f">BeginDrawing</span>();
+    <span class="tk-f">ClearBackground</span>(BLACK);
+    <span class="tk-c">// draw the texture to the screen; the source height is NEGATIVE because OpenGL textures are upside down</span>
+    <span class="tk-f">DrawTexturePro</span>(target.texture, { <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">320</span>, -<span class="tk-n">180</span> }, letterboxRect, { <span class="tk-n">0</span>, <span class="tk-n">0</span> }, <span class="tk-n">0</span>, WHITE);
+<span class="tk-f">EndDrawing</span>();
+
+<span class="tk-f">UnloadRenderTexture</span>(target);</code></pre></div>
+<p>The negative source height is the one thing everyone forgets: without it, the whole picture is upside down.</p>
+<h2>Pixel-perfect scaling</h2>
+<p>This is the clean way to make a pixel-art game: draw everything at the native resolution (320 × 180) into a render texture with point filtering, then draw that texture scaled up by a whole number, centred, with black bars (the letterbox from practice 2.01). Every pixel is the same size whatever the window size, and the mouse is mapped back with the inverse of the same scale and offset.</p>
+<h2>Other uses</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Use</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Minimap</td>
+<td>Draw the level from above with a second camera into a small texture, show it in a corner</td>
+</tr>
+<tr>
+<td>Split screen</td>
+<td>One render texture per player, each with its own camera, side by side</td>
+</tr>
+<tr>
+<td>Mirrors, security cameras</td>
+<td>Draw the scene from another camera into a texture used on an object</td>
+</tr>
+<tr>
+<td>Caching</td>
+<td>Draw something expensive once (a big static background) and reuse the texture</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Post-processing</h2>
+<p><strong>Post-processing</strong> is a shader applied to the whole finished frame: draw the world into a render texture, then draw that texture to the screen inside <code>BeginShaderMode</code>. The fragment shader sees every pixel of the frame:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// vignette.fs: darken towards the edges</span>
+<span class="tk-p">#version</span> <span class="tk-n">330</span>
+in vec2 fragTexCoord;
+uniform sampler2D texture0;
+out vec4 finalColor;
+<span class="tk-k">void</span> <span class="tk-f">main</span>()
+{
+    vec3 c = <span class="tk-f">texture</span>(texture0, fragTexCoord).rgb;
+    <span class="tk-k">float</span> d = <span class="tk-f">distance</span>(fragTexCoord, <span class="tk-f">vec2</span>(<span class="tk-n">0.5</span>));      <span class="tk-c">// 0 in the centre, about 0.7 in the corners</span>
+    c *= <span class="tk-f">smoothstep</span>(<span class="tk-n">0.8</span>, <span class="tk-n">0.3</span>, d);                     <span class="tk-c">// fade from 1 to 0 between 0.3 and 0.8</span>
+    finalColor = <span class="tk-f">vec4</span>(c, <span class="tk-n">1.0</span>);
+}</code></pre></div>
+<p>Common effects:</p>
+<ul>
+<li><strong>Vignette</strong> (above): focuses the eye on the centre.</li>
+<li><strong>Colour grading</strong>: adjust brightness, contrast and saturation, or tint the whole frame for mood (blue at night, red when low on health).</li>
+<li><strong>Grey scale</strong>: <code>dot(c, vec3(0.299, 0.587, 0.114))</code> gives the perceived brightness, used for a &quot;game over&quot; or flashback look.</li>
+<li><strong>Blur</strong>: average neighbouring pixels; done in two passes (horizontal, then vertical) for speed, often to put a menu over a blurred game.</li>
+<li><strong>Scanlines and curvature</strong>: an old CRT look.</li>
+<li><strong>Bloom</strong>: blur only the bright parts and add them back, so lights glow.</li>
+</ul>
+<p>raylib&#39;s examples include a dozen post-processing shaders (<code>shaders_postprocessing</code>) to start from.</p>
+<h2>Keep it optional</h2>
+<p>Post-processing costs a full-screen pass per effect, and some effects (blur, shake, flashing) bother some players. Give each strong effect a setting, and keep the interface outside the effect by drawing it <strong>after</strong> the post-processed frame.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/raylib/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/raylib/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-shaders/"><span class="mono">previous</span><b>5.04 Shaders</b></a>
+      <a class="lp-next" href="../6-01-saving-progress-and-settings/"><span class="mono">next</span><b>6.01 Saving Progress and Settings</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/raylib/5-05-render-textures-and-post-processing"></script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Recursion · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/3-04-recursion/">
+  <meta name="description" content="Functions that call themselves, the base case, why a local recursive function needs local function, walking nested tables, speeding up repeated work with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Recursion · Lua · Xenon">
+  <meta property="og:description" content="Functions that call themselves, the base case, why a local recursive function needs local function, walking nested tables, speeding up repeated work with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/3-04-recursion/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Recursion · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Recursion · Lua · Xenon">
+  <meta name="twitter:description" content="Functions that call themselves, the base case, why a local recursive function needs local function, walking nested tables, speeding up repeated work with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Functions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Recursion</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.04</b></span><span>4 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Functions that call themselves, the base case, why a local recursive function needs local function, walking nested tables, speeding up repeated work with memoisation, and Lua&#39;s proper tail calls.</p>
+      <div class="prose">
+<h2>A function that calls itself</h2>
+<p>A <strong>recursive</strong> function solves a problem by solving a smaller copy of the same problem. It needs a <strong>base case</strong> that stops, and every other call must move towards it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">factorial</span>(n)
+    <span class="tk-k">if</span> n &lt;= <span class="tk-n">1</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-n">1</span> <span class="tk-k">end</span>          <span class="tk-c">-- base case</span>
+    <span class="tk-k">return</span> n * <span class="tk-f">factorial</span>(n - <span class="tk-n">1</span>)          <span class="tk-c">-- a smaller problem</span>
+<span class="tk-k">end</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">factorial</span>(<span class="tk-n">5</span>), <span class="tk-f">factorial</span>(<span class="tk-n">20</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>120	2432902008176640000</code></pre></div>
+<p><code>local function factorial</code> matters here. It declares the local name first, then the function, so the body can see <code>factorial</code>. Written as <code>local factorial = function(n) ... factorial(n - 1) ... end</code>, the name inside refers to a <em>global</em> <code>factorial</code> that does not exist yet, and the call fails.</p>
+<p>Without a base case (or with one the calls never reach) the program fails with &quot;stack overflow&quot; after about 200,000 nested calls.</p>
+<h2>Walking nested data</h2>
+<p>Recursion fits data that contains smaller versions of itself, like tables in tables:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">sum_all</span>(t)
+    <span class="tk-k">local</span> total = <span class="tk-n">0</span>
+    <span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">pairs</span>(t) <span class="tk-k">do</span>
+        <span class="tk-k">if</span> <span class="tk-f">type</span>(v) == <span class="tk-s">&quot;table&quot;</span> <span class="tk-k">then</span>
+            total = total + <span class="tk-f">sum_all</span>(v)
+        <span class="tk-k">else</span>
+            total = total + v
+        <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> total
+<span class="tk-k">end</span>
+
+<span class="tk-f">print</span>(<span class="tk-f">sum_all</span>({ <span class="tk-n">1</span>, <span class="tk-n">2</span>, { <span class="tk-n">3</span>, <span class="tk-n">4</span>, { <span class="tk-n">5</span> } }, { <span class="tk-n">6</span> } }))
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">depth</span>(t)
+    <span class="tk-k">if</span> <span class="tk-f">type</span>(t) ~= <span class="tk-s">&quot;table&quot;</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-n">0</span> <span class="tk-k">end</span>
+    <span class="tk-k">local</span> deepest = <span class="tk-n">0</span>
+    <span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">pairs</span>(t) <span class="tk-k">do</span> deepest = math.<span class="tk-f">max</span>(deepest, <span class="tk-f">depth</span>(v)) <span class="tk-k">end</span>
+    <span class="tk-k">return</span> deepest + <span class="tk-n">1</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">depth</span>({ <span class="tk-n">1</span>, { <span class="tk-n">2</span>, { <span class="tk-n">3</span> } } }), <span class="tk-f">depth</span>({}), <span class="tk-f">depth</span>(<span class="tk-n">5</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>21
+3	1	0</code></pre></div>
+<p>A tree of files and folders, a menu with sub-menus, a parsed expression: the shape is always &quot;a value, or a table of more of the same&quot;.</p>
+<h2>Remembering answers</h2>
+<p>The direct recursive Fibonacci recomputes the same values over and over, so it gets slow very fast:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> calls = <span class="tk-n">0</span>
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">slow_fib</span>(n)
+    calls = calls + <span class="tk-n">1</span>
+    <span class="tk-k">if</span> n &lt; <span class="tk-n">2</span> <span class="tk-k">then</span> <span class="tk-k">return</span> n <span class="tk-k">end</span>
+    <span class="tk-k">return</span> <span class="tk-f">slow_fib</span>(n - <span class="tk-n">1</span>) + <span class="tk-f">slow_fib</span>(n - <span class="tk-n">2</span>)
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">slow_fib</span>(<span class="tk-n">25</span>), calls)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>75025	242785</code></pre></div>
+<p><strong>Memoisation</strong> stores each answer in a table the first time and looks it up afterwards:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> memo = {}
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">fib</span>(n)
+    <span class="tk-k">if</span> n &lt; <span class="tk-n">2</span> <span class="tk-k">then</span> <span class="tk-k">return</span> n <span class="tk-k">end</span>
+    <span class="tk-k">if</span> memo[n] <span class="tk-k">then</span> <span class="tk-k">return</span> memo[n] <span class="tk-k">end</span>
+    <span class="tk-k">local</span> result = <span class="tk-f">fib</span>(n - <span class="tk-n">1</span>) + <span class="tk-f">fib</span>(n - <span class="tk-n">2</span>)
+    memo[n] = result
+    <span class="tk-k">return</span> result
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">fib</span>(<span class="tk-n">25</span>), <span class="tk-f">fib</span>(<span class="tk-n">90</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>75025	2880067194370816120</code></pre></div>
+<p>From hundreds of thousands of calls down to about a hundred.</p>
+<h2>Tail calls</h2>
+<p>When a function&#39;s very last action is <code>return f(args)</code>, Lua does not keep the current call around while <code>f</code> runs: it <strong>replaces</strong> it. Such a <em>tail call</em> uses no extra stack, so a tail-recursive function can run any number of times:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">count_down</span>(n)
+    <span class="tk-k">if</span> n == <span class="tk-n">0</span> <span class="tk-k">then</span> <span class="tk-k">return</span> <span class="tk-s">&quot;done&quot;</span> <span class="tk-k">end</span>
+    <span class="tk-k">return</span> <span class="tk-f">count_down</span>(n - <span class="tk-n">1</span>)     <span class="tk-c">-- a tail call</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">count_down</span>(<span class="tk-n">1000000</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>done</code></pre></div>
+<p><code>return n * f(n - 1)</code> is <strong>not</strong> a tail call (the multiplication still has to happen afterwards), and neither is <code>return (f(x))</code> or <code>f(x); return</code>. Only <code>return f(args)</code> exactly.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/3.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/3.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-03-functions-as-values-and-closures/"><span class="mono">previous</span><b>3.03 Functions as Values and Closures</b></a>
+      <a class="lp-next" href="../3-05-scope-globals-and-blocks/"><span class="mono">next</span><b>3.05 Scope, Globals and Blocks</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/3-04-recursion"></script>
+</body>
+</html>

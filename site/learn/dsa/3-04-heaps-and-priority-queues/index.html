@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Heaps and Priority Queues · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/3-04-heaps-and-priority-queues/">
+  <meta name="description" content="The binary heap - a complete tree stored in an array, sift-up and sift-down, push and pop in O(log n), building a heap in O(n), heapsort, std::priority queue…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Heaps and Priority Queues · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="The binary heap - a complete tree stored in an array, sift-up and sift-down, push and pop in O(log n), building a heap in O(n), heapsort, std::priority queue…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/3-04-heaps-and-priority-queues/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Heaps and Priority Queues · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Heaps and Priority Queues · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="The binary heap - a complete tree stored in an array, sift-up and sift-down, push and pop in O(log n), building a heap in O(n), heapsort, std::priority queue…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Sorting and Heaps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Heaps and Priority Queues</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.04</b></span><span>4 of 5 in milestone 3</span><span>8 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The binary heap - a complete tree stored in an array, sift-up and sift-down, push and pop in O(log n), building a heap in O(n), heapsort, std::priority_queue and the heap algorithms, min-heaps with std::greater, and classic uses - top k, merging k sorted lists, and the running median with two heaps.</p>
+      <div class="prose">
+<h2>A queue ordered by priority</h2>
+<p>A <strong>priority queue</strong> hands out its elements by priority rather than arrival order: always the largest (or smallest) next. Hospitals triage this way; operating systems schedule threads this way; Dijkstra&#39;s shortest-path algorithm (lesson 5.03) is built on one.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Implementation</th>
+<th>push</th>
+<th>pop the max</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>unsorted vector</td>
+<td>O(1)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>sorted vector</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td><strong>binary heap</strong></td>
+<td><strong>O(log n)</strong></td>
+<td><strong>O(log n)</strong></td>
+</tr>
+</tbody></table>
+</div>
+<h2>The heap property</h2>
+<p>A <strong>binary max-heap</strong> is a binary tree in which every node is <strong>at least as large as its children</strong>. So the largest element is at the root. The tree is also <strong>complete</strong>: every level is full except possibly the last, which is filled from the left.</p>
+<p>Completeness means the tree fits perfectly in an array, level by level, with no pointers at all:</p>
+<ul>
+<li>the root is at index 0,</li>
+<li>the children of node <code>i</code> are at <code>2i + 1</code> and <code>2i + 2</code>,</li>
+<li>the parent of node <code>i</code> is at <code>(i − 1) / 2</code>.</li>
+</ul>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    A[&quot;90 (0)&quot;] --&gt; B[&quot;70 (1)&quot;] &amp; C[&quot;80 (2)&quot;]
+    B --&gt; D[&quot;40 (3)&quot;] &amp; E[&quot;60 (4)&quot;]
+    C --&gt; F[&quot;50 (5)&quot;] &amp; G[&quot;10 (6)&quot;]</pre></div>
+<p>As an array: <code>90 70 80 40 60 50 10</code>.</p>
+<h2>Push: sift up</h2>
+<p>Put the new element at the end of the array (the next free spot in the bottom level), then <strong>sift it up</strong>: while it is larger than its parent, swap them. The tree has log₂ n levels, so this is O(log n).</p>
+<h2>Pop: sift down</h2>
+<p>The maximum is at the root. Move the <strong>last</strong> element into the root and shrink the array, then <strong>sift it down</strong>: while it is smaller than its larger child, swap it with that child. Again O(log n).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;stdexcept&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">MaxHeap</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">void</span> <span class="tk-f">push</span>(<span class="tk-k">int</span> value)
+    {
+        a_.<span class="tk-f">push_back</span>(value);
+        std::size_t i = a_.<span class="tk-f">size</span>() - <span class="tk-n">1</span>;
+        <span class="tk-k">while</span> (i &gt; <span class="tk-n">0</span> &amp;&amp; a_[(i - <span class="tk-n">1</span>) / <span class="tk-n">2</span>] &lt; a_[i])           <span class="tk-c">// sift up</span>
+        {
+            std::<span class="tk-f">swap</span>(a_[(i - <span class="tk-n">1</span>) / <span class="tk-n">2</span>], a_[i]);
+            i = (i - <span class="tk-n">1</span>) / <span class="tk-n">2</span>;
+        }
+    }
+
+    <span class="tk-k">int</span> <span class="tk-f">pop</span>()
+    {
+        <span class="tk-k">if</span> (a_.<span class="tk-f">empty</span>()) <span class="tk-k">throw</span> std::<span class="tk-f">out_of_range</span>(<span class="tk-s">&quot;empty heap&quot;</span>);
+        <span class="tk-k">int</span> top = a_[<span class="tk-n">0</span>];
+        a_[<span class="tk-n">0</span>] = a_.<span class="tk-f">back</span>();
+        a_.<span class="tk-f">pop_back</span>();
+        <span class="tk-f">siftDown</span>(<span class="tk-n">0</span>);
+        <span class="tk-k">return</span> top;
+    }
+
+    <span class="tk-k">bool</span> <span class="tk-f">empty</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> a_.<span class="tk-f">empty</span>(); }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">void</span> <span class="tk-f">siftDown</span>(std::size_t i)
+    {
+        <span class="tk-k">while</span> (<span class="tk-k">true</span>)
+        {
+            std::size_t largest = i, l = <span class="tk-n">2</span> * i + <span class="tk-n">1</span>, r = <span class="tk-n">2</span> * i + <span class="tk-n">2</span>;
+            <span class="tk-k">if</span> (l &lt; a_.<span class="tk-f">size</span>() &amp;&amp; a_[largest] &lt; a_[l]) largest = l;
+            <span class="tk-k">if</span> (r &lt; a_.<span class="tk-f">size</span>() &amp;&amp; a_[largest] &lt; a_[r]) largest = r;
+            <span class="tk-k">if</span> (largest == i) <span class="tk-k">return</span>;
+            std::<span class="tk-f">swap</span>(a_[i], a_[largest]);
+            i = largest;
+        }
+    }
+
+    std::vector&lt;<span class="tk-k">int</span>&gt; a_;
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">MaxHeap</span> h;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : { <span class="tk-n">40</span>, <span class="tk-n">90</span>, <span class="tk-n">10</span>, <span class="tk-n">70</span>, <span class="tk-n">60</span>, <span class="tk-n">80</span>, <span class="tk-n">50</span> }) h.<span class="tk-f">push</span>(x);
+    <span class="tk-k">while</span> (!h.<span class="tk-f">empty</span>()) std::cout &lt;&lt; h.<span class="tk-f">pop</span>() &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<h2>Building a heap in O(n)</h2>
+<p>Pushing n elements one at a time costs O(n log n). But a whole array can be turned into a heap faster: sift down every non-leaf node, <strong>from the last one back to the root</strong>. Most nodes are near the bottom, where sifting down is short (half the nodes are leaves and do nothing, a quarter sift at most one level, an eighth at most two...). The total is n·(1/4 + 2/8 + 3/16 + ...) &lt; n: <strong>O(n)</strong>.</p>
+<h2>Heapsort</h2>
+<p>Build a max-heap in O(n), then repeatedly swap the root (the maximum) with the last element of the heap, shrink the heap by one, and sift the new root down. The array fills with sorted elements from the back.</p>
+<p>Heapsort is <strong>O(n log n) in the worst case</strong> and <strong>in place</strong>, which is why introsort uses it as its safety net. It is not stable, and its jumps around the array make it slower than quicksort in practice.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">siftDown</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; a, std::size_t i, std::size_t n)
+{
+    <span class="tk-k">while</span> (<span class="tk-k">true</span>)
+    {
+        std::size_t largest = i, l = <span class="tk-n">2</span> * i + <span class="tk-n">1</span>, r = l + <span class="tk-n">1</span>;
+        <span class="tk-k">if</span> (l &lt; n &amp;&amp; a[largest] &lt; a[l]) largest = l;
+        <span class="tk-k">if</span> (r &lt; n &amp;&amp; a[largest] &lt; a[r]) largest = r;
+        <span class="tk-k">if</span> (largest == i) <span class="tk-k">return</span>;
+        std::<span class="tk-f">swap</span>(a[i], a[largest]);
+        i = largest;
+    }
+}
+
+<span class="tk-k">void</span> <span class="tk-f">heapSort</span>(std::vector&lt;<span class="tk-k">int</span>&gt;&amp; a)
+{
+    std::size_t n = a.<span class="tk-f">size</span>();
+    <span class="tk-k">for</span> (std::size_t i = n / <span class="tk-n">2</span>; i-- &gt; <span class="tk-n">0</span>;) <span class="tk-f">siftDown</span>(a, i, n);     <span class="tk-c">// build the heap, bottom up</span>
+    <span class="tk-k">for</span> (std::size_t end = n; end &gt; <span class="tk-n">1</span>; --end)
+    {
+        std::<span class="tk-f">swap</span>(a[<span class="tk-n">0</span>], a[end - <span class="tk-n">1</span>]);                              <span class="tk-c">// the maximum goes to its final place</span>
+        <span class="tk-f">siftDown</span>(a, <span class="tk-n">0</span>, end - <span class="tk-n">1</span>);
+    }
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;<span class="tk-k">int</span>&gt; a{ <span class="tk-n">12</span>, <span class="tk-n">11</span>, <span class="tk-n">13</span>, <span class="tk-n">5</span>, <span class="tk-n">6</span>, <span class="tk-n">7</span>, <span class="tk-n">3</span>, <span class="tk-n">99</span>, <span class="tk-n">0</span> };
+    <span class="tk-f">heapSort</span>(a);
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : a) std::cout &lt;&lt; x &lt;&lt; <span class="tk-s">' '</span>;
+    std::cout &lt;&lt; <span class="tk-s">'\n'</span>;
+}</code></pre></div>
+<h2>The standard library</h2>
+<p><code>std::priority_queue&lt;T&gt;</code> is a max-heap adapter over a <code>std::vector</code>: <code>push</code>, <code>top</code>, <code>pop</code>, <code>size</code>. For a <strong>min-heap</strong>, pass <code>std::greater&lt;T&gt;</code> as the comparator. The raw algorithms <code>std::make_heap</code>, <code>std::push_heap</code>, <code>std::pop_heap</code> and <code>std::sort_heap</code> work on any random-access range.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;functional&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Task</span> { <span class="tk-k">int</span> priority; std::string name; };
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::priority_queue&lt;<span class="tk-k">int</span>, std::vector&lt;<span class="tk-k">int</span>&gt;, std::greater&lt;<span class="tk-k">int</span>&gt;&gt; minHeap;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : { <span class="tk-n">5</span>, <span class="tk-n">1</span>, <span class="tk-n">8</span>, <span class="tk-n">3</span> }) minHeap.<span class="tk-f">push</span>(x);
+    std::cout &lt;&lt; <span class="tk-s">&quot;smallest: &quot;</span> &lt;&lt; minHeap.<span class="tk-f">top</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+
+    <span class="tk-k">auto</span> lower = [](<span class="tk-k">const</span> <span class="tk-t">Task</span>&amp; a, <span class="tk-k">const</span> <span class="tk-t">Task</span>&amp; b) { <span class="tk-k">return</span> a.priority &lt; b.priority; };   <span class="tk-c">// &quot;a comes out after b&quot;</span>
+    std::priority_queue&lt;<span class="tk-t">Task</span>, std::vector&lt;<span class="tk-t">Task</span>&gt;, <span class="tk-k">decltype</span>(lower)&gt; <span class="tk-f">tasks</span>(lower);
+    tasks.<span class="tk-f">push</span>({ <span class="tk-n">2</span>, <span class="tk-s">&quot;write report&quot;</span> });
+    tasks.<span class="tk-f">push</span>({ <span class="tk-n">5</span>, <span class="tk-s">&quot;fix outage&quot;</span> });
+    tasks.<span class="tk-f">push</span>({ <span class="tk-n">1</span>, <span class="tk-s">&quot;water plants&quot;</span> });
+    <span class="tk-k">while</span> (!tasks.<span class="tk-f">empty</span>()) { std::cout &lt;&lt; tasks.<span class="tk-f">top</span>().priority &lt;&lt; <span class="tk-s">' '</span> &lt;&lt; tasks.<span class="tk-f">top</span>().name &lt;&lt; <span class="tk-s">'\n'</span>; tasks.<span class="tk-f">pop</span>(); }
+}</code></pre></div>
+<p>The comparator reads backwards at first: <code>priority_queue</code> puts the element that is <strong>largest</strong> according to it on top, so <code>less</code> gives a max-heap and <code>greater</code> a min-heap.</p>
+<h2>Classic uses</h2>
+<p><strong>The k largest of n items</strong>: keep a <strong>min-heap of size k</strong>. For each item, push it, and if the heap has more than k elements, pop the smallest. The heap ends up holding the k largest, in O(n log k) time and O(k) memory, which works even for a stream too big to store.</p>
+<p><strong>Merging k sorted lists</strong>: put the first element of each list in a min-heap, with a note of which list it came from. Repeatedly pop the smallest, output it, and push the next element from the same list. With n elements in total, that is O(n log k).</p>
+<p><strong>The running median</strong>: keep the smaller half of the numbers in a max-heap and the larger half in a min-heap, with sizes differing by at most one. Each new number goes into the right heap, one element moves across if the sizes get unbalanced, and the median is at the top of one or both heaps. Each step is O(log n).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;functional&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::priority_queue&lt;<span class="tk-k">int</span>&gt; low;                                       <span class="tk-c">// max-heap: the smaller half</span>
+    std::priority_queue&lt;<span class="tk-k">int</span>, std::vector&lt;<span class="tk-k">int</span>&gt;, std::greater&lt;<span class="tk-k">int</span>&gt;&gt; high; <span class="tk-c">// min-heap: the larger half</span>
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> x : { <span class="tk-n">5</span>, <span class="tk-n">15</span>, <span class="tk-n">1</span>, <span class="tk-n">3</span>, <span class="tk-n">8</span>, <span class="tk-n">7</span>, <span class="tk-n">9</span>, <span class="tk-n">10</span> })
+    {
+        <span class="tk-k">if</span> (low.<span class="tk-f">empty</span>() || x &lt;= low.<span class="tk-f">top</span>()) low.<span class="tk-f">push</span>(x); <span class="tk-k">else</span> high.<span class="tk-f">push</span>(x);
+        <span class="tk-k">if</span> (low.<span class="tk-f">size</span>() &gt; high.<span class="tk-f">size</span>() + <span class="tk-n">1</span>) { high.<span class="tk-f">push</span>(low.<span class="tk-f">top</span>()); low.<span class="tk-f">pop</span>(); }
+        <span class="tk-k">else</span> <span class="tk-k">if</span> (high.<span class="tk-f">size</span>() &gt; low.<span class="tk-f">size</span>()) { low.<span class="tk-f">push</span>(high.<span class="tk-f">top</span>()); high.<span class="tk-f">pop</span>(); }
+
+        <span class="tk-k">double</span> median = low.<span class="tk-f">size</span>() &gt; high.<span class="tk-f">size</span>() ? low.<span class="tk-f">top</span>() : (low.<span class="tk-f">top</span>() + high.<span class="tk-f">top</span>()) / <span class="tk-n">2.0</span>;
+        std::cout &lt;&lt; <span class="tk-s">&quot;after &quot;</span> &lt;&lt; x &lt;&lt; <span class="tk-s">&quot;: median &quot;</span> &lt;&lt; median &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+}</code></pre></div>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">In an array-stored heap, where are the children of the node at index 5?</div><ul><li>6 and 7</li><li>11 and 12</li><li>10 and 11</li><li>2 and 3</li></ul><details><summary>Show the answer</summary><p><b>11 and 12</b> 2 × 5 + 1 = 11 and 2 × 5 + 2 = 12.</p></details></li><li><div class="q">Why is building a heap bottom-up O(n) rather than O(n log n)?</div><ul><li>Most nodes are near the bottom, where sifting down is short, and the total work sums to less than n</li><li>Because it uses insertion sort</li><li>Because the heap is not fully sorted</li><li>It is actually O(n log n)</li></ul><details><summary>Show the answer</summary><p><b>Most nodes are near the bottom, where sifting down is short, and the total work sums to less than n</b> Half the nodes are leaves, a quarter move at most one level, and so on.</p></details></li><li><div class="q">How do you find the 10 largest values in a stream of a billion numbers?</div><ul><li>Sort them all</li><li>Keep a min-heap of size 10, popping the smallest whenever it holds 11</li><li>Keep a max-heap of all of them</li><li>Use binary search</li></ul><details><summary>Show the answer</summary><p><b>Keep a min-heap of size 10, popping the smallest whenever it holds 11</b> The min-heap&#39;s top is the smallest of the current top 10, the one to throw out.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>A binary heap is a complete tree in an array: children of <code>i</code> at <code>2i + 1</code> and <code>2i + 2</code>.</li>
+<li>Push sifts up, pop sifts down: O(log n). Building from an array is O(n).</li>
+<li>Heapsort is O(n log n) worst case and in place, but unstable and cache-unfriendly.</li>
+<li><code>std::priority_queue</code> is a max-heap; <code>std::greater</code> makes a min-heap.</li>
+<li>Heaps give top-k in O(n log k), k-way merges in O(n log k), and running medians in O(log n) per number.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/3.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/3.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-03-quicksort/"><span class="mono">previous</span><b>3.03 Quicksort</b></a>
+      <a class="lp-next" href="../3-05-counting-and-radix-sort/"><span class="mono">next</span><b>3.05 Counting and Radix Sort</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/3-04-heaps-and-priority-queues"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

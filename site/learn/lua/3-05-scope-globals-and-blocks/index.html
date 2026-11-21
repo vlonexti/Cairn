@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Scope, Globals and Blocks · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/3-05-scope-globals-and-blocks/">
+  <meta name="description" content="Where a local is visible, blocks and do ... end, shadowing, how globals live in the table G, why a typo creates a global, the const and close attributes of…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Scope, Globals and Blocks · Lua · Xenon">
+  <meta property="og:description" content="Where a local is visible, blocks and do ... end, shadowing, how globals live in the table G, why a typo creates a global, the const and close attributes of…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/3-05-scope-globals-and-blocks/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scope, Globals and Blocks · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Scope, Globals and Blocks · Lua · Xenon">
+  <meta name="twitter:description" content="Where a local is visible, blocks and do ... end, shadowing, how globals live in the table G, why a typo creates a global, the const and close attributes of…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Functions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Scope, Globals and Blocks</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Where a local is visible, blocks and do ... end, shadowing, how globals live in the table _G, why a typo creates a global, the const and close attributes of Lua 5.4, and keeping a file&#39;s names private.</p>
+      <div class="prose">
+<h2>A local lives in its block</h2>
+<p>A local variable is visible from the line after its declaration to the <code>end</code> of the <strong>block</strong> it is in. Every <code>then ... end</code>, loop body, function body and <code>do ... end</code> is a block:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> x = <span class="tk-s">&quot;outer&quot;</span>
+<span class="tk-k">do</span>
+    <span class="tk-k">local</span> x = <span class="tk-s">&quot;inner&quot;</span>      <span class="tk-c">-- a new x, hiding the outer one</span>
+    <span class="tk-k">local</span> y = <span class="tk-n">1</span>
+    <span class="tk-f">print</span>(x, y)
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(x, y)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>inner	1
+outer	nil</code></pre></div>
+<p><code>do ... end</code> makes a block on its own, which is useful to keep helper variables from leaking. The inner <code>x</code> <strong>shadows</strong> the outer one: same name, different variable. Shadowing is legal but confusing; prefer new names.</p>
+<h2>Globals are a table</h2>
+<p>A name that is not a local is a <strong>global</strong>, and globals are simply fields of a table called <code>_G</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code>score = <span class="tk-n">10</span>                     <span class="tk-c">-- no local: a global</span>
+<span class="tk-f">print</span>(_G.score, _G[<span class="tk-s">&quot;score&quot;</span>])
+_G.level = <span class="tk-n">3</span>
+<span class="tk-f">print</span>(level)
+<span class="tk-f">print</span>(<span class="tk-f">type</span>(_G.print), _G.math.pi &gt; <span class="tk-n">3</span>)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>10	10
+3
+function	true</code></pre></div>
+<p><code>print</code>, <code>math</code>, <code>string</code>, <code>table</code> and the rest of the standard library are globals too: entries in <code>_G</code>. That has a consequence:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">total</span>(list)
+    sum = <span class="tk-n">0</span>                    <span class="tk-c">-- forgot local</span>
+    <span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(list) <span class="tk-k">do</span> sum = sum + v <span class="tk-k">end</span>
+    <span class="tk-k">return</span> sum
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">total</span>({ <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> }), sum)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>6	6</code></pre></div>
+<p><code>sum</code> leaked out of the function into the whole program. A second function using its own <code>sum</code> would silently trample this one. Misspell a variable (<code>totl = totl + 1</code>) and you get a global, plus an &quot;arithmetic on a nil value&quot; error much later.</p>
+<div class="callout tip"><div class="callout-title"><span>Finding accidental globals</span></div><div class="callout-body"><p>Run <code>luac -l -p file.lua</code> (shipped with Lua) and look for <code>SETTABUP</code> lines: each one writes a global. Editors with a Lua language server underline undefined globals as you type. Lesson 5.02 shows how to make reading a missing global an error.</p>
+</div></div>
+<p>Locals are also faster than globals: a local lives in a register, a global is a table lookup every time. That is why Lua code often starts with <code>local insert = table.insert</code>.</p>
+<h2>const and close</h2>
+<p>Lua 5.4 adds two <strong>attributes</strong> for locals:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> LIMIT &lt;const&gt; = <span class="tk-n">100</span>
+<span class="tk-f">print</span>(LIMIT * <span class="tk-n">2</span>)
+<span class="tk-c">-- LIMIT = 5   would not compile: attempt to assign to const variable 'LIMIT'</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>200</code></pre></div>
+<p><code>&lt;const&gt;</code> makes assigning to the variable a compile-time error. <code>&lt;close&gt;</code> is for resources: when the block ends, Lua calls the value&#39;s <code>__close</code> metamethod, so a file or lock is released even if an error happens. Lesson 6.04 uses it with files.</p>
+<h2>Private names in a file</h2>
+<p>A file is a block too. A <code>local</code> at the top of a file is visible to the rest of that file and to nothing else. A module (lesson 5.05) keeps its helpers local and hands out only what it returns:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-c">-- shapes.lua</span>
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">square</span>(x) <span class="tk-k">return</span> x * x <span class="tk-k">end</span>   <span class="tk-c">-- private helper</span>
+
+<span class="tk-k">local</span> M = {}
+<span class="tk-k">function</span> M.<span class="tk-f">circle_area</span>(r) <span class="tk-k">return</span> math.pi * <span class="tk-f">square</span>(r) <span class="tk-k">end</span>
+<span class="tk-k">return</span> M</code></pre></div>
+<h2>Upvalues and blocks together</h2>
+<p>A block can create private state for a function, with no global and no outer variable involved:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> next_id
+<span class="tk-k">do</span>
+    <span class="tk-k">local</span> last = <span class="tk-n">0</span>
+    next_id = <span class="tk-k">function</span>()
+        last = last + <span class="tk-n">1</span>
+        <span class="tk-k">return</span> <span class="tk-s">&quot;id&quot;</span> .. last
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(<span class="tk-f">next_id</span>(), <span class="tk-f">next_id</span>(), last)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>id1	id2	nil</code></pre></div>
+<p><code>last</code> is invisible outside the <code>do</code> block, but the closure keeps it alive.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-recursion/"><span class="mono">previous</span><b>3.04 Recursion</b></a>
+      <a class="lp-next" href="../4-01-the-string-library/"><span class="mono">next</span><b>4.01 The String Library</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/3-05-scope-globals-and-blocks"></script>
+</body>
+</html>

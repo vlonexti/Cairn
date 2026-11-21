@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Embedding Lua and Its Dialects · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/6-05-embedding-lua-and-its-dialects/">
+  <meta name="description" content="How a C program runs Lua with the C API and its stack, giving scripts functions written in C, the garbage collector, Lua's versions and the dialects LuaJIT…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Embedding Lua and Its Dialects · Lua · Xenon">
+  <meta property="og:description" content="How a C program runs Lua with the C API and its stack, giving scripts functions written in C, the garbage collector, Lua's versions and the dialects LuaJIT…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/6-05-embedding-lua-and-its-dialects/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Embedding Lua and Its Dialects · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Embedding Lua and Its Dialects · Lua · Xenon">
+  <meta name="twitter:description" content="How a C program runs Lua with the C API and its stack, giving scripts functions written in C, the garbage collector, Lua's versions and the dialects LuaJIT…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Lua in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Embedding Lua and Its Dialects</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How a C program runs Lua with the C API and its stack, giving scripts functions written in C, the garbage collector, Lua&#39;s versions and the dialects LuaJIT and Luau, and where to go next with LÖVE, Neovim and Roblox.</p>
+      <div class="prose">
+<h2>Lua inside a C program</h2>
+<p>Everything in this course ran in the <code>lua</code> command, which is itself a small C program around the Lua library. Any C or C++ program can do the same: link the library, create a <strong>Lua state</strong>, and hand it scripts. The C course on this site covers enough C to read this.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;lua.h&gt;</span>
+<span class="tk-p">#include &lt;lauxlib.h&gt;</span>
+<span class="tk-p">#include &lt;lualib.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    lua_State *L = <span class="tk-f">luaL_newstate</span>();      <span class="tk-c">/* a fresh Lua world */</span>
+    <span class="tk-f">luaL_openlibs</span>(L);                    <span class="tk-c">/* string, table, math, io, os... */</span>
+
+    <span class="tk-k">if</span> (<span class="tk-f">luaL_dostring</span>(L, <span class="tk-s">&quot;print('hello from Lua', 6 * 7)&quot;</span>) != LUA_OK) {
+        <span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;error: %s\n&quot;</span>, <span class="tk-f">lua_tostring</span>(L, -<span class="tk-n">1</span>));
+    }
+
+    <span class="tk-f">lua_close</span>(L);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>gcc host.c -o host -llua -lm
+./host</code></pre></div>
+<p>Each <code>lua_State</code> is a completely separate Lua world with its own globals. A game can run one state per mod, so mods cannot see each other.</p>
+<h2>The stack</h2>
+<p>C and Lua exchange values through a <strong>stack</strong> that belongs to the state. C pushes values onto it, calls Lua, and reads the results off it. Index 1 is the bottom; negative indexes count from the top (<code>-1</code> is the top value).</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-c">/* call the Lua function area(w, h) from C */</span>
+<span class="tk-f">lua_getglobal</span>(L, <span class="tk-s">&quot;area&quot;</span>);                 <span class="tk-c">/* stack: area            */</span>
+<span class="tk-f">lua_pushnumber</span>(L, <span class="tk-n">3</span>);                     <span class="tk-c">/* stack: area 3          */</span>
+<span class="tk-f">lua_pushnumber</span>(L, <span class="tk-n">4</span>);                     <span class="tk-c">/* stack: area 3 4        */</span>
+<span class="tk-k">if</span> (<span class="tk-f">lua_pcall</span>(L, <span class="tk-n">2</span>, <span class="tk-n">1</span>, <span class="tk-n">0</span>) == LUA_OK) {    <span class="tk-c">/* 2 arguments, 1 result  */</span>
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%g\n&quot;</span>, <span class="tk-f">lua_tonumber</span>(L, -<span class="tk-n">1</span>));  <span class="tk-c">/* stack: 12              */</span>
+    <span class="tk-f">lua_pop</span>(L, <span class="tk-n">1</span>);                        <span class="tk-c">/* stack: empty again     */</span>
+}</code></pre></div>
+<p><code>lua_pcall</code> is the C side of <code>pcall</code>: a script that crashes reports an error instead of killing the host program.</p>
+<h2>Giving scripts your functions</h2>
+<p>The other direction is what makes Lua a scripting language: the host gives Lua functions written in C. Such a function receives its arguments on the stack, pushes its results, and returns how many it pushed:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-c">/* Lua will see this as  game.damage(target_id, amount) -&gt; remaining hp */</span>
+<span class="tk-k">static</span> <span class="tk-k">int</span> <span class="tk-f">l_damage</span>(lua_State *L)
+{
+    lua_Integer id = <span class="tk-f">luaL_checkinteger</span>(L, <span class="tk-n">1</span>);   <span class="tk-c">/* raises a Lua error if not an integer */</span>
+    lua_Integer amount = <span class="tk-f">luaL_checkinteger</span>(L, <span class="tk-n">2</span>);
+    lua_Integer hp = <span class="tk-f">apply_damage</span>(id, amount);  <span class="tk-c">/* the game's own C function */</span>
+    <span class="tk-f">lua_pushinteger</span>(L, hp);
+    <span class="tk-k">return</span> <span class="tk-n">1</span>;                                   <span class="tk-c">/* one result */</span>
+}
+
+<span class="tk-k">static</span> <span class="tk-k">const</span> luaL_Reg game_lib[] = {
+    { <span class="tk-s">&quot;damage&quot;</span>, l_damage },
+    { <span class="tk-k">NULL</span>, <span class="tk-k">NULL</span> },
+};
+
+<span class="tk-c">/* at start-up: */</span>
+<span class="tk-f">luaL_newlib</span>(L, game_lib);    <span class="tk-c">/* a table with the functions */</span>
+<span class="tk-f">lua_setglobal</span>(L, <span class="tk-s">&quot;game&quot;</span>);    <span class="tk-c">/* scripts call game.damage(...) */</span></code></pre></div>
+<p>A script then reads like part of the game:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> hp = game.<span class="tk-f">damage</span>(enemy_id, <span class="tk-n">15</span>)
+<span class="tk-k">if</span> hp &lt;= <span class="tk-n">0</span> <span class="tk-k">then</span> <span class="tk-f">print</span>(<span class="tk-s">&quot;defeated!&quot;</span>) <span class="tk-k">end</span></code></pre></div>
+<p>That is the whole model behind World of Warcraft add-ons, Redis scripts and Neovim plugins: the host decides what the scripts may touch. A host that does not want scripts to delete files simply leaves out <code>io</code> and <code>os</code>.</p>
+<h2>The garbage collector</h2>
+<p>Lua frees memory itself. Periodically the <strong>garbage collector</strong> finds tables, strings, functions and coroutines that nothing can reach any more and frees them. Lua 5.4 can run it <em>incrementally</em> (a little at a time, the default) or <em>generationally</em> (young objects checked more often):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> before = <span class="tk-f">collectgarbage</span>(<span class="tk-s">&quot;count&quot;</span>)
+<span class="tk-k">local</span> junk = {}
+<span class="tk-k">for</span> i = <span class="tk-n">1</span>, <span class="tk-n">100000</span> <span class="tk-k">do</span> junk[i] = { i } <span class="tk-k">end</span>
+<span class="tk-k">local</span> during = <span class="tk-f">collectgarbage</span>(<span class="tk-s">&quot;count&quot;</span>)
+junk = <span class="tk-k">nil</span>
+<span class="tk-f">collectgarbage</span>()
+<span class="tk-k">local</span> after = <span class="tk-f">collectgarbage</span>(<span class="tk-s">&quot;count&quot;</span>)
+<span class="tk-f">print</span>(during &gt; before + <span class="tk-n">1000</span>, after &lt; during)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>true	true</code></pre></div>
+<p><code>collectgarbage(&quot;count&quot;)</code> is the memory in use, in kilobytes. Games sometimes run <code>collectgarbage(&quot;step&quot;)</code> once per frame to keep collection pauses small. A <code>__gc</code> metamethod on a table runs when the collector frees it, the hook a C library uses to free its own resources.</p>
+<h2>Versions and dialects</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Lua 5.1 (2006)</td>
+<td>Still widespread through LuaJIT; no integers, no <code>goto</code>, <code>setfenv</code> instead of <code>_ENV</code></td>
+</tr>
+<tr>
+<td>Lua 5.2 (2011)</td>
+<td><code>_ENV</code>, <code>goto</code>, <code>bit32</code></td>
+</tr>
+<tr>
+<td>Lua 5.3 (2015)</td>
+<td>Integers, bitwise operators, <code>utf8</code>, <code>//</code></td>
+</tr>
+<tr>
+<td>Lua 5.4 (2020)</td>
+<td><code>&lt;const&gt;</code> and <code>&lt;close&gt;</code>, generational GC; this course</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>LuaJIT</strong> is a very fast compiler for Lua 5.1 (with some 5.2 additions) and has an FFI that calls C functions straight from Lua. LÖVE, OpenResty and Neovim use it. Integer subtypes, <code>//</code>, <code>&lt;close&gt;</code> and <code>utf8</code> are missing; <code>bit.band(a, b)</code> replaces <code>a &amp; b</code>.</p>
+<p><strong>Luau</strong>, Roblox&#39;s language, started from Lua 5.1 and added gradual type annotations (<code>local hp: number = 100</code>), compound assignment (<code>x += 1</code>), <code>continue</code>, string interpolation (<code>`hp is {hp}`</code>) and a sandbox. Everything else in this course (tables, metatables, closures, coroutines) works the same.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><strong>Games with LÖVE</strong> (love2d.org): you write <code>love.load</code>, <code>love.update(dt)</code> and <code>love.draw()</code>, and LÖVE calls them every frame. Milestones 2, 3 and 5 are exactly what you need.</li>
+<li><strong>Neovim</strong>: <code>init.lua</code> configures the editor with the <code>vim</code> table (<code>vim.opt.number = true</code>, <code>vim.keymap.set(...)</code>).</li>
+<li><strong>Roblox</strong>: Luau scripts work with <code>game</code>, <code>workspace</code> and events (<code>part.Touched:Connect(function(hit) ... end)</code>), using the colon method calls from lesson 5.03.</li>
+<li><strong>Embedding</strong>: take the C fragments above, build the Lua 5.4 source (one <code>make</code>), and give a program of your own a scripting language.</li>
+<li><strong>The book</strong>: <em>Programming in Lua</em> by Roberto Ierusalimschy, Lua&#39;s lead designer, and the free reference manual at lua.org/manual/5.4.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-files-and-the-os-library/"><span class="mono">previous</span><b>6.04 Files and the os Library</b></a>
+      <a class="lp-next" href="../7-01-environments-and-sandboxes/"><span class="mono">next</span><b>7.01 Environments and Sandboxes</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/6-05-embedding-lua-and-its-dialects"></script>
+</body>
+</html>

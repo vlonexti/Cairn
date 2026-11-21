@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Colours and Colour Pickers · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/2-04-colours-and-colour-pickers/">
+  <meta name="description" content="ImGui works with colours in two forms - four floats from 0 to 1 (ImVec4) and one packed 32-bit integer (ImU32, built with IM COL32). This lesson covers the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Colours and Colour Pickers · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="ImGui works with colours in two forms - four floats from 0 to 1 (ImVec4) and one packed 32-bit integer (ImU32, built with IM COL32). This lesson covers the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/2-04-colours-and-colour-pickers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Colours and Colour Pickers · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Colours and Colour Pickers · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="ImGui works with colours in two forms - four floats from 0 to 1 (ImVec4) and one packed 32-bit integer (ImU32, built with IM COL32). This lesson covers the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Widgets and Input</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Colours and Colour Pickers</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">ImGui works with colours in two forms - four floats from 0 to 1 (<code>ImVec4</code>) and one packed 32-bit integer (<code>ImU32</code>, built with <code>IM_COL32</code>). This lesson covers the colour widgets, converting between the forms and to HSV, and why packed colours store their bytes in the order they do.</p>
+      <div class="prose">
+<h2>Colour widgets</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">ColorEdit3</span>(<span class="tk-s">&quot;Fog colour&quot;</span>, &amp;fog.color.x);        <span class="tk-c">// float[3]: r, g, b from 0 to 1</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">ColorEdit4</span>(<span class="tk-s">&quot;Tint&quot;</span>, &amp;sprite.tint.x);            <span class="tk-c">// float[4]: with alpha</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">ColorPicker4</span>(<span class="tk-s">&quot;Sky&quot;</span>, &amp;sky.x);                   <span class="tk-c">// the big picker with a hue wheel or square</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">ColorButton</span>(<span class="tk-s">&quot;##swatch&quot;</span>, <span class="tk-f">ImVec4</span>(<span class="tk-n">0.9f</span>, <span class="tk-n">0.6f</span>, <span class="tk-n">0.2f</span>, <span class="tk-n">1.0f</span>));   <span class="tk-c">// a clickable swatch</span></code></pre></div>
+<p><code>ColorEdit</code> shows the colour as numbers with a swatch; click the swatch for a picker popup. Flags choose the details: <code>ImGuiColorEditFlags_NoAlpha</code>, <code>DisplayHex</code>, <code>DisplayHSV</code>, <code>PickerHueWheel</code>, <code>Float</code> (0..1 numbers instead of 0..255), <code>HDR</code> (values above 1).</p>
+<h2>Two forms of colour</h2>
+<p><strong><code>ImVec4</code></strong>: four floats, red, green, blue, alpha, each from 0 to 1. Widgets and styles use this form.</p>
+<p><strong><code>ImU32</code></strong>: four bytes packed into one 32-bit unsigned integer. Draw lists use this form, because millions of vertices each carry a colour and four bytes are much smaller than four floats. The macro builds one:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImU32</span> gold = <span class="tk-f">IM_COL32</span>(<span class="tk-n">240</span>, <span class="tk-n">180</span>, <span class="tk-n">70</span>, <span class="tk-n">255</span>);    <span class="tk-c">// r, g, b, a from 0 to 255</span>
+draw-&gt;<span class="tk-f">AddRectFilled</span>(min, max, gold);</code></pre></div>
+<p>With ImGui&#39;s default settings, <code>IM_COL32(r, g, b, a)</code> is</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>(a &lt;&lt; 24) | (b &lt;&lt; 16) | (g &lt;&lt; 8) | r</code></pre></div>
+<p>Red is in the <strong>lowest</strong> byte. Written in memory on a little-endian PC (lesson 1.02 of the gamedev course), the bytes are in the order <strong>R, G, B, A</strong>, which is exactly the vertex format the GPU reads. That is why it looks &quot;backwards&quot; as a hexadecimal number: opaque red is <code>0xFF0000FF</code>.</p>
+<p>Converting between them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImVec4</span> v = <span class="tk-t">ImGui</span>::<span class="tk-f">ColorConvertU32ToFloat4</span>(gold);
+<span class="tk-t">ImU32</span>  u = <span class="tk-t">ImGui</span>::<span class="tk-f">ColorConvertFloat4ToU32</span>(<span class="tk-f">ImVec4</span>(<span class="tk-n">1</span>, <span class="tk-n">0.5f</span>, <span class="tk-n">0</span>, <span class="tk-n">1</span>));   <span class="tk-c">// rounds to the nearest of 0..255</span>
+<span class="tk-t">ImU32</span>  w = <span class="tk-t">ImGui</span>::<span class="tk-f">GetColorU32</span>(<span class="tk-t">ImGuiCol_Text</span>);                       <span class="tk-c">// a style colour, with the current alpha</span></code></pre></div>
+<h2>HSV</h2>
+<p>Hue, saturation, value is a friendlier space for adjusting colours: change the hue to cycle through the rainbow while keeping brightness; lower the saturation to grey something out.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">float</span> h, s, v;
+<span class="tk-t">ImGui</span>::<span class="tk-f">ColorConvertRGBtoHSV</span>(c.x, c.y, c.z, h, s, v);   <span class="tk-c">// all in 0..1, hue too</span>
+h = std::<span class="tk-f">fmod</span>(h + <span class="tk-n">0.1f</span>, <span class="tk-n">1.0f</span>);                          <span class="tk-c">// shift the hue</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">ColorConvertHSVtoRGB</span>(h, s, v, c.x, c.y, c.z);</code></pre></div>
+<p>A classic tool trick is to give each item a distinct colour from its index: hue = <code>i * 0.618034f</code> modulo 1 (the golden ratio spreads them evenly), saturation 0.6, value 0.9. The practice writes the conversions.</p>
+<h2>Hexadecimal colour codes</h2>
+<p>Artists often paste colours as <code>#F0B446</code> or <code>#F0B446CC</code>. Parsing them into an <code>ImVec4</code> is a small, useful function, which the practice also has you write.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Building an ImU32 by hand in the wrong byte order</span></div><div class="callout-body"><p><code>0xF0B446FF</code> is not gold with full alpha in ImGui&#39;s layout. Use IM_COL32 or ColorConvertFloat4ToU32.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Passing 0-255 values to ColorEdit</span></div><div class="callout-body"><p>ColorEdit edits floats from 0 to 1. Convert when your data stores bytes.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does IM_COL32(255, 0, 0, 255) equal with ImGui&#39;s default byte order?</div><ul><li>0xFF0000FF</li><li>0xFFFF0000</li><li>0x00FF00FF</li></ul><details><summary>Show the answer</summary><p><b>0xFF0000FF</b> Alpha in the top byte, then blue, green, and red in the lowest byte.</p></details></li><li><div class="q">Why do draw lists use ImU32 instead of ImVec4?</div><ul><li>Four bytes per vertex colour is far smaller than four floats</li><li>ImVec4 cannot hold alpha</li><li>The GPU cannot read floats</li></ul><details><summary>Show the answer</summary><p><b>Four bytes per vertex colour is far smaller than four floats</b> Every vertex carries a colour.</p></details></li><li><div class="q">Which colour space makes &quot;rotate through the rainbow at the same brightness&quot; easy?</div><ul><li>HSV</li><li>Packed ImU32</li><li>RGB</li></ul><details><summary>Show the answer</summary><p><b>HSV</b> Change only the hue.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-combo-boxes-and-list-boxes/"><span class="mono">previous</span><b>2.03 Combo Boxes and List Boxes</b></a>
+      <a class="lp-next" href="../2-05-sharing-input-with-your-game/"><span class="mono">next</span><b>2.05 Sharing Input with Your Game</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/2-04-colours-and-colour-pickers"></script>
+</body>
+</html>

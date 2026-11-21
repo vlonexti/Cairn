@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Loading Only the Files You Mean · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/4-02-loading-only-the-files-you-mean/">
+  <meta name="description" content="Loading a DLL by bare name leaves the choice of file to the search order, which an attacker or an accident can influence. This lesson shows how to load…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Loading Only the Files You Mean · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="Loading a DLL by bare name leaves the choice of file to the search order, which an attacker or an accident can influence. This lesson shows how to load…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/4-02-loading-only-the-files-you-mean/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Loading Only the Files You Mean · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Loading Only the Files You Mean · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="Loading a DLL by bare name leaves the choice of file to the search order, which an attacker or an accident can influence. This lesson shows how to load…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Loading Safely and Shipping</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Loading Only the Files You Mean</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 5 in milestone 4</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Loading a DLL by bare name leaves the choice of file to the search order, which an attacker or an accident can influence. This lesson shows how to load exactly the file you intend - full paths, <code>SetDefaultDllDirectories</code>, <code>AddDllDirectory</code> and the <code>LOAD_LIBRARY_SEARCH_*</code> flags - and how to check a plugin folder before loading anything from it.</p>
+      <div class="prose">
+<h2>The risk</h2>
+<p>If a program loads <code>renderer.dll</code> by name and that name is not found in the application folder, Windows keeps searching, eventually in the current directory and on PATH. Anyone who can put a file called <code>renderer.dll</code> in one of those places gets their code run inside your program. This is called <strong>DLL planting</strong> or <strong>DLL search-order hijacking</strong>, and it has been the cause of many real security problems.</p>
+<p>Accidents follow the same path: an old copy of a DLL in some folder on PATH gets loaded instead of yours.</p>
+<p>The defence is the same for both: <strong>never let Windows guess</strong>.</p>
+<h2>1. Use full paths for run-time loading</h2>
+<p>Build the path from a folder you trust, normally the application&#39;s own:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;filesystem&gt;</span>
+
+std::filesystem::path <span class="tk-f">appFolder</span>()
+{
+    <span class="tk-k">wchar_t</span> buffer[MAX_PATH]{};
+    <span class="tk-k">const</span> DWORD length{ <span class="tk-f">GetModuleFileNameW</span>(<span class="tk-k">nullptr</span>, buffer, MAX_PATH) };   <span class="tk-c">// full path of our own .exe</span>
+    <span class="tk-k">return</span> std::filesystem::<span class="tk-f">path</span>(std::<span class="tk-f">wstring</span>(buffer, length)).<span class="tk-f">parent_path</span>();
+}
+
+HMODULE renderer{ <span class="tk-f">LoadLibraryW</span>((<span class="tk-f">appFolder</span>() / <span class="tk-s">L&quot;renderer.dll&quot;</span>).<span class="tk-f">c_str</span>()) };</code></pre></div>
+<p><code>GetModuleFileNameW(nullptr, ...)</code> returns the path of the <code>.exe</code>. With a full path, <code>LoadLibraryW</code> loads exactly that file (or fails).</p>
+<h2>2. Restrict the search for everything else</h2>
+<p>Even with full paths for your own DLLs, those DLLs import others by name. Call this <strong>once, first thing in <code>main</code></strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">SetDefaultDllDirectories</span>(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);</code></pre></div>
+<p>From then on, every name-only load in the process searches only:</p>
+<ul>
+<li>the application folder (<code>LOAD_LIBRARY_SEARCH_APPLICATION_DIR</code>),</li>
+<li><code>System32</code> (<code>LOAD_LIBRARY_SEARCH_SYSTEM32</code>),</li>
+<li>folders you add yourself with <code>AddDllDirectory</code> (<code>LOAD_LIBRARY_SEARCH_USER_DIRS</code>).</li>
+</ul>
+<p>The current directory and PATH are <strong>not</strong> searched any more. For a new program there is no reason not to do this.</p>
+<h2>3. LoadLibraryExW with search flags</h2>
+<p><code>LoadLibraryExW</code> takes flags that control the search for one call:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HMODULE m{ <span class="tk-f">LoadLibraryExW</span>(path, <span class="tk-k">nullptr</span>, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS) };</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Searches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LOAD_LIBRARY_SEARCH_APPLICATION_DIR</code></td>
+<td>The <code>.exe</code>&#39;s folder</td>
+</tr>
+<tr>
+<td><code>LOAD_LIBRARY_SEARCH_SYSTEM32</code></td>
+<td><code>System32</code></td>
+</tr>
+<tr>
+<td><code>LOAD_LIBRARY_SEARCH_USER_DIRS</code></td>
+<td>Folders added with <code>AddDllDirectory</code></td>
+</tr>
+<tr>
+<td><code>LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR</code></td>
+<td><strong>The folder of the DLL being loaded</strong> (only with a full path)</td>
+</tr>
+<tr>
+<td><code>LOAD_LIBRARY_SEARCH_DEFAULT_DIRS</code></td>
+<td>The first three together</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR</code> solves lesson 4.01&#39;s subfolder problem: a plugin loaded from <code>plugins\fog\fog.dll</code> can now find <code>plugins\fog\noise.dll</code>, which it depends on.</p>
+<h2>4. Check what you are about to load</h2>
+<p>A plugin folder is a place users (and installers) write files to. Before loading, check:</p>
+<ul>
+<li>the path is <strong>absolute</strong> and really inside the folder you meant (no <code>..</code> escaping out of it);</li>
+<li>the file name ends in <code>.dll</code>;</li>
+<li>for software you distribute widely, that the file is <strong>signed</strong> with your certificate (<code>WinVerifyTrust</code>), so a replaced file is refused.</li>
+</ul>
+<p>Lesson 5.01&#39;s plugin loader does the first two; the practice for this lesson writes the path check.</p>
+<h2>Data files that look like DLLs</h2>
+<p>If you only want to read a DLL&#39;s resources (icons, strings, version info) without running any of its code, load it as data:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HMODULE resources{ <span class="tk-f">LoadLibraryExW</span>(path, <span class="tk-k">nullptr</span>, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE) };</code></pre></div>
+<p>No <code>DllMain</code> runs and nothing is executable.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Calling SetDefaultDllDirectories after DLLs were already loaded by name</span></div><div class="callout-body"><p>It only affects loads that happen after it. Call it at the very start.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Building a plugin path from user input without checking it</span></div><div class="callout-body"><p><code>&quot;..\\..\\Windows\\something.dll&quot;</code> escapes the plugin folder. Normalise the path and check its parent.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS) remove from the search?</div><ul><li>The current directory and the PATH folders</li><li>System32</li><li>The application folder</li></ul><details><summary>Show the answer</summary><p><b>The current directory and the PATH folders</b> Only the application folder, System32 and added folders remain.</p></details></li><li><div class="q">A plugin loaded by full path from plugins\fog needs noise.dll from the same folder. Which flag helps?</div><ul><li>LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR</li><li>LOAD_LIBRARY_AS_DATAFILE</li><li>LOAD_LIBRARY_SEARCH_SYSTEM32</li></ul><details><summary>Show the answer</summary><p><b>LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR</b> It adds the loaded DLL&#39;s own folder to the search for its dependencies.</p></details></li><li><div class="q">What is DLL planting?</div><ul><li>Placing a file with a DLL&#39;s name where the search order finds it before the real one</li><li>Copying a DLL into System32</li><li>Signing a DLL</li></ul><details><summary>Show the answer</summary><p><b>Placing a file with a DLL&#39;s name where the search order finds it before the real one</b> Full paths and restricted search directories prevent it.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-the-dll-search-order/"><span class="mono">previous</span><b>4.01 The DLL Search Order</b></a>
+      <a class="lp-next" href="../4-03-delay-loading/"><span class="mono">next</span><b>4.03 Delay Loading</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/4-02-loading-only-the-files-you-mean"></script>
+</body>
+</html>

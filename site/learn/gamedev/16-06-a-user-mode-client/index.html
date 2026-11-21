@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A User-Mode Client · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/16-06-a-user-mode-client/">
+  <meta name="description" content="The other half of the driver is an ordinary program: it opens the device by its symbolic link with CreateFileW, sends commands with DeviceIoControl, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A User-Mode Client · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The other half of the driver is an ordinary program: it opens the device by its symbolic link with CreateFileW, sends commands with DeviceIoControl, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/16-06-a-user-mode-client/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A User-Mode Client · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A User-Mode Client · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The other half of the driver is an ordinary program: it opens the device by its symbolic link with CreateFileW, sends commands with DeviceIoControl, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Educational Driver Development</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A User-Mode Client</h1>
+      <div class="readout lp-readout"><span>lesson <b>16.06</b></span><span>6 of 10 in milestone 16</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The other half of the driver is an ordinary program: it opens the device by its symbolic link with <code>CreateFileW</code>, sends commands with <code>DeviceIoControl</code>, and reports errors clearly. This lesson writes the echo driver&#39;s client using chapter 5&#39;s handles and errors, wraps the protocol in a small class, and covers the details that trip people up: buffer sizes, <code>ERROR_MORE_DATA</code>, and the driver not being loaded.</p>
+      <div class="prose">
+<h2>Opening the device</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;cstdio&gt;</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;echo_ioctl.h&quot;</span>          <span class="tk-c">// shared with the driver (lesson 16.05)</span>
+
+<span class="tk-t">UniqueHandle</span> <span class="tk-f">openEcho</span>()          <span class="tk-c">// lesson 5.01's RAII handle</span>
+{
+    HANDLE h{ <span class="tk-f">CreateFileW</span>(<span class="tk-s">L&quot;\\\\.\\XenonEcho&quot;</span>,          <span class="tk-c">// the symbolic link, as \\.\XenonEcho</span>
+                          GENERIC_READ | GENERIC_WRITE,  <span class="tk-c">// the access our IOCTLs require (lesson 16.05)</span>
+                          <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>, OPEN_EXISTING, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>) };
+    <span class="tk-k">return</span> <span class="tk-t">UniqueHandle</span>{ h };    <span class="tk-c">// treats INVALID_HANDLE_VALUE as empty</span>
+}</code></pre></div>
+<p>If the driver is not loaded, <code>CreateFileW</code> fails with error 2 (<code>ERROR_FILE_NOT_FOUND</code>: there is no such name); if the device&#39;s security does not allow this user, error 5 (<code>ERROR_ACCESS_DENIED</code>, lesson 16.04). A good client reports these in plain words: &quot;The XenonEcho driver is not loaded: run sc start XenonEcho in the lab VM.&quot;</p>
+<h2>Sending a command</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">ping</span>(HANDLE device)
+{
+    DWORD returned{ <span class="tk-n">0</span> };
+    <span class="tk-k">return</span> <span class="tk-f">DeviceIoControl</span>(device, IOCTL_ECHO_PING, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, &amp;returned, <span class="tk-k">nullptr</span>) != FALSE;
+}
+
+std::optional&lt;<span class="tk-t">EchoStats</span>&gt; <span class="tk-f">stats</span>(HANDLE device)
+{
+    <span class="tk-t">EchoStats</span> s{};
+    DWORD returned{ <span class="tk-n">0</span> };
+    <span class="tk-k">if</span> (!<span class="tk-f">DeviceIoControl</span>(device, IOCTL_ECHO_STATS, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, &amp;s, <span class="tk-k">sizeof</span>(s), &amp;returned, <span class="tk-k">nullptr</span>)) <span class="tk-k">return</span> std::nullopt;
+    <span class="tk-k">if</span> (returned != <span class="tk-k">sizeof</span>(s)) <span class="tk-k">return</span> std::nullopt;           <span class="tk-c">// never trust the length blindly, even from our own driver</span>
+    <span class="tk-k">return</span> s;
+}</code></pre></div>
+<p><code>DeviceIoControl</code> takes the control code, an input buffer and its size, an output buffer and its size, and returns how many bytes the driver put in the output (the IRP&#39;s <code>Information</code>, lesson 16.05). The driver&#39;s NTSTATUS becomes a Win32 error for <code>GetLastError</code> (lesson 5.02): <code>STATUS_BUFFER_TOO_SMALL</code> arrives as <code>ERROR_INSUFFICIENT_BUFFER</code>, <code>STATUS_INVALID_DEVICE_REQUEST</code> as <code>ERROR_INVALID_FUNCTION</code>.</p>
+<h2>Echo, with a variable size</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::optional&lt;std::string&gt; <span class="tk-f">echo</span>(HANDLE device, <span class="tk-k">const</span> std::string&amp; text)
+{
+    std::string <span class="tk-f">reply</span>(text.<span class="tk-f">size</span>(), <span class="tk-s">'\0'</span>);
+    DWORD returned{ <span class="tk-n">0</span> };
+    <span class="tk-k">if</span> (!<span class="tk-f">DeviceIoControl</span>(device, IOCTL_ECHO_ECHO,
+                         <span class="tk-k">const_cast</span>&lt;<span class="tk-k">char</span>*&gt;(text.<span class="tk-f">data</span>()), <span class="tk-k">static_cast</span>&lt;DWORD&gt;(text.<span class="tk-f">size</span>()),
+                         reply.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;DWORD&gt;(reply.<span class="tk-f">size</span>()), &amp;returned, <span class="tk-k">nullptr</span>))
+        <span class="tk-k">return</span> std::nullopt;
+    reply.<span class="tk-f">resize</span>(returned);
+    <span class="tk-k">return</span> reply;
+}</code></pre></div>
+<p>The protocol is the client and driver&#39;s shared contract, exactly like lesson 13.03&#39;s plugin API: a shared header, explicit sizes, versions if it will change (lesson 12.06), and validation on both sides. The practice task builds a versioned message format for requests and replies with careful parsing.</p>
+<h2>A small client program</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">wmain</span>()
+{
+    <span class="tk-t">UniqueHandle</span> device{ <span class="tk-f">openEcho</span>() };
+    <span class="tk-k">if</span> (!device)
+    {
+        <span class="tk-k">const</span> DWORD error{ <span class="tk-f">GetLastError</span>() };
+        <span class="tk-k">if</span> (error == ERROR_FILE_NOT_FOUND) std::<span class="tk-f">wprintf</span>(<span class="tk-s">L&quot;XenonEcho is not loaded (sc start XenonEcho, in the lab VM)\n&quot;</span>);
+        <span class="tk-k">else</span> std::<span class="tk-f">wprintf</span>(<span class="tk-s">L&quot;could not open XenonEcho: error %lu\n&quot;</span>, error);
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    }
+    std::<span class="tk-f">wprintf</span>(<span class="tk-s">L&quot;ping: %s\n&quot;</span>, <span class="tk-f">ping</span>(device.<span class="tk-f">get</span>()) ? <span class="tk-s">L&quot;ok&quot;</span> : <span class="tk-s">L&quot;failed&quot;</span>);
+    <span class="tk-k">if</span> (<span class="tk-k">auto</span> reply{ <span class="tk-f">echo</span>(device.<span class="tk-f">get</span>(), <span class="tk-s">&quot;hello, kernel&quot;</span>) }) std::<span class="tk-f">printf</span>(<span class="tk-s">&quot;echo: %s\n&quot;</span>, reply-&gt;<span class="tk-f">c_str</span>());
+    <span class="tk-k">if</span> (<span class="tk-k">auto</span> s{ <span class="tk-f">stats</span>(device.<span class="tk-f">get</span>()) }) std::<span class="tk-f">printf</span>(<span class="tk-s">&quot;requests %llu, bytes echoed %llu\n&quot;</span>, s-&gt;requests, s-&gt;bytesEchoed);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Run it in the VM with the driver loaded, under the kernel debugger with a breakpoint in <code>EchoDeviceControl</code>, and you can follow one request from <code>DeviceIoControl</code> in user mode, through the system call (lesson 15.02), to your dispatch routine and back.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Opening the device with less access than the IOCTL requires</span></div><div class="callout-body"><p>The request fails with access denied before reaching the driver.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Ignoring the returned byte count</span></div><div class="callout-body"><p>Use it to size the result, and check it is what you expected.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Cryptic errors</span></div><div class="callout-body"><p>Translate the common cases (not loaded, access denied) into instructions the user can follow.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">The client&#39;s <code>CreateFileW(L&quot;\\\\.\\XenonEcho&quot;, ...)</code> fails with error 2. What is the likely cause?</div><ul><li>The driver is not loaded, so the symbolic link does not exist</li><li>The user is not an administrator</li><li>The IOCTL code is wrong</li></ul><details><summary>Show the answer</summary><p><b>The driver is not loaded, so the symbolic link does not exist</b> Error 5 would suggest access denied.</p></details></li><li><div class="q">How does a driver&#39;s NTSTATUS reach the client?</div><ul><li><code>DeviceIoControl</code> fails and <code>GetLastError</code> returns the corresponding Win32 error</li><li>As the return value of <code>DeviceIoControl</code></li><li>Through the output buffer</li></ul><details><summary>Show the answer</summary><p><b><code>DeviceIoControl</code> fails and <code>GetLastError</code> returns the corresponding Win32 error</b> For example <code>STATUS_BUFFER_TOO_SMALL</code> becomes <code>ERROR_INSUFFICIENT_BUFFER</code>.</p></details></li><li><div class="q">What does the <code>returned</code> argument of <code>DeviceIoControl</code> receive?</div><ul><li>The number of output bytes the driver reported in the IRP&#39;s Information field</li><li>The NTSTATUS</li><li>The size of the input buffer</li></ul><details><summary>Show the answer</summary><p><b>The number of output bytes the driver reported in the IRP&#39;s Information field</b> Size results by it, and check it.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/16.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/16.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../16-05-ioctls-talking-to-a-driver/"><span class="mono">previous</span><b>16.05 IOCTLs: Talking to a Driver</b></a>
+      <a class="lp-next" href="../16-07-validating-buffers-and-staying-safe/"><span class="mono">next</span><b>16.07 Validating Buffers and Staying Safe</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/16-06-a-user-mode-client"></script>
+</body>
+</html>

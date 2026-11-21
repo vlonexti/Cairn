@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>shared_ptr and weak_ptr · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/5-03-shared-ptr-and-weak-ptr/">
+  <meta name="description" content="std::shared ptr shares ownership through a reference count kept in a control block, and deletes the object when the last owner goes. What it costs, the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="shared_ptr and weak_ptr · Pointers and Memory · Xenon">
+  <meta property="og:description" content="std::shared ptr shares ownership through a reference count kept in a control block, and deletes the object when the last owner goes. What it costs, the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/5-03-shared-ptr-and-weak-ptr/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="shared_ptr and weak_ptr · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="shared_ptr and weak_ptr · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="std::shared ptr shares ownership through a reference count kept in a control block, and deletes the object when the last owner goes. What it costs, the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Managing Memory Safely</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">shared_ptr and weak_ptr</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">std::shared_ptr shares ownership through a reference count kept in a control block, and deletes the object when the last owner goes. What it costs, the cycles that make it leak, std::weak_ptr for observing without owning, and when shared ownership is really the right answer.</p>
+      <div class="prose">
+<h2>Several owners</h2>
+<p>Sometimes an object really has no single owner: a texture used by several materials, where whichever material is destroyed last should free it. <code>std::shared_ptr&lt;T&gt;</code> handles that case. It keeps a <strong>reference count</strong>, the number of <code>shared_ptr</code>s currently pointing at the object, and deletes the object when the count reaches zero.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::shared_ptr&lt;<span class="tk-t">Texture</span>&gt; stone{ std::make_shared&lt;<span class="tk-t">Texture</span>&gt;(<span class="tk-s">&quot;stone.png&quot;</span>) };   <span class="tk-c">// count 1</span>
+{
+    std::shared_ptr&lt;<span class="tk-t">Texture</span>&gt; copy{ stone };     <span class="tk-c">// copying is allowed: count 2</span>
+    std::cout &lt;&lt; stone.<span class="tk-f">use_count</span>() &lt;&lt; <span class="tk-s">'\n'</span>;     <span class="tk-c">// 2</span>
+}                                               <span class="tk-c">// copy destroyed: count 1</span>
+stone.<span class="tk-f">reset</span>();                                  <span class="tk-c">// count 0: the texture is deleted</span></code></pre></div>
+<h2>The control block</h2>
+<p>The count has to live somewhere every copy can reach, so a <code>shared_ptr</code> is two pointers: one to the object and one to a <strong>control block</strong> holding the counts.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code> shared_ptr a ---+--&gt; [ control block: strong 2, weak 1 ]
+                 |
+ shared_ptr b ---+--&gt; [ Texture object ]</code></pre></div>
+<p><code>std::make_shared</code> allocates the control block and the object in <strong>one</strong> heap block, which is faster and uses less memory than <code>std::shared_ptr&lt;T&gt;(new T)</code>. Always use it.</p>
+<h2>What it costs</h2>
+<ul>
+<li>Every <code>shared_ptr</code> is 16 bytes, twice a raw pointer.</li>
+<li>Copying one changes the count with an <strong>atomic</strong> instruction (it must be safe across threads), which is noticeably slower than copying a pointer. Pass a <code>shared_ptr</code> by <code>const&amp;</code>, or pass the object by reference, when the function does not need to keep a share.</li>
+<li>It hides who really controls the object&#39;s lifetime. When anyone can keep it alive, nobody knows when it dies.</li>
+</ul>
+<p>So <code>unique_ptr</code> is the default, and <code>shared_ptr</code> is for when ownership is genuinely shared.</p>
+<h2>Cycles leak</h2>
+<p>Reference counting has one blind spot. If two objects hold <code>shared_ptr</code>s to each other, each keeps the other&#39;s count above zero for ever:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Player</span>;
+<span class="tk-k">struct</span> <span class="tk-t">Team</span>   { std::vector&lt;std::shared_ptr&lt;<span class="tk-t">Player</span>&gt;&gt; members; };
+<span class="tk-k">struct</span> <span class="tk-t">Player</span> { std::shared_ptr&lt;<span class="tk-t">Team</span>&gt; team; };
+
+{
+    <span class="tk-k">auto</span> team{ std::make_shared&lt;<span class="tk-t">Team</span>&gt;() };
+    <span class="tk-k">auto</span> ada{ std::make_shared&lt;<span class="tk-t">Player</span>&gt;() };
+    team-&gt;members.<span class="tk-f">push_back</span>(ada);   <span class="tk-c">// team owns ada</span>
+    ada-&gt;team = team;               <span class="tk-c">// ada owns team</span>
+}   <span class="tk-c">// the locals are gone, but team's count is 1 (from ada) and ada's is 1 (from team): both leak</span></code></pre></div>
+<p>No leak checker running over the heap sees anything wrong while the program runs; the memory is still &quot;owned&quot;. Cycles of <code>shared_ptr</code> are the most common leak in modern C++ code.</p>
+<h2>weak_ptr: observe without owning</h2>
+<p><code>std::weak_ptr&lt;T&gt;</code> points at an object managed by <code>shared_ptr</code>s <strong>without</strong> adding to its strong count. It cannot be dereferenced directly. To use the object you call <code>lock()</code>, which gives a <code>shared_ptr</code> if the object still exists and an empty one if it has gone:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Player</span> { std::weak_ptr&lt;<span class="tk-t">Team</span>&gt; team; };    <span class="tk-c">// a back-reference that does not own</span>
+
+<span class="tk-k">if</span> (std::shared_ptr&lt;<span class="tk-t">Team</span>&gt; t{ ada-&gt;team.<span class="tk-f">lock</span>() })   <span class="tk-c">// still alive?</span>
+    t-&gt;<span class="tk-f">announce</span>(<span class="tk-s">&quot;Ada scored&quot;</span>);
+<span class="tk-k">else</span>
+    <span class="tk-c">/* the team was disbanded */</span>;</code></pre></div>
+<p>The rule for any parent and child: the parent <strong>owns</strong> the child (<code>shared_ptr</code> or, better, <code>unique_ptr</code>), and the child <strong>observes</strong> the parent (<code>weak_ptr</code>, or a raw pointer when the child can never outlive the parent).</p>
+<p><code>weak_ptr</code> also solves lesson 1.05&#39;s dangling pointer problem for shared objects: a cache, a list of listeners or a target reference can hold <code>weak_ptr</code>s and find out cleanly that the object is gone, rather than following a dangling address. The control block stays alive while any <code>weak_ptr</code> refers to it, so <code>lock()</code> can always answer, even though the object itself was destroyed.</p>
+<h2>When shared ownership is right</h2>
+<ul>
+<li>Resources used by several independent owners with no natural single parent: textures, sounds, fonts in a cache.</li>
+<li>Objects handed to work running on other threads, where the caller may finish first.</li>
+<li>Graphs where nodes are added and removed from many places.</li>
+</ul>
+<p>Even then, ask first whether one central owner (a <code>TextureCache</code> holding <code>unique_ptr</code>s and handing out raw pointers or handles) would be simpler. It usually is.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-unique-ptr/"><span class="mono">previous</span><b>5.02 unique_ptr</b></a>
+      <a class="lp-next" href="../5-04-views-that-do-not-own/"><span class="mono">next</span><b>5.04 Views That Do Not Own</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/5-03-shared-ptr-and-weak-ptr"></script>
+</body>
+</html>

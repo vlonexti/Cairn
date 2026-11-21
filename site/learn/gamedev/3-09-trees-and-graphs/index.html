@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Trees and Graphs · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/3-09-trees-and-graphs/">
+  <meta name="description" content="When data has branches rather than a single line, pointers or indices join it into trees and graphs . Games are full of them: the scene graph of objects…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Trees and Graphs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="When data has branches rather than a single line, pointers or indices join it into trees and graphs . Games are full of them: the scene graph of objects…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/3-09-trees-and-graphs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Trees and Graphs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Trees and Graphs · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="When data has branches rather than a single line, pointers or indices join it into trees and graphs . Games are full of them: the scene graph of objects…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Pointers, References and Data Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Trees and Graphs</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.09</b></span><span>9 of 10 in milestone 3</span><span>7 min</span></div>
+      <p class="lp-summary">When data has branches rather than a single line, pointers or indices join it into <strong>trees</strong> and <strong>graphs</strong>. Games are full of them: the scene graph of objects attached to other objects, the binary search tree inside <code>std::map</code>, the graph of rooms in a dungeon, and the grid a monster searches to find the player. This lesson covers the shapes, the two ways to walk them, and a shortest-path search.</p>
+      <div class="prose">
+<h2>Trees</h2>
+<p>A <strong>tree</strong> is a set of <strong>nodes</strong> where each node has one <strong>parent</strong> (except the single <strong>root</strong>) and any number of <strong>children</strong>. There are no loops.</p>
+<p>The most visible tree in a game is the <strong>scene graph</strong>: a sword is attached to a hand, the hand to an arm, the arm to a knight, the knight to a horse. Move the horse and everything attached moves with it.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    W[&quot;World&quot;] --&gt; H[&quot;Horse&quot;]
+    W --&gt; T[&quot;Tree&quot;]
+    H --&gt; K[&quot;Knight&quot;]
+    K --&gt; A[&quot;Arm&quot;]
+    A --&gt; S[&quot;Sword&quot;]
+    K --&gt; HE[&quot;Helmet&quot;]</pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;memory&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">SceneNode</span>
+{
+    std::string name;
+    <span class="tk-k">float</span> x{ <span class="tk-n">0</span> };                                     <span class="tk-c">// position relative to the parent</span>
+    std::vector&lt;std::unique_ptr&lt;<span class="tk-t">SceneNode</span>&gt;&gt; children;
+
+    <span class="tk-t">SceneNode</span>* <span class="tk-f">add</span>(std::string childName, <span class="tk-k">float</span> childX)
+    {
+        children.<span class="tk-f">push_back</span>(std::make_unique&lt;<span class="tk-t">SceneNode</span>&gt;(<span class="tk-t">SceneNode</span>{ std::<span class="tk-f">move</span>(childName), childX, {} }));
+        <span class="tk-k">return</span> children.<span class="tk-f">back</span>().<span class="tk-f">get</span>();
+    }
+};
+
+<span class="tk-c">// Depth-first: handle a node, then each child's whole subtree in turn.</span>
+<span class="tk-k">void</span> <span class="tk-f">printWorld</span>(<span class="tk-k">const</span> <span class="tk-t">SceneNode</span>&amp; node, <span class="tk-k">float</span> parentX, <span class="tk-k">int</span> depth)
+{
+    <span class="tk-k">const</span> <span class="tk-k">float</span> worldX{ parentX + node.x };
+    std::cout &lt;&lt; std::<span class="tk-f">string</span>(depth * <span class="tk-n">2</span>, <span class="tk-s">' '</span>) &lt;&lt; node.name &lt;&lt; <span class="tk-s">&quot; at &quot;</span> &lt;&lt; worldX &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; child : node.children) <span class="tk-f">printWorld</span>(*child, worldX, depth + <span class="tk-n">1</span>);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">SceneNode</span> world{ <span class="tk-s">&quot;world&quot;</span>, <span class="tk-n">0</span>, {} };
+    <span class="tk-t">SceneNode</span>* horse{ world.<span class="tk-f">add</span>(<span class="tk-s">&quot;horse&quot;</span>, <span class="tk-n">10</span>) };
+    <span class="tk-t">SceneNode</span>* knight{ horse-&gt;<span class="tk-f">add</span>(<span class="tk-s">&quot;knight&quot;</span>, <span class="tk-n">0.5f</span>) };
+    knight-&gt;<span class="tk-f">add</span>(<span class="tk-s">&quot;sword&quot;</span>, <span class="tk-n">0.75f</span>);
+    world.<span class="tk-f">add</span>(<span class="tk-s">&quot;tree&quot;</span>, <span class="tk-n">3</span>);
+    <span class="tk-f">printWorld</span>(world, <span class="tk-n">0</span>, <span class="tk-n">0</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>world at 0
+  horse at 10
+    knight at 10.5
+      sword at 11.25
+  tree at 3</code></pre></div>
+<p>Each node owns its children through <code>std::unique_ptr</code>, so destroying a node destroys its whole subtree. Each position is relative to the parent, and the walk adds them up on the way down: that is how attaching works.</p>
+<h2>Binary search trees</h2>
+<p>A <strong>binary search tree</strong> gives each node at most two children with a rule: everything in the left subtree is smaller than the node, everything in the right is larger. Finding a key means comparing at each node and going left or right, so a balanced tree of a million entries needs about 20 comparisons.</p>
+<p><code>std::map</code> and <code>std::set</code> are balanced binary search trees (red-black trees in the common implementations). That is why they keep keys in order and why lookups cost &quot;about log n&quot; comparisons, not constant time like a hash table (lesson 3.08).</p>
+<h2>Graphs</h2>
+<p>A <strong>graph</strong> drops the tree&#39;s rules: any node can connect to any other, and connections can form loops. The nodes are often called <strong>vertices</strong> and the connections <strong>edges</strong>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Game graph</th>
+<th>Vertices</th>
+<th>Edges</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dungeon layout</td>
+<td>Rooms</td>
+<td>Doors</td>
+</tr>
+<tr>
+<td>Navigation mesh</td>
+<td>Walkable regions</td>
+<td>Shared borders</td>
+</tr>
+<tr>
+<td>Tile map</td>
+<td>Walkable tiles</td>
+<td>Steps to neighbouring tiles</td>
+</tr>
+<tr>
+<td>Dialogue</td>
+<td>Lines of dialogue</td>
+<td>Player choices</td>
+</tr>
+<tr>
+<td>Quest dependencies</td>
+<td>Quests</td>
+<td>&quot;Must finish first&quot;</td>
+</tr>
+</tbody></table>
+</div>
+<p>Graphs are usually stored as an <strong>adjacency list</strong>: for each vertex, a list of the vertices it connects to. A tile map is a graph that needs no stored edges at all, because a tile&#39;s neighbours can be calculated from its position.</p>
+<h2>Two ways to walk</h2>
+<p>Every tree and graph algorithm builds on one of two orders of visiting:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Depth-first search (DFS)</th>
+<th>Breadth-first search (BFS)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Order</td>
+<td>Go as deep as possible down one branch, then back up</td>
+<td>Visit everything 1 step away, then everything 2 steps away, ...</td>
+</tr>
+<tr>
+<td>Natural tool</td>
+<td>A stack (or recursion)</td>
+<td>A queue</td>
+</tr>
+<tr>
+<td>Good for</td>
+<td>Visiting everything, scene graphs, flood fills</td>
+<td><strong>Shortest paths</strong> where every step costs the same</td>
+</tr>
+</tbody></table>
+</div>
+<p>On a graph with loops, both must remember which vertices they have already visited, or they go round forever. The flood fill in lesson 2.01 was a depth-first search on a tile map.</p>
+<h2>Shortest path on a grid with BFS</h2>
+<p>To find how many steps a monster needs to reach the player, run a breadth-first search from the monster. Because BFS visits tiles in order of distance, the first time it reaches a tile, it has found the shortest way there.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-c">// Steps from (sx, sy) to (tx, ty) moving up, down, left or right through '.' tiles; -1 if unreachable.</span>
+<span class="tk-k">int</span> <span class="tk-f">shortestSteps</span>(<span class="tk-k">const</span> std::vector&lt;std::string&gt;&amp; map, <span class="tk-k">int</span> sx, <span class="tk-k">int</span> sy, <span class="tk-k">int</span> tx, <span class="tk-k">int</span> ty)
+{
+    <span class="tk-k">const</span> <span class="tk-k">int</span> h{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(map.<span class="tk-f">size</span>()) }, w{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(map[<span class="tk-n">0</span>].<span class="tk-f">size</span>()) };
+    std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">dist</span>(<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(w * h), -<span class="tk-n">1</span>);       <span class="tk-c">// -1 means not reached yet</span>
+    std::queue&lt;std::pair&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;&gt; frontier;
+    dist[<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(sy * w + sx)] = <span class="tk-n">0</span>;
+    frontier.<span class="tk-f">push</span>({ sx, sy });
+    <span class="tk-k">const</span> <span class="tk-k">int</span> dx[]{ <span class="tk-n">1</span>, -<span class="tk-n">1</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span> }, dy[]{ <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">1</span>, -<span class="tk-n">1</span> };
+    <span class="tk-k">while</span> (!frontier.<span class="tk-f">empty</span>())
+    {
+        <span class="tk-k">const</span> <span class="tk-k">auto</span> [x, y] = frontier.<span class="tk-f">front</span>();
+        frontier.<span class="tk-f">pop</span>();
+        <span class="tk-k">if</span> (x == tx &amp;&amp; y == ty) <span class="tk-k">return</span> dist[<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(y * w + x)];
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> d{ <span class="tk-n">0</span> }; d &lt; <span class="tk-n">4</span>; ++d)
+        {
+            <span class="tk-k">const</span> <span class="tk-k">int</span> nx{ x + dx[d] }, ny{ y + dy[d] };
+            <span class="tk-k">if</span> (nx &lt; <span class="tk-n">0</span> || ny &lt; <span class="tk-n">0</span> || nx &gt;= w || ny &gt;= h || map[ny][nx] == <span class="tk-s">'#'</span>) <span class="tk-k">continue</span>;
+            <span class="tk-k">int</span>&amp; seen{ dist[<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(ny * w + nx)] };
+            <span class="tk-k">if</span> (seen != -<span class="tk-n">1</span>) <span class="tk-k">continue</span>;
+            seen = dist[<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(y * w + x)] + <span class="tk-n">1</span>;
+            frontier.<span class="tk-f">push</span>({ nx, ny });
+        }
+    }
+    <span class="tk-k">return</span> -<span class="tk-n">1</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> std::vector&lt;std::string&gt; map{
+        <span class="tk-s">&quot;#########&quot;</span>,
+        <span class="tk-s">&quot;#M..#...#&quot;</span>,
+        <span class="tk-s">&quot;#.#.#.#.#&quot;</span>,
+        <span class="tk-s">&quot;#.#...#P#&quot;</span>,
+        <span class="tk-s">&quot;#########&quot;</span>,
+    };
+    std::cout &lt;&lt; <span class="tk-f">shortestSteps</span>(map, <span class="tk-n">1</span>, <span class="tk-n">1</span>, <span class="tk-n">7</span>, <span class="tk-n">3</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>12</code></pre></div>
+<p>The queue is the whole trick: tiles are taken out in the order they were discovered, so all tiles at distance 3 come out before any at distance 4. Storing which tile each one was reached from (a &quot;came from&quot; array) lets you walk back from the target to recover the actual path. When steps have different costs (mud is slower than road), BFS becomes <strong>Dijkstra&#39;s algorithm</strong>, and with a distance estimate to guide it, <strong>A*</strong>, which most game pathfinding uses. Chapter 11&#39;s monsters use this.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Forgetting the visited set on a graph</span></div><div class="callout-body"><p>A search on a graph with loops never ends. Mark vertices when you first discover them.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Recursion on deep trees</span></div><div class="callout-body"><p>A very deep or degenerate tree (one long chain) can overflow the stack, as in lesson 2.01. Use an explicit stack for data that might be deep.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Marking visited when popping instead of when pushing</span></div><div class="callout-body"><p>In BFS, mark a tile when you add it to the queue. Otherwise the same tile can be queued many times.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What makes a tree different from a general graph?</div><ul><li>Every node except the root has exactly one parent, and there are no loops</li><li>Trees cannot be stored with pointers</li><li>Trees always have exactly two children per node</li></ul><details><summary>Show the answer</summary><p><b>Every node except the root has exactly one parent, and there are no loops</b> A binary tree has at most two children; a tree in general may have any number.</p></details></li><li><div class="q">Why does breadth-first search find the shortest path when every step costs the same?</div><ul><li>It visits places in order of their distance from the start, so the first time it reaches the target is by a shortest route</li><li>It tries every possible path and keeps the shortest</li><li>It always moves towards the target</li></ul><details><summary>Show the answer</summary><p><b>It visits places in order of their distance from the start, so the first time it reaches the target is by a shortest route</b> The queue ensures all places at distance n are handled before any at distance n + 1.</p></details></li><li><div class="q">What data structure drives a breadth-first search?</div><ul><li>A stack</li><li>A queue</li><li>A hash table</li></ul><details><summary>Show the answer</summary><p><b>A queue</b> First in, first out: places are explored in the order they were discovered.</p></details></li><li><div class="q">What kind of structure is <code>std::map</code> built on?</div><ul><li>A hash table</li><li>A balanced binary search tree</li><li>A sorted vector</li></ul><details><summary>Show the answer</summary><p><b>A balanced binary search tree</b> That is why it keeps keys in order and looks them up in logarithmic time.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/3.09">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/3.09">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-08-hash-tables/"><span class="mono">previous</span><b>3.08 Hash Tables</b></a>
+      <a class="lp-next" href="../3-10-containers-of-game-objects-entity-lists-and-pools/"><span class="mono">next</span><b>3.10 Containers of Game Objects: Entity Lists and Pools</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/3-09-trees-and-graphs"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Common Controls · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/3-05-common-controls/">
+  <meta name="description" content="The list view, tree view, status bar, progress bar and tab control come from the Common Controls library. This lesson enables visual styles, creates these…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Common Controls · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="The list view, tree view, status bar, progress bar and tab control come from the Common Controls library. This lesson enables visual styles, creates these…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/3-05-common-controls/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Common Controls · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Common Controls · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="The list view, tree view, status bar, progress bar and tab control come from the Common Controls library. This lesson enables visual styles, creates these…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Dialogs and Modern Interfaces</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Common Controls</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The list view, tree view, status bar, progress bar and tab control come from the Common Controls library. This lesson enables visual styles, creates these controls, handles WM_NOTIFY, and uses a virtual list view to show a hundred thousand rows instantly.</p>
+      <div class="prose">
+<h2>Enabling them, with visual styles</h2>
+<p>The <strong>common controls</strong> (<code>comctl32.dll</code>) add the controls Explorer uses. Version 6 draws them, and the standard controls, with the modern visual style. Ask for it in the manifest, conveniently with a linker directive, and initialise the library:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;commctrl.h&gt;</span>
+<span class="tk-p">#pragma</span> <span class="tk-f">comment</span>(lib, <span class="tk-s">&quot;comctl32.lib&quot;</span>)
+<span class="tk-p">#pragma</span> <span class="tk-f">comment</span>(linker, &quot;\&quot;/manifestdependency:type='win32' name='<span class="tk-t">Microsoft</span>.<span class="tk-t">Windows</span>.<span class="tk-t">Common</span>-<span class="tk-t">Controls</span>' \
+version='<span class="tk-n">6.0</span>.<span class="tk-n">0.0</span>' processorArchitecture=<span class="tk-s">'*'</span> publicKeyToken='6595b64144ccf1df' language=<span class="tk-s">'*'</span>\<span class="tk-s">&quot;&quot;</span>)
+
+INITCOMMONCONTROLSEX icc{ <span class="tk-k">sizeof</span>(icc), ICC_LISTVIEW_CLASSES | ICC_TREEVIEW_CLASSES | ICC_BAR_CLASSES | ICC_TAB_CLASSES | ICC_PROGRESS_CLASS };
+<span class="tk-f">InitCommonControlsEx</span>(&amp;icc);</code></pre></div>
+<p>Without the manifest entry, buttons and check boxes look like Windows 95.</p>
+<h2>The controls</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Control</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WC_LISTVIEW</code></td>
+<td>List view: rows with columns, or icons</td>
+<td>Files, search results</td>
+</tr>
+<tr>
+<td><code>WC_TREEVIEW</code></td>
+<td>Tree view</td>
+<td>Folders, outlines, settings categories</td>
+</tr>
+<tr>
+<td><code>STATUSCLASSNAME</code></td>
+<td>Status bar</td>
+<td>Line and column, state, progress</td>
+</tr>
+<tr>
+<td><code>PROGRESS_CLASS</code></td>
+<td>Progress bar</td>
+<td>Long operations</td>
+</tr>
+<tr>
+<td><code>WC_TABCONTROL</code></td>
+<td>Tabs</td>
+<td>Pages of settings</td>
+</tr>
+<tr>
+<td><code>TOOLTIPS_CLASS</code></td>
+<td>Tooltips</td>
+<td>Help on hover</td>
+</tr>
+<tr>
+<td><code>TRACKBAR_CLASS</code>, <code>UPDOWN_CLASS</code></td>
+<td>Slider, spin buttons</td>
+<td>Numbers</td>
+</tr>
+</tbody></table>
+</div>
+<h2>A list view with columns</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HWND lv = <span class="tk-f">CreateWindowExW</span>(<span class="tk-n">0</span>, WC_LISTVIEW, <span class="tk-s">L&quot;&quot;</span>, WS_CHILD | WS_VISIBLE | WS_TABSTOP | LVS_REPORT | LVS_SHOWSELALWAYS,
+                          <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, hwnd, <span class="tk-k">reinterpret_cast</span>&lt;HMENU&gt;(IDC_FILES), instance, <span class="tk-k">nullptr</span>);
+<span class="tk-f">ListView_SetExtendedListViewStyle</span>(lv, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+
+LVCOLUMNW col{ LVCF_TEXT | LVCF_WIDTH };
+col.pszText = <span class="tk-k">const_cast</span>&lt;<span class="tk-k">wchar_t</span>*&gt;(<span class="tk-s">L&quot;Name&quot;</span>); col.cx = <span class="tk-f">scale</span>(<span class="tk-n">240</span>); <span class="tk-f">ListView_InsertColumn</span>(lv, <span class="tk-n">0</span>, &amp;col);
+col.pszText = <span class="tk-k">const_cast</span>&lt;<span class="tk-k">wchar_t</span>*&gt;(<span class="tk-s">L&quot;Size&quot;</span>); col.cx = <span class="tk-f">scale</span>(<span class="tk-n">90</span>);  <span class="tk-f">ListView_InsertColumn</span>(lv, <span class="tk-n">1</span>, &amp;col);</code></pre></div>
+<p><code>ListView_InsertColumn</code> and friends are macros around <code>SendMessageW</code> with <code>LVM_...</code> messages, the same mechanism as lesson 2.05 with nicer names.</p>
+<h2>WM_NOTIFY</h2>
+<p>Common controls report events with <code>WM_NOTIFY</code>. <code>lParam</code> points to an <code>NMHDR</code> (the control&#39;s window, id and <strong>code</strong>), which is the first member of a bigger, code-specific structure:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">case</span> WM_NOTIFY:
+{
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>* hdr = <span class="tk-k">reinterpret_cast</span>&lt;NMHDR*&gt;(lParam);
+    <span class="tk-k">if</span> (hdr-&gt;idFrom == IDC_FILES)
+    {
+        <span class="tk-k">switch</span> (hdr-&gt;code)
+        {
+        <span class="tk-k">case</span> NM_DBLCLK: <span class="tk-f">openSelected</span>(); <span class="tk-k">return</span> <span class="tk-n">0</span>;
+        <span class="tk-k">case</span> LVN_COLUMNCLICK: <span class="tk-f">sortBy</span>(<span class="tk-k">reinterpret_cast</span>&lt;NMLISTVIEW*&gt;(lParam)-&gt;iSubItem); <span class="tk-k">return</span> <span class="tk-n">0</span>;
+        <span class="tk-k">case</span> LVN_GETDISPINFOW: <span class="tk-f">fillDisplayInfo</span>(<span class="tk-k">reinterpret_cast</span>&lt;NMLVDISPINFOW*&gt;(lParam)); <span class="tk-k">return</span> <span class="tk-n">0</span>;
+        }
+    }
+    <span class="tk-k">break</span>;
+}</code></pre></div>
+<h2>Virtual list views</h2>
+<p>Adding 100 000 items one by one with <code>ListView_InsertItem</code> takes seconds and copies every string into the control. A <strong>virtual</strong> list view (<code>LVS_OWNERDATA</code>) stores nothing: you tell it how many rows there are, and it asks for the text of each row only when it needs to draw it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-f">ListView_SetItemCountEx</span>(lv, <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(m_results.<span class="tk-f">size</span>()), LVSICF_NOSCROLL);
+
+<span class="tk-k">void</span> <span class="tk-f">fillDisplayInfo</span>(NMLVDISPINFOW* info)
+{
+    <span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; row = m_results[info-&gt;item.iItem];
+    <span class="tk-k">if</span> (info-&gt;item.mask &amp; LVIF_TEXT)
+    {
+        <span class="tk-k">const</span> std::wstring text = info-&gt;item.iSubItem == <span class="tk-n">0</span> ? row.name : <span class="tk-f">formatSize</span>(row.size);
+        <span class="tk-f">wcsncpy_s</span>(info-&gt;item.pszText, info-&gt;item.cchTextMax, text.<span class="tk-f">c_str</span>(), _TRUNCATE);
+    }
+}</code></pre></div>
+<p>Showing a million rows is now instant, and sorting means sorting your own vector and calling <code>InvalidateRect</code>. This is the list the file finder of milestone 6 uses. Formatting sizes the way Explorer does (&quot;1.5 KB&quot;, &quot;23.4 MB&quot;) is part of the practice.</p>
+<h2>The status bar</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>m_status = <span class="tk-f">CreateWindowExW</span>(<span class="tk-n">0</span>, STATUSCLASSNAME, <span class="tk-k">nullptr</span>, WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, hwnd, <span class="tk-k">nullptr</span>, instance, <span class="tk-k">nullptr</span>);
+<span class="tk-k">const</span> <span class="tk-k">int</span> parts[] = { <span class="tk-f">scale</span>(<span class="tk-n">200</span>), <span class="tk-f">scale</span>(<span class="tk-n">320</span>), -<span class="tk-n">1</span> };       <span class="tk-c">// right edges; -1 = to the end</span>
+<span class="tk-f">SendMessageW</span>(m_status, SB_SETPARTS, <span class="tk-n">3</span>, <span class="tk-k">reinterpret_cast</span>&lt;LPARAM&gt;(parts));
+<span class="tk-f">SendMessageW</span>(m_status, SB_SETTEXTW, <span class="tk-n">0</span>, <span class="tk-k">reinterpret_cast</span>&lt;LPARAM&gt;(<span class="tk-s">L&quot;Ln 12, Col 4&quot;</span>));
+<span class="tk-c">// in WM_SIZE: SendMessageW(m_status, WM_SIZE, 0, 0); it positions itself at the bottom</span></code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-high-dpi-screens/"><span class="mono">previous</span><b>3.04 High-DPI Screens</b></a>
+      <a class="lp-next" href="../4-01-flicker-free-drawing/"><span class="mono">next</span><b>4.01 Flicker-Free Drawing</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/3-05-common-controls"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Case Studies · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/6-05-case-studies/">
+  <meta name="description" content="How real systems combine the techniques of this course - a multi-process browser, an editor and its language servers, a game and its live editor link, a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Case Studies · Processes and Communication · Xenon">
+  <meta property="og:description" content="How real systems combine the techniques of this course - a multi-process browser, an editor and its language servers, a game and its live editor link, a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/6-05-case-studies/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Case Studies · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Case Studies · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="How real systems combine the techniques of this course - a multi-process browser, an editor and its language servers, a game and its live editor link, a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Building Real Systems</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Case Studies</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.05</b></span><span>5 of 5 in milestone 6</span><span>5 min</span></div>
+      <p class="lp-summary">How real systems combine the techniques of this course - a multi-process browser, an editor and its language servers, a game and its live editor link, a Windows service with a tray application - and the questions to ask when designing your own.</p>
+      <div class="prose">
+<h2>A browser</h2>
+<p>A modern browser such as Chrome or Edge runs as many processes: one <strong>browser process</strong> (the window, tabs, network, storage), a <strong>renderer process</strong> per site (running its HTML, CSS and JavaScript), a <strong>GPU process</strong>, and utility processes for audio, network and storage.</p>
+<ul>
+<li><strong>Isolation</strong>: a crash or exploit in one site&#39;s renderer is contained; renderers run in a strict sandbox with almost no rights.</li>
+<li><strong>Communication</strong>: named pipes carrying a custom message system (Mojo) with typed interfaces generated from definition files.</li>
+<li><strong>Shared memory</strong>: rendered frames and large data move through shared memory, with only small messages over the pipes.</li>
+<li><strong>Supervision</strong>: a crashed renderer shows the &quot;Aw, Snap!&quot; page; the browser process carries on.</li>
+</ul>
+<p>Every idea from this course is there: processes for isolation, pipes for messages, shared memory for bulk data, protocol design with versioned interfaces, and security at every boundary.</p>
+<h2>An editor and its language servers</h2>
+<p>VS Code and many other editors get code intelligence from <strong>language servers</strong>: separate processes, one per language, speaking the Language Server Protocol.</p>
+<ul>
+<li><strong>Transport</strong>: usually the server&#39;s stdin and stdout (lesson 1.04), with <code>Content-Length</code> framing.</li>
+<li><strong>Protocol</strong>: JSON-RPC 2.0, with requests and ids (completion, go to definition), notifications (document changed), and capabilities negotiated in an <code>initialize</code> handshake (lesson 5.02).</li>
+<li><strong>Independence</strong>: the server can be written in any language, by anyone, and work with any editor that speaks the protocol. That is the strongest argument for a documented, language-neutral protocol.</li>
+</ul>
+<h2>A game and its live editor</h2>
+<p>Game engines often connect a running game to an editor or debug tool: change a value in the editor and see it in the game at once.</p>
+<ul>
+<li><strong>Discovery</strong>: the game listens on a loopback port (or named pipe) and announces itself through a port file, or the editor launches the game with the endpoint on the command line.</li>
+<li><strong>Commands</strong>: a request and response protocol over a socket or pipe: set this property, spawn this object, reload this asset.</li>
+<li><strong>Telemetry</strong>: frame times, memory and object counts streamed back, or published in shared memory with a seqlock so the tool never slows the game (lesson 3.05).</li>
+<li><strong>Robustness</strong>: either side can restart; the connection is re-established automatically, and the game never blocks waiting for the tool.</li>
+</ul>
+<h2>A service and its tray application</h2>
+<p>A Windows service runs in session 0 under its own account; the user&#39;s tray icon runs in the user&#39;s session. They cannot share windows or <code>Local\</code> objects, so:</p>
+<ul>
+<li>the service creates a <strong>named pipe</strong> with a security descriptor that allows the interactive users (lesson 5.05);</li>
+<li>the tray application connects as a client, sends commands (pause, settings), and receives events (status changes);</li>
+<li>the service <strong>impersonates</strong> the client when it must act with the user&#39;s rights, and validates every request, because any program the user runs can connect.</li>
+</ul>
+<h2>Designing your own</h2>
+<p>Faced with a new system, walk through the questions this course has raised:</p>
+<ol>
+<li><strong>Which processes, and why?</strong> Isolation, rights, crash containment, or just separate products?</li>
+<li><strong>Who finds whom?</strong> Inherited handles, names, port files, command-line arguments.</li>
+<li><strong>Which channel?</strong> Pipes or sockets for messages, shared memory for bulk or latest-state data, events and mutexes for signalling.</li>
+<li><strong>What is the protocol?</strong> Handshake, envelope, versioning, requests, responses and events, limits.</li>
+<li><strong>What fails, and how do you notice?</strong> Timeouts, process handles, heartbeats, abandoned mutexes.</li>
+<li><strong>Who could abuse it?</strong> Access control, tokens, validation, impersonation.</li>
+<li><strong>How will you test and debug it?</strong> Layers, fault injection, transcripts, logs with ids.</li>
+</ol>
+<p>The project that ends this course answers all seven for one complete system.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/6.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/6.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-04-testing-and-debugging-ipc/"><span class="mono">previous</span><b>6.04 Testing and Debugging IPC</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/6-05-case-studies"></script>
+</body>
+</html>

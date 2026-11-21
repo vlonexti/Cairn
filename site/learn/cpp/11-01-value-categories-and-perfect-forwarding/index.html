@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Value Categories and Perfect Forwarding · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/11-01-value-categories-and-perfect-forwarding/">
+  <meta name="description" content="Every expression has a type and a value category : lvalue, xvalue or prvalue. In a template, T&amp;&amp; is a forwarding reference : it binds to anything and records…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Value Categories and Perfect Forwarding · C++ · Xenon">
+  <meta property="og:description" content="Every expression has a type and a value category : lvalue, xvalue or prvalue. In a template, T&amp;&amp; is a forwarding reference : it binds to anything and records…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/11-01-value-categories-and-perfect-forwarding/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Value Categories and Perfect Forwarding · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Value Categories and Perfect Forwarding · C++ · Xenon">
+  <meta name="twitter:description" content="Every expression has a type and a value category : lvalue, xvalue or prvalue. In a template, T&amp;&amp; is a forwarding reference : it binds to anything and records…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Advanced Templates and Metaprogramming</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Value Categories and Perfect Forwarding</h1>
+      <div class="readout lp-readout"><span>lesson <b>11.01</b></span><span>1 of 7 in milestone 11</span><span>6 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Every expression has a <strong>type</strong> and a <strong>value category</strong>: lvalue, xvalue or prvalue. In a template, <code>T&amp;&amp;</code> is a <strong>forwarding reference</strong>: it binds to anything and records whether the argument was an lvalue or an rvalue. <code>std::forward&lt;T&gt;(x)</code> passes it on with that category intact, which is <strong>perfect forwarding</strong>.</p>
+      <div class="prose">
+<h2>Value categories, precisely</h2>
+<p><a href="../7-05-move-semantics/">7.05 Move Semantics</a> used a two-way split into lvalues and rvalues. The standard uses three primary categories, defined by two independent properties: does the expression have <strong>identity</strong> (does it refer to a particular object), and may its resources be <strong>moved from</strong>?</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    E[&quot;expression&quot;] --&gt; GL[&quot;glvalue&lt;br/&gt;has identity&quot;]
+    E --&gt; R[&quot;rvalue&lt;br/&gt;may be moved from&quot;]
+    GL --&gt; L[&quot;lvalue&lt;br/&gt;x, *p, v[0], a call returning T&amp;&quot;]
+    GL --&gt; X[&quot;xvalue&lt;br/&gt;std::move(x), a call returning T&amp;&amp;&quot;]
+    R --&gt; X
+    R --&gt; PR[&quot;prvalue&lt;br/&gt;42, x + 1, T{}, a call returning T&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Identity</th>
+<th>Movable</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>lvalue</strong></td>
+<td>Yes</td>
+<td>No</td>
+<td><code>x</code>, <code>*p</code>, <code>v[0]</code>, a string literal</td>
+</tr>
+<tr>
+<td><strong>xvalue</strong> (&quot;expiring&quot;)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><code>std::move(x)</code>, <code>static_cast&lt;T&amp;&amp;&gt;(x)</code></td>
+</tr>
+<tr>
+<td><strong>prvalue</strong> (&quot;pure rvalue&quot;)</td>
+<td>No</td>
+<td>Yes</td>
+<td><code>42</code>, <code>x + 1</code>, <code>T{}</code>, <code>make()</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A value category is a property of an <strong>expression</strong>, not of an object or a type. The same object can be named by an lvalue expression (<code>x</code>) and by an xvalue expression (<code>std::move(x)</code>).</p>
+<div class="callout important"><div class="callout-title"><span>A named rvalue reference is an lvalue</span></div><div class="callout-body">
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">f</span>(std::string&amp;&amp; s)
+{
+    <span class="tk-f">g</span>(s);               <span class="tk-c">// s is a name, so this expression is an lvalue: g copies</span>
+    <span class="tk-f">g</span>(std::<span class="tk-f">move</span>(s));    <span class="tk-c">// an xvalue: g may move</span>
+}</code></pre></div>
+<p>The <strong>type</strong> of <code>s</code> is <code>std::string&amp;&amp;</code>. The <strong>value category</strong> of the expression <code>s</code> is lvalue, because it has a name and could be used again. This is what makes forwarding necessary.</p>
+</div></div>
+<h2>Forwarding references</h2>
+<p><code>T&amp;&amp;</code> has a special meaning when, and only when, <code>T</code> is a template parameter <strong>deduced</strong> from that very parameter.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">void</span> <span class="tk-f">wrapper</span>(T&amp;&amp; arg);       <span class="tk-c">// forwarding reference: binds to anything</span>
+
+<span class="tk-k">void</span> <span class="tk-f">f</span>(std::string&amp;&amp; s);     <span class="tk-c">// rvalue reference: binds to rvalues only</span>
+<span class="tk-k">auto</span>&amp;&amp; x{ expression };      <span class="tk-c">// also a forwarding reference</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Declaration</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>template &lt;typename T&gt; void f(T&amp;&amp;)</code></td>
+<td>Forwarding reference</td>
+</tr>
+<tr>
+<td><code>auto&amp;&amp;</code></td>
+<td>Forwarding reference</td>
+</tr>
+<tr>
+<td><code>void f(Widget&amp;&amp;)</code></td>
+<td>Rvalue reference: no deduction</td>
+</tr>
+<tr>
+<td><code>template &lt;typename T&gt; void f(const T&amp;&amp;)</code></td>
+<td>Rvalue reference: <code>const</code> disqualifies it</td>
+</tr>
+<tr>
+<td><code>template &lt;typename T&gt; void f(std::vector&lt;T&gt;&amp;&amp;)</code></td>
+<td>Rvalue reference: not of the form <code>T&amp;&amp;</code></td>
+</tr>
+</tbody></table>
+</div>
+<h3>Reference collapsing</h3>
+<p>Two rules produce the behaviour.</p>
+<p><strong>A special deduction rule.</strong> When an lvalue of type <code>A</code> is passed to <code>T&amp;&amp;</code>, <code>T</code> is deduced as <code>A&amp;</code>. When an rvalue is passed, <code>T</code> is deduced as <code>A</code>.</p>
+<p><strong>Reference collapsing.</strong> A reference to a reference, which can only arise through templates and aliases, collapses:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> &amp;  &amp;   becomes  &amp;        &amp;  &amp;&amp;  becomes  &amp;
+ &amp;&amp; &amp;   becomes  &amp;        &amp;&amp; &amp;&amp;  becomes  &amp;&amp;
+
+ an lvalue reference anywhere wins</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Argument</th>
+<th><code>T</code> deduced as</th>
+<th><code>T&amp;&amp;</code> becomes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>An lvalue <code>std::string</code></td>
+<td><code>std::string&amp;</code></td>
+<td><code>std::string&amp; &amp;&amp;</code>, which collapses to <code>std::string&amp;</code></td>
+</tr>
+<tr>
+<td>An rvalue <code>std::string</code></td>
+<td><code>std::string</code></td>
+<td><code>std::string&amp;&amp;</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>So <code>T</code> itself <strong>encodes</strong> the argument&#39;s original value category.</p>
+<h2><code>std::forward</code></h2>
+<p>Inside <code>wrapper</code>, <code>arg</code> is a name and therefore an lvalue, whatever was passed. <code>std::forward&lt;T&gt;(arg)</code> restores the original category by reading it back out of <code>T</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">process</span>(<span class="tk-k">const</span> std::string&amp;) { std::cout &lt;&lt; <span class="tk-s">&quot;copy\n&quot;</span>; }
+<span class="tk-k">void</span> <span class="tk-f">process</span>(std::string&amp;&amp;)      { std::cout &lt;&lt; <span class="tk-s">&quot;move\n&quot;</span>; }
+
+<span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">void</span> <span class="tk-f">relay</span>(T&amp;&amp; arg)
+{
+    <span class="tk-f">process</span>(std::forward&lt;T&gt;(arg));
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::string name{ <span class="tk-s">&quot;Ann&quot;</span> };
+    <span class="tk-f">relay</span>(name);                    <span class="tk-c">// copy</span>
+    <span class="tk-f">relay</span>(std::string{ <span class="tk-s">&quot;Bo&quot;</span> });     <span class="tk-c">// move</span>
+    <span class="tk-f">relay</span>(std::<span class="tk-f">move</span>(name));         <span class="tk-c">// move</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;relay(name)&lt;br/&gt;an lvalue&quot;] --&gt; F[&quot;T is std::string&amp;amp;&lt;br/&gt;forward yields an lvalue&quot;] --&gt; C[&quot;process(const std::string&amp;amp;)&quot;]
+    B[&quot;relay(temporary)&lt;br/&gt;an rvalue&quot;] --&gt; G[&quot;T is std::string&lt;br/&gt;forward yields an rvalue&quot;] --&gt; M[&quot;process(std::string&amp;amp;&amp;amp;)&quot;]</pre></div>
+<p><code>std::forward&lt;T&gt;(arg)</code> is <code>static_cast&lt;T&amp;&amp;&gt;(arg)</code>. With <code>T</code> as <code>std::string&amp;</code> it collapses to an lvalue reference; with <code>T</code> as <code>std::string</code> it is an rvalue reference.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th><code>std::move(x)</code></th>
+<th><code>std::forward&lt;T&gt;(x)</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Produces</td>
+<td>Always an rvalue</td>
+<td>An lvalue or an rvalue, as recorded in <code>T</code></td>
+</tr>
+<tr>
+<td>Use with</td>
+<td>An rvalue reference or object you are finished with</td>
+<td>A forwarding reference</td>
+</tr>
+<tr>
+<td>Template argument</td>
+<td>Deduced</td>
+<td>Must be written explicitly</td>
+</tr>
+</tbody></table>
+</div>
+<h2>The standard use: wrapping construction</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T, <span class="tk-k">typename</span>... <span class="tk-t">Args</span>&gt;
+std::unique_ptr&lt;T&gt; <span class="tk-f">make</span>(<span class="tk-t">Args</span>&amp;&amp;... args)
+{
+    <span class="tk-k">return</span> std::unique_ptr&lt;T&gt;{ <span class="tk-k">new</span> <span class="tk-f">T</span>(std::forward&lt;<span class="tk-t">Args</span>&gt;(args)...) };
+}</code></pre></div>
+<p>Each argument reaches <code>T</code>&#39;s constructor exactly as the caller supplied it: lvalues are copied from, rvalues moved from, and nothing is copied in between. <code>std::make_unique</code>, <code>emplace_back</code> and the constructor of <code>std::thread</code> all work this way.</p>
+<h2><code>decltype</code> and <code>decltype(auto)</code></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Yields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>decltype(x)</code> where <code>x</code> is a name</td>
+<td>The declared type of <code>x</code></td>
+</tr>
+<tr>
+<td><code>decltype((x))</code>, or any other lvalue expression of type <code>T</code></td>
+<td><code>T&amp;</code></td>
+</tr>
+<tr>
+<td><code>decltype(</code> an xvalue <code>)</code></td>
+<td><code>T&amp;&amp;</code></td>
+</tr>
+<tr>
+<td><code>decltype(</code> a prvalue <code>)</code></td>
+<td><code>T</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> x{};
+<span class="tk-k">decltype</span>(x) a{};        <span class="tk-c">// int</span>
+<span class="tk-k">decltype</span>((x)) b{ x };   <span class="tk-c">// int&amp;: the parentheses make it an expression, not a name</span></code></pre></div>
+<p><code>auto</code> strips references and top-level <code>const</code>. <code>decltype(auto)</code> deduces with the <code>decltype</code> rules, preserving them. That is what a forwarding wrapper needs for its return type:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> F, <span class="tk-k">typename</span>... <span class="tk-t">Args</span>&gt;
+<span class="tk-k">decltype</span>(<span class="tk-k">auto</span>) <span class="tk-f">call</span>(F&amp;&amp; f, <span class="tk-t">Args</span>&amp;&amp;... args)
+{
+    <span class="tk-k">return</span> std::forward&lt;F&gt;(f)(std::forward&lt;<span class="tk-t">Args</span>&gt;(args)...);
+}</code></pre></div>
+<p>If <code>f</code> returns a reference, so does <code>call</code>. <code>std::invoke(f, args...)</code> generalises the call itself to member function pointers and member data pointers.</p>
+<h2>Pitfalls</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pitfall</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Forwarding the same argument twice</td>
+<td>The first use may move from it</td>
+</tr>
+<tr>
+<td>Overloading on a forwarding reference</td>
+<td><code>template &lt;typename T&gt; void f(T&amp;&amp;)</code> is an exact match for almost anything and beats <code>f(const Widget&amp;)</code> for a non-const lvalue. Constrain it with a concept.</td>
+</tr>
+<tr>
+<td>A forwarding constructor</td>
+<td>It can hijack copy construction from a non-const lvalue. Constrain it.</td>
+</tr>
+<tr>
+<td><code>return (x);</code> under <code>decltype(auto)</code></td>
+<td>The parentheses make it <code>T&amp;</code>: a reference to a local</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/11.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/11.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../10-09-cmake-libraries-and-package-managers/"><span class="mono">previous</span><b>10.09 CMake, Libraries and Package Managers</b></a>
+      <a class="lp-next" href="../11-02-type-traits/"><span class="mono">next</span><b>11.02 Type Traits</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/11-01-value-categories-and-perfect-forwarding"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Named Pipes · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/2-02-named-pipes/">
+  <meta name="description" content="Pipes any program can find by name - creating a server instance, waiting for a client to connect, connecting as a client and handling a busy server, byte and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Named Pipes · Processes and Communication · Xenon">
+  <meta property="og:description" content="Pipes any program can find by name - creating a server instance, waiting for a client to connect, connecting as a client and handling a busy server, byte and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/2-02-named-pipes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Named Pipes · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Named Pipes · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="Pipes any program can find by name - creating a server instance, waiting for a client to connect, connecting as a client and handling a busy server, byte and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Pipes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Named Pipes</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.02</b></span><span>2 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Pipes any program can find by name - creating a server instance, waiting for a client to connect, connecting as a client and handling a busy server, byte and message modes, disconnecting, and the rules for pipe names.</p>
+      <div class="prose">
+<h2>A pipe with a name</h2>
+<p>A <strong>named pipe</strong> is created by a <strong>server</strong> under a name such as <code>\\.\pipe\xenon-indexer</code>. Any program on the machine that knows the name can connect as a <strong>client</strong>. Each connection is a private, two-way channel between the server and that one client.</p>
+<h2>The server</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE pipe{ <span class="tk-f">CreateNamedPipeW</span>(
+    <span class="tk-s">LR&quot;(\\.\pipe\xenon-indexer)&quot;</span>,
+    PIPE_ACCESS_DUPLEX,                                         <span class="tk-c">// read and write</span>
+    PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT |    <span class="tk-c">// message mode (below)</span>
+        PIPE_REJECT_REMOTE_CLIENTS,                             <span class="tk-c">// this machine only</span>
+    PIPE_UNLIMITED_INSTANCES,                                   <span class="tk-c">// how many clients at once</span>
+    <span class="tk-n">64</span> * <span class="tk-n">1024</span>, <span class="tk-n">64</span> * <span class="tk-n">1024</span>,                                       <span class="tk-c">// out and in buffer sizes</span>
+    <span class="tk-n">0</span>,                                                          <span class="tk-c">// default client wait timeout</span>
+    <span class="tk-k">nullptr</span>) };                                                 <span class="tk-c">// security: lesson 5.05</span>
+<span class="tk-k">if</span> (pipe == INVALID_HANDLE_VALUE) <span class="tk-c">/* GetLastError() */</span>;
+
+<span class="tk-k">if</span> (!<span class="tk-f">ConnectNamedPipe</span>(pipe, <span class="tk-k">nullptr</span>) &amp;&amp; <span class="tk-f">GetLastError</span>() != ERROR_PIPE_CONNECTED)
+    <span class="tk-c">/* failed */</span>;
+<span class="tk-c">// a client is connected: ReadFile / WriteFile on `pipe`</span></code></pre></div>
+<p><code>CreateNamedPipeW</code> creates one <strong>instance</strong>: a single connection slot. <code>ConnectNamedPipe</code> waits until a client connects to it. (<code>ERROR_PIPE_CONNECTED</code> means a client connected between the create and the connect call, which is success.) To serve another client at the same time you create another instance (lesson 2.04).</p>
+<p>When the conversation ends, <code>DisconnectNamedPipe</code> drops the client and the same instance can <code>ConnectNamedPipe</code> again; or close it.</p>
+<h2>The client</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE pipe{};
+<span class="tk-k">for</span> (;;)
+{
+    pipe = <span class="tk-f">CreateFileW</span>(<span class="tk-s">LR&quot;(\\.\pipe\xenon-indexer)&quot;</span>, GENERIC_READ | GENERIC_WRITE, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>, OPEN_EXISTING, <span class="tk-n">0</span>, <span class="tk-k">nullptr</span>);
+    <span class="tk-k">if</span> (pipe != INVALID_HANDLE_VALUE) <span class="tk-k">break</span>;
+    <span class="tk-k">if</span> (<span class="tk-f">GetLastError</span>() != ERROR_PIPE_BUSY) <span class="tk-c">/* no server: ERROR_FILE_NOT_FOUND (2) */</span> <span class="tk-k">return</span>;
+    <span class="tk-k">if</span> (!<span class="tk-f">WaitNamedPipeW</span>(<span class="tk-s">LR&quot;(\\.\pipe\xenon-indexer)&quot;</span>, <span class="tk-n">2000</span>)) <span class="tk-k">return</span>;   <span class="tk-c">// every instance busy: wait up to 2 s</span>
+}
+DWORD mode{ PIPE_READMODE_MESSAGE };
+<span class="tk-f">SetNamedPipeHandleState</span>(pipe, &amp;mode, <span class="tk-k">nullptr</span>, <span class="tk-k">nullptr</span>);              <span class="tk-c">// read whole messages too</span></code></pre></div>
+<p>The client opens the pipe like a file. Two errors matter: <code>ERROR_FILE_NOT_FOUND</code> means no server is running (start it, or report that), and <code>ERROR_PIPE_BUSY</code> means the server exists but every instance is in use, so wait with <code>WaitNamedPipeW</code> and try again. Another client can win the race after the wait, which is why it is a loop.</p>
+<h2>Byte mode and message mode</h2>
+<ul>
+<li><strong>Byte mode</strong> (<code>PIPE_TYPE_BYTE</code>): a stream like an anonymous pipe. Boundaries are lost.</li>
+<li><strong>Message mode</strong> (<code>PIPE_TYPE_MESSAGE</code> with <code>PIPE_READMODE_MESSAGE</code> on the reading side): each <code>WriteFile</code> is one message, and each <code>ReadFile</code> returns at most one message. If your buffer is too small, the read returns what fits and fails with <code>ERROR_MORE_DATA</code>; keep reading to get the rest of the same message.</li>
+</ul>
+<p>Message mode is convenient, but it is Windows-only and ties your protocol to pipes. Many programs use byte mode with their own framing (lesson 2.03), which then works unchanged over sockets too.</p>
+<h2>Names</h2>
+<ul>
+<li>Local pipes are <code>\\.\pipe\</code> followed by the name. Remote ones are <code>\\server\pipe\name</code> (blocked by <code>PIPE_REJECT_REMOTE_CLIENTS</code>, which you should set unless you need them).</li>
+<li>The name part may contain any character except <code>\</code>. The whole string can be up to 256 characters. Names are <strong>not case-sensitive</strong>.</li>
+<li>Names are <strong>global</strong> to the machine: two programs, or two users, choosing <code>\\.\pipe\server</code> collide. Make names specific: product, purpose, and usually the user or session (<code>\\.\pipe\xenon-indexer-S-1-5-21-...</code> or a per-user random suffix stored where the client can find it).</li>
+<li>A name that another program created first can be <strong>squatted</strong>: your client might connect to an impostor. Lesson 5.05 covers how to guard against it.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/2.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/2.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-01-anonymous-pipes/"><span class="mono">previous</span><b>2.01 Anonymous Pipes</b></a>
+      <a class="lp-next" href="../2-03-message-framing/"><span class="mono">next</span><b>2.03 Message Framing</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/2-02-named-pipes"></script>
+</body>
+</html>

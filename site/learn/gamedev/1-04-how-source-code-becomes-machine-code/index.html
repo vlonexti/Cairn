@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>How Source Code Becomes Machine Code · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/1-04-how-source-code-becomes-machine-code/">
+  <meta name="description" content="The CPU only understands numbers, so C++ has to be translated before it can run. Four tools do it in turn: the preprocessor , the compiler , the assembler…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How Source Code Becomes Machine Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The CPU only understands numbers, so C++ has to be translated before it can run. Four tools do it in turn: the preprocessor , the compiler , the assembler…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/1-04-how-source-code-becomes-machine-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="How Source Code Becomes Machine Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How Source Code Becomes Machine Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The CPU only understands numbers, so C++ has to be translated before it can run. Four tools do it in turn: the preprocessor , the compiler , the assembler…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>How Computers Run Programs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">How Source Code Becomes Machine Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 8 in milestone 1</span><span>9 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The CPU only understands numbers, so C++ has to be translated before it can run. Four tools do it in turn: the <strong>preprocessor</strong>, the <strong>compiler</strong>, the <strong>assembler</strong> and the <strong>linker</strong>. Knowing what each one does explains most build errors and almost everything you will see in a debugger.</p>
+      <div class="prose">
+<h2>From text to numbers</h2>
+<p>In lesson 1.01 the tiny computer ran a program that was nothing but numbers in memory. A real CPU is the same. It has never heard of C++. A <code>.cpp</code> file is text for people, and something has to turn it into the numbers the processor executes.</p>
+<p>That job is split into stages. Each stage takes one kind of file and produces another.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    SRC[&quot;main.cpp&lt;br/&gt;your source&quot;] --&gt; PRE[&quot;Preprocessor&lt;br/&gt;pastes in headers,&lt;br/&gt;expands macros&quot;]
+    PRE --&gt; COMP[&quot;Compiler&lt;br/&gt;C++ to&lt;br/&gt;assembly&quot;]
+    COMP --&gt; ASM[&quot;Assembler&lt;br/&gt;assembly to&lt;br/&gt;machine code&quot;]
+    ASM --&gt; OBJ[&quot;main.obj&lt;br/&gt;object file&quot;]
+    OBJ --&gt; LINK[&quot;Linker&lt;br/&gt;joins object files&lt;br/&gt;and libraries&quot;]
+    LIB[&quot;Libraries&lt;br/&gt;(.lib)&quot;] --&gt; LINK
+    LINK --&gt; EXE[&quot;game.exe&quot;]</pre></div>
+<p>When you press Build in Visual Studio, all of these run one after another, so it feels like one step. It is worth knowing the stages apart, because each has its own kind of error.</p>
+<h2>Stage 1: the preprocessor</h2>
+<p>Every line that starts with <code>#</code> is an instruction to the <strong>preprocessor</strong>, which works on plain text before any C++ is understood.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Directive</th>
+<th>What the preprocessor does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>#include &lt;iostream&gt;</code></td>
+<td>Pastes the whole of that file in place of the line</td>
+</tr>
+<tr>
+<td><code>#define MAX_PLAYERS 4</code></td>
+<td>From here on, replaces the word <code>MAX_PLAYERS</code> with <code>4</code></td>
+</tr>
+<tr>
+<td><code>#ifdef _DEBUG</code> ... <code>#endif</code></td>
+<td>Keeps or drops the lines in between, depending on whether <code>_DEBUG</code> is defined</td>
+</tr>
+</tbody></table>
+</div>
+<p>The result is one long file called a <strong>translation unit</strong>. Including <code>&lt;iostream&gt;</code> alone adds tens of thousands of lines. You never see this file, but the compiler does.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-p">#define</span> GREETING <span class="tk-s">&quot;Hello from the preprocessor&quot;</span>
+<span class="tk-p">#define</span> <span class="tk-f">SQUARE</span>(x) ((x) * (x))
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; GREETING &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-f">SQUARE</span>(<span class="tk-n">7</span>) &lt;&lt; <span class="tk-s">'\n'</span>;
+<span class="tk-p">#ifdef</span> _DEBUG
+    std::cout &lt;&lt; <span class="tk-s">&quot;This is a debug build\n&quot;</span>;
+<span class="tk-p">#endif</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Hello from the preprocessor
+49
+This is a debug build</code></pre></div>
+<p>The examples on this site are built as Debug builds, where <code>_DEBUG</code> is defined, so the last line appears. In a Release build the preprocessor removes that line before the compiler ever sees it.</p>
+<p>By the time the compiler sees <code>main</code>, the second line reads <code>std::cout &lt;&lt; ((7) * (7)) &lt;&lt; &#39;\n&#39;;</code>. The word <code>SQUARE</code> is gone. Macros are text substitution and nothing more, which is why modern C++ prefers <code>constexpr</code> variables and ordinary functions: those obey the language&#39;s rules for types and scope.</p>
+<div class="callout tip"><div class="callout-title"><span>See the preprocessed file yourself</span></div><div class="callout-body"><p>In Visual Studio, open the project&#39;s properties, go to <strong>C/C++ → Preprocessor</strong> and set <strong>Preprocess to a File</strong> to Yes. Building then writes <code>main.i</code>, the text the compiler actually reads. Turn the option off again afterwards, because it stops the build from producing an executable.</p>
+</div></div>
+<h2>Stage 2: the compiler</h2>
+<p>The <strong>compiler</strong> reads the translation unit, checks that it is valid C++, and translates every function into <strong>assembly language</strong>: a text form of machine instructions, one per line. This is the stage that reports most of the errors you meet, such as a missing semicolon, a type that does not match, or a name that does not exist.</p>
+<p>Here is a small function and what Microsoft&#39;s compiler turns it into, with optimisation switched on:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">addBonus</span>(<span class="tk-k">int</span> score)
+{
+    <span class="tk-k">return</span> score + <span class="tk-n">50</span>;
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>addBonus PROC
+    lea  <span class="tk-t">eax</span>, <span class="tk-k">DWORD</span> <span class="tk-k">PTR</span> [<span class="tk-t">rcx</span>+<span class="tk-n">50</span>]
+    ret  <span class="tk-n">0</span>
+addBonus ENDP</code></pre></div>
+<p>Two instructions. The argument <code>score</code> arrived in a register called <code>rcx</code>, the result is left in a register called <code>eax</code>, and <code>ret</code> returns to whoever called the function. You do not need to read assembly yet: chapter 7 teaches it properly. For now, notice that each line is one small action, just like the tiny computer&#39;s instructions.</p>
+<h2>Stage 3: the assembler</h2>
+<p>The <strong>assembler</strong> turns each assembly line into its numeric encoding. <code>ret</code> becomes the single byte <code>C3</code>. The <code>lea</code> line becomes three bytes, <code>8D 41 32</code>, and the <code>32</code> at the end is 50 in hexadecimal: the bonus itself, stored inside the instruction.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>addBonus:
+  8D 41 32      lea eax, [rcx+32h]
+  C3            ret</code></pre></div>
+<p>This is exactly what lesson 1.01 described: a program is numbers in memory. These four bytes <em>are</em> the function <code>addBonus</code>. When the game runs, they sit somewhere in memory, and calling <code>addBonus</code> means telling the CPU to fetch its next instruction from there.</p>
+<p>The assembler&#39;s output is an <strong>object file</strong> (<code>.obj</code> on Windows). It holds the machine code for one <code>.cpp</code> file, plus a list of names it defines and names it uses but does not define.</p>
+<h2>Stage 4: the linker</h2>
+<p>A real program is many <code>.cpp</code> files, and each one is compiled on its own. If <code>main.cpp</code> calls <code>addBonus</code> but <code>addBonus</code> lives in <code>score.cpp</code>, then <code>main.obj</code> contains a call to a function whose address it does not know. It leaves a note: &quot;fill in the address of <code>addBonus</code> here&quot;.</p>
+<p>The <strong>linker</strong> reads every object file and every library, matches each &quot;I need&quot; note with the &quot;I define&quot; entry that answers it, fills in the real addresses, and writes the final <code>.exe</code>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    M[&quot;main.obj&lt;br/&gt;defines: main&lt;br/&gt;needs: addBonus, printf&quot;] --&gt; L[&quot;Linker&quot;]
+    S[&quot;score.obj&lt;br/&gt;defines: addBonus&quot;] --&gt; L
+    C[&quot;C runtime library&lt;br/&gt;defines: printf, ...&quot;] --&gt; L
+    L --&gt; E[&quot;game.exe&lt;br/&gt;every call has a real address&quot;]</pre></div>
+<p>That explains the two classic linker errors:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LNK2019: unresolved external symbol addBonus</code></td>
+<td>Something needs <code>addBonus</code>, and no object file or library defines it. Often a <code>.cpp</code> file is missing from the project, or a library was not added.</td>
+</tr>
+<tr>
+<td><code>LNK2005: addBonus already defined in main.obj</code></td>
+<td>Two object files both define it. Often a function body was written in a header that two <code>.cpp</code> files include.</td>
+</tr>
+</tbody></table>
+</div>
+<p>Neither is a mistake in the C++ syntax, which is why they only appear after compiling has succeeded.</p>
+<h2>Why the stages matter later</h2>
+<p>Everything in the rest of this course rests on this pipeline.</p>
+<ul>
+<li><strong>Debugging.</strong> The debugger shows you the running machine code and maps it back to your source lines using a separate file of <strong>debug symbols</strong> (<code>.pdb</code>) that the compiler and linker write alongside the program.</li>
+<li><strong>Assembly.</strong> Chapter 7 reads the compiler&#39;s output, the stage 2 text you saw above.</li>
+<li><strong>Libraries and DLLs.</strong> Chapter 4 shows how the linker can leave some addresses to be filled in when the program starts, which is how DLLs work.</li>
+<li><strong>Reverse engineering.</strong> Chapter 9 runs the pipeline backwards: from the numbers in an <code>.exe</code> back to something a person can understand.</li>
+</ul>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Thinking <code>#include</code> is like <code>import</code> in other languages
+It is a literal copy and paste of text. Including the same header twice pastes it twice, which is why headers start with <code>#pragma once</code>.</p>
+</blockquote>
+<blockquote><p>[!warning] Putting function bodies in headers without <code>inline</code>
+Each <code>.cpp</code> that includes the header gets its own copy of the function, and the linker reports <code>already defined</code>. Put the body in a <code>.cpp</code> file, or mark it <code>inline</code>.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Reading a linker error as a syntax error</span></div><div class="callout-body"><p>If the message starts with <code>LNK</code>, your code compiled. Look for a missing file, a missing library, or a declaration that does not match its definition exactly.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Macros with missing brackets</span></div><div class="callout-body"><p><code>#define SQUARE(x) x * x</code> turns <code>SQUARE(2 + 3)</code> into <code>2 + 3 * 2 + 3</code>, which is 11. This is one reason to prefer <code>constexpr</code> functions.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which stage turns <code>#include &lt;vector&gt;</code> into thousands of lines of code?</div><ul><li>The preprocessor</li><li>The compiler</li><li>The linker</li></ul><details><summary>Show the answer</summary><p><b>The preprocessor</b> The preprocessor handles every <code>#</code> line, and <code>#include</code> is a straight paste of the file&#39;s text.</p></details></li><li><div class="q">What does an object file (<code>.obj</code>) contain?</div><ul><li>The finished program, ready to run</li><li>Machine code for one source file, plus lists of names it defines and names it still needs</li><li>The assembly language text for the whole program</li></ul><details><summary>Show the answer</summary><p><b>Machine code for one source file, plus lists of names it defines and names it still needs</b> Each <code>.cpp</code> file becomes one object file. The linker later joins them and fills in the addresses that were missing.</p></details></li><li><div class="q">A build fails with <code>LNK2019: unresolved external symbol</code>. What is the most likely cause?</div><ul><li>A missing semicolon</li><li>A spelling mistake inside a comment</li><li>A function is declared and called, but no compiled file or library defines it</li></ul><details><summary>Show the answer</summary><p><b>A function is declared and called, but no compiled file or library defines it</b> Linker errors appear after compiling has succeeded. Something is used but never defined in anything the linker was given.</p></details></li><li><div class="q">In the assembler output above, why does the byte <code>32</code> appear in the encoding of <code>lea eax, [rcx+50]</code>?</div><ul><li>It is the size of the instruction</li><li>50 in decimal is <code>0x32</code> in hexadecimal</li><li>It is the address of the function</li></ul><details><summary>Show the answer</summary><p><b>50 in decimal is <code>0x32</code> in hexadecimal</b> Numbers inside instructions are stored as bytes like everything else. Fifty is three sixteens and two, which is <code>0x32</code>.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-memory-addresses-and-pointers/"><span class="mono">previous</span><b>1.03 Memory, Addresses and Pointers</b></a>
+      <a class="lp-next" href="../1-05-function-calls-and-the-stack-a-first-look/"><span class="mono">next</span><b>1.05 Function Calls and the Stack: A First Look</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/1-04-how-source-code-becomes-machine-code"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

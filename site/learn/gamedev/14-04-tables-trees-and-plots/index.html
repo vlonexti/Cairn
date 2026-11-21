@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Tables, Trees and Plots · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/14-04-tables-trees-and-plots/">
+  <meta name="description" content="Tools mostly show data: lists of entities, hierarchies of objects, numbers over time. ImGui's tables give sortable, resizable, scrollable columns; trees show…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tables, Trees and Plots · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Tools mostly show data: lists of entities, hierarchies of objects, numbers over time. ImGui's tables give sortable, resizable, scrollable columns; trees show…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/14-04-tables-trees-and-plots/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Tables, Trees and Plots · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tables, Trees and Plots · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Tools mostly show data: lists of entities, hierarchies of objects, numbers over time. ImGui's tables give sortable, resizable, scrollable columns; trees show…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>User Interfaces for Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Tables, Trees and Plots</h1>
+      <div class="readout lp-readout"><span>lesson <b>14.04</b></span><span>4 of 6 in milestone 14</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Tools mostly show data: lists of entities, hierarchies of objects, numbers over time. ImGui&#39;s <strong>tables</strong> give sortable, resizable, scrollable columns; <strong>trees</strong> show hierarchies such as a scene graph; <strong>plots</strong> show values over time. This lesson uses each for Delve&#39;s tools, including clipping long lists so a table of ten thousand rows stays fast.</p>
+      <div class="prose">
+<h2>Tables</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-t">ImGuiTableFlags</span> flags{ <span class="tk-t">ImGuiTableFlags_Borders</span> | <span class="tk-t">ImGuiTableFlags_RowBg</span> | <span class="tk-t">ImGuiTableFlags_Resizable</span>
+                           | <span class="tk-t">ImGuiTableFlags_Sortable</span> | <span class="tk-t">ImGuiTableFlags_ScrollY</span> };
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginTable</span>(<span class="tk-s">&quot;monsters&quot;</span>, <span class="tk-n">4</span>, flags, { <span class="tk-n">0</span>, <span class="tk-n">300</span> }))
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TableSetupScrollFreeze</span>(<span class="tk-n">0</span>, <span class="tk-n">1</span>);                       <span class="tk-c">// keep the header row visible when scrolling</span>
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TableSetupColumn</span>(<span class="tk-s">&quot;Id&quot;</span>, <span class="tk-t">ImGuiTableColumnFlags_DefaultSort</span>);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TableSetupColumn</span>(<span class="tk-s">&quot;Kind&quot;</span>);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TableSetupColumn</span>(<span class="tk-s">&quot;Position&quot;</span>);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TableSetupColumn</span>(<span class="tk-s">&quot;HP&quot;</span>);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TableHeadersRow</span>();
+
+    <span class="tk-k">if</span> (<span class="tk-t">ImGuiTableSortSpecs</span>* sort{ <span class="tk-t">ImGui</span>::<span class="tk-f">TableGetSortSpecs</span>() }; sort &amp;&amp; sort-&gt;<span class="tk-t">SpecsDirty</span>)
+    {
+        <span class="tk-f">sortRows</span>(m_rows, sort-&gt;<span class="tk-t">Specs</span>[<span class="tk-n">0</span>].<span class="tk-t">ColumnIndex</span>, sort-&gt;<span class="tk-t">Specs</span>[<span class="tk-n">0</span>].<span class="tk-t">SortDirection</span> == <span class="tk-t">ImGuiSortDirection_Ascending</span>);
+        sort-&gt;<span class="tk-t">SpecsDirty</span> = <span class="tk-k">false</span>;                              <span class="tk-c">// sort only when the user changed the order</span>
+    }
+
+    <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-t">Row</span>&amp; r : m_rows)
+    {
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TableNextRow</span>();
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TableNextColumn</span>(); <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%d&quot;</span>, r.id);
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TableNextColumn</span>(); <span class="tk-t">ImGui</span>::<span class="tk-f">TextUnformatted</span>(r.kind.<span class="tk-f">c_str</span>());
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TableNextColumn</span>(); <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%d, %d&quot;</span>, r.x, r.y);
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TableNextColumn</span>(); <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%d&quot;</span>, r.hp);
+    }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndTable</span>();
+}</code></pre></div>
+<p>ImGui handles the header clicks, resizing and scrolling; <strong>your code sorts the data</strong> when <code>SpecsDirty</code> says the order changed. A filter box above the table (<code>InputText</code> with a hint) completes it. The practice task writes the sorting and filtering logic, with stable sorting so rows with equal values keep their relative order.</p>
+<h2>Long lists: clipping</h2>
+<p>Describing ten thousand rows every frame is wasteful when only thirty are visible. <code>ImGuiListClipper</code> tells you which rows are on screen:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGuiListClipper</span> clipper;
+clipper.<span class="tk-f">Begin</span>(<span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(m_rows.<span class="tk-f">size</span>()));
+<span class="tk-k">while</span> (clipper.<span class="tk-f">Step</span>())
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ clipper.<span class="tk-t">DisplayStart</span> }; i &lt; clipper.<span class="tk-t">DisplayEnd</span>; ++i)
+        <span class="tk-f">drawRow</span>(m_rows[<span class="tk-k">static_cast</span>&lt;size_t&gt;(i)]);</code></pre></div>
+<p>It is lesson 10.04&#39;s culling, for interfaces: the cost depends on what is visible, not on the size of the data.</p>
+<h2>Trees</h2>
+<p>Hierarchies (a scene graph, lesson 3.09; folders; a struct&#39;s members, lesson 9.09) use tree nodes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">drawNode</span>(<span class="tk-k">const</span> <span class="tk-t">SceneNode</span>&amp; n)
+{
+    <span class="tk-k">const</span> <span class="tk-t">ImGuiTreeNodeFlags</span> flags{ n.children.<span class="tk-f">empty</span>() ? <span class="tk-t">ImGuiTreeNodeFlags_Leaf</span> : <span class="tk-t">ImGuiTreeNodeFlags_None</span> };
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">TreeNodeEx</span>(&amp;n, flags, <span class="tk-s">&quot;%s  (%.1f, %.1f)&quot;</span>, n.name.<span class="tk-f">c_str</span>(), n.x, n.y))   <span class="tk-c">// the pointer is the id</span>
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; child : n.children) <span class="tk-f">drawNode</span>(*child);
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TreePop</span>();
+    }
+}</code></pre></div>
+<p><code>TreeNodeEx</code> returns true when the node is open, and you then draw its children and call <code>TreePop</code>. Selection, drag and drop and context menus (<code>BeginPopupContextItem</code>) build an editor&#39;s hierarchy panel from the same pieces.</p>
+<h2>Plots</h2>
+<p><code>ImGui::PlotLines</code> and <code>PlotHistogram</code> draw simple graphs from an array, enough for lesson 12.05&#39;s frame times:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">PlotLines</span>(<span class="tk-s">&quot;##frame&quot;</span>, m_frameMs.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(m_frameMs.<span class="tk-f">size</span>()), <span class="tk-n">0</span>,
+                 <span class="tk-s">&quot;frame ms&quot;</span>, <span class="tk-n">0.0f</span>, <span class="tk-n">33.0f</span>, <span class="tk-f">ImVec2</span>(-FLT_MIN, <span class="tk-n">80</span>));</code></pre></div>
+<p>For real charting (several series, axes, zoom, markers) the separate <strong>ImPlot</strong> library (also in vcpkg) extends ImGui with full plotting. A frame-time plot with a line at 16.7 ms (lesson 8.08&#39;s budget) makes stutter obvious.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Sorting every frame</span></div><div class="callout-body"><p>Sort only when <code>SpecsDirty</code> is set, or when the data changes.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Describing every row of a huge list</span></div><div class="callout-body"><p>Use <code>ImGuiListClipper</code>.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Unstable sorting</span></div><div class="callout-body"><p>Rows with equal values jump around each time the list is re-sorted. Use a stable sort with a tie-breaker.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Who sorts a sortable ImGui table&#39;s data?</div><ul><li>Your code, when ImGui reports the sort order changed</li><li>ImGui sorts its own copy of the rows</li><li>The renderer</li></ul><details><summary>Show the answer</summary><p><b>Your code, when ImGui reports the sort order changed</b> ImGui only tracks which column and direction the user chose.</p></details></li><li><div class="q">What does <code>ImGuiListClipper</code> do?</div><ul><li>Tells you which rows are visible, so only those are described each frame</li><li>Removes rows from the data</li><li>Clips text that is too long</li></ul><details><summary>Show the answer</summary><p><b>Tells you which rows are visible, so only those are described each frame</b> Cost then depends on what is on screen.</p></details></li><li><div class="q">How does a tree node know whether to draw its children?</div><ul><li><code>TreeNodeEx</code> returns true when the node is open</li><li>It always draws them</li><li>A separate call checks</li></ul><details><summary>Show the answer</summary><p><b><code>TreeNodeEx</code> returns true when the node is open</b> Then draw the children and call <code>TreePop</code>.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/14.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/14.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../14-03-windows-widgets-and-layout/"><span class="mono">previous</span><b>14.03 Windows, Widgets and Layout</b></a>
+      <a class="lp-next" href="../14-05-settings-that-persist/"><span class="mono">next</span><b>14.05 Settings That Persist</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/14-04-tables-trees-and-plots"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Webhook Receiver · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/4-04-a-webhook-receiver/">
+  <meta name="description" content="The HTTP side of a webhook endpoint - what a raw request looks like on the wire, parsing the request line, headers and body by Content-Length, choosing…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Webhook Receiver · Working with APIs · Xenon">
+  <meta property="og:description" content="The HTTP side of a webhook endpoint - what a raw request looks like on the wire, parsing the request line, headers and body by Content-Length, choosing…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/4-04-a-webhook-receiver/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Webhook Receiver · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Webhook Receiver · Working with APIs · Xenon">
+  <meta name="twitter:description" content="The HTTP side of a webhook endpoint - what a raw request looks like on the wire, parsing the request line, headers and body by Content-Length, choosing…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Webhooks</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Webhook Receiver</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The HTTP side of a webhook endpoint - what a raw request looks like on the wire, parsing the request line, headers and body by Content-Length, choosing status codes for every failure, a minimal receiver with Python&#39;s http.server, and what production adds (a framework, HTTPS, a queue).</p>
+      <div class="prose">
+<h2>The request on the wire</h2>
+<p>A webhook delivery is an ordinary HTTP request. On the wire, before any framework has touched it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>POST /webhooks HTTP/1.1\r\n
+Host: hooks.example.org\r\n
+Content-Type: application/json\r\n
+Content-Length: 58\r\n
+Webhook-Signature: t=1793523600,v1=...\r\n
+\r\n
+{&quot;id&quot;:&quot;evt_1&quot;,&quot;type&quot;:&quot;order.paid&quot;,&quot;data&quot;:{&quot;order&quot;:&quot;o_42&quot;}}</code></pre></div>
+<ul>
+<li>The <strong>request line</strong>: method, path, version.</li>
+<li><strong>Headers</strong>, one per line, <code>Name: value</code>; names are case-insensitive.</li>
+<li>An empty line, then the <strong>body</strong>, exactly <code>Content-Length</code> bytes.</li>
+</ul>
+<p>Frameworks parse this for you, but knowing the shape helps when debugging (what exactly arrived?) and is the clearest way to see which bytes the signature covers. Practice 4.04 parses it by hand.</p>
+<h2>Every way it can fail</h2>
+<p>A receiver should answer each failure with a status that tells the sender the truth:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>malformed request (bad request line, header without <code>:</code>, body shorter than <code>Content-Length</code>)</td>
+<td>400</td>
+</tr>
+<tr>
+<td>wrong path</td>
+<td>404</td>
+</tr>
+<tr>
+<td>method other than <code>POST</code></td>
+<td>405</td>
+</tr>
+<tr>
+<td>missing or invalid signature, timestamp out of range</td>
+<td>401 (or 400)</td>
+</tr>
+<tr>
+<td>body is not valid JSON, or not an event</td>
+<td>400</td>
+</tr>
+<tr>
+<td>your own failure while storing</td>
+<td>500</td>
+</tr>
+<tr>
+<td>accepted (new or duplicate)</td>
+<td>200</td>
+</tr>
+</tbody></table>
+</div>
+<h2>A minimal receiver</h2>
+<p>Python&#39;s standard library can run a small HTTP server, enough for development and for understanding:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> json
+<span class="tk-k">from</span> http.server <span class="tk-k">import</span> BaseHTTPRequestHandler, HTTPServer
+
+SECRETS = [os.environ[<span class="tk-s">&quot;WEBHOOK_SECRET&quot;</span>].<span class="tk-f">encode</span>()]
+
+<span class="tk-k">class</span> <span class="tk-f">Handler</span>(BaseHTTPRequestHandler):
+    <span class="tk-k">def</span> <span class="tk-f">do_POST</span>(<span class="tk-k">self</span>):
+        <span class="tk-k">if</span> <span class="tk-k">self</span>.path != <span class="tk-s">&quot;/webhooks&quot;</span>:
+            <span class="tk-k">return</span> <span class="tk-k">self</span>.<span class="tk-f">reply</span>(<span class="tk-n">404</span>)
+        length = <span class="tk-f">int</span>(<span class="tk-k">self</span>.headers.<span class="tk-f">get</span>(<span class="tk-s">&quot;Content-Length&quot;</span>, <span class="tk-s">&quot;0&quot;</span>))
+        raw = <span class="tk-k">self</span>.rfile.<span class="tk-f">read</span>(length)                      <span class="tk-c"># the raw bytes: verify these</span>
+        <span class="tk-k">if</span> <span class="tk-k">not</span> <span class="tk-f">verify</span>(<span class="tk-k">self</span>.headers.<span class="tk-f">get</span>(<span class="tk-s">&quot;Webhook-Signature&quot;</span>), raw, SECRETS, now=time.<span class="tk-f">time</span>()):
+            <span class="tk-k">return</span> <span class="tk-k">self</span>.<span class="tk-f">reply</span>(<span class="tk-n">401</span>)
+        <span class="tk-k">try</span>:
+            event = json.<span class="tk-f">loads</span>(raw)
+        <span class="tk-k">except</span> ValueError:
+            <span class="tk-k">return</span> <span class="tk-k">self</span>.<span class="tk-f">reply</span>(<span class="tk-n">400</span>)
+        queue.<span class="tk-f">put</span>(event)                                   <span class="tk-c"># process later</span>
+        <span class="tk-k">self</span>.<span class="tk-f">reply</span>(<span class="tk-n">200</span>)
+
+    <span class="tk-k">def</span> <span class="tk-f">reply</span>(<span class="tk-k">self</span>, status):
+        <span class="tk-k">self</span>.<span class="tk-f">send_response</span>(status)
+        <span class="tk-k">self</span>.<span class="tk-f">end_headers</span>()
+
+<span class="tk-f">HTTPServer</span>((<span class="tk-s">&quot;127.0.0.1&quot;</span>, <span class="tk-n">8080</span>), Handler).<span class="tk-f">serve_forever</span>()</code></pre></div>
+<h2>In production</h2>
+<ul>
+<li>Run it in a real web framework (Flask, FastAPI, Django) behind a production server, with <strong>HTTPS</strong>: services refuse to deliver to plain HTTP, and secrets travel in these requests.</li>
+<li>Put events on a durable <strong>queue</strong> or table, and process them in a worker (lesson 4.03).</li>
+<li>Log each delivery&#39;s event id, type, signature result and status (redacted, lesson 2.05).</li>
+<li>Limit the body size: a receiver that reads any <code>Content-Length</code> can be made to allocate gigabytes.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-handling-deliveries/"><span class="mono">previous</span><b>4.03 Handling Deliveries</b></a>
+      <a class="lp-next" href="../4-05-testing-webhooks/"><span class="mono">next</span><b>4.05 Testing Webhooks</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/4-04-a-webhook-receiver"></script>
+</body>
+</html>

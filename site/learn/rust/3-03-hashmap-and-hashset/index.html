@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>HashMap and HashSet · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/3-03-hashmap-and-hashset/">
+  <meta name="description" content="Key-value lookups with HashMap - insert, get, contains key, remove, iterating, and the entry API for counting and grouping - unique values with HashSet and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="HashMap and HashSet · Rust · Xenon">
+  <meta property="og:description" content="Key-value lookups with HashMap - insert, get, contains key, remove, iterating, and the entry API for counting and grouping - unique values with HashSet and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/3-03-hashmap-and-hashset/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="HashMap and HashSet · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="HashMap and HashSet · Rust · Xenon">
+  <meta name="twitter:description" content="Key-value lookups with HashMap - insert, get, contains key, remove, iterating, and the entry API for counting and grouping - unique values with HashSet and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Collections, Errors and Modules</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">HashMap and HashSet</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Key-value lookups with HashMap - insert, get, contains_key, remove, iterating, and the entry API for counting and grouping - unique values with HashSet and its set operations, ordered alternatives BTreeMap and BTreeSet, ownership of keys and values, and which key types are allowed.</p>
+      <div class="prose">
+<h2>HashMap</h2>
+<p><code>HashMap&lt;K, V&gt;</code> maps keys to values with O(1) average lookup. It lives in <code>std::collections</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::collections::<span class="tk-t">HashMap</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> ages: <span class="tk-t">HashMap</span>&lt;<span class="tk-t">String</span>, <span class="tk-k">u32</span>&gt; = <span class="tk-t">HashMap</span>::<span class="tk-f">new</span>();
+    ages.<span class="tk-f">insert</span>(<span class="tk-s">&quot;Ada&quot;</span>.<span class="tk-f">to_string</span>(), <span class="tk-n">36</span>);
+    ages.<span class="tk-f">insert</span>(<span class="tk-s">&quot;Grace&quot;</span>.<span class="tk-f">to_string</span>(), <span class="tk-n">85</span>);
+    ages.<span class="tk-f">insert</span>(<span class="tk-s">&quot;Ada&quot;</span>.<span class="tk-f">to_string</span>(), <span class="tk-n">37</span>);               <span class="tk-c">// replaces; insert returns Some(36)</span>
+
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, ages.<span class="tk-f">get</span>(<span class="tk-s">&quot;Ada&quot;</span>));                 <span class="tk-c">// Some(37): look up with &amp;str</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, ages.<span class="tk-f">get</span>(<span class="tk-s">&quot;Bob&quot;</span>).<span class="tk-f">copied</span>().<span class="tk-f">unwrap_or</span>(<span class="tk-n">0</span>));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, ages.<span class="tk-f">contains_key</span>(<span class="tk-s">&quot;Grace&quot;</span>));
+    <span class="tk-k">if</span> <span class="tk-k">let</span> <span class="tk-f">Some</span>(age) = ages.<span class="tk-f">get_mut</span>(<span class="tk-s">&quot;Grace&quot;</span>) {
+        *age += <span class="tk-n">1</span>;
+    }
+    ages.<span class="tk-f">remove</span>(<span class="tk-s">&quot;Ada&quot;</span>);
+    <span class="tk-k">for</span> (name, age) <span class="tk-k">in</span> &amp;ages {                         <span class="tk-c">// order is unspecified</span>
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{name}: {age}&quot;</span>);
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, ages.<span class="tk-f">len</span>());
+}</code></pre></div>
+<p>A <code>HashMap&lt;String, ...&gt;</code> can be looked up with a <code>&amp;str</code>, so you do not need to allocate a <code>String</code> just to search.</p>
+<p>Inserting <strong>moves</strong> the key and value into the map: the map owns them. Values that are <code>Copy</code> (numbers) are copied in.</p>
+<h2>The entry API</h2>
+<p>Counting and grouping need &quot;insert if missing, then update&quot;. The <strong>entry API</strong> does it in one lookup:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::collections::<span class="tk-t">HashMap</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> text = <span class="tk-s">&quot;the cat and the hat and the bat&quot;</span>;
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> counts: <span class="tk-t">HashMap</span>&lt;&amp;<span class="tk-k">str</span>, <span class="tk-k">usize</span>&gt; = <span class="tk-t">HashMap</span>::<span class="tk-f">new</span>();
+    <span class="tk-k">for</span> word <span class="tk-k">in</span> text.<span class="tk-f">split_whitespace</span>() {
+        *counts.<span class="tk-f">entry</span>(word).<span class="tk-f">or_insert</span>(<span class="tk-n">0</span>) += <span class="tk-n">1</span>;
+    }
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> sorted: <span class="tk-t">Vec</span>&lt;(&amp;<span class="tk-k">str</span>, <span class="tk-k">usize</span>)&gt; = counts.<span class="tk-f">into_iter</span>().<span class="tk-f">collect</span>();
+    sorted.<span class="tk-f">sort_by</span>(|a, b| b.<span class="tk-n">1</span>.<span class="tk-f">cmp</span>(&amp;a.<span class="tk-n">1</span>).<span class="tk-f">then</span>(a.<span class="tk-n">0</span>.<span class="tk-f">cmp</span>(b.<span class="tk-n">0</span>)));     <span class="tk-c">// by count, then word</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{sorted:?}&quot;</span>);
+
+    <span class="tk-k">let</span> words = [<span class="tk-s">&quot;apple&quot;</span>, <span class="tk-s">&quot;avocado&quot;</span>, <span class="tk-s">&quot;banana&quot;</span>, <span class="tk-s">&quot;blueberry&quot;</span>, <span class="tk-s">&quot;cherry&quot;</span>];
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> by_letter: <span class="tk-t">HashMap</span>&lt;<span class="tk-k">char</span>, <span class="tk-t">Vec</span>&lt;&amp;<span class="tk-k">str</span>&gt;&gt; = <span class="tk-t">HashMap</span>::<span class="tk-f">new</span>();
+    <span class="tk-k">for</span> w <span class="tk-k">in</span> words {
+        by_letter.<span class="tk-f">entry</span>(w.<span class="tk-f">chars</span>().<span class="tk-f">next</span>().<span class="tk-f">unwrap</span>()).<span class="tk-f">or_default</span>().<span class="tk-f">push</span>(w);
+    }
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> letters: <span class="tk-t">Vec</span>&lt;_&gt; = by_letter.<span class="tk-f">keys</span>().<span class="tk-f">collect</span>();
+    letters.<span class="tk-f">sort</span>();
+    <span class="tk-k">for</span> l <span class="tk-k">in</span> letters {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{l}: {:?}&quot;</span>, by_letter[l]);
+    }
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Entry method</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>entry(k).or_insert(v)</code></td>
+<td>Inserts <code>v</code> if missing; returns <code>&amp;mut V</code></td>
+</tr>
+<tr>
+<td><code>entry(k).or_insert_with(f)</code></td>
+<td>Same, computing the value only when needed</td>
+</tr>
+<tr>
+<td><code>entry(k).or_default()</code></td>
+<td>Inserts <code>V::default()</code> (0, empty vec...) if missing</td>
+</tr>
+<tr>
+<td><code>entry(k).and_modify(f).or_insert(v)</code></td>
+<td>Updates an existing value, or inserts</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>map[&amp;key]</code> panics when the key is missing; use it only when the key must exist.</p>
+<h2>HashSet</h2>
+<p><code>HashSet&lt;T&gt;</code> holds unique values with fast membership tests:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::collections::<span class="tk-t">HashSet</span>;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> seen = <span class="tk-t">HashSet</span>::<span class="tk-f">new</span>();
+    <span class="tk-k">for</span> tag <span class="tk-k">in</span> [<span class="tk-s">&quot;rust&quot;</span>, <span class="tk-s">&quot;cli&quot;</span>, <span class="tk-s">&quot;rust&quot;</span>, <span class="tk-s">&quot;web&quot;</span>] {
+        <span class="tk-k">if</span> !seen.<span class="tk-f">insert</span>(tag) {                         <span class="tk-c">// insert returns false for duplicates</span>
+            <span class="tk-p">println!</span>(<span class="tk-s">&quot;duplicate: {tag}&quot;</span>);
+        }
+    }
+    <span class="tk-k">let</span> a: <span class="tk-t">HashSet</span>&lt;<span class="tk-k">i32</span>&gt; = [<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>].<span class="tk-f">into_iter</span>().<span class="tk-f">collect</span>();
+    <span class="tk-k">let</span> b: <span class="tk-t">HashSet</span>&lt;<span class="tk-k">i32</span>&gt; = [<span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>].<span class="tk-f">into_iter</span>().<span class="tk-f">collect</span>();
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> both: <span class="tk-t">Vec</span>&lt;_&gt; = a.<span class="tk-f">intersection</span>(&amp;b).<span class="tk-f">copied</span>().<span class="tk-f">collect</span>();
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> either: <span class="tk-t">Vec</span>&lt;_&gt; = a.<span class="tk-k">union</span>(&amp;b).<span class="tk-f">copied</span>().<span class="tk-f">collect</span>();
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> only_a: <span class="tk-t">Vec</span>&lt;_&gt; = a.<span class="tk-f">difference</span>(&amp;b).<span class="tk-f">copied</span>().<span class="tk-f">collect</span>();
+    both.<span class="tk-f">sort</span>(); either.<span class="tk-f">sort</span>(); only_a.<span class="tk-f">sort</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{both:?} {either:?} {only_a:?} {}&quot;</span>, a.<span class="tk-f">contains</span>(&amp;<span class="tk-n">2</span>));
+}</code></pre></div>
+<h2>Ordered maps and sets</h2>
+<p><code>HashMap</code> and <code>HashSet</code> iterate in an unpredictable order. When order matters (printing, ranges, smallest or largest key), use <code>BTreeMap</code> and <code>BTreeSet</code>, which keep keys sorted (O(log n) operations):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">use</span> std::collections::BTreeMap;
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> scores = BTreeMap::<span class="tk-f">new</span>();
+    <span class="tk-k">for</span> (name, score) <span class="tk-k">in</span> [(<span class="tk-s">&quot;linus&quot;</span>, <span class="tk-n">72</span>), (<span class="tk-s">&quot;ada&quot;</span>, <span class="tk-n">95</span>), (<span class="tk-s">&quot;grace&quot;</span>, <span class="tk-n">88</span>)] {
+        scores.<span class="tk-f">insert</span>(name, score);
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{scores:?}&quot;</span>);                                  <span class="tk-c">// sorted by key</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} {:?}&quot;</span>, scores.<span class="tk-f">first_key_value</span>(), scores.<span class="tk-f">last_key_value</span>());
+    <span class="tk-k">for</span> (name, s) <span class="tk-k">in</span> scores.<span class="tk-f">range</span>(<span class="tk-s">&quot;b&quot;</span>..<span class="tk-s">&quot;h&quot;</span>) {                <span class="tk-c">// keys from &quot;b&quot; up to &quot;h&quot;</span>
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{name} {s}&quot;</span>);
+    }
+}</code></pre></div>
+<h2>Keys</h2>
+<p>A key type must implement <code>Eq</code> and <code>Hash</code> (for <code>HashMap</code>) or <code>Ord</code> (for <code>BTreeMap</code>). Strings, integers, <code>char</code>, <code>bool</code>, tuples of those, and your own types with <code>#[derive(PartialEq, Eq, Hash)]</code> all work. <code>f64</code> does not (NaN breaks equality); use an integer representation instead.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-strings-in-depth/"><span class="mono">previous</span><b>3.02 Strings in Depth</b></a>
+      <a class="lp-next" href="../3-04-error-handling-with-result/"><span class="mono">next</span><b>3.04 Error Handling with Result</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/3-03-hashmap-and-hashset"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Text with DirectWrite · Windows Programming with the Win32 API · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/winapi/4-03-text-with-directwrite/">
+  <meta name="description" content="DirectWrite lays out and renders text with proper font fallback, ligatures, colour emoji and ClearType. This lesson creates text formats and layouts, draws…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Text with DirectWrite · Windows Programming with the Win32 API · Xenon">
+  <meta property="og:description" content="DirectWrite lays out and renders text with proper font fallback, ligatures, colour emoji and ClearType. This lesson creates text formats and layouts, draws…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/winapi/4-03-text-with-directwrite/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Text with DirectWrite · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Text with DirectWrite · Windows Programming with the Win32 API · Xenon">
+  <meta name="twitter:description" content="DirectWrite lays out and renders text with proper font fallback, ligatures, colour emoji and ClearType. This lesson creates text formats and layouts, draws…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/winapi.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Programming with the Win32 API</a><span>/</span><span>Drawing</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Text with DirectWrite</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.03</b></span><span>3 of 4 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">DirectWrite lays out and renders text with proper font fallback, ligatures, colour emoji and ClearType. This lesson creates text formats and layouts, draws them with Direct2D, measures them, and uses hit-testing to place a caret and select text with the mouse.</p>
+      <div class="prose">
+<h2>Why not just DrawText?</h2>
+<p>GDI&#39;s <code>DrawTextW</code> handles simple text, but modern text needs more: <strong>font fallback</strong> (a Latin font does not contain Chinese characters or emoji, so another font must be found for them), <strong>shaping</strong> (Arabic letters change form, &quot;fi&quot; can become one ligature), colour emoji, and subpixel positioning. <strong>DirectWrite</strong> does all of that and draws through Direct2D.</p>
+<h2>Formats and layouts</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;dwrite.h&gt;</span>
+<span class="tk-p">#pragma</span> <span class="tk-f">comment</span>(lib, <span class="tk-s">&quot;dwrite.lib&quot;</span>)
+
+<span class="tk-t">ComPtr</span>&lt;IDWriteFactory&gt; dw;
+<span class="tk-f">DWriteCreateFactory</span>(DWRITE_FACTORY_TYPE_SHARED, <span class="tk-f">__uuidof</span>(IDWriteFactory), <span class="tk-k">reinterpret_cast</span>&lt;IUnknown**&gt;(dw.<span class="tk-f">GetAddressOf</span>()));
+
+<span class="tk-t">ComPtr</span>&lt;IDWriteTextFormat&gt; format;           <span class="tk-c">// font, size, style: like a CSS class</span>
+dw-&gt;<span class="tk-f">CreateTextFormat</span>(<span class="tk-s">L&quot;Segoe UI&quot;</span>, <span class="tk-k">nullptr</span>, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL,
+                     DWRITE_FONT_STRETCH_NORMAL, <span class="tk-n">14.0f</span> <span class="tk-c">/* DIPs */</span>, <span class="tk-s">L&quot;en-us&quot;</span>, &amp;format);
+format-&gt;<span class="tk-f">SetWordWrapping</span>(DWRITE_WORD_WRAPPING_WRAP);</code></pre></div>
+<p>A <strong>text format</strong> describes how text should look. A <strong>text layout</strong> is a particular string laid out in a particular box: line breaks done, every glyph positioned. Create the layout when the text or the width changes, then draw and query it as often as needed:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ComPtr</span>&lt;IDWriteTextLayout&gt; layout;
+dw-&gt;<span class="tk-f">CreateTextLayout</span>(m_text.<span class="tk-f">c_str</span>(), <span class="tk-f">UINT32</span>(m_text.<span class="tk-f">size</span>()), format.<span class="tk-f">Get</span>(), width, height, &amp;layout);
+layout-&gt;<span class="tk-f">SetFontWeight</span>(DWRITE_FONT_WEIGHT_BOLD, DWRITE_TEXT_RANGE{ <span class="tk-n">0</span>, <span class="tk-n">5</span> });   <span class="tk-c">// formatting for a range</span>
+m_target-&gt;<span class="tk-f">DrawTextLayout</span>(D2D1::<span class="tk-f">Point2F</span>(<span class="tk-n">10</span>, <span class="tk-n">10</span>), layout.<span class="tk-f">Get</span>(), m_textBrush.<span class="tk-f">Get</span>());</code></pre></div>
+<p>For one-off labels, <code>m_target-&gt;DrawText(text, length, format, rect, brush)</code> creates a temporary layout internally.</p>
+<h2>Measuring</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>DWRITE_TEXT_METRICS m;
+layout-&gt;<span class="tk-f">GetMetrics</span>(&amp;m);         <span class="tk-c">// m.width, m.height: the size actually used; m.lineCount</span></code></pre></div>
+<p><code>GetMetrics</code> is how a control sizes itself to its text, or a label is centred. <code>GetLineMetrics</code> gives each line&#39;s length (in UTF-16 units) and height.</p>
+<h2>Hit-testing: from a point to text and back</h2>
+<p>An editor needs two conversions:</p>
+<ul>
+<li><strong>Where is the caret?</strong> From a text position to a point: <code>HitTestTextPosition(index, isTrailing, &amp;x, &amp;y, &amp;metrics)</code>.</li>
+<li><strong>Where did the user click?</strong> From a point to a text position: <code>HitTestPoint(x, y, &amp;isTrailing, &amp;isInside, &amp;metrics)</code>; <code>metrics.textPosition</code> plus 1 if <code>isTrailing</code> is the caret index.</li>
+</ul>
+<p>&quot;Trailing&quot; means the click was on the right half of a character, so the caret goes <strong>after</strong> it. Text positions are UTF-16 indices, so a caret must never land between the two halves of a surrogate pair (lesson 1.02): DirectWrite&#39;s hit-testing respects clusters for you.</p>
+<p>A selection is drawn by asking for the rectangles covering a range, one per line, with <code>HitTestTextRange</code>, and filling them before drawing the text. The practice computes exactly these: caret positions, hit-testing and selection rectangles, from the widths of the characters.</p>
+<h2>Font fallback and emoji</h2>
+<p>DirectWrite chooses fallback fonts automatically. For colour emoji, pass <code>D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT</code> to <code>DrawTextLayout</code> (on a render target that supports it, such as an <code>ID2D1DeviceContext</code>). Text in right-to-left scripts needs <code>SetReadingDirection</code>; DirectWrite then handles mixed-direction lines.</p>
+<h2>Rendering quality</h2>
+<p><code>m_target-&gt;SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE)</code> gives ClearType on opaque backgrounds; on transparent or animated surfaces use <code>GRAYSCALE</code>. Snap the text&#39;s origin to whole DIPs for the sharpest result.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/winapi/l/4.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/winapi/l/4.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-02-drawing-with-direct2d/"><span class="mono">previous</span><b>4.02 Drawing with Direct2D</b></a>
+      <a class="lp-next" href="../4-04-images-with-wic/"><span class="mono">next</span><b>4.04 Images with WIC</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/winapi/4-03-text-with-directwrite"></script>
+</body>
+</html>

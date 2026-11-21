@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Halts, goto, and Testing Your Code · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/3-08-halts-goto-and-testing-your-code/">
+  <meta name="description" content="std::exit ends the program from anywhere; std::abort ends it at once with no clean-up. goto exists and you almost never want it. Testing each function with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Halts, goto, and Testing Your Code · C++ · Xenon">
+  <meta property="og:description" content="std::exit ends the program from anywhere; std::abort ends it at once with no clean-up. goto exists and you almost never want it. Testing each function with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/3-08-halts-goto-and-testing-your-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Halts, goto, and Testing Your Code · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Halts, goto, and Testing Your Code · C++ · Xenon">
+  <meta name="twitter:description" content="std::exit ends the program from anywhere; std::abort ends it at once with no clean-up. goto exists and you almost never want it. Testing each function with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Control Flow and Scope</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Halts, goto, and Testing Your Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.08</b></span><span>8 of 8 in milestone 3</span><span>6 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary"><code>std::exit</code> ends the program from anywhere; <code>std::abort</code> ends it at once with no clean-up. <code>goto</code> exists and you almost never want it. <strong>Testing</strong> each function with known inputs as you write it is the cheapest way to catch bugs.</p>
+      <div class="prose">
+<h2>Ways a program ends</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    A[&quot;return from main&quot;] --&gt;|&quot;normal: everything is cleaned up&quot;| Z[&quot;program ends&quot;]
+    B[&quot;std::exit(code)&quot;] --&gt;|&quot;globals cleaned up,&lt;br/&gt;local variables are not&quot;| Z
+    C[&quot;std::abort()&quot;] --&gt;|&quot;immediate, no clean-up&lt;br/&gt;(what a failed assert does)&quot;| Z</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>How</th>
+<th>Clean-up</th>
+<th>Use it when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>return</code> from <code>main</code></td>
+<td>Complete</td>
+<td>Always, if you can</td>
+</tr>
+<tr>
+<td><code>std::exit(code)</code></td>
+<td>Partial</td>
+<td>A fatal problem deep in the program with no sensible way back</td>
+</tr>
+<tr>
+<td><code>std::abort()</code></td>
+<td>None</td>
+<td>Something is so wrong that continuing would do harm</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdlib&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string_view&gt;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">fatal</span>(std::string_view message)
+{
+    std::cerr &lt;&lt; <span class="tk-s">&quot;Fatal: &quot;</span> &lt;&lt; message &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::<span class="tk-f">exit</span>(EXIT_FAILURE);
+}</code></pre></div>
+<p>The number handed to <code>std::exit</code>, like the one returned from <code>main</code>, is the program&#39;s <strong>exit code</strong>. <code>EXIT_SUCCESS</code> (0) means it worked. Anything else means it did not, and other programs can check that.</p>
+<p>&quot;Clean-up&quot; will mean more in Milestones 6 and 7, when objects start releasing files and memory as they are destroyed. That is why returning from <code>main</code> is preferred: it is the only route on which everything is released properly.</p>
+<h2><code>goto</code></h2>
+<p><code>goto</code> jumps to a labelled statement elsewhere in the same function.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> attempts{ <span class="tk-n">0</span> };
+retry:
+    ++attempts;
+    <span class="tk-k">if</span> (attempts &lt; <span class="tk-n">3</span>)
+    {
+        <span class="tk-k">goto</span> retry;
+    }</code></pre></div>
+<p>It works, and a loop says the same thing more clearly. Code that jumps around freely becomes impossible to follow, which programmers call <em>spaghetti code</em>. Loops, <code>break</code>, <code>continue</code> and functions cover everything <code>goto</code> did, with structure a reader can see.</p>
+<p>The one case people defend is leaving several nested loops at once. A function with <code>return</code> does that better:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">containsPair</span>(<span class="tk-k">int</span> limit, <span class="tk-k">int</span> target)
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> a{ <span class="tk-n">1</span> }; a &lt;= limit; ++a)
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> b{ <span class="tk-n">1</span> }; b &lt;= limit; ++b)
+        {
+            <span class="tk-k">if</span> (a * b == target)
+            {
+                <span class="tk-k">return</span> <span class="tk-k">true</span>;    <span class="tk-c">// leaves both loops</span>
+            }
+        }
+    }
+    <span class="tk-k">return</span> <span class="tk-k">false</span>;
+}</code></pre></div>
+<h2>Testing your code</h2>
+<p>This is the part of the lesson that will change how you work.</p>
+<p>A <strong>test</strong> is code that calls your function with inputs whose correct answer you already know, and checks the result. Every Check button you have pressed in Xenon has run tests like that against your code.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    W[&quot;Write a small function&quot;] --&gt; T[&quot;Test it with known cases&quot;] --&gt; P{&quot;pass?&quot;}
+    P -- no --&gt; F[&quot;Fix it now, while it is&lt;br/&gt;small and fresh&quot;] --&gt; T
+    P -- yes --&gt; N[&quot;Next function&quot;]</pre></div>
+<p>Testing each function as you finish it means a failure can only be in the few lines you just wrote. Testing a whole program at the end means it could be anywhere.</p>
+<h3>A small test function</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">bool</span> <span class="tk-f">isLeapYear</span>(<span class="tk-k">int</span> year)
+{
+    <span class="tk-k">return</span> (year % <span class="tk-n">4</span> == <span class="tk-n">0</span> &amp;&amp; year % <span class="tk-n">100</span> != <span class="tk-n">0</span>) || year % <span class="tk-n">400</span> == <span class="tk-n">0</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">testIsLeapYear</span>()
+{
+    <span class="tk-k">if</span> (<span class="tk-f">isLeapYear</span>(<span class="tk-n">2024</span>) != <span class="tk-k">true</span>)  { <span class="tk-k">return</span> <span class="tk-n">1</span>; }
+    <span class="tk-k">if</span> (<span class="tk-f">isLeapYear</span>(<span class="tk-n">2023</span>) != <span class="tk-k">false</span>) { <span class="tk-k">return</span> <span class="tk-n">2</span>; }
+    <span class="tk-k">if</span> (<span class="tk-f">isLeapYear</span>(<span class="tk-n">1900</span>) != <span class="tk-k">false</span>) { <span class="tk-k">return</span> <span class="tk-n">3</span>; }    <span class="tk-c">// divisible by 100</span>
+    <span class="tk-k">if</span> (<span class="tk-f">isLeapYear</span>(<span class="tk-n">2000</span>) != <span class="tk-k">true</span>)  { <span class="tk-k">return</span> <span class="tk-n">4</span>; }    <span class="tk-c">// divisible by 400</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-k">int</span> failed{ <span class="tk-f">testIsLeapYear</span>() };
+    <span class="tk-k">if</span> (failed != <span class="tk-n">0</span>)
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;Test case &quot;</span> &lt;&lt; failed &lt;&lt; <span class="tk-s">&quot; FAILED\n&quot;</span>;
+    }
+    <span class="tk-k">else</span>
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;All tests passed\n&quot;</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Tests stay useful after they pass. Run them again whenever you change the function, and they tell you immediately if you broke something that used to work.</p>
+<h3>Choosing test cases</h3>
+<p>Typical values are the <strong>least</strong> likely to reveal a bug. Bugs gather at the edges. For <code>clamp(value, 0, 10)</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind of case</th>
+<th>Examples</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ordinary</td>
+<td><code>5</code> gives <code>5</code></td>
+<td>Does it work at all?</td>
+</tr>
+<tr>
+<td><strong>On the boundary</strong></td>
+<td><code>0</code> gives <code>0</code>, <code>10</code> gives <code>10</code></td>
+<td>Catches <code>&lt;</code> written for <code>&lt;=</code></td>
+</tr>
+<tr>
+<td><strong>Just outside</strong></td>
+<td><code>-1</code> gives <code>0</code>, <code>11</code> gives <code>10</code></td>
+<td>Catches off-by-one errors</td>
+</tr>
+<tr>
+<td>Extremes</td>
+<td>The largest and smallest <code>int</code></td>
+<td>Catches overflow</td>
+</tr>
+<tr>
+<td>Odd input</td>
+<td>Low limit above high limit</td>
+<td>Did you decide what should happen?</td>
+</tr>
+</tbody></table>
+</div>
+<h3>Coverage</h3>
+<p>A test can only find a bug in code it actually runs. <strong>Coverage</strong> measures how much of your code the tests execute.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Statement coverage</td>
+<td>Every line ran at least once</td>
+</tr>
+<tr>
+<td>Branch coverage</td>
+<td>Every <code>if</code> went both ways at least once</td>
+</tr>
+</tbody></table>
+</div>
+<p>If no test ever makes a condition false, the <code>else</code> branch is untested, however many tests you have.</p>
+<div class="callout info"><div class="callout-title"><span>Real projects use a testing framework</span></div><div class="callout-body"><p>Libraries such as Catch2 and GoogleTest remove the repetitive parts and report failures clearly. The idea is exactly the one above. See <a href="../13-09-testing-sanitizers-static-analysis-and-tooling/">13.09 Testing, Sanitizers, Static Analysis and Tooling</a>.</p>
+</div></div>
+<h2>The usual suspects</h2>
+<p>When a test fails, check these first. They account for most logic errors in the first three milestones.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Wrong comparison</td>
+<td><code>age &gt; 18</code> where <code>&gt;=</code> was meant</td>
+</tr>
+<tr>
+<td>Off by one</td>
+<td><code>i &lt;= size</code></td>
+</tr>
+<tr>
+<td>Loop that never ends</td>
+<td>The step is missing</td>
+</tr>
+<tr>
+<td>Precedence</td>
+<td><code>a + b / 2</code></td>
+</tr>
+<tr>
+<td>Integer division</td>
+<td><code>1 / 2 * x</code> is always 0</td>
+</tr>
+<tr>
+<td>Stray semicolon</td>
+<td><code>if (x);</code> or <code>for (...);</code></td>
+</tr>
+<tr>
+<td><code>=</code> for <code>==</code></td>
+<td><code>if (x = 0)</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/3.08">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/3.08">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-07-input-validation-and-assert/"><span class="mono">previous</span><b>3.07 Input Validation and assert</b></a>
+      <a class="lp-next" href="../4-01-function-overloading-and-default-arguments/"><span class="mono">next</span><b>4.01 Function Overloading and Default Arguments</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/3-08-halts-goto-and-testing-your-code"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Structs, Arrays and Pointers in Assembly · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/7-08-structs-arrays-and-pointers-in-assembly/">
+  <meta name="description" content="In assembly there are no types, only addresses and sizes. A struct member is a fixed offset from a pointer; an array element is base plus index times size; a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Structs, Arrays and Pointers in Assembly · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="In assembly there are no types, only addresses and sizes. A struct member is a fixed offset from a pointer; an array element is base plus index times size; a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/7-08-structs-arrays-and-pointers-in-assembly/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Structs, Arrays and Pointers in Assembly · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Structs, Arrays and Pointers in Assembly · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="In assembly there are no types, only addresses and sizes. A struct member is a fixed offset from a pointer; an array element is base plus index times size; a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>x64 Assembly Language</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Structs, Arrays and Pointers in Assembly</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.08</b></span><span>8 of 11 in milestone 7</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">In assembly there are no types, only addresses and sizes. A struct member is a fixed offset from a pointer; an array element is base plus index times size; a pointer chain is a series of loads. This lesson shows how each C++ data access compiles, and how to work backwards from the offsets and sizes in disassembly to the data structures behind them.</p>
+      <div class="prose">
+<h2>Members are offsets</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Monster</span>
+{
+    <span class="tk-k">int</span> id;          <span class="tk-c">// +0</span>
+    <span class="tk-k">float</span> x, y;      <span class="tk-c">// +4, +8</span>
+    <span class="tk-k">int</span> health;      <span class="tk-c">// +12</span>
+    <span class="tk-t">Monster</span>* target; <span class="tk-c">// +16</span>
+};
+
+<span class="tk-k">void</span> <span class="tk-f">hurt</span>(<span class="tk-t">Monster</span>* m, <span class="tk-k">int</span> amount)
+{
+    m-&gt;health -= amount;
+    <span class="tk-k">if</span> (m-&gt;health &lt;= <span class="tk-n">0</span>) m-&gt;target = <span class="tk-k">nullptr</span>;
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>hurt PROC
+    sub   <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">0Ch</span>], <span class="tk-t">edx</span>      <span class="tk-c">; m-&gt;health -= amount     (offset 12, 4 bytes)</span>
+    jg    alive
+    mov   <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">10h</span>], <span class="tk-n">0</span>        <span class="tk-c">; m-&gt;target = nullptr     (offset 16, 8 bytes)</span>
+<span class="tk-f">alive:</span>
+    ret
+hurt ENDP</code></pre></div>
+<p>Every member access is <code>[pointer + offset]</code> with a size. Reading this cold, with no source, you could still say: the first argument points at a structure; at offset <code>0xC</code> there is a 4-byte integer that is compared with zero; at offset <code>0x10</code> an 8-byte value that is set to zero, probably a pointer. That is how chapter 9 rebuilds unknown structs.</p>
+<p><code>sub</code> also set the flags, so the compiler used them directly for the <code>&lt;= 0</code> test with <code>jg</code>: no separate <code>cmp</code>. Optimisers do this whenever they can.</p>
+<h2>Arrays of structs</h2>
+<p>An element of an array of structs is <code>base + index × sizeof(struct) + member offset</code>. When the size is 1, 2, 4 or 8 the scale does it; otherwise the index is multiplied first:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Particle</span> { <span class="tk-k">float</span> x, y, vx, vy, life; };    <span class="tk-c">// 20 bytes</span>
+
+<span class="tk-k">float</span> <span class="tk-f">lifeOf</span>(<span class="tk-k">const</span> <span class="tk-t">Particle</span>* particles, <span class="tk-k">int</span> i) { <span class="tk-k">return</span> particles[i].life; }</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>    movsxd <span class="tk-t">rax</span>, <span class="tk-t">edx</span>                        <span class="tk-c">; i, widened to 64 bits</span>
+    lea    <span class="tk-t">rax</span>, [<span class="tk-t">rax</span>+<span class="tk-t">rax</span>*<span class="tk-n">4</span>]                <span class="tk-c">; i * 5</span>
+    movss  <span class="tk-t">xmm0</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-t">rax</span>*<span class="tk-n">4</span>+<span class="tk-n">10h</span>] <span class="tk-c">; particles + i*20 + 16: the life member</span>
+    ret</code></pre></div>
+<p><code>i * 5 * 4 = i * 20</code> (the struct size) plus <code>0x10</code> (the offset of <code>life</code>). When you see an index multiplied by an odd constant, divide to get the element size.</p>
+<h2>Pointer chains</h2>
+<p><code>world-&gt;player-&gt;inventory-&gt;gold</code> (lesson 3.02) is one load per arrow:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>mov   <span class="tk-t">rax</span>, <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">18h</span>]    <span class="tk-c">; world-&gt;player       (player is at offset 0x18 in World)</span>
+mov   <span class="tk-t">rax</span>, <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rax</span>+<span class="tk-n">40h</span>]    <span class="tk-c">; -&gt;inventory         (inventory at 0x40 in Player)</span>
+mov   <span class="tk-t">eax</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rax</span>+<span class="tk-n">8</span>]      <span class="tk-c">; -&gt;gold              (gold at 8 in Inventory)</span></code></pre></div>
+<p>Each <code>qword</code> load produces the address for the next. A run of dependent 8-byte loads like this is a pointer chain, and its offsets are the layouts of each struct in turn.</p>
+<h2>Objects with virtual functions</h2>
+<p>A virtual call (lesson 3.05) has its own fingerprint:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>mov   <span class="tk-t">rax</span>, <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>]         <span class="tk-c">; load the vptr from offset 0</span>
+call  <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rax</span>+<span class="tk-n">18h</span>]          <span class="tk-c">; call slot 3 of the vtable (0x18 / 8)</span></code></pre></div>
+<p>A load from offset 0 of an object followed by an indirect <code>call</code> through that value plus an offset: a virtual call. The offset divided by 8 is the slot number.</p>
+<h2>Working backwards: a reading table</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You see</th>
+<th>Probably</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>dword ptr [rcx+N]</code></td>
+<td>A 4-byte member (<code>int</code>, <code>float</code>, enum) at offset N of the struct <code>rcx</code> points to</td>
+</tr>
+<tr>
+<td><code>qword ptr [rcx+N]</code> then used as an address</td>
+<td>A pointer member at offset N</td>
+</tr>
+<tr>
+<td><code>movss</code> / <code>movsd</code> with a memory operand</td>
+<td>A <code>float</code> / <code>double</code> member</td>
+</tr>
+<tr>
+<td><code>movzx eax, byte ptr [rcx+N]</code>, then <code>test al, al</code></td>
+<td>A <code>bool</code> member</td>
+</tr>
+<tr>
+<td><code>[rcx+rdx*4]</code>, <code>[rcx+rdx*8]</code></td>
+<td>An array of 4- or 8-byte elements</td>
+</tr>
+<tr>
+<td><code>imul rdx, rdx, 38h</code> then <code>[rcx+rdx]</code></td>
+<td>An array of 56-byte structs</td>
+</tr>
+<tr>
+<td><code>mov rax, [rcx]</code> then <code>call [rax+N]</code></td>
+<td>A virtual call, slot N/8</td>
+</tr>
+<tr>
+<td><code>lea rcx, [rdi+20h]</code> then <code>call</code></td>
+<td>Passing the address of a member (or base subobject) at offset 0x20</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Assuming the same register means the same object</span></div><div class="callout-body"><p>Registers are reused constantly. Track what each one holds at each point.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Forgetting padding when guessing a layout</span></div><div class="callout-body"><p>A 4-byte member at offset 0 followed by an 8-byte one at offset 8 means padding at 4 to 7, not a hidden member (lesson 2.05).</p>
+</div></div>
+<blockquote><p>[!warning] Reading <code>lea</code> as a load
+<code>lea rcx, [rdi+20h]</code> takes an address; it does not read the member.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q"><code>mov eax, dword ptr [rcx+0Ch]</code> with <code>rcx</code> holding a struct pointer. What is being read?</div><ul><li>A 4-byte member at offset 12</li><li>The 12th element of an array</li><li>A pointer at offset 12</li></ul><details><summary>Show the answer</summary><p><b>A 4-byte member at offset 12</b> <code>dword ptr</code> is 4 bytes; <code>+0Ch</code> is the member&#39;s offset.</p></details></li><li><div class="q">Code computes <code>lea rax, [rax+rax*2]</code> and then reads <code>[rcx+rax*8]</code>. What is the element size?</div><ul><li>24 bytes</li><li>8 bytes</li><li>3 bytes</li></ul><details><summary>Show the answer</summary><p><b>24 bytes</b> The index is multiplied by 3, then scaled by 8.</p></details></li><li><div class="q">What does <code>mov rax, [rcx]</code> followed by <code>call qword ptr [rax+10h]</code> indicate?</div><ul><li>A virtual call to slot 2 of the object&#39;s vtable</li><li>A call to a function at address <code>rcx + 16</code></li><li>Reading an array</li></ul><details><summary>Show the answer</summary><p><b>A virtual call to slot 2 of the object&#39;s vtable</b> The first load fetches the vptr; 0x10 / 8 = slot 2.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/7.08">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/7.08">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-07-reading-compiler-output-if-loops-and-switch/"><span class="mono">previous</span><b>7.07 Reading Compiler Output: if, Loops and switch</b></a>
+      <a class="lp-next" href="../7-09-floating-point-with-sse/"><span class="mono">next</span><b>7.09 Floating Point with SSE</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/7-08-structs-arrays-and-pointers-in-assembly"></script>
+</body>
+</html>

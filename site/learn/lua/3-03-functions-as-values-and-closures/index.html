@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Functions as Values and Closures · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/3-03-functions-as-values-and-closures/">
+  <meta name="description" content="Functions are values you can store, pass and return, anonymous functions, writing map, filter and reduce, closures that remember the variables around them,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Functions as Values and Closures · Lua · Xenon">
+  <meta property="og:description" content="Functions are values you can store, pass and return, anonymous functions, writing map, filter and reduce, closures that remember the variables around them,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/3-03-functions-as-values-and-closures/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Functions as Values and Closures · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Functions as Values and Closures · Lua · Xenon">
+  <meta name="twitter:description" content="Functions are values you can store, pass and return, anonymous functions, writing map, filter and reduce, closures that remember the variables around them,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>Functions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Functions as Values and Closures</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Functions are values you can store, pass and return, anonymous functions, writing map, filter and reduce, closures that remember the variables around them, counters and factories, and the loop variable being fresh each round.</p>
+      <div class="prose">
+<h2>Functions are values</h2>
+<p><code>local function add(a, b) ... end</code> is a shorter way of writing <code>local add = function(a, b) ... end</code>. A function is a value of type <code>function</code>, like a number or a table, so it can be stored in variables and tables, passed to other functions and returned from them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">double</span>(x) <span class="tk-k">return</span> x * <span class="tk-n">2</span> <span class="tk-k">end</span>
+<span class="tk-k">local</span> twice = double
+<span class="tk-f">print</span>(<span class="tk-f">twice</span>(<span class="tk-n">21</span>), <span class="tk-f">type</span>(double))
+
+<span class="tk-k">local</span> ops = {
+    add = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a + b <span class="tk-k">end</span>,
+    mul = <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a * b <span class="tk-k">end</span>,
+}
+<span class="tk-f">print</span>(ops.<span class="tk-f">add</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>), ops[<span class="tk-s">&quot;mul&quot;</span>](<span class="tk-n">2</span>, <span class="tk-n">3</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>42	function
+5	6</code></pre></div>
+<p>A function written without a name (<code>function(a, b) ... end</code>) is an <strong>anonymous function</strong>. You met one already as the comparison passed to <code>table.sort</code>.</p>
+<h2>Functions that take functions</h2>
+<p>A function that takes or returns another function is a <strong>higher-order</strong> function. The three classic ones work on lists:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">map</span>(list, f)
+    <span class="tk-k">local</span> out = {}
+    <span class="tk-k">for</span> i, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(list) <span class="tk-k">do</span> out[i] = <span class="tk-f">f</span>(v) <span class="tk-k">end</span>
+    <span class="tk-k">return</span> out
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">filter</span>(list, keep)
+    <span class="tk-k">local</span> out = {}
+    <span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(list) <span class="tk-k">do</span>
+        <span class="tk-k">if</span> <span class="tk-f">keep</span>(v) <span class="tk-k">then</span> out[#out + <span class="tk-n">1</span>] = v <span class="tk-k">end</span>
+    <span class="tk-k">end</span>
+    <span class="tk-k">return</span> out
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">reduce</span>(list, f, start)
+    <span class="tk-k">local</span> acc = start
+    <span class="tk-k">for</span> _, v <span class="tk-k">in</span> <span class="tk-f">ipairs</span>(list) <span class="tk-k">do</span> acc = <span class="tk-f">f</span>(acc, v) <span class="tk-k">end</span>
+    <span class="tk-k">return</span> acc
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> nums = { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>, <span class="tk-n">6</span> }
+<span class="tk-f">print</span>(table.<span class="tk-f">concat</span>(<span class="tk-f">map</span>(nums, <span class="tk-k">function</span>(x) <span class="tk-k">return</span> x * x <span class="tk-k">end</span>), <span class="tk-s">&quot; &quot;</span>))
+<span class="tk-f">print</span>(table.<span class="tk-f">concat</span>(<span class="tk-f">filter</span>(nums, <span class="tk-k">function</span>(x) <span class="tk-k">return</span> x % <span class="tk-n">2</span> == <span class="tk-n">0</span> <span class="tk-k">end</span>), <span class="tk-s">&quot; &quot;</span>))
+<span class="tk-f">print</span>(<span class="tk-f">reduce</span>(nums, <span class="tk-k">function</span>(a, b) <span class="tk-k">return</span> a + b <span class="tk-k">end</span>, <span class="tk-n">0</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1 4 9 16 25 36
+2 4 6
+21</code></pre></div>
+<p>Lua has none of these built in; programs write them (or take them from a library) when they want them.</p>
+<h2>Closures</h2>
+<p>A function can use the local variables of the function it was written inside, even <strong>after</strong> that outer function has returned. The inner function together with the variables it remembers is a <strong>closure</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">make_counter</span>()
+    <span class="tk-k">local</span> count = <span class="tk-n">0</span>
+    <span class="tk-k">return</span> <span class="tk-k">function</span>()
+        count = count + <span class="tk-n">1</span>
+        <span class="tk-k">return</span> count
+    <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> a = <span class="tk-f">make_counter</span>()
+<span class="tk-k">local</span> b = <span class="tk-f">make_counter</span>()
+<span class="tk-f">print</span>(<span class="tk-f">a</span>(), <span class="tk-f">a</span>(), <span class="tk-f">a</span>())
+<span class="tk-f">print</span>(<span class="tk-f">b</span>())</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>1	2	3
+1</code></pre></div>
+<p>Each call of <code>make_counter</code> creates a new <code>count</code>, and the returned function keeps it alive. <code>a</code> and <code>b</code> have separate counters. The remembered variables are called <strong>upvalues</strong>.</p>
+<p>Closures are how Lua code keeps private state without objects:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">make_multiplier</span>(factor)
+    <span class="tk-k">return</span> <span class="tk-k">function</span>(x) <span class="tk-k">return</span> x * factor <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> triple = <span class="tk-f">make_multiplier</span>(<span class="tk-n">3</span>)
+<span class="tk-k">local</span> half = <span class="tk-f">make_multiplier</span>(<span class="tk-n">0.5</span>)
+<span class="tk-f">print</span>(<span class="tk-f">triple</span>(<span class="tk-n">7</span>), <span class="tk-f">half</span>(<span class="tk-n">7</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>21	3.5</code></pre></div>
+<h2>Shared, not copied</h2>
+<p>A closure shares the variable itself, not a copy of its value. Two closures made in the same call share the same variable:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">make_account</span>(balance)
+    <span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">deposit</span>(n) balance = balance + n <span class="tk-k">end</span>
+    <span class="tk-k">local</span> <span class="tk-k">function</span> <span class="tk-f">get</span>() <span class="tk-k">return</span> balance <span class="tk-k">end</span>
+    <span class="tk-k">return</span> deposit, get
+<span class="tk-k">end</span>
+
+<span class="tk-k">local</span> deposit, get = <span class="tk-f">make_account</span>(<span class="tk-n">100</span>)
+<span class="tk-f">deposit</span>(<span class="tk-n">25</span>)
+<span class="tk-f">deposit</span>(<span class="tk-n">5</span>)
+<span class="tk-f">print</span>(<span class="tk-f">get</span>())</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>130</code></pre></div>
+<p>The loop variable of a <code>for</code> is a <strong>new</strong> local in every round, so closures made in a loop each remember their own value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> buttons = {}
+<span class="tk-k">for</span> i = <span class="tk-n">1</span>, <span class="tk-n">3</span> <span class="tk-k">do</span>
+    buttons[i] = <span class="tk-k">function</span>() <span class="tk-k">return</span> <span class="tk-s">&quot;button &quot;</span> .. i <span class="tk-k">end</span>
+<span class="tk-k">end</span>
+<span class="tk-f">print</span>(buttons[<span class="tk-n">1</span>](), buttons[<span class="tk-n">3</span>]())</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>button 1	button 3</code></pre></div>
+<p>(In some languages every one of those would say &quot;button 3&quot;. In Lua each round has its own <code>i</code>.)</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-optional-and-variable-arguments/"><span class="mono">previous</span><b>3.02 Optional and Variable Arguments</b></a>
+      <a class="lp-next" href="../3-04-recursion/"><span class="mono">next</span><b>3.04 Recursion</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/3-03-functions-as-values-and-closures"></script>
+</body>
+</html>

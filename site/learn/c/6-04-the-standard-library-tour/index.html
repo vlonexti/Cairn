@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Standard Library Tour · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/6-04-the-standard-library-tour/">
+  <meta name="description" content="The C standard library is small but covers the basics - input and output, strings, memory, maths, time, random numbers, sorting, characters and errors.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Standard Library Tour · C · Xenon">
+  <meta property="og:description" content="The C standard library is small but covers the basics - input and output, strings, memory, maths, time, random numbers, sorting, characters and errors.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/6-04-the-standard-library-tour/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Standard Library Tour · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Standard Library Tour · C · Xenon">
+  <meta name="twitter:description" content="The C standard library is small but covers the basics - input and output, strings, memory, maths, time, random numbers, sorting, characters and errors.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C Close to the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Standard Library Tour</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The C standard library is small but covers the basics - input and output, strings, memory, maths, time, random numbers, sorting, characters and errors. Knowing what is there saves rewriting it. Beyond it, POSIX adds the operating system&#39;s services, and C23 brings a few modern conveniences.</p>
+      <div class="prose">
+<h2>The headers</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Gives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stdio.h</code></td>
+<td><code>printf</code>, <code>scanf</code>, <code>fgets</code>, files, <code>snprintf</code>, <code>perror</code></td>
+</tr>
+<tr>
+<td><code>stdlib.h</code></td>
+<td><code>malloc</code>, <code>free</code>, <code>qsort</code>, <code>bsearch</code>, <code>strtol</code>, <code>strtod</code>, <code>rand</code>, <code>exit</code>, <code>abs</code>, <code>getenv</code></td>
+</tr>
+<tr>
+<td><code>string.h</code></td>
+<td><code>strlen</code>, <code>strcmp</code>, <code>strchr</code>, <code>strstr</code>, <code>memcpy</code>, <code>memmove</code>, <code>memset</code>, <code>memcmp</code>, <code>strerror</code></td>
+</tr>
+<tr>
+<td><code>ctype.h</code></td>
+<td><code>isalpha</code>, <code>isdigit</code>, <code>isspace</code>, <code>toupper</code>, <code>tolower</code></td>
+</tr>
+<tr>
+<td><code>math.h</code></td>
+<td><code>sqrt</code>, <code>pow</code>, <code>sin</code>, <code>cos</code>, <code>floor</code>, <code>ceil</code>, <code>round</code>, <code>fabs</code>, <code>hypot</code>, <code>NAN</code>, <code>INFINITY</code></td>
+</tr>
+<tr>
+<td><code>stdint.h</code>, <code>inttypes.h</code></td>
+<td>exact-width integers and their formats</td>
+</tr>
+<tr>
+<td><code>stdbool.h</code>, <code>stddef.h</code></td>
+<td><code>bool</code>; <code>size_t</code>, <code>NULL</code>, <code>offsetof</code></td>
+</tr>
+<tr>
+<td><code>limits.h</code>, <code>float.h</code></td>
+<td><code>INT_MAX</code>, <code>LLONG_MIN</code>, <code>DBL_EPSILON</code></td>
+</tr>
+<tr>
+<td><code>time.h</code></td>
+<td><code>time</code>, <code>clock</code>, <code>localtime</code>, <code>strftime</code></td>
+</tr>
+<tr>
+<td><code>assert.h</code>, <code>errno.h</code></td>
+<td><code>assert</code>; <code>errno</code> and its codes</td>
+</tr>
+<tr>
+<td><code>stdarg.h</code></td>
+<td>functions like printf that take any number of arguments</td>
+</tr>
+</tbody></table>
+</div>
+<p>On Linux, GCC needs <code>-lm</code> to link the maths library; the website adds it for you.</p>
+<h2>memmove, for overlapping memory</h2>
+<p><code>memcpy</code> must not be used when the source and destination overlap; <code>memmove</code> handles that correctly:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;string.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">char</span> text[] = <span class="tk-s">&quot;abcdef&quot;</span>;
+    <span class="tk-f">memmove</span>(text + <span class="tk-n">2</span>, text, <span class="tk-n">4</span>);      <span class="tk-c">// shift right by 2, overlapping</span>
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%s\n&quot;</span>, text);            <span class="tk-c">// ababcd</span>
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<h2>Time</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;time.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    time_t now = <span class="tk-f">time</span>(<span class="tk-k">NULL</span>);                 <span class="tk-c">// seconds since 1 January 1970 (UTC)</span>
+    <span class="tk-k">struct</span> tm *utc = <span class="tk-f">gmtime</span>(&amp;now);
+    <span class="tk-k">char</span> text[<span class="tk-n">64</span>];
+    <span class="tk-f">strftime</span>(text, <span class="tk-k">sizeof</span> text, <span class="tk-s">&quot;%Y-%m-%d %H:%M:%S UTC&quot;</span>, utc);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%s\n&quot;</span>, text);
+
+    clock_t start = <span class="tk-f">clock</span>();                 <span class="tk-c">// processor time used so far</span>
+    <span class="tk-k">volatile</span> <span class="tk-k">double</span> x = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">10000000</span>; i++) x += i * <span class="tk-n">0.5</span>;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;the loop took %.3f s of processor time\n&quot;</span>, (<span class="tk-k">double</span>)(<span class="tk-f">clock</span>() - start) / CLOCKS_PER_SEC);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>volatile</code> tells the compiler the variable may change in ways it cannot see, so the loop is not optimised away.</p>
+<h2>Random numbers</h2>
+<p><code>rand()</code> returns a number from 0 to <code>RAND_MAX</code>; <code>srand(seed)</code> chooses where the sequence starts. The same seed always gives the same sequence, which is useful for tests and replays:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">roll</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">return</span> <span class="tk-f">rand</span>() % <span class="tk-n">6</span> + <span class="tk-n">1</span>;        <span class="tk-c">// 1 to 6 (very slightly uneven, fine for games)</span>
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">srand</span>(<span class="tk-n">42</span>);                    <span class="tk-c">// srand((unsigned)time(NULL)) for different runs</span>
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">5</span>; i++) <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d &quot;</span>, <span class="tk-f">roll</span>());
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;\n&quot;</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>rand</code> is fine for games and simulations, never for passwords or keys: use the operating system&#39;s secure generator (<code>getrandom</code> on Linux, <code>arc4random</code> on BSD and Mac, <code>BCryptGenRandom</code> on Windows).</p>
+<h2>Variable arguments</h2>
+<p><code>printf</code> takes any number of arguments through <code>stdarg.h</code>. Your own functions can too:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdarg.h&gt;</span>
+<span class="tk-p">#include &lt;stdio.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">sum_ints</span>(<span class="tk-k">int</span> count, ...)
+{
+    va_list args;
+    <span class="tk-f">va_start</span>(args, count);
+    <span class="tk-k">int</span> total = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; count; i++) total += <span class="tk-f">va_arg</span>(args, <span class="tk-k">int</span>);
+    <span class="tk-f">va_end</span>(args);
+    <span class="tk-k">return</span> total;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">log_message</span>(<span class="tk-k">const</span> <span class="tk-k">char</span> *level, <span class="tk-k">const</span> <span class="tk-k">char</span> *format, ...)
+{
+    va_list args;
+    <span class="tk-f">va_start</span>(args, format);
+    <span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;[%s] &quot;</span>, level);
+    <span class="tk-f">vfprintf</span>(stderr, format, args);      <span class="tk-c">// the v versions take a va_list</span>
+    <span class="tk-f">fprintf</span>(stderr, <span class="tk-s">&quot;\n&quot;</span>);
+    <span class="tk-f">va_end</span>(args);
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d\n&quot;</span>, <span class="tk-f">sum_ints</span>(<span class="tk-n">4</span>, <span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>, <span class="tk-n">40</span>));
+    <span class="tk-f">log_message</span>(<span class="tk-s">&quot;info&quot;</span>, <span class="tk-s">&quot;loaded %d items in %.1f ms&quot;</span>, <span class="tk-n">120</span>, <span class="tk-n">3.5</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>The function cannot know how many arguments it got or their types; the caller must say (here <code>count</code>, in printf the format string). Getting it wrong is undefined.</p>
+<h2>Leaving the program</h2>
+<p><code>return</code> from <code>main</code> ends the program; so does <code>exit(status)</code> from anywhere, which still flushes and closes files. <code>atexit(function)</code> registers clean-up to run then. <code>EXIT_SUCCESS</code> and <code>EXIT_FAILURE</code> are the portable status codes.</p>
+<h2>Beyond the standard</h2>
+<ul>
+<li><strong>POSIX</strong> (Linux, Mac, BSD) adds the operating system&#39;s services: <code>open</code>, <code>read</code>, <code>write</code>, <code>fork</code>, <code>exec</code>, <code>pthread_create</code> for threads, sockets for networking, <code>getline</code>, <code>strdup</code>.</li>
+<li><strong>Windows</strong> has its own API (<code>CreateFile</code>, <code>CreateThread</code>) alongside the standard library.</li>
+<li><strong>C11</strong> added <code>threads.h</code> and <code>stdatomic.h</code>; <strong>C23</strong> adds <code>bool</code> as a keyword, <code>nullptr</code>, <code>typeof</code>, <code>constexpr</code>, binary literals like <code>0b1010</code>, <code>strdup</code> and checked arithmetic.</li>
+</ul>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which function copies memory correctly when the source and destination overlap?</div><ul><li>memmove</li><li>memcpy</li><li>strcpy</li></ul><details><summary>Show the answer</summary><p><b>memmove</b> memcpy is allowed to assume they do not overlap.</p></details></li><li><div class="q">What does srand(42) followed by rand() calls give in every run?</div><ul><li>The same sequence of numbers</li><li>A different sequence each time</li><li>Only the number 42</li></ul><details><summary>Show the answer</summary><p><b>The same sequence of numbers</b> Seed with time(NULL) for different runs.</p></details></li><li><div class="q">Is rand() suitable for making passwords?</div><ul><li>No: use the operating system&#39;s secure random generator</li><li>Yes</li><li>Only with a large seed</li></ul><details><summary>Show the answer</summary><p><b>No: use the operating system&#39;s secure random generator</b> Its sequence is predictable.</p></details></li><li><div class="q">How does a variadic function know how many arguments it was given?</div><ul><li>The caller must tell it, for example with a count or a format string</li><li>va_count returns it</li><li>It always gets exactly ten</li></ul><details><summary>Show the answer</summary><p><b>The caller must tell it, for example with a count or a format string</b> stdarg.h gives no way to ask.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-how-c-becomes-assembly/"><span class="mono">previous</span><b>6.03 How C Becomes Assembly</b></a>
+      <a class="lp-next" href="../6-05-building-a-hash-table/"><span class="mono">next</span><b>6.05 Building a Hash Table</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/6-04-the-standard-library-tour"></script>
+</body>
+</html>

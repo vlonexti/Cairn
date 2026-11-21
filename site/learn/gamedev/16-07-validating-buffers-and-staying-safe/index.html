@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Validating Buffers and Staying Safe · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/16-07-validating-buffers-and-staying-safe/">
+  <meta name="description" content="A driver that accepts requests from user mode is a doorway into the kernel, and many serious Windows vulnerabilities have been driver bugs in exactly this…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Validating Buffers and Staying Safe · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A driver that accepts requests from user mode is a doorway into the kernel, and many serious Windows vulnerabilities have been driver bugs in exactly this…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/16-07-validating-buffers-and-staying-safe/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Validating Buffers and Staying Safe · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Validating Buffers and Staying Safe · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A driver that accepts requests from user mode is a doorway into the kernel, and many serious Windows vulnerabilities have been driver bugs in exactly this…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Educational Driver Development</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Validating Buffers and Staying Safe</h1>
+      <div class="readout lp-readout"><span>lesson <b>16.07</b></span><span>7 of 10 in milestone 16</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A driver that accepts requests from user mode is a doorway into the kernel, and many serious Windows vulnerabilities have been driver bugs in exactly this code. This lesson covers the three ways buffers reach a driver (<strong>buffered</strong>, <strong>direct</strong> and <strong>neither</strong> I/O), and the rules that keep a driver safe: check every length, never return more than was written, never leak kernel memory, and handle every failure.</p>
+      <div class="prose">
+<h2>Why this matters</h2>
+<p>Lesson 15.02 explained that the kernel never trusts user mode. A driver&#39;s dispatch routines are kernel code run with user-supplied inputs: lengths, control codes and buffer contents chosen by whoever opened the device. A bug that lets a caller read or write memory it should not becomes a way to take over the machine. Vulnerable drivers are a well-known attack route, which is why Windows maintains a <strong>blocklist</strong> of known-vulnerable signed drivers and why Microsoft&#39;s signing process includes testing (lesson 16.09). Writing this code carefully is not optional.</p>
+<h2>Three ways to pass buffers</h2>
+<p>The method in the control code (lesson 16.05) decides how the I/O manager presents the caller&#39;s buffers:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>What the driver gets</th>
+<th>Safety</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>METHOD_BUFFERED</code></td>
+<td>One <strong>system buffer</strong> in non-paged pool, <code>max(input, output)</code> bytes. The I/O manager copies the input in before the call and copies <code>Information</code> bytes out after</td>
+<td>Safest: the driver never touches user memory. Best for small requests</td>
+</tr>
+<tr>
+<td><code>METHOD_IN_DIRECT</code> / <code>METHOD_OUT_DIRECT</code></td>
+<td>Input in a system buffer; the output (or second) buffer described by an <strong>MDL</strong> whose pages the I/O manager has probed and locked (lesson 15.04)</td>
+<td>Safe, avoids copying large data</td>
+</tr>
+<tr>
+<td><code>METHOD_NEITHER</code></td>
+<td>The <strong>raw user pointers</strong></td>
+<td>The driver must probe, capture and guard every access itself (lesson 15.02&#39;s three rules). Avoid unless there is a strong reason</td>
+</tr>
+</tbody></table>
+</div>
+<p>The echo driver uses <code>METHOD_BUFFERED</code> throughout, and so should yours unless measurements show copying is too slow.</p>
+<h2>The rules for every request</h2>
+<ol>
+<li><strong>Check every length before touching any buffer.</strong> Input at least as large as the structure you will read; output at least as large as what you will write. Return <code>STATUS_BUFFER_TOO_SMALL</code> (or <code>STATUS_INVALID_PARAMETER</code>) otherwise.</li>
+<li><strong>Treat every field read from the input as hostile.</strong> Counts, sizes, offsets and indices inside the request get the same checks as the lengths, including overflow in arithmetic (<code>count * sizeof(T)</code> can wrap, lesson 15.02).</li>
+<li><strong>Set <code>Information</code> to exactly the number of bytes written, never more than the output length.</strong> With buffered I/O, the I/O manager copies <code>Information</code> bytes from the system buffer back to the caller; a larger number copies out whatever else is in that pool memory: an <strong>information leak</strong>.</li>
+<li><strong>Never leak kernel memory.</strong> Zero output structures before filling them (padding bytes too, lesson 2.05). <code>ExAllocatePool2</code> zero-initialises, which is one reason it replaced the older function (lesson 15.04).</li>
+<li><strong>Handle every failure.</strong> Allocations can fail; return <code>STATUS_INSUFFICIENT_RESOURCES</code>. Never assume.</li>
+<li><strong>Keep the state consistent across processors.</strong> Requests can arrive on several processors at once (lesson 15.06): protect shared state.</li>
+</ol>
+<h2>The echo handler, carefully</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>NTSTATUS <span class="tk-f">EchoEcho</span>(<span class="tk-t">EchoState</span>* state, PIRP irp, <span class="tk-k">const</span> <span class="tk-k">auto</span>&amp; p, ULONG_PTR&amp; information)
+{
+    <span class="tk-k">const</span> ULONG in{ p.<span class="tk-t">InputBufferLength</span> };
+    <span class="tk-k">const</span> ULONG out{ p.<span class="tk-t">OutputBufferLength</span> };
+    <span class="tk-k">if</span> (in == <span class="tk-n">0</span>) <span class="tk-k">return</span> STATUS_INVALID_PARAMETER;
+    <span class="tk-k">if</span> (in &gt; kMaxEchoBytes) <span class="tk-k">return</span> STATUS_INVALID_PARAMETER;      <span class="tk-c">// a limit protects the pool</span>
+    <span class="tk-k">if</span> (out &lt; in) <span class="tk-k">return</span> STATUS_BUFFER_TOO_SMALL;                  <span class="tk-c">// we will write exactly `in` bytes</span>
+
+    <span class="tk-c">// Buffered I/O: input and output share the system buffer, and the input is already there.</span>
+    <span class="tk-c">// Echoing means leaving it in place and reporting that many bytes as output.</span>
+    information = in;                                              <span class="tk-c">// never more than out</span>
+
+    <span class="tk-f">InterlockedIncrement64</span>(&amp;state-&gt;stats.requests);
+    <span class="tk-f">InterlockedAdd64</span>(&amp;state-&gt;stats.bytesEchoed, in);
+    <span class="tk-k">return</span> STATUS_SUCCESS;
+}</code></pre></div>
+<p>Every number that comes from the caller (<code>in</code>, <code>out</code>) is checked before it is used; the output count is exactly what is valid; the shared statistics use interlocked operations. The practice task writes the general validator that checks a request against these rules.</p>
+<h2>Tools that help</h2>
+<ul>
+<li><strong>Driver Verifier</strong> (lesson 15.07) with I/O verification catches IRPs completed wrongly and leaks.</li>
+<li><strong>Code Analysis for drivers</strong> (lesson 16.01) and its annotations (<code>_In_reads_bytes_</code>, <code>_IRQL_requires_max_</code>) find length and IRQL mistakes at build time.</li>
+<li><strong>Fuzzing</strong> the IOCTL interface from user mode with random codes, lengths and contents (lesson 17.03) finds what review misses. Run it in the lab VM, with Verifier on.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Reading the input before checking its length</span></div><div class="callout-body"><p>Even one field read from a too-short buffer reads past it.</p>
+</div></div>
+<blockquote><p>[!warning] <code>Information</code> larger than what was written
+Leaks pool contents to user mode.</p>
+</blockquote>
+<blockquote><p>[!warning] <code>METHOD_NEITHER</code> without probing, capturing and guarding
+A classic source of exploitable driver bugs. Prefer buffered I/O.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Trusting sizes inside the request</span></div><div class="callout-body"><p>A count field in the request is as untrusted as the buffer length.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">With <code>METHOD_BUFFERED</code>, what does the driver work with?</div><ul><li>A system buffer in non-paged pool, into which the I/O manager copied the input and from which it copies the output</li><li>The caller&#39;s user-mode pointers</li><li>An MDL</li></ul><details><summary>Show the answer</summary><p><b>A system buffer in non-paged pool, into which the I/O manager copied the input and from which it copies the output</b> The driver never touches user memory directly.</p></details></li><li><div class="q">Why must <code>Information</code> never exceed the bytes actually written?</div><ul><li>The I/O manager copies that many bytes back to the caller, so extra bytes would leak whatever was in kernel memory</li><li>It would crash the client</li><li>It makes the request slower</li></ul><details><summary>Show the answer</summary><p><b>The I/O manager copies that many bytes back to the caller, so extra bytes would leak whatever was in kernel memory</b> An information leak can reveal kernel addresses and data.</p></details></li><li><div class="q">A request contains a count of items. How should the driver treat it?</div><ul><li>As untrusted input: check it, and the arithmetic based on it, against the buffer length and limits before using it</li><li>Trust it, since the length was already checked</li><li>Ignore it</li></ul><details><summary>Show the answer</summary><p><b>As untrusted input: check it, and the arithmetic based on it, against the buffer length and limits before using it</b> Fields inside requests are as hostile as the lengths.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/16.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/16.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../16-06-a-user-mode-client/"><span class="mono">previous</span><b>16.06 A User-Mode Client</b></a>
+      <a class="lp-next" href="../16-08-kernel-debugging-with-windbg/"><span class="mono">next</span><b>16.08 Kernel Debugging with WinDbg</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/16-07-validating-buffers-and-staying-safe"></script>
+</body>
+</html>

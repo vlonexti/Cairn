@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Deadlocks and Timeouts · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/4-05-deadlocks-and-timeouts/">
+  <meta name="description" content="How cooperating processes get stuck waiting for each other - lock-order deadlocks, request-reply deadlocks over pipes, waiting for a peer that died - and the…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Deadlocks and Timeouts · Processes and Communication · Xenon">
+  <meta property="og:description" content="How cooperating processes get stuck waiting for each other - lock-order deadlocks, request-reply deadlocks over pipes, waiting for a peer that died - and the…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/4-05-deadlocks-and-timeouts/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Deadlocks and Timeouts · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Deadlocks and Timeouts · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="How cooperating processes get stuck waiting for each other - lock-order deadlocks, request-reply deadlocks over pipes, waiting for a peer that died - and the…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Synchronisation Across Processes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Deadlocks and Timeouts</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.05</b></span><span>5 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How cooperating processes get stuck waiting for each other - lock-order deadlocks, request-reply deadlocks over pipes, waiting for a peer that died - and the disciplines that prevent them - a global lock order, timeouts on every wait, never holding a lock across IPC, and watchdogs.</p>
+      <div class="prose">
+<h2>Stuck for ever</h2>
+<p>A <strong>deadlock</strong> is a set of threads or processes each waiting for something only another of them can provide. Nothing crashes, nothing logs an error; the programs simply stop responding. Across processes they are harder to find than within one, because no single debugger sees both sides.</p>
+<h2>Lock-order deadlocks</h2>
+<p>Two processes and two named mutexes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>Process A: lock &quot;settings&quot;, then lock &quot;cache&quot;
+Process B: lock &quot;cache&quot;,    then lock &quot;settings&quot;</code></pre></div>
+<p>If A takes &quot;settings&quot; and B takes &quot;cache&quot; at the same moment, each then waits for the other&#39;s mutex, for ever. Drawn as a <strong>wait-for graph</strong> (an arrow from each waiter to the holder of what it wants), a deadlock is a <strong>cycle</strong>: A waits for B, B waits for A.</p>
+<p>The fix is a <strong>global lock order</strong>: give every lock a rank and always take them in increasing order, in every process. Then a cycle cannot form, because every arrow points &quot;up&quot; the ranking. Writing the order down (in the code next to the names) is the cheapest deadlock prevention there is.</p>
+<h2>Request-reply deadlocks</h2>
+<p>Locks are not the only thing you wait for. Over pipes:</p>
+<ul>
+<li>Both sides send a large message at the same time, before reading. Both pipes fill, both writes block, neither side ever reads (the stdio version was in lesson 1.04).</li>
+<li>A server, while handling client A&#39;s request, calls into client A (a callback), while client A is blocked waiting for the reply to its request.</li>
+<li>Process A sends a <code>WM_COPYDATA</code> to B while B is blocked in <code>SendMessageW</code> to A.</li>
+</ul>
+<p>The disciplines that prevent these:</p>
+<ul>
+<li><strong>Never hold a lock while doing IPC.</strong> Copy what you need, release, then send or wait. A lock held across a pipe write turns a slow peer into a frozen one.</li>
+<li><strong>Read continuously.</strong> A side that may need to receive while it is sending must read on another thread or with overlapped I/O.</li>
+<li><strong>Avoid synchronous calls back into the caller.</strong> Make callbacks asynchronous (post a message, queue an event) or design the protocol so only one side initiates requests.</li>
+</ul>
+<h2>Waiting for the dead</h2>
+<p>A process that died while you wait for its reply, its event or its mutex is the most common &quot;deadlock&quot; of all. Kernel objects help (pipes break, mutexes are abandoned), but an event that a dead process will never set just stays unset.</p>
+<ul>
+<li><strong>Time out every wait.</strong> <code>INFINITE</code> belongs only where something else (a stop event, a process handle in the same <code>WaitForMultipleObjects</code>) guarantees an end. After a timeout, check whether the peer is alive (wait on its process handle with 0 timeout) before deciding to wait again or give up.</li>
+<li><strong>Include the peer&#39;s process handle</strong> in multi-object waits (lesson 4.02).</li>
+<li><strong>Use a watchdog</strong> for long-running systems: each worker updates a heartbeat (a counter in shared memory, or a periodic message); a supervisor that sees no heartbeat for a few seconds treats the worker as hung, ends it and starts another (lesson 6.02).</li>
+</ul>
+<h2>Finding a deadlock</h2>
+<p>When it happens anyway:</p>
+<ol>
+<li>Attach a debugger to each stuck process and look at every thread&#39;s call stack: you will see each waiting in <code>WaitForSingleObject</code>, <code>ReadFile</code> or <code>SendMessage</code>.</li>
+<li>Find out what each is waiting for: which handle, which object name. Process Explorer&#39;s handle view (and the &quot;wait chain&quot; view in Resource Monitor&#39;s Analyze Wait Chain) shows which objects each process has and who holds what.</li>
+<li>Draw the wait-for graph. The cycle is the bug; the fix is usually an ordering rule or a lock released before an IPC call.</li>
+</ol>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/4.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/4.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-04-window-messages-between-programs/"><span class="mono">previous</span><b>4.04 Window Messages Between Programs</b></a>
+      <a class="lp-next" href="../5-01-sockets-on-one-machine/"><span class="mono">next</span><b>5.01 Sockets on One Machine</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/4-05-deadlocks-and-timeouts"></script>
+</body>
+</html>

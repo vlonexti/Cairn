@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Callbacks and Errors · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/6-04-callbacks-and-errors/">
+  <meta name="description" content="When C calls back into Python - CFUNCTYPE and WINFUNCTYPE, keeping callbacks alive, exceptions inside callbacks - and how C reports errors - return codes,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Callbacks and Errors · Working with APIs · Xenon">
+  <meta property="og:description" content="When C calls back into Python - CFUNCTYPE and WINFUNCTYPE, keeping callbacks alive, exceptions inside callbacks - and how C reports errors - return codes,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/6-04-callbacks-and-errors/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Callbacks and Errors · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Callbacks and Errors · Working with APIs · Xenon">
+  <meta name="twitter:description" content="When C calls back into Python - CFUNCTYPE and WINFUNCTYPE, keeping callbacks alive, exceptions inside callbacks - and how C reports errors - return codes,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Calling C Libraries</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Callbacks and Errors</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.04</b></span><span>4 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">When C calls back into Python - CFUNCTYPE and WINFUNCTYPE, keeping callbacks alive, exceptions inside callbacks - and how C reports errors - return codes, errno with use_errno, GetLastError with use_last_error and WinError, and errcheck to turn return codes into Python exceptions automatically.</p>
+      <div class="prose">
+<h2>Functions as arguments</h2>
+<p>Many C APIs take a <strong>function pointer</strong>: <code>qsort</code> takes a comparison function, Windows&#39; <code>EnumWindows</code> calls you once per window, libraries call you with progress or log messages. In ctypes, describe the function type with <code>CFUNCTYPE(restype, *argtypes)</code> (<code>WINFUNCTYPE</code> for Windows API callbacks), and wrap a Python function with it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">import</span> ctypes
+
+BINARY = ctypes.<span class="tk-f">CFUNCTYPE</span>(ctypes.c_int, ctypes.c_int, ctypes.c_int)
+
+<span class="tk-k">def</span> <span class="tk-f">add</span>(a, b):
+    <span class="tk-k">return</span> a + b
+
+c_add = <span class="tk-f">BINARY</span>(add)          <span class="tk-c"># a real C function pointer that runs the Python code</span>
+<span class="tk-f">print</span>(<span class="tk-f">c_add</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>))</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>5</code></pre></div>
+<p>A classic use, sorting a C array with the C library&#39;s <code>qsort</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>CMP = ctypes.<span class="tk-f">CFUNCTYPE</span>(ctypes.c_int, ctypes.<span class="tk-f">POINTER</span>(ctypes.c_int), ctypes.<span class="tk-f">POINTER</span>(ctypes.c_int))
+
+<span class="tk-k">def</span> <span class="tk-f">compare</span>(a, b):
+    <span class="tk-k">return</span> (a[<span class="tk-n">0</span>] &gt; b[<span class="tk-n">0</span>]) - (a[<span class="tk-n">0</span>] &lt; b[<span class="tk-n">0</span>])
+
+values = (ctypes.c_int * <span class="tk-n">5</span>)(<span class="tk-n">5</span>, <span class="tk-n">1</span>, <span class="tk-n">4</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>)
+libc.qsort.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, CMP]
+libc.qsort.restype = <span class="tk-k">None</span>
+libc.<span class="tk-f">qsort</span>(values, <span class="tk-f">len</span>(values), ctypes.<span class="tk-f">sizeof</span>(ctypes.c_int), <span class="tk-f">CMP</span>(compare))
+<span class="tk-f">print</span>(<span class="tk-f">list</span>(values))                 <span class="tk-c"># [1, 2, 3, 4, 5]</span></code></pre></div>
+<h2>Keep the callback alive</h2>
+<p>The C function pointer only exists while the Python wrapper object exists. If C <strong>stores</strong> the callback to call later (an event handler, a timer), and your code keeps no reference to the <code>CFUNCTYPE</code> object, Python frees it and C later jumps into freed memory: a crash, possibly minutes later. Store such callbacks somewhere long-lived (an attribute of the object that registered them) until you unregister them.</p>
+<h2>Exceptions cannot cross</h2>
+<p>An exception raised inside a callback cannot travel up through C frames. ctypes prints it, and C receives a meaningless result. So catch everything inside the callback, store the error, and check it after the C function returns:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>errors = []
+<span class="tk-k">def</span> <span class="tk-f">safe_compare</span>(a, b):
+    <span class="tk-k">try</span>:
+        <span class="tk-k">return</span> <span class="tk-f">compare</span>(a, b)
+    <span class="tk-k">except</span> Exception <span class="tk-k">as</span> e:
+        errors.<span class="tk-f">append</span>(e)
+        <span class="tk-k">return</span> <span class="tk-n">0</span></code></pre></div>
+<h2>How C reports errors</h2>
+<p>C has no exceptions. Libraries report failure in the ways the Reading Documentation course described:</p>
+<ul>
+<li>a <strong>return code</strong> (0 for success, negative for errors) or a special value (<code>NULL</code>, <code>-1</code>);</li>
+<li><strong>errno</strong>: load with <code>CDLL(name, use_errno=True)</code> and read <code>ctypes.get_errno()</code> right after the call;</li>
+<li>on Windows, <strong>GetLastError</strong>: load with <code>WinDLL(name, use_last_error=True)</code>, read <code>ctypes.get_last_error()</code>, and <code>ctypes.WinError(code)</code> turns it into an <code>OSError</code> with the system&#39;s message.</li>
+</ul>
+<p>ctypes saves errno and the last error <strong>immediately</strong> after each call when asked to, which matters because Python itself may make system calls (and change them) before your next line runs.</p>
+<h2>errcheck</h2>
+<p>Checking every return value by hand is repetitive and easy to forget. A function&#39;s <strong>errcheck</strong> attribute runs after every call and may raise:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code><span class="tk-k">def</span> <span class="tk-f">check_zero</span>(result, func, args):
+    <span class="tk-k">if</span> result != <span class="tk-n">0</span>:
+        <span class="tk-k">raise</span> <span class="tk-f">OSError</span>(result, <span class="tk-s">f&quot;{func.__name__} failed with {result}&quot;</span>)
+    <span class="tk-k">return</span> result
+
+lib.open_device.argtypes = [ctypes.c_char_p, ctypes.<span class="tk-f">POINTER</span>(DeviceHandle)]
+lib.open_device.restype = ctypes.c_int
+lib.open_device.errcheck = check_zero          <span class="tk-c"># now a failure raises like normal Python</span></code></pre></div>
+<p>Wrapping a C library this way, with types declared, errors turned into exceptions and resources freed in <code>__del__</code> or context managers, gives the rest of the program an API that feels like ordinary Python.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/6.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/6.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-03-structures-pointers-and-buffers/"><span class="mono">previous</span><b>6.03 Structures, Pointers and Buffers</b></a>
+      <a class="lp-next" href="../6-05-other-ways-to-bind-c/"><span class="mono">next</span><b>6.05 Other Ways to Bind C</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/6-04-callbacks-and-errors"></script>
+</body>
+</html>

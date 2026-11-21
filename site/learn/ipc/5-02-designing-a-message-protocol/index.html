@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Designing a Message Protocol · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/5-02-designing-a-message-protocol/">
+  <meta name="description" content="The decisions behind a protocol two programs will speak for years - a handshake with a magic number and version, an envelope with type, id, flags and length,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Designing a Message Protocol · Processes and Communication · Xenon">
+  <meta property="og:description" content="The decisions behind a protocol two programs will speak for years - a handshake with a magic number and version, an envelope with type, id, flags and length,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/5-02-designing-a-message-protocol/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Designing a Message Protocol · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Designing a Message Protocol · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="The decisions behind a protocol two programs will speak for years - a handshake with a magic number and version, an envelope with type, id, flags and length,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Local Sockets and Protocols</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Designing a Message Protocol</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.02</b></span><span>2 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The decisions behind a protocol two programs will speak for years - a handshake with a magic number and version, an envelope with type, id, flags and length, kinds of messages, version negotiation, error replies, and writing it all down.</p>
+      <div class="prose">
+<h2>A protocol is a contract</h2>
+<p>Two programs talking over a pipe or a socket depend on a set of agreements: what bytes come first, what each message means, what happens when one side is newer than the other. That contract is the <strong>protocol</strong>, and it outlives the code: once two released versions of your programs speak it, changing it means staying compatible. A little design up front saves years of trouble.</p>
+<h2>The handshake</h2>
+<p>The first exchange on a new connection should establish that both sides speak the same protocol:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>client -&gt; server   HELLO   magic &quot;XIPC&quot;, version 2.3, client name &quot;xenon-editor&quot;
+server -&gt; client   WELCOME version 2.1, server name &quot;xenon-agent&quot;, capabilities</code></pre></div>
+<ul>
+<li>A <strong>magic number</strong> catches connections from something that is not your client at all (a port scanner, an old program on a reused port, a browser) before you try to parse its bytes as messages.</li>
+<li>A <strong>version</strong> lets both sides agree on the dialect. A common scheme: the <strong>major</strong> version changes when old and new cannot talk at all; the <strong>minor</strong> version changes when features are added compatibly. Both sides use the same major and the <strong>lower</strong> of the two minors, and simply avoid features newer than that.</li>
+<li><strong>Capabilities</strong> (a list of feature names or flag bits) are an alternative or complement to minor versions: &quot;I support compression and batch requests&quot;.</li>
+</ul>
+<p>If the handshake fails, say why (a message with an error code, if possible) and close the connection.</p>
+<h2>The envelope</h2>
+<p>Every message after the handshake shares one outer structure, the <strong>envelope</strong>, so that any message can be framed, routed and logged without understanding its payload:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Size</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>length</td>
+<td>4</td>
+<td>frame length (lesson 2.03)</td>
+</tr>
+<tr>
+<td>type</td>
+<td>1 or 2</td>
+<td>what kind of message</td>
+</tr>
+<tr>
+<td>flags</td>
+<td>1</td>
+<td>bits such as &quot;this is a reply&quot;, &quot;this is an error&quot;</td>
+</tr>
+<tr>
+<td>id</td>
+<td>4</td>
+<td>matches replies to requests (lesson 5.04)</td>
+</tr>
+<tr>
+<td>payload</td>
+<td>rest</td>
+<td>type-specific content (lesson 5.03)</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Kinds of messages</h2>
+<p>Almost every protocol needs the same three kinds:</p>
+<ul>
+<li><strong>Requests</strong>: &quot;do this and tell me the result&quot;. Carry an id.</li>
+<li><strong>Responses</strong>: the result of one request, carrying its id; either a success with data or an <strong>error</strong> with a code and a message.</li>
+<li><strong>Events</strong> (notifications): sent without being asked, such as &quot;file changed&quot; or &quot;build finished&quot;. No reply expected.</li>
+</ul>
+<p>Keep error replies structured: a numeric code that programs can act on (&quot;not found&quot;, &quot;bad argument&quot;, &quot;busy&quot;, &quot;not supported in this version&quot;) plus a human-readable message for logs.</p>
+<h2>Rules that keep a protocol healthy</h2>
+<ul>
+<li><strong>Unknown message types</strong>: reply &quot;not supported&quot; (for requests) or ignore (for events). Never crash, never close the connection.</li>
+<li><strong>Unknown fields</strong>: skip them, if the encoding allows (lesson 5.03). This is what lets a newer sender add fields that an older receiver ignores.</li>
+<li><strong>Limits</strong>: maximum message size, maximum outstanding requests, maximum string lengths. Write them in the specification and enforce them.</li>
+<li><strong>Text or binary?</strong> Text (JSON) is easy to debug and to speak from any language; binary is compact and fast. JSON lines or JSON with a length header (like the Language Server Protocol) are fine for most tools; reach for binary when messages are frequent or large.</li>
+<li><strong>Write it down.</strong> A short specification (one page with the envelope, the message types and their payloads, versions and limits) is worth more than any amount of &quot;the code is the documentation&quot;, especially when the other side is written by someone else or in another language.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/5.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/5.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-01-sockets-on-one-machine/"><span class="mono">previous</span><b>5.01 Sockets on One Machine</b></a>
+      <a class="lp-next" href="../5-03-serialising-data/"><span class="mono">next</span><b>5.03 Serialising Data</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/5-02-designing-a-message-protocol"></script>
+</body>
+</html>

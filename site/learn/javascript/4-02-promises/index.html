@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Promises · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/4-02-promises/">
+  <meta name="description" content="A promise as a value that arrives later - its three states, creating one with new Promise, chaining then and catch, returning promises from then, finally,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Promises · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="A promise as a value that arrives later - its three states, creating one with new Promise, chaining then and catch, returning promises from then, finally,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/4-02-promises/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Promises · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Promises · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="A promise as a value that arrives later - its three states, creating one with new Promise, chaining then and catch, returning promises from then, finally,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Asynchronous JavaScript</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Promises</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A promise as a value that arrives later - its three states, creating one with new Promise, chaining then and catch, returning promises from then, finally, wrapping callback APIs, and combining promises with Promise.all, allSettled, race and any.</p>
+      <div class="prose">
+<h2>A value that arrives later</h2>
+<p>A <strong>promise</strong> stands for the result of an operation that has not finished. It is in one of three states:</p>
+<ul>
+<li><strong>pending</strong>: still working;</li>
+<li><strong>fulfilled</strong>: finished with a value;</li>
+<li><strong>rejected</strong>: failed with an error (a reason).</li>
+</ul>
+<p>Once fulfilled or rejected, it is <strong>settled</strong> and never changes again.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> wait = ms =&gt; <span class="tk-k">new</span> <span class="tk-f">Promise</span>(resolve =&gt; <span class="tk-f">setTimeout</span>(resolve, ms));
+
+<span class="tk-k">function</span> <span class="tk-f">delayedSquare</span>(n) {
+  <span class="tk-k">return</span> <span class="tk-k">new</span> <span class="tk-f">Promise</span>((resolve, reject) =&gt; {
+    <span class="tk-k">if</span> (<span class="tk-k">typeof</span> n !== <span class="tk-s">&quot;number&quot;</span>) { <span class="tk-f">reject</span>(<span class="tk-k">new</span> <span class="tk-f">TypeError</span>(<span class="tk-s">&quot;not a number&quot;</span>)); <span class="tk-k">return</span>; }
+    <span class="tk-f">setTimeout</span>(() =&gt; <span class="tk-f">resolve</span>(n * n), <span class="tk-n">10</span>);
+  });
+}
+
+<span class="tk-f">delayedSquare</span>(<span class="tk-n">4</span>).<span class="tk-f">then</span>(v =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;value&quot;</span>, v));
+<span class="tk-f">delayedSquare</span>(<span class="tk-s">&quot;x&quot;</span>).<span class="tk-k">catch</span>(err =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;error&quot;</span>, err.message));
+<span class="tk-f">wait</span>(<span class="tk-n">20</span>).<span class="tk-f">then</span>(() =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;20 ms later&quot;</span>));</code></pre></div>
+<p>The function given to <code>new Promise</code> (the <strong>executor</strong>) runs immediately and calls <code>resolve(value)</code> or <code>reject(error)</code> when done.</p>
+<h2>Chaining</h2>
+<p><code>then(f)</code> returns a <strong>new</strong> promise for whatever <code>f</code> returns. If <code>f</code> returns a promise, the chain waits for it. That makes sequences flat:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> step = (label, ms) =&gt; <span class="tk-k">new</span> <span class="tk-f">Promise</span>(r =&gt; <span class="tk-f">setTimeout</span>(() =&gt; { console.<span class="tk-f">log</span>(label); <span class="tk-f">r</span>(label.length); }, ms));
+
+<span class="tk-f">step</span>(<span class="tk-s">&quot;load user&quot;</span>, <span class="tk-n">10</span>)
+  .<span class="tk-f">then</span>(n =&gt; <span class="tk-f">step</span>(<span class="tk-s">&quot;load orders&quot;</span>, <span class="tk-n">10</span>).<span class="tk-f">then</span>(() =&gt; n))
+  .<span class="tk-f">then</span>(n =&gt; { console.<span class="tk-f">log</span>(<span class="tk-s">&quot;first label had&quot;</span>, n, <span class="tk-s">&quot;letters&quot;</span>); <span class="tk-k">return</span> n * <span class="tk-n">2</span>; })
+  .<span class="tk-f">then</span>(doubled =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;doubled&quot;</span>, doubled))
+  .<span class="tk-k">catch</span>(err =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;something failed:&quot;</span>, err.message))
+  .<span class="tk-k">finally</span>(() =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;done either way&quot;</span>));</code></pre></div>
+<p>A <code>catch</code> at the end handles a rejection from <strong>any</strong> step above it, like a <code>try</code> around the whole chain. A <code>throw</code> inside a <code>then</code> callback rejects the chain too. <code>finally</code> runs whatever happened, without changing the result.</p>
+<p>Always end a chain with <code>catch</code> (or <code>await</code> it inside <code>try</code>): an <strong>unhandled rejection</strong> prints a warning in the browser and stops a Node program.</p>
+<h2>Wrapping callback APIs</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">loadUser</span>(id, cb) { <span class="tk-f">setTimeout</span>(() =&gt; (id &gt; <span class="tk-n">0</span> ? <span class="tk-f">cb</span>(<span class="tk-k">null</span>, { id }) : <span class="tk-f">cb</span>(<span class="tk-k">new</span> <span class="tk-f">Error</span>(<span class="tk-s">&quot;bad id&quot;</span>))), <span class="tk-n">5</span>); }
+
+<span class="tk-k">const</span> loadUserAsync = id =&gt; <span class="tk-k">new</span> <span class="tk-f">Promise</span>((resolve, reject) =&gt; {
+  <span class="tk-f">loadUser</span>(id, (err, user) =&gt; (err ? <span class="tk-f">reject</span>(err) : <span class="tk-f">resolve</span>(user)));
+});
+
+<span class="tk-f">loadUserAsync</span>(<span class="tk-n">3</span>).<span class="tk-f">then</span>(u =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;user&quot;</span>, u.id));</code></pre></div>
+<p>Node&#39;s <code>util.promisify</code> does this for any error-first function.</p>
+<h2>Many promises at once</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Combinator</th>
+<th>Fulfils when</th>
+<th>Rejects when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Promise.all(list)</code></td>
+<td>all fulfil: with an array of values in <strong>list order</strong></td>
+<td>any rejects (the first error)</td>
+</tr>
+<tr>
+<td><code>Promise.allSettled(list)</code></td>
+<td>all settle: with <code>{ status, value }</code> or <code>{ status, reason }</code> for each</td>
+<td>never</td>
+</tr>
+<tr>
+<td><code>Promise.race(list)</code></td>
+<td>the first one settles, with its value</td>
+<td>the first one to settle rejects</td>
+</tr>
+<tr>
+<td><code>Promise.any(list)</code></td>
+<td>the first one fulfils</td>
+<td>all reject (<code>AggregateError</code>)</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> after = (ms, v, fail = <span class="tk-k">false</span>) =&gt; <span class="tk-k">new</span> <span class="tk-f">Promise</span>((res, rej) =&gt; <span class="tk-f">setTimeout</span>(() =&gt; (fail ? <span class="tk-f">rej</span>(<span class="tk-k">new</span> <span class="tk-f">Error</span>(v)) : <span class="tk-f">res</span>(v)), ms));
+
+Promise.<span class="tk-f">all</span>([<span class="tk-f">after</span>(<span class="tk-n">30</span>, <span class="tk-s">&quot;a&quot;</span>), <span class="tk-f">after</span>(<span class="tk-n">10</span>, <span class="tk-s">&quot;b&quot;</span>)]).<span class="tk-f">then</span>(v =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;all&quot;</span>, v));
+Promise.<span class="tk-f">allSettled</span>([<span class="tk-f">after</span>(<span class="tk-n">5</span>, <span class="tk-s">&quot;ok&quot;</span>), <span class="tk-f">after</span>(<span class="tk-n">5</span>, <span class="tk-s">&quot;bad&quot;</span>, <span class="tk-k">true</span>)]).<span class="tk-f">then</span>(r =&gt; console.<span class="tk-f">log</span>(r.<span class="tk-f">map</span>(x =&gt; x.status)));
+Promise.<span class="tk-f">race</span>([<span class="tk-f">after</span>(<span class="tk-n">20</span>, <span class="tk-s">&quot;slow&quot;</span>), <span class="tk-f">after</span>(<span class="tk-n">5</span>, <span class="tk-s">&quot;fast&quot;</span>)]).<span class="tk-f">then</span>(v =&gt; console.<span class="tk-f">log</span>(<span class="tk-s">&quot;race&quot;</span>, v));</code></pre></div>
+<p><code>Promise.all</code> runs the operations <strong>at the same time</strong>: three 100 ms requests take about 100 ms, not 300.</p>
+<p><code>Promise.resolve(v)</code> and <code>Promise.reject(e)</code> make already-settled promises, useful in tests and for returning a promise from a function that sometimes has the answer ready.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-the-event-loop-and-callbacks/"><span class="mono">previous</span><b>4.01 The Event Loop and Callbacks</b></a>
+      <a class="lp-next" href="../4-03-async-and-await/"><span class="mono">next</span><b>4.03 async and await</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/4-02-promises"></script>
+</body>
+</html>

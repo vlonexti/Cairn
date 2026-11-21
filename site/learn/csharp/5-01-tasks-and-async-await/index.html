@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Tasks and async/await · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/5-01-tasks-and-async-await/">
+  <meta name="description" content="Asynchronous code in C - why waiting should not block a thread, Task and Task&lt;T , async methods and await, running work in sequence or at the same time with…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tasks and async/await · C# · Xenon">
+  <meta property="og:description" content="Asynchronous code in C - why waiting should not block a thread, Task and Task&lt;T , async methods and await, running work in sequence or at the same time with…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/5-01-tasks-and-async-await/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Tasks and async/await · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tasks and async/await · C# · Xenon">
+  <meta name="twitter:description" content="Asynchronous code in C - why waiting should not block a thread, Task and Task&lt;T , async methods and await, running work in sequence or at the same time with…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Async, Files and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Tasks and async/await</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.01</b></span><span>1 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Asynchronous code in C# - why waiting should not block a thread, Task and Task&lt;T&gt;, async methods and await, running work in sequence or at the same time with Task.WhenAll and WhenAny, exceptions in async code, async void and why to avoid it, ValueTask, async streams with IAsyncEnumerable, and never blocking with .Result.</p>
+      <div class="prose">
+<h2>Waiting without blocking</h2>
+<p>Much of a program&#39;s time is spent <strong>waiting</strong>: for a file, a database, a web server. A thread that sits waiting cannot do anything else. In a desktop app that freezes the window; in a server it wastes a thread that could serve another request.</p>
+<p><strong>Asynchronous</strong> code starts the operation, gives the thread back while waiting, and continues when the result is ready. In C#, an operation in progress is a <strong>Task</strong>: <code>Task</code> for one with no result, <code>Task&lt;T&gt;</code> for one that produces a <code>T</code>.</p>
+<h2>async and await</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;ordering&quot;</span>);
+<span class="tk-k">string</span> coffee = <span class="tk-k">await</span> <span class="tk-f">MakeCoffeeAsync</span>();
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(coffee);
+
+<span class="tk-k">static</span> <span class="tk-k">async</span> <span class="tk-t">Task</span>&lt;<span class="tk-k">string</span>&gt; <span class="tk-f">MakeCoffeeAsync</span>()
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;  grinding...&quot;</span>);
+    <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">Delay</span>(<span class="tk-n">200</span>);                 <span class="tk-c">// waits 200 ms without blocking a thread</span>
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;  brewing...&quot;</span>);
+    <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">Delay</span>(<span class="tk-n">300</span>);
+    <span class="tk-k">return</span> <span class="tk-s">&quot;a flat white&quot;</span>;
+}</code></pre></div>
+<ul>
+<li><code>async</code> on a method allows <code>await</code> inside it; the method returns <code>Task</code> or <code>Task&lt;T&gt;</code>.</li>
+<li><code>await task</code> pauses <strong>this method</strong> until the task finishes, then gives its result. The thread is free in the meantime.</li>
+<li>Top-level statements may use <code>await</code> directly, as here.</li>
+<li>By convention, async method names end in <code>Async</code>.</li>
+</ul>
+<h2>Sequence or at the same time</h2>
+<p>Each <code>await</code> waits before the next line starts. When operations do not depend on each other, start them all first and await them together:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> sw = <span class="tk-t">System</span>.<span class="tk-t">Diagnostics</span>.<span class="tk-t">Stopwatch</span>.<span class="tk-f">StartNew</span>();
+<span class="tk-k">string</span> a = <span class="tk-k">await</span> <span class="tk-f">FetchAsync</span>(<span class="tk-s">&quot;a&quot;</span>, <span class="tk-n">300</span>);
+<span class="tk-k">string</span> b = <span class="tk-k">await</span> <span class="tk-f">FetchAsync</span>(<span class="tk-s">&quot;b&quot;</span>, <span class="tk-n">300</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;one after another: {a}{b} in ~{sw.ElapsedMilliseconds / 100 * 100} ms&quot;</span>);
+
+sw.<span class="tk-f">Restart</span>();
+<span class="tk-t">Task</span>&lt;<span class="tk-k">string</span>&gt; ta = <span class="tk-f">FetchAsync</span>(<span class="tk-s">&quot;a&quot;</span>, <span class="tk-n">300</span>);    <span class="tk-c">// started</span>
+<span class="tk-t">Task</span>&lt;<span class="tk-k">string</span>&gt; tb = <span class="tk-f">FetchAsync</span>(<span class="tk-s">&quot;b&quot;</span>, <span class="tk-n">300</span>);    <span class="tk-c">// started too</span>
+<span class="tk-k">string</span>[] both = <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">WhenAll</span>(ta, tb);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;together: {string.Join(&quot;&quot;, both)} in ~{sw.ElapsedMilliseconds / 100 * 100} ms&quot;</span>);
+
+sw.<span class="tk-f">Restart</span>();
+<span class="tk-t">Task</span>&lt;<span class="tk-k">string</span>&gt; first = <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">WhenAny</span>(<span class="tk-f">FetchAsync</span>(<span class="tk-s">&quot;slow&quot;</span>, <span class="tk-n">500</span>), <span class="tk-f">FetchAsync</span>(<span class="tk-s">&quot;fast&quot;</span>, <span class="tk-n">100</span>));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;first finished: {await first}&quot;</span>);
+
+<span class="tk-k">static</span> <span class="tk-k">async</span> <span class="tk-t">Task</span>&lt;<span class="tk-k">string</span>&gt; <span class="tk-f">FetchAsync</span>(<span class="tk-k">string</span> name, <span class="tk-k">int</span> ms)
+{
+    <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">Delay</span>(ms);
+    <span class="tk-k">return</span> name;
+}</code></pre></div>
+<p><code>Task.WhenAll</code> finishes when all tasks have, with their results in the order given. <code>Task.WhenAny</code> finishes with the first task to complete.</p>
+<h2>Exceptions</h2>
+<p>An exception inside an async method is stored in its task and thrown again where the task is <strong>awaited</strong>, so ordinary <code>try</code>/<code>catch</code> works:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">try</span>
+{
+    <span class="tk-k">await</span> <span class="tk-f">LoadAsync</span>(-<span class="tk-n">1</span>);
+}
+<span class="tk-k">catch</span> (<span class="tk-t">ArgumentException</span> e)
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;caught: {e.Message}&quot;</span>);
+}
+
+<span class="tk-k">static</span> <span class="tk-k">async</span> <span class="tk-t">Task</span>&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">LoadAsync</span>(<span class="tk-k">int</span> id)
+{
+    <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">Delay</span>(<span class="tk-n">10</span>);
+    <span class="tk-k">if</span> (id &lt; <span class="tk-n">0</span>) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">ArgumentException</span>(<span class="tk-s">&quot;id must not be negative&quot;</span>);
+    <span class="tk-k">return</span> id * <span class="tk-n">2</span>;
+}</code></pre></div>
+<p>With <code>Task.WhenAll</code>, <code>await</code> throws the <strong>first</strong> exception; the task&#39;s <code>Exception</code> property holds all of them.</p>
+<h2>Rules that save you trouble</h2>
+<ul>
+<li><strong>Async all the way</strong>: a method that awaits must itself be async and return a <code>Task</code>, up to the top (<code>Main</code>, an event handler, a web endpoint).</li>
+<li><strong>Never block on a task</strong> with <code>.Result</code> or <code>.Wait()</code>. In desktop apps it can deadlock; everywhere it wastes the thread that async was meant to free. <code>await</code> it instead.</li>
+<li><strong>Avoid <code>async void</code>.</strong> Nobody can await it, and an exception in it crashes the process. The only exception is event handlers, which must return <code>void</code>.</li>
+<li><strong>CPU work is different</strong>: <code>await</code> helps with waiting, not computing. To move heavy computation off the UI thread, use <code>await Task.Run(() =&gt; Compute())</code> (lesson 5.02).</li>
+<li>A method that usually completes at once (from a cache) can return <code>ValueTask&lt;T&gt;</code> to avoid an allocation; use plain <code>Task</code> unless you have measured.</li>
+</ul>
+<h2>Async streams</h2>
+<p><code>IAsyncEnumerable&lt;T&gt;</code> is a sequence whose items arrive over time. Produce it with <code>yield return</code> in an async iterator and consume it with <code>await foreach</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">await</span> <span class="tk-k">foreach</span> (<span class="tk-k">var</span> reading <span class="tk-k">in</span> <span class="tk-f">ReadSensorAsync</span>(<span class="tk-n">3</span>))
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;reading {reading}&quot;</span>);
+}
+
+<span class="tk-k">static</span> <span class="tk-k">async</span> IAsyncEnumerable&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">ReadSensorAsync</span>(<span class="tk-k">int</span> count)
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt;= count; i++)
+    {
+        <span class="tk-k">await</span> <span class="tk-t">Task</span>.<span class="tk-f">Delay</span>(<span class="tk-n">50</span>);            <span class="tk-c">// e.g. waiting for the next value from a device</span>
+        <span class="tk-k">yield</span> <span class="tk-k">return</span> i * <span class="tk-n">10</span>;
+    }
+}</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/5.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/5.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-iterators-and-yield/"><span class="mono">previous</span><b>4.05 Iterators and yield</b></a>
+      <a class="lp-next" href="../5-02-parallel-work-and-cancellation/"><span class="mono">next</span><b>5.02 Parallel Work and Cancellation</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/5-01-tasks-and-async-await"></script>
+</body>
+</html>

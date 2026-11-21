@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Memory Viewer · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/12-02-a-memory-viewer/">
+  <meta name="description" content="A hex viewer that shows raw memory with addresses, bytes and text is one of the most useful debugging tools there is, and the Memory window of lesson 2.11 is…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Memory Viewer · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A hex viewer that shows raw memory with addresses, bytes and text is one of the most useful debugging tools there is, and the Memory window of lesson 2.11 is…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/12-02-a-memory-viewer/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Memory Viewer · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Memory Viewer · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A hex viewer that shows raw memory with addresses, bytes and text is one of the most useful debugging tools there is, and the Memory window of lesson 2.11 is…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Inspection and Debugging Tools</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Memory Viewer</h1>
+      <div class="readout lp-readout"><span>lesson <b>12.02</b></span><span>2 of 7 in milestone 12</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A hex viewer that shows raw memory with addresses, bytes and text is one of the most useful debugging tools there is, and the Memory window of lesson 2.11 is one. This lesson builds one for your own process and for a process your tool launched: reading with <strong>ReadProcessMemory</strong>, coping with pages that cannot be read, and formatting the classic three-column view.</p>
+      <div class="prose">
+<h2>The classic layout</h2>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Address           00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F   Text
+0000020E6C8F5E30  52 6F 6F 6B 00 00 00 00  00 00 00 00 00 00 00 00   Rook............
+0000020E6C8F5E40  0E 00 00 00 14 00 00 00  00 00 80 3F ?? ?? ?? ??   ...........?....</code></pre></div>
+<p>Three columns: the address of the row, sixteen bytes in hex, and the same bytes as text (printable characters as themselves, everything else as a dot). Bytes that could not be read are shown as <code>??</code>, which a good viewer must handle because memory can be freed, never committed, or protected (lesson 6.03).</p>
+<h2>Reading your own process safely</h2>
+<p>In your own process you can read memory directly through a pointer, but only if it is committed and readable; touching anything else crashes the viewer. Ask first with <code>VirtualQuery</code> (lesson 6.04):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">readable</span>(<span class="tk-k">const</span> <span class="tk-k">void</span>* address, size_t size)
+{
+    MEMORY_BASIC_INFORMATION info{};
+    <span class="tk-k">if</span> (!<span class="tk-f">VirtualQuery</span>(address, &amp;info, <span class="tk-k">sizeof</span>(info))) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+    <span class="tk-k">if</span> (info.<span class="tk-t">State</span> != MEM_COMMIT) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+    <span class="tk-k">if</span> (info.<span class="tk-t">Protect</span> &amp; (PAGE_NOACCESS | PAGE_GUARD)) <span class="tk-k">return</span> <span class="tk-k">false</span>;
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> end{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(info.<span class="tk-t">BaseAddress</span>) + info.<span class="tk-t">RegionSize</span> };
+    <span class="tk-k">return</span> <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">char</span>*&gt;(address) + size &lt;= end;     <span class="tk-c">// a longer read may cross into the next region</span>
+}</code></pre></div>
+<p>Even this has a gap: another thread could free the memory between the check and the read. In a viewer for your own process that is acceptable; in a tool that must never crash, read through <code>ReadProcessMemory</code> on the current process, which returns failure instead of faulting.</p>
+<h2>Reading another process you started</h2>
+<p>For a process the tool launched itself (and so has full rights to, lesson 6.08), <code>ReadProcessMemory</code> copies bytes from its address space:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>SIZE_T got{ <span class="tk-n">0</span> };
+std::vector&lt;<span class="tk-k">unsigned</span> <span class="tk-k">char</span>&gt; <span class="tk-f">buffer</span>(<span class="tk-n">256</span>);
+<span class="tk-k">const</span> BOOL ok{ <span class="tk-f">ReadProcessMemory</span>(child, <span class="tk-k">reinterpret_cast</span>&lt;LPCVOID&gt;(address), buffer.<span class="tk-f">data</span>(), buffer.<span class="tk-f">size</span>(), &amp;got) };</code></pre></div>
+<ul>
+<li>The handle needs <code>PROCESS_VM_READ</code> (and <code>PROCESS_QUERY_INFORMATION</code> for <code>VirtualQueryEx</code>). A process you created with <code>CreateProcessW</code> comes with a full-access handle.</li>
+<li>If any page in the range is unreadable, the call fails and <code>got</code> reports how much was copied, which may be <strong>less</strong> than asked. A robust viewer reads page by page (4,096 bytes, lesson 6.02), so one bad page only blanks its own part.</li>
+<li><code>VirtualQueryEx(child, ...)</code> is <code>VirtualQuery</code> for another process, and tells you in advance which pages are readable.</li>
+</ul>
+<h2>Formatting</h2>
+<p>The practice task writes the formatter: given a starting address, the bytes, and which of them were readable, produce the three-column lines. Separating <strong>reading</strong> (the platform part) from <strong>formatting</strong> (pure logic) means the formatter can be tested without any process at all, as every practice task in this course has done.</p>
+<h2>Making it useful</h2>
+<p>Features that turn a hex dump into a tool:</p>
+<ul>
+<li><strong>Follow a pointer</strong>: click 8 bytes that look like an address (lesson 2.11) and jump there.</li>
+<li><strong>Interpretations</strong>: show the selected bytes as <code>int</code>, <code>float</code>, <code>double</code>, and as a pointer, side by side.</li>
+<li><strong>Highlight changes</strong>: re-read every 100 ms and colour bytes that changed (Visual Studio&#39;s Memory window does this when stepping).</li>
+<li><strong>Bookmarks</strong> and <strong>type overlays</strong>: apply a struct layout (lesson 9.09) so offsets show member names.</li>
+</ul>
+<p>Chapter 14 gives the viewer a proper interface with Dear ImGui; chapter 18&#39;s first capstone completes it.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Reading a whole range in one call</span></div><div class="callout-body"><p>One unreadable page fails the whole read. Read page by page.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Showing stale data as current</span></div><div class="callout-body"><p>Mark the time of the last successful read, and show unreadable bytes as <code>??</code>, never as zeros.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Asking for more access than reading needs</span></div><div class="callout-body"><p>A viewer needs <code>PROCESS_VM_READ</code> and query rights only.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does a viewer show for bytes it could not read?</div><ul><li>A marker such as <code>??</code>, never a made-up value like 0</li><li>Zeros</li><li>Nothing: the row is skipped</li></ul><details><summary>Show the answer</summary><p><b>A marker such as <code>??</code>, never a made-up value like 0</b> Showing zeros would mislead whoever reads the dump.</p></details></li><li><div class="q">Why read another process&#39;s memory one page at a time?</div><ul><li>An unreadable page then only blanks its own bytes instead of failing the whole read</li><li>Pages are the only size <code>ReadProcessMemory</code> accepts</li><li>It is faster</li></ul><details><summary>Show the answer</summary><p><b>An unreadable page then only blanks its own bytes instead of failing the whole read</b> Protection and commitment are per page.</p></details></li><li><div class="q">Why keep the formatting separate from the reading?</div><ul><li>The formatting is pure logic that can be tested without a running process</li><li>Formatting must run on another thread</li><li>Windows requires it</li></ul><details><summary>Show the answer</summary><p><b>The formatting is pure logic that can be tested without a running process</b> Testable logic, thin platform layer.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/12.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/12.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../12-01-looking-at-another-process-with-documented-apis/"><span class="mono">previous</span><b>12.01 Looking at Another Process with Documented APIs</b></a>
+      <a class="lp-next" href="../12-03-a-minimal-debugger-of-your-own/"><span class="mono">next</span><b>12.03 A Minimal Debugger of Your Own</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/12-02-a-memory-viewer"></script>
+</body>
+</html>

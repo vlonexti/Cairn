@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Traits · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/4-02-traits/">
+  <meta name="description" content="Defining shared behaviour with traits, implementing them for your types and for existing ones, default methods, traits as parameters with impl Trait and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Traits · Rust · Xenon">
+  <meta property="og:description" content="Defining shared behaviour with traits, implementing them for your types and for existing ones, default methods, traits as parameters with impl Trait and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/4-02-traits/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Traits · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Traits · Rust · Xenon">
+  <meta name="twitter:description" content="Defining shared behaviour with traits, implementing them for your types and for existing ones, default methods, traits as parameters with impl Trait and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Generics, Traits and Lifetimes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Traits</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Defining shared behaviour with traits, implementing them for your types and for existing ones, default methods, traits as parameters with impl Trait and generic bounds, returning impl Trait, associated types and constants, supertraits, the orphan rule, and blanket implementations.</p>
+      <div class="prose">
+<h2>A trait</h2>
+<p>A <strong>trait</strong> names a set of methods that types can implement: shared behaviour, like an interface in other languages.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">trait</span> <span class="tk-t">Shape</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span>;
+    <span class="tk-k">fn</span> <span class="tk-f">name</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span>;
+
+    <span class="tk-k">fn</span> <span class="tk-f">describe</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> {                 <span class="tk-c">// a default method: implementers may keep it</span>
+        <span class="tk-p">format!</span>(<span class="tk-s">&quot;{} with area {:.2}&quot;</span>, <span class="tk-k">self</span>.<span class="tk-f">name</span>(), <span class="tk-k">self</span>.<span class="tk-f">area</span>())
+    }
+}
+
+<span class="tk-k">struct</span> <span class="tk-t">Circle</span> { radius: <span class="tk-k">f64</span> }
+<span class="tk-k">struct</span> <span class="tk-t">Rect</span> { w: <span class="tk-k">f64</span>, h: <span class="tk-k">f64</span> }
+
+<span class="tk-k">impl</span> <span class="tk-t">Shape</span> <span class="tk-k">for</span> <span class="tk-t">Circle</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { std::<span class="tk-k">f64</span>::consts::PI * <span class="tk-k">self</span>.radius * <span class="tk-k">self</span>.radius }
+    <span class="tk-k">fn</span> <span class="tk-f">name</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-s">&quot;circle&quot;</span>.<span class="tk-f">to_string</span>() }
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Shape</span> <span class="tk-k">for</span> <span class="tk-t">Rect</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { <span class="tk-k">self</span>.w * <span class="tk-k">self</span>.h }
+    <span class="tk-k">fn</span> <span class="tk-f">name</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-s">&quot;rectangle&quot;</span>.<span class="tk-f">to_string</span>() }
+    <span class="tk-k">fn</span> <span class="tk-f">describe</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-p">format!</span>(<span class="tk-s">&quot;a {}x{} rectangle&quot;</span>, <span class="tk-k">self</span>.w, <span class="tk-k">self</span>.h) }   <span class="tk-c">// override</span>
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-t">Circle</span> { radius: <span class="tk-n">1.0</span> }.<span class="tk-f">describe</span>());
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-t">Rect</span> { w: <span class="tk-n">2.0</span>, h: <span class="tk-n">3.0</span> }.<span class="tk-f">describe</span>());
+}</code></pre></div>
+<h2>Traits as parameters</h2>
+<p>A function can accept <strong>any</strong> type implementing a trait. Three spellings mean the same thing for one parameter:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">trait</span> <span class="tk-t">Shape</span> { <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span>; }
+<span class="tk-k">struct</span> <span class="tk-f">Square</span>(<span class="tk-k">f64</span>);
+<span class="tk-k">impl</span> <span class="tk-t">Shape</span> <span class="tk-k">for</span> <span class="tk-t">Square</span> { <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { <span class="tk-k">self</span>.<span class="tk-n">0</span> * <span class="tk-k">self</span>.<span class="tk-n">0</span> } }
+<span class="tk-k">struct</span> <span class="tk-f">Circle</span>(<span class="tk-k">f64</span>);
+<span class="tk-k">impl</span> <span class="tk-t">Shape</span> <span class="tk-k">for</span> <span class="tk-t">Circle</span> { <span class="tk-k">fn</span> <span class="tk-f">area</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-k">f64</span> { <span class="tk-n">3.14159</span> * <span class="tk-k">self</span>.<span class="tk-n">0</span> * <span class="tk-k">self</span>.<span class="tk-n">0</span> } }
+
+<span class="tk-k">fn</span> <span class="tk-f">print_area</span>(s: &amp;<span class="tk-k">impl</span> <span class="tk-t">Shape</span>) {                      <span class="tk-c">// impl Trait in argument position</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:.2}&quot;</span>, s.<span class="tk-f">area</span>());
+}
+
+<span class="tk-k">fn</span> total_area&lt;S: <span class="tk-t">Shape</span>&gt;(shapes: &amp;[S]) -&gt; <span class="tk-k">f64</span> {        <span class="tk-c">// a generic bound: all items the same type</span>
+    shapes.<span class="tk-f">iter</span>().<span class="tk-f">map</span>(|s| s.<span class="tk-f">area</span>()).<span class="tk-f">sum</span>()
+}
+
+<span class="tk-k">fn</span> bigger&lt;'a&gt;(a: &amp;'a <span class="tk-k">impl</span> <span class="tk-t">Shape</span>, b: &amp;'a <span class="tk-k">impl</span> <span class="tk-t">Shape</span>) -&gt; <span class="tk-k">f64</span> {
+    a.<span class="tk-f">area</span>().<span class="tk-f">max</span>(b.<span class="tk-f">area</span>())
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-f">print_area</span>(&amp;<span class="tk-f">Square</span>(<span class="tk-n">2.0</span>));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">total_area</span>(&amp;[<span class="tk-f">Square</span>(<span class="tk-n">1.0</span>), <span class="tk-f">Square</span>(<span class="tk-n">2.0</span>)]));
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:.2}&quot;</span>, <span class="tk-f">bigger</span>(&amp;<span class="tk-f">Square</span>(<span class="tk-n">1.0</span>), &amp;<span class="tk-f">Circle</span>(<span class="tk-n">1.0</span>)));
+}</code></pre></div>
+<p>A <code>Vec&lt;S&gt;</code> with <code>S: Shape</code> holds one concrete shape type. To mix circles and squares in one list you need <strong>trait objects</strong> (lesson 4.05).</p>
+<h2>Returning impl Trait</h2>
+<p><code>-&gt; impl Trait</code> returns some type that implements the trait without naming it, which is how functions return iterators and closures:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">evens</span>(limit: <span class="tk-k">u32</span>) -&gt; <span class="tk-k">impl</span> <span class="tk-t">Iterator</span>&lt;<span class="tk-t">Item</span> = <span class="tk-k">u32</span>&gt; {
+    (<span class="tk-n">0</span>..limit).<span class="tk-f">filter</span>(|n| n % <span class="tk-n">2</span> == <span class="tk-n">0</span>)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">adder</span>(n: <span class="tk-k">i32</span>) -&gt; <span class="tk-k">impl</span> <span class="tk-f">Fn</span>(<span class="tk-k">i32</span>) -&gt; <span class="tk-k">i32</span> {
+    <span class="tk-k">move</span> |x| x + n
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?}&quot;</span>, <span class="tk-f">evens</span>(<span class="tk-n">10</span>).collect::&lt;<span class="tk-t">Vec</span>&lt;_&gt;&gt;());
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, <span class="tk-f">adder</span>(<span class="tk-n">5</span>)(<span class="tk-n">10</span>));
+}</code></pre></div>
+<h2>Implementing traits for existing types</h2>
+<p>You can implement your own trait for types you did not write, including <code>i32</code> and <code>String</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">trait</span> <span class="tk-t">Shout</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">shout</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span>;
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Shout</span> <span class="tk-k">for</span> <span class="tk-k">str</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">shout</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-k">self</span>.<span class="tk-f">to_uppercase</span>() + <span class="tk-s">&quot;!&quot;</span> }
+}
+
+<span class="tk-k">impl</span> <span class="tk-t">Shout</span> <span class="tk-k">for</span> <span class="tk-k">i32</span> {
+    <span class="tk-k">fn</span> <span class="tk-f">shout</span>(&amp;<span class="tk-k">self</span>) -&gt; <span class="tk-t">String</span> { <span class="tk-p">format!</span>(<span class="tk-s">&quot;{}!!!&quot;</span>, <span class="tk-k">self</span>) }
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {}&quot;</span>, <span class="tk-s">&quot;hello&quot;</span>.<span class="tk-f">shout</span>(), <span class="tk-n">42</span>.<span class="tk-f">shout</span>());
+}</code></pre></div>
+<p>The <strong>orphan rule</strong>: you may implement a trait for a type only if the trait or the type is defined in your crate. You cannot implement the standard library&#39;s <code>Display</code> for the standard library&#39;s <code>Vec</code>, which prevents two crates from giving conflicting implementations. Wrap the type in your own struct (the newtype pattern) when you need to.</p>
+<h2>Associated types and constants</h2>
+<p>A trait can require a type or a constant from its implementers. <code>Iterator</code> uses an associated type for its items:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">trait</span> <span class="tk-t">Unit</span> {
+    <span class="tk-k">const</span> SYMBOL: &amp;'<span class="tk-k">static</span> <span class="tk-k">str</span>;
+    <span class="tk-k">const</span> PER_METER: <span class="tk-k">f64</span>;
+    <span class="tk-k">fn</span> <span class="tk-f">from_meters</span>(m: <span class="tk-k">f64</span>) -&gt; <span class="tk-k">f64</span> { m * <span class="tk-k">Self</span>::PER_METER }
+}
+
+<span class="tk-k">struct</span> <span class="tk-t">Feet</span>;
+<span class="tk-k">impl</span> <span class="tk-t">Unit</span> <span class="tk-k">for</span> <span class="tk-t">Feet</span> { <span class="tk-k">const</span> SYMBOL: &amp;'<span class="tk-k">static</span> <span class="tk-k">str</span> = <span class="tk-s">&quot;ft&quot;</span>; <span class="tk-k">const</span> PER_METER: <span class="tk-k">f64</span> = <span class="tk-n">3.28084</span>; }
+
+<span class="tk-k">struct</span> <span class="tk-t">Centimeters</span>;
+<span class="tk-k">impl</span> <span class="tk-t">Unit</span> <span class="tk-k">for</span> <span class="tk-t">Centimeters</span> { <span class="tk-k">const</span> SYMBOL: &amp;'<span class="tk-k">static</span> <span class="tk-k">str</span> = <span class="tk-s">&quot;cm&quot;</span>; <span class="tk-k">const</span> PER_METER: <span class="tk-k">f64</span> = <span class="tk-n">100.0</span>; }
+
+<span class="tk-k">fn</span> show&lt;U: <span class="tk-t">Unit</span>&gt;(meters: <span class="tk-k">f64</span>) -&gt; <span class="tk-t">String</span> {
+    <span class="tk-p">format!</span>(<span class="tk-s">&quot;{:.1} {}&quot;</span>, U::<span class="tk-f">from_meters</span>(meters), U::SYMBOL)
+}
+
+<span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {}&quot;</span>, show::&lt;<span class="tk-t">Feet</span>&gt;(<span class="tk-n">1.8</span>), show::&lt;<span class="tk-t">Centimeters</span>&gt;(<span class="tk-n">1.8</span>));
+}</code></pre></div>
+<h2>Supertraits and blanket implementations</h2>
+<p>A trait can require another (<code>trait Named: std::fmt::Display { ... }</code>). And an implementation can cover every type that meets a bound: the standard library implements <code>ToString</code> for every <code>T: Display</code>, which is why anything printable has <code>.to_string()</code>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-generics/"><span class="mono">previous</span><b>4.01 Generics</b></a>
+      <a class="lp-next" href="../4-03-the-standard-traits/"><span class="mono">next</span><b>4.03 The Standard Traits</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/4-02-traits"></script>
+</body>
+</html>

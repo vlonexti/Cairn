@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Reconstructing Structs from Compiled Code · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/9-09-reconstructing-structs-from-compiled-code/">
+  <meta name="description" content="Types disappear in compilation, but every struct leaves a trail of offsets and sizes in the code that uses it. This lesson is a step-by-step method for…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Reconstructing Structs from Compiled Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Types disappear in compilation, but every struct leaves a trail of offsets and sizes in the code that uses it. This lesson is a step-by-step method for…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/9-09-reconstructing-structs-from-compiled-code/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Reconstructing Structs from Compiled Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reconstructing Structs from Compiled Code · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Types disappear in compilation, but every struct leaves a trail of offsets and sizes in the code that uses it. This lesson is a step-by-step method for…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Reverse Engineering Fundamentals</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Reconstructing Structs from Compiled Code</h1>
+      <div class="readout lp-readout"><span>lesson <b>9.09</b></span><span>9 of 10 in milestone 9</span><span>5 min</span></div>
+      <p class="lp-summary">Types disappear in compilation, but every struct leaves a trail of offsets and sizes in the code that uses it. This lesson is a step-by-step method for rebuilding a struct definition from those accesses, combining static evidence (offsets, sizes, instructions used) with dynamic evidence (values seen in the debugger), and recording the result as a type the disassembler can apply everywhere.</p>
+      <div class="prose">
+<h2>The evidence an access gives</h2>
+<p>Each instruction that touches a struct member tells you three things (lesson 7.08):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Evidence</th>
+<th>Example</th>
+<th>Tells you</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Offset</td>
+<td><code>[rcx+14h]</code></td>
+<td>A member starts at 0x14</td>
+</tr>
+<tr>
+<td>Size</td>
+<td><code>dword ptr</code>, <code>byte ptr</code>, <code>qword ptr</code></td>
+<td>It is 4, 1 or 8 bytes</td>
+</tr>
+<tr>
+<td>Instruction</td>
+<td><code>movss</code> vs <code>mov</code>; <code>movsx</code> vs <code>movzx</code>; <code>jl</code> vs <code>jb</code> afterwards</td>
+<td>float or integer; signed or unsigned</td>
+</tr>
+<tr>
+<td>Use</td>
+<td>Passed to <code>printf</code> with <code>%s</code>; followed as a pointer; compared with 0 and branched</td>
+<td>A string pointer or buffer; a pointer; a flag or count</td>
+</tr>
+</tbody></table>
+</div>
+<h2>A method</h2>
+<ol>
+<li><strong>Pick one struct pointer</strong> and find every function that receives it (from xrefs and from the calls in its creator).</li>
+<li><strong>Collect accesses</strong>: every <code>[reg+offset]</code> with that pointer, noting offset, size and instruction. The disassembler&#39;s structure editor helps: Ghidra&#39;s <strong>Auto Create Structure</strong> on a parameter does a first pass.</li>
+<li><strong>Lay them out</strong> by offset (this is lesson 7.08&#39;s practice task). Gaps are either padding (lesson 2.05) or members this code never touches.</li>
+<li><strong>Type the members</strong> using instructions and uses: <code>movss</code> means float; a value compared with <code>jl</code>/<code>jg</code> is signed; an 8-byte member that is dereferenced is a pointer, and what it points to is another struct to rebuild.</li>
+<li><strong>Name them</strong> from strings and context: a member printed with <code>&quot;HP: %d&quot;</code> is health.</li>
+<li><strong>Check alignment</strong>: a 4-byte member at an offset that is not a multiple of 4 suggests the struct is packed, or you mis-read an access.</li>
+<li><strong>Confirm dynamically</strong>: break where the struct is used and look at it in the debugger&#39;s memory view (lesson 2.11); the values should make sense with your types (floats look like floats, pointers like pointers, counts are small).</li>
+<li><strong>Apply the type</strong> to the parameter and globals, and iterate: the decompiler output improves, revealing more.</li>
+</ol>
+<h2>A worked example</h2>
+<p>A function in a stripped target contains:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>movss   <span class="tk-t">xmm0</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">8</span>]        <span class="tk-c">; float at 8</span>
+addss   <span class="tk-t">xmm0</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">10h</span>]      <span class="tk-c">; float at 0x10</span>
+movss   <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">8</span>], <span class="tk-t">xmm0</span>
+mov     <span class="tk-t">eax</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">18h</span>]       <span class="tk-c">; 4-byte integer at 0x18</span>
+test    <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+jle     dead                            <span class="tk-c">; signed compare with 0: health-like</span>
+movzx   <span class="tk-t">edx</span>, <span class="tk-k">byte</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">1Ch</span>]        <span class="tk-c">; 1-byte unsigned at 0x1C, then tested: a bool</span>
+test    <span class="tk-t">dl</span>, <span class="tk-t">dl</span>
+...
+mov     <span class="tk-t">rax</span>, <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">20h</span>]       <span class="tk-c">; 8 bytes at 0x20, then used as an address: a pointer</span>
+mov     <span class="tk-t">rcx</span>, <span class="tk-k">qword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rax</span>]           <span class="tk-c">; reading through it: its first member</span></code></pre></div>
+<p>Elsewhere, a constructor stores a vtable address at <code>[rcx]</code>, and a function prints <code>[rcx+0Ch]</code> as a float alongside <code>[rcx+8]</code> with <code>&quot;pos %.1f,%.1f&quot;</code>.</p>
+<p>Reconstruction:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Entity</span>              <span class="tk-c">// reconstructed</span>
+{
+    <span class="tk-k">void</span>* vftable;         <span class="tk-c">// 0x00  written by the constructor (lesson 9.06)</span>
+    <span class="tk-k">float</span> x;               <span class="tk-c">// 0x08  printed with &quot;pos %.1f,%.1f&quot;</span>
+    <span class="tk-k">float</span> y;               <span class="tk-c">// 0x0C</span>
+    <span class="tk-k">float</span> vx;              <span class="tk-c">// 0x10  added to x each update: a velocity</span>
+    <span class="tk-k">float</span> vy;              <span class="tk-c">// 0x14  (by symmetry with x/vx; confirm in the debugger)</span>
+    <span class="tk-k">int</span> health;            <span class="tk-c">// 0x18  signed, compared with 0</span>
+    <span class="tk-k">bool</span> alive;            <span class="tk-c">// 0x1C</span>
+    <span class="tk-c">// 0x1D..0x1F          padding before the pointer</span>
+    <span class="tk-t">Entity</span>* target;        <span class="tk-c">// 0x20  dereferenced, and its first member looks like a vtable</span>
+};                         <span class="tk-c">// size 0x28 if nothing follows (check the allocation size in the creator)</span></code></pre></div>
+<p>The size can usually be confirmed where objects are created: <code>operator new(0x28)</code> or a <code>HeapAlloc</code> with that size right before the constructor call.</p>
+<h2>Recording it</h2>
+<p>In Ghidra, create the structure in the <strong>Data Type Manager</strong>, fill in the members, and <strong>Retype</strong> the parameter (<code>Ctrl+L</code>) in every function that receives it. Keep a notes file alongside: which evidence supports each member, and which are guesses. When new evidence contradicts a guess, you will know which to revisit.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Assuming you have seen every member</span></div><div class="callout-body"><p>Code you have not looked at may use offsets you have not seen. Mark uncertain regions as unknown rather than as padding.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Ignoring the creator</span></div><div class="callout-body"><p>The allocation size and the constructor&#39;s initial values are some of the best evidence for a struct&#39;s size and members.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Over-trusting names</span></div><div class="callout-body"><p>A member you called &quot;health&quot; is a hypothesis until behaviour confirms it.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A member is read with <code>movss</code> at offset 0x8. What type is it most likely?</div><ul><li><code>float</code></li><li><code>int</code></li><li>A pointer</li></ul><details><summary>Show the answer</summary><p><b><code>float</code></b> <code>movss</code> moves a single-precision float.</p></details></li><li><div class="q">How can you find a struct&#39;s total size?</div><ul><li>Look at the allocation size passed to <code>operator new</code> or the allocator just before its constructor is called</li><li>Add up the offsets</li><li>It cannot be found</li></ul><details><summary>Show the answer</summary><p><b>Look at the allocation size passed to <code>operator new</code> or the allocator just before its constructor is called</b> Creators reveal sizes directly.</p></details></li><li><div class="q">An 8-byte member is loaded and then used as an address. What is it?</div><ul><li>A pointer to another object, whose type you reconstruct the same way</li><li>A double</li><li>A pair of ints</li></ul><details><summary>Show the answer</summary><p><b>A pointer to another object, whose type you reconstruct the same way</b> Following it leads to the next struct.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/9.09">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/9.09">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../9-08-cross-references-finding-where-data-is-used/"><span class="mono">previous</span><b>9.08 Cross-References: Finding Where Data Is Used</b></a>
+      <a class="lp-next" href="../9-10-practice-targets-you-compile-yourself/"><span class="mono">next</span><b>9.10 Practice Targets You Compile Yourself</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/9-09-reconstructing-structs-from-compiled-code"></script>
+</body>
+</html>

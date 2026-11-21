@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Pointers to Pointers · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/3-02-pointers-to-pointers/">
+  <meta name="description" content="A pointer is a variable, so it has an address, and a pointer can point at it. int lets a function change which address the caller's pointer holds. Arrays of…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pointers to Pointers · Pointers and Memory · Xenon">
+  <meta property="og:description" content="A pointer is a variable, so it has an address, and a pointer can point at it. int lets a function change which address the caller's pointer holds. Arrays of…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/3-02-pointers-to-pointers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pointers to Pointers · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pointers to Pointers · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="A pointer is a variable, so it has an address, and a pointer can point at it. int lets a function change which address the caller's pointer holds. Arrays of…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Structures and Pointer Chains</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Pointers to Pointers</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A pointer is a variable, so it has an address, and a pointer can point at it. int** lets a function change which address the caller&#39;s pointer holds. Arrays of pointers, argv, and the pointer-to-pointer trick that removes items from a linked list without special cases.</p>
+      <div class="prose">
+<h2>One more level</h2>
+<p>A pointer is an ordinary variable with an address of its own, so another pointer can hold that address:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">int</span> score{ <span class="tk-n">42</span> };
+    <span class="tk-k">int</span>* p{ &amp;score };     <span class="tk-c">// p holds the address of score</span>
+    <span class="tk-k">int</span>** pp{ &amp;p };       <span class="tk-c">// pp holds the address of p</span>
+
+    std::cout &lt;&lt; **pp &lt;&lt; <span class="tk-s">'\n'</span>;  <span class="tk-c">// follow twice: 42</span>
+    **pp = <span class="tk-n">50</span>;                  <span class="tk-c">// writes score</span>
+    std::cout &lt;&lt; score &lt;&lt; <span class="tk-s">'\n'</span>; <span class="tk-c">// 50</span>
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>   pp                 p                  score
+ [ 0x2010 ] ----&gt; [ 0x2000 ] ----&gt; [ 50 ]
+  at 0x2020         at 0x2010        at 0x2000</code></pre></div>
+<p><code>*pp</code> is <code>p</code>, and <code>**pp</code> is <code>score</code>. Each star follows one arrow. There is nothing special about two levels; <code>int***</code> is three arrows, though you will rarely want more than two.</p>
+<h2>Changing the caller&#39;s pointer</h2>
+<p>Lesson 1.04 passed <code>int*</code> so a function could change the caller&#39;s int. By the same logic, to change the caller&#39;s <strong>pointer</strong>, pass its address, an <code>int**</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// Makes *target point at the larger of two values.</span>
+<span class="tk-k">void</span> <span class="tk-f">aimAtLarger</span>(<span class="tk-k">int</span>** target, <span class="tk-k">int</span>* a, <span class="tk-k">int</span>* b)
+{
+    *target = (*a &gt;= *b) ? a : b;     <span class="tk-c">// changes the caller's pointer variable</span>
+}
+
+<span class="tk-k">int</span>* chosen{ <span class="tk-k">nullptr</span> };
+<span class="tk-f">aimAtLarger</span>(&amp;chosen, &amp;x, &amp;y);         <span class="tk-c">// chosen now holds &amp;x or &amp;y</span></code></pre></div>
+<p>The C and Windows APIs use this pattern for functions that hand you a newly created object: <code>HRESULT CreateSomething(..., IThing** result)</code>. You pass the address of your pointer, and the function fills it in.</p>
+<p>In C++ the same effect is often written with a reference to a pointer, <code>int*&amp; target</code>, but the <code>**</code> form is everywhere in C interfaces, so you need to read it fluently.</p>
+<h2>Arrays of pointers</h2>
+<p>An array whose elements are pointers is common and useful: a list of strings, a list of objects that live elsewhere.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">char</span>* names[]{ <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-s">&quot;Linus&quot;</span> };   <span class="tk-c">// three pointers to text</span>
+<span class="tk-k">const</span> <span class="tk-k">char</span>** cursor{ names };                       <span class="tk-c">// pointer to the first pointer</span>
+std::cout &lt;&lt; *cursor &lt;&lt; <span class="tk-s">'\n'</span>;                        <span class="tk-c">// Ada</span>
+std::cout &lt;&lt; *(cursor + <span class="tk-n">2</span>) &lt;&lt; <span class="tk-s">'\n'</span>;                  <span class="tk-c">// Linus</span>
+std::cout &lt;&lt; **(cursor + <span class="tk-n">1</span>) &lt;&lt; <span class="tk-s">'\n'</span>;                 <span class="tk-c">// G: first char of Grace</span></code></pre></div>
+<p><code>main</code>&#39;s second parameter is exactly this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">int</span> argc, <span class="tk-k">char</span>** argv)
+<span class="tk-c">// argv[0] is the program's path, argv[1] ... argv[argc - 1] are the arguments, argv[argc] is nullptr</span></code></pre></div>
+<h2>The pointer-to-pointer trick</h2>
+<p>Removing an item from a singly linked list usually needs a special case for the first node, because removing it changes <code>head</code> while removing any other node changes the previous node&#39;s <code>next</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Node</span> { <span class="tk-k">int</span> value; <span class="tk-t">Node</span>* next; };
+
+<span class="tk-c">// the usual way: two cases</span>
+<span class="tk-k">void</span> <span class="tk-f">removeValue</span>(<span class="tk-t">Node</span>*&amp; head, <span class="tk-k">int</span> value)
+{
+    <span class="tk-k">if</span> (head &amp;&amp; head-&gt;value == value) { <span class="tk-t">Node</span>* dead{ head }; head = head-&gt;next; <span class="tk-k">delete</span> dead; <span class="tk-k">return</span>; }
+    <span class="tk-k">for</span> (<span class="tk-t">Node</span>* n{ head }; n &amp;&amp; n-&gt;next; n = n-&gt;next)
+        <span class="tk-k">if</span> (n-&gt;next-&gt;value == value) { <span class="tk-t">Node</span>* dead{ n-&gt;next }; n-&gt;next = dead-&gt;next; <span class="tk-k">delete</span> dead; <span class="tk-k">return</span>; }
+}</code></pre></div>
+<p>But <code>head</code> and every <code>next</code> are all just <strong>pointers to Node</strong>, and a <code>Node**</code> can point at any of them. Walk a pointer to &quot;the link that points at the current node&quot;, and there is only one case:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">removeValue</span>(<span class="tk-t">Node</span>** link, <span class="tk-k">int</span> value)
+{
+    <span class="tk-k">while</span> (*link &amp;&amp; (*link)-&gt;value != value)
+        link = &amp;(*link)-&gt;next;           <span class="tk-c">// move to the next link</span>
+    <span class="tk-k">if</span> (*link)
+    {
+        <span class="tk-t">Node</span>* dead{ *link };
+        *link = dead-&gt;next;              <span class="tk-c">// bypass the node, whether *link is head or a next</span>
+        <span class="tk-k">delete</span> dead;
+    }
+}
+
+<span class="tk-f">removeValue</span>(&amp;head, <span class="tk-n">7</span>);</code></pre></div>
+<p><code>link</code> starts at <code>&amp;head</code>; after one step it is <code>&amp;head-&gt;next</code>, and so on. When it stops, <code>*link</code> is the matching node, and assigning to <code>*link</code> updates whichever pointer pointed at it. Linus Torvalds famously called this version &quot;good taste&quot;, because the special case disappears instead of being handled.</p>
+<h2>Reading the declarations</h2>
+<p>Declarations with several stars and <code>const</code> read right to left:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Declaration</th>
+<th>Reads as</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>int** pp</code></td>
+<td>pp is a pointer to a pointer to int</td>
+</tr>
+<tr>
+<td><code>const char** names</code></td>
+<td>names is a pointer to a pointer to const char</td>
+</tr>
+<tr>
+<td><code>char* const* argv</code></td>
+<td>argv is a pointer to a const pointer to char</td>
+</tr>
+<tr>
+<td><code>int*&amp; r</code></td>
+<td>r is a reference to a pointer to int</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-structs-in-memory/"><span class="mono">previous</span><b>3.01 Structs in Memory</b></a>
+      <a class="lp-next" href="../3-03-following-pointer-chains/"><span class="mono">next</span><b>3.03 Following Pointer Chains</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/3-02-pointers-to-pointers"></script>
+</body>
+</html>

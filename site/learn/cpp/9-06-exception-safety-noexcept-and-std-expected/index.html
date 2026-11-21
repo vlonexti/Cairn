@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Exception Safety, noexcept and std::expected · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/9-06-exception-safety-noexcept-and-std-expected/">
+  <meta name="description" content="Code must leave objects in a sensible state when an exception passes through it. Know the three guarantees : basic, strong and nothrow. Mark functions that…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Exception Safety, noexcept and std::expected · C++ · Xenon">
+  <meta property="og:description" content="Code must leave objects in a sensible state when an exception passes through it. Know the three guarantees : basic, strong and nothrow. Mark functions that…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/9-06-exception-safety-noexcept-and-std-expected/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Exception Safety, noexcept and std::expected · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Exception Safety, noexcept and std::expected · C++ · Xenon">
+  <meta name="twitter:description" content="Code must leave objects in a sensible state when an exception passes through it. Know the three guarantees : basic, strong and nothrow. Mark functions that…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Templates and Exceptions</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Exception Safety, noexcept and std::expected</h1>
+      <div class="readout lp-readout"><span>lesson <b>9.06</b></span><span>6 of 6 in milestone 9</span><span>6 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">Code must leave objects in a sensible state when an exception passes through it. Know the <strong>three guarantees</strong>: basic, strong and nothrow. Mark functions that cannot throw <code>noexcept</code>. Destructors must not throw. For failures that are a normal outcome, consider <code>std::optional</code> or <code>std::expected</code>.</p>
+      <div class="prose">
+<h2>The exception-safety guarantees</h2>
+<p>Any statement that might throw is a possible exit from the function. <strong>Exception safety</strong> describes what a function promises about the program&#39;s state if that happens.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    N[&quot;No guarantee&lt;br/&gt;leaks or corrupted state are possible&quot;] --&gt; B[&quot;Basic&lt;br/&gt;no leaks, every object still valid,&lt;br/&gt;but values may have changed&quot;]
+    B --&gt; S[&quot;Strong&lt;br/&gt;commit or roll back:&lt;br/&gt;it succeeds, or nothing changed&quot;]
+    S --&gt; T[&quot;Nothrow&lt;br/&gt;it never throws&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Guarantee</th>
+<th>Promise</th>
+<th>Typical examples</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Basic</strong></td>
+<td>Invariants hold and nothing leaks</td>
+<td>The minimum for any correct code</td>
+</tr>
+<tr>
+<td><strong>Strong</strong></td>
+<td>If it throws, the state is exactly as before the call</td>
+<td><code>std::vector::push_back</code></td>
+</tr>
+<tr>
+<td><strong>Nothrow</strong></td>
+<td>It always succeeds</td>
+<td>Destructors, <code>swap</code>, move operations</td>
+</tr>
+</tbody></table>
+</div>
+<p>Every function should give at least the basic guarantee. With RAII members, that comes almost free.</p>
+<h3>Getting the strong guarantee</h3>
+<p>Do all the work that might throw on the side, then commit with operations that cannot.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-t">Inventory</span>::<span class="tk-f">replaceAll</span>(<span class="tk-k">const</span> std::vector&lt;<span class="tk-t">Item</span>&gt;&amp; items)
+{
+    std::vector&lt;<span class="tk-t">Item</span>&gt; fresh{ items };    <span class="tk-c">// may throw: this object is untouched</span>
+    <span class="tk-f">validate</span>(fresh);                     <span class="tk-c">// may throw: still untouched</span>
+    m_items.<span class="tk-f">swap</span>(fresh);                 <span class="tk-c">// cannot throw: the commit</span>
+}</code></pre></div>
+<p>That is precisely why copy and swap (<a href="../7-03-copy-semantics-shallow-vs-deep/">7.03 Copy Semantics — Shallow vs Deep</a>) is exception-safe. The strong guarantee costs a copy, so it is not always worth having; choose it where a half-done operation would be harmful.</p>
+<h2>Where exceptions bite</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Hazard</th>
+<th>Consequence</th>
+<th>Defence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A raw <code>new</code> with a throw before its <code>delete</code></td>
+<td>A leak</td>
+<td>Hold resources in RAII objects</td>
+</tr>
+<tr>
+<td>A destructor that throws during unwinding</td>
+<td><code>std::terminate</code></td>
+<td>Never let an exception escape a destructor</td>
+</tr>
+<tr>
+<td>A constructor that throws part-way</td>
+<td>The destructor does not run</td>
+<td>Keep each resource in its own RAII member, which is destroyed automatically</td>
+</tr>
+<tr>
+<td>Updating two pieces of state, with a throw between them</td>
+<td>Inconsistent object</td>
+<td>Prepare both first, then commit without throwing</td>
+</tr>
+</tbody></table>
+</div>
+<h2><code>noexcept</code></h2>
+<p><code>noexcept</code> on a function declares that it does not throw.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">swap</span>(<span class="tk-t">Buffer</span>&amp; a, <span class="tk-t">Buffer</span>&amp; b) <span class="tk-k">noexcept</span>;
+<span class="tk-f">Buffer</span>(<span class="tk-t">Buffer</span>&amp;&amp; other) <span class="tk-k">noexcept</span>;</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Fact</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>It is a promise, not a check</td>
+<td>If a <code>noexcept</code> function does throw, <code>std::terminate</code> is called</td>
+</tr>
+<tr>
+<td>Callers and the compiler can rely on it</td>
+<td>Code can choose faster algorithms, and less unwinding machinery is generated</td>
+</tr>
+<tr>
+<td>Destructors are <code>noexcept</code> implicitly</td>
+<td>You do not write it</td>
+</tr>
+<tr>
+<td>It can be conditional</td>
+<td><code>noexcept(condition)</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">void</span> <span class="tk-f">relocate</span>(T&amp; from, T&amp; to) <span class="tk-k">noexcept</span>(std::is_nothrow_move_constructible_v&lt;T&gt;);
+
+<span class="tk-k">static_assert</span>(<span class="tk-k">noexcept</span>(<span class="tk-f">swap</span>(a, b)));    <span class="tk-c">// the noexcept operator: a compile-time query</span></code></pre></div>
+<p><code>noexcept(expression)</code> used as an operator asks whether an expression is declared not to throw. It does not evaluate the expression.</p>
+<h3>Why it matters for moves</h3>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    V[&quot;a vector must grow&quot;] --&gt; Q{&quot;Is T's move constructor&lt;br/&gt;noexcept?&quot;}
+    Q -- yes --&gt; M[&quot;MOVE the elements&lt;br/&gt;the strong guarantee still holds&quot;]
+    Q -- no --&gt; C{&quot;Is T copyable?&quot;}
+    C -- yes --&gt; CP[&quot;COPY the elements&lt;br/&gt;so it can roll back&quot;]
+    C -- no --&gt; M2[&quot;move anyway&lt;br/&gt;basic guarantee only&quot;]</pre></div>
+<p><code>push_back</code> promises the strong guarantee. If moving an element could throw half-way through a reallocation, some elements would already have left the old block and the vector could not restore itself. So it moves only when the move is <code>noexcept</code>, through <code>std::move_if_noexcept</code>. This is the rule stated in <a href="../7-05-move-semantics/">7.05 Move Semantics</a>, and now you can see where it comes from.</p>
+<blockquote><p>[!tip] What to mark <code>noexcept</code>
+Move constructors, move assignment operators and <code>swap</code>: always, when true. Other functions: only when not throwing is a deliberate, permanent part of their contract, since removing <code>noexcept</code> later can break callers.</p>
+</blockquote>
+<h2>Reporting failure without exceptions</h2>
+<p>When failure is an ordinary result, encode it in the return type.</p>
+<h3><code>std::optional</code>: maybe a value</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>std::optional&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">parseAge</span>(std::string_view text);
+
+<span class="tk-k">if</span> (<span class="tk-k">const</span> <span class="tk-k">auto</span> age{ <span class="tk-f">parseAge</span>(input) })
+{
+    std::cout &lt;&lt; *age &lt;&lt; <span class="tk-s">'\n'</span>;
+}
+<span class="tk-k">else</span>
+{
+    std::cout &lt;&lt; <span class="tk-s">&quot;invalid\n&quot;</span>;
+}</code></pre></div>
+<h3><code>std::expected</code>: a value or an error</h3>
+<p><code>std::expected&lt;T, E&gt;</code> (C++23) holds either a <code>T</code> or an <code>E</code> explaining why there is none.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;charconv&gt;</span>
+<span class="tk-p">#include &lt;expected&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string_view&gt;</span>
+
+<span class="tk-k">enum</span> <span class="tk-k">class</span> <span class="tk-t">ParseError</span> { empty, notANumber, outOfRange };
+
+std::expected&lt;<span class="tk-k">int</span>, <span class="tk-t">ParseError</span>&gt; <span class="tk-f">parseAge</span>(std::string_view text)
+{
+    <span class="tk-k">if</span> (text.<span class="tk-f">empty</span>())
+    {
+        <span class="tk-k">return</span> std::unexpected{ <span class="tk-t">ParseError</span>::empty };
+    }
+    <span class="tk-k">int</span> value{};
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> [end, error]{ std::<span class="tk-f">from_chars</span>(text.<span class="tk-f">data</span>(), text.<span class="tk-f">data</span>() + text.<span class="tk-f">size</span>(), value) };
+    <span class="tk-k">if</span> (error != std::errc{} || end != text.<span class="tk-f">data</span>() + text.<span class="tk-f">size</span>())
+    {
+        <span class="tk-k">return</span> std::unexpected{ <span class="tk-t">ParseError</span>::notANumber };
+    }
+    <span class="tk-k">if</span> (value &lt; <span class="tk-n">0</span> || value &gt; <span class="tk-n">150</span>)
+    {
+        <span class="tk-k">return</span> std::unexpected{ <span class="tk-t">ParseError</span>::outOfRange };
+    }
+    <span class="tk-k">return</span> value;
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-k">const</span> <span class="tk-k">auto</span> result{ <span class="tk-f">parseAge</span>(<span class="tk-s">&quot;42&quot;</span>) };
+    <span class="tk-k">if</span> (result)
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;age &quot;</span> &lt;&lt; *result &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+    <span class="tk-k">else</span>
+    {
+        std::cout &lt;&lt; <span class="tk-s">&quot;error &quot;</span> &lt;&lt; <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(result.<span class="tk-f">error</span>()) &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>std::from_chars</code> is the non-throwing, locale-independent way to parse a number. It returns where it stopped and an error code.</p>
+<h2>Choosing a mechanism</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>assert</code></td>
+<td>The condition can only be false if the code has a bug</td>
+</tr>
+<tr>
+<td><code>std::optional</code></td>
+<td>&quot;No result&quot; is normal and needs no explanation</td>
+</tr>
+<tr>
+<td><code>std::expected</code></td>
+<td>Failure is normal and the caller needs to know why</td>
+</tr>
+<tr>
+<td>Exceptions</td>
+<td>Failure is rare, is handled far from where it occurs, or happens in a constructor</td>
+</tr>
+<tr>
+<td>Error codes</td>
+<td>Interfacing with C, or environments that disable exceptions (some games and embedded systems)</td>
+</tr>
+</tbody></table>
+</div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TD
+    Q1{&quot;Is it a bug in the program?&quot;} -- yes --&gt; A[&quot;assert&quot;]
+    Q1 -- no --&gt; Q2{&quot;Is failure a normal,&lt;br/&gt;frequent outcome?&quot;}
+    Q2 -- &quot;yes, and the reason matters&quot; --&gt; E[&quot;std::expected&quot;]
+    Q2 -- &quot;yes, no reason needed&quot; --&gt; O[&quot;std::optional&quot;]
+    Q2 -- &quot;no: it is rare&quot; --&gt; X[&quot;exception&quot;]</pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/9.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/9.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../9-05-exceptions/"><span class="mono">previous</span><b>9.05 Exceptions</b></a>
+      <a class="lp-next" href="../10-01-choosing-stl-containers/"><span class="mono">next</span><b>10.01 Choosing STL Containers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/9-06-exception-safety-noexcept-and-std-expected"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Trees and Selection · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/3-04-trees-and-selection/">
+  <meta name="description" content="A scene hierarchy, a file browser and an asset list all need a tree and a selection that behaves like every other program - click to select, Ctrl+click to…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Trees and Selection · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="A scene hierarchy, a file browser and an asset list all need a tree and a selection that behaves like every other program - click to select, Ctrl+click to…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/3-04-trees-and-selection/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Trees and Selection · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Trees and Selection · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="A scene hierarchy, a file browser and an asset list all need a tree and a selection that behaves like every other program - click to select, Ctrl+click to…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Layout and Structure</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Trees and Selection</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.04</b></span><span>4 of 5 in milestone 3</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">A scene hierarchy, a file browser and an asset list all need a tree and a selection that behaves like every other program - click to select, Ctrl+click to add, Shift+click for a range. This lesson covers <code>TreeNode</code> and its flags, building a tree from your data, and implementing multi-selection properly.</p>
+      <div class="prose">
+<h2>Tree nodes</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">TreeNode</span>(<span class="tk-s">&quot;Level&quot;</span>))            <span class="tk-c">// true while open</span>
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;child item&quot;</span>);
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">TreeNode</span>(<span class="tk-s">&quot;Props&quot;</span>)) { <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;rock&quot;</span>); <span class="tk-t">ImGui</span>::<span class="tk-f">TreePop</span>(); }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">TreePop</span>();                    <span class="tk-c">// only if TreeNode returned true</span>
+}</code></pre></div>
+<p>ImGui remembers whether each node is open by its ID (lesson 1.05), so two nodes with the same label in the same place open and close together. In a loop, use <code>PushID</code> or the <code>TreeNode(ptr_id, fmt, ...)</code> overload, which takes a pointer as the ID and a separate display text.</p>
+<h2>TreeNodeEx and its flags</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGuiTreeNodeFlags</span> flags = <span class="tk-t">ImGuiTreeNodeFlags_OpenOnArrow</span>       <span class="tk-c">// click the arrow to open, the label to select</span>
+                         | <span class="tk-t">ImGuiTreeNodeFlags_OpenOnDoubleClick</span>
+                         | <span class="tk-t">ImGuiTreeNodeFlags_SpanAvailWidth</span>;   <span class="tk-c">// the whole row is clickable</span>
+<span class="tk-k">if</span> (node.children.<span class="tk-f">empty</span>()) flags |= <span class="tk-t">ImGuiTreeNodeFlags_Leaf</span> | <span class="tk-t">ImGuiTreeNodeFlags_NoTreePushOnOpen</span>;
+<span class="tk-k">if</span> (<span class="tk-f">isSelected</span>(node.id))  flags |= <span class="tk-t">ImGuiTreeNodeFlags_Selected</span>;
+
+<span class="tk-k">const</span> <span class="tk-k">bool</span> open = <span class="tk-t">ImGui</span>::<span class="tk-f">TreeNodeEx</span>((<span class="tk-k">void</span>*)(intptr_t)node.id, flags, <span class="tk-s">&quot;%s&quot;</span>, node.name.<span class="tk-f">c_str</span>());
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">IsItemClicked</span>() &amp;&amp; !<span class="tk-t">ImGui</span>::<span class="tk-f">IsItemToggledOpen</span>())   <span class="tk-c">// clicked the label, not the arrow</span>
+    <span class="tk-f">select</span>(node.id);</code></pre></div>
+<ul>
+<li><code>Leaf</code> draws no arrow; with <code>NoTreePushOnOpen</code> you also skip <code>TreePop</code> for it.</li>
+<li><code>DefaultOpen</code> opens a node the first time it is seen.</li>
+<li><code>ImGui::SetNextItemOpen(true)</code> opens the next node from code: &quot;reveal the selected object in the tree&quot;.</li>
+</ul>
+<h2>Building a tree from your data</h2>
+<p>Scene data is usually a flat list where each object knows its parent. Draw it recursively:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">drawNode</span>(<span class="tk-k">const</span> <span class="tk-t">Scene</span>&amp; scene, <span class="tk-k">int</span> id)
+{
+    <span class="tk-k">const</span> <span class="tk-t">Object</span>&amp; o = scene.objects[id];
+    <span class="tk-t">ImGuiTreeNodeFlags</span> flags = <span class="tk-t">ImGuiTreeNodeFlags_OpenOnArrow</span> | <span class="tk-t">ImGuiTreeNodeFlags_SpanAvailWidth</span>;
+    <span class="tk-k">if</span> (o.children.<span class="tk-f">empty</span>()) flags |= <span class="tk-t">ImGuiTreeNodeFlags_Leaf</span> | <span class="tk-t">ImGuiTreeNodeFlags_NoTreePushOnOpen</span>;
+    <span class="tk-k">const</span> <span class="tk-k">bool</span> open = <span class="tk-t">ImGui</span>::<span class="tk-f">TreeNodeEx</span>((<span class="tk-k">void</span>*)(intptr_t)id, flags, <span class="tk-s">&quot;%s&quot;</span>, o.name.<span class="tk-f">c_str</span>());
+    <span class="tk-k">if</span> (open &amp;&amp; !o.children.<span class="tk-f">empty</span>())
+    {
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> child : o.children) <span class="tk-f">drawNode</span>(scene, child);
+        <span class="tk-t">ImGui</span>::<span class="tk-f">TreePop</span>();
+    }
+}</code></pre></div>
+<p>The practice builds the &quot;children of each node&quot; lists from parent links and produces the order rows appear in, which is also what Shift+click ranges need.</p>
+<h2>Selection that behaves</h2>
+<p>Users expect:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Click</td>
+<td>Select only this item; it becomes the <strong>anchor</strong></td>
+</tr>
+<tr>
+<td>Ctrl+click</td>
+<td>Toggle this item, keep the others; it becomes the anchor</td>
+</tr>
+<tr>
+<td>Shift+click</td>
+<td>Select every item <strong>between the anchor and this one</strong>, in display order, replacing the selection</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+click</td>
+<td>Add that range to the existing selection</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <strong>anchor</strong> is the last item clicked without Shift. Ranges are measured in <strong>display order</strong>: the order rows appear on screen, which for a tree is depth-first over the open nodes. Store the selection as a set of stable IDs, never as row positions, so it survives sorting and filtering.</p>
+<p>Dear ImGui 1.91 added a full multi-select API (<code>BeginMultiSelect</code>/<code>EndMultiSelect</code>) that handles these rules, box-selection and keyboard navigation for you; writing the rules yourself once, as the practice does, makes it much easier to use well.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Selecting when the arrow was clicked</span></div><div class="callout-body"><p>Check IsItemToggledOpen so opening a node does not also select it.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Storing the selection as row numbers</span></div><div class="callout-body"><p>Rows change when the list is sorted, filtered or a node opens. Store IDs.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does ImGuiTreeNodeFlags_OpenOnArrow change?</div><ul><li>Only clicking the arrow opens the node, so clicking the label can select it</li><li>The node is always open</li><li>The arrow is hidden</li></ul><details><summary>Show the answer</summary><p><b>Only clicking the arrow opens the node, so clicking the label can select it</b> It separates opening from selecting.</p></details></li><li><div class="q">The anchor is item 3 and the user Shift+clicks item 7. What is selected?</div><ul><li>Items 3 to 7 in display order, replacing the previous selection</li><li>Only item 7</li><li>Items 3 and 7</li></ul><details><summary>Show the answer</summary><p><b>Items 3 to 7 in display order, replacing the previous selection</b> Shift+click selects the range from the anchor.</p></details></li><li><div class="q">Why store selected items by ID rather than by row number?</div><ul><li>Rows change with sorting, filtering and opening nodes; IDs do not</li><li>IDs take less memory</li><li>ImGui requires it</li></ul><details><summary>Show the answer</summary><p><b>Rows change with sorting, filtering and opening nodes; IDs do not</b> The selection must survive changes to what is shown.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/3.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/3.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-03-tables/"><span class="mono">previous</span><b>3.03 Tables</b></a>
+      <a class="lp-next" href="../3-05-tabs-collapsing-headers-and-tooltips/"><span class="mono">next</span><b>3.05 Tabs, Collapsing Headers and Tooltips</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/3-04-trees-and-selection"></script>
+</body>
+</html>

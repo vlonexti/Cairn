@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Finding Where Data Lives · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/3-03-finding-where-data-lives/">
+  <meta name="description" content="Locating a value in a running program you built - value scanning by narrowing a set of candidate addresses, the types and alignments to search for, then a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Finding Where Data Lives · Reverse Engineering · Xenon">
+  <meta property="og:description" content="Locating a value in a running program you built - value scanning by narrowing a set of candidate addresses, the types and alignments to search for, then a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/3-03-finding-where-data-lives/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Finding Where Data Lives · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Finding Where Data Lives · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="Locating a value in a running program you built - value scanning by narrowing a set of candidate addresses, the types and alignments to search for, then a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Dynamic Analysis</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Finding Where Data Lives</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Locating a value in a running program you built - value scanning by narrowing a set of candidate addresses, the types and alignments to search for, then a data breakpoint to find the code that writes it, and working back from that code to the structure and the pointer path that reach it.</p>
+      <div class="prose">
+<h2>The problem</h2>
+<p>You can see a number on the screen of your own game: the player has 87 health. Where in memory is it, and which code changes it? You have no symbols, or the value is deep inside objects created at run time. Three steps answer it: <strong>scan</strong> for the value, <strong>watch</strong> the address to find the code, then <strong>walk back</strong> from the code to the structures around it.</p>
+<h2>Value scanning</h2>
+<p>A <strong>value scanner</strong> (the tool you build in this milestone&#39;s project) reads all of the process&#39;s readable, writable memory and keeps a list of candidate addresses:</p>
+<ol>
+<li><strong>First scan</strong>: every address where the 4 bytes equal 87. In a real program that is thousands of hits.</li>
+<li><strong>Change the value in the program</strong> (take some damage: 87 becomes 72).</li>
+<li><strong>Next scan</strong>: of the previous candidates, keep only those that now hold 72.</li>
+<li>Repeat until one or a few addresses remain.</li>
+</ol>
+<p>When you do not know the exact value (a health bar with no number), scan for <strong>unknown</strong> first (every address is a candidate), then narrow with <strong>changed</strong>, <strong>unchanged</strong>, <strong>increased</strong> and <strong>decreased</strong> scans: lose health, scan &quot;decreased&quot;; do nothing, scan &quot;unchanged&quot;; heal, scan &quot;increased&quot;.</p>
+<p>To scan efficiently you have to guess the <strong>type</strong> and <strong>alignment</strong> right:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Likely stored as</th>
+<th>Alignment</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>health, ammo, score</td>
+<td><code>int32_t</code> (sometimes <code>int16_t</code> or a <code>float</code>)</td>
+<td>4</td>
+</tr>
+<tr>
+<td>position, speed, a fraction</td>
+<td><code>float</code> (or <code>double</code>)</td>
+<td>4 (8)</td>
+</tr>
+<tr>
+<td>money in a big game</td>
+<td><code>int64_t</code> or <code>double</code></td>
+<td>8</td>
+</tr>
+<tr>
+<td>a flag</td>
+<td><code>bool</code> or a byte</td>
+<td>1</td>
+</tr>
+</tbody></table>
+</div>
+<p>Compilers align members (Pointers and Memory course, lesson 3.01), so scanning only at multiples of the size is both faster and avoids false hits from overlapping bytes. Floats are compared with a tolerance, because the shown value is rounded: 87 on screen may be 86.99997 in memory.</p>
+<div class="callout note"><div class="callout-title"><span class="label">Note</span></div><div class="callout-body"><p>Do this on your own programs: the debug build of a game you are writing, or the sample programs of the Game Development course. Online games, and games that forbid it, are off limits.</p>
+</div></div>
+<h2>Data breakpoints: who writes this?</h2>
+<p>Once you have the address, set a <strong>hardware write breakpoint</strong> on it (lesson 3.01): in x64dbg, right-click the address in the dump, Breakpoint &gt; Hardware, Write, Dword; in Visual Studio, Debug &gt; New Breakpoint &gt; Data Breakpoint. Then take damage again. The debugger stops on the instruction <strong>just after</strong> the write:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>game.exe+<span class="tk-n">0x2A1F</span>:  sub <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rbx</span>+<span class="tk-n">1Ch</span>], <span class="tk-t">eax</span>     <span class="tk-c">; the write</span>
+game.exe+<span class="tk-n">0x2A22</span>:  mov <span class="tk-t">ecx</span>, <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rbx</span>+<span class="tk-n">1Ch</span>]     <span class="tk-c">; &lt;- execution stops here</span></code></pre></div>
+<p>Now you know the code (<code>game.exe+0x2A1F</code>), and the operand tells you more: <code>rbx</code> points at the <strong>object</strong> that contains the health, and health is at <strong>offset 0x1C</strong> in it. So:</p>
+<blockquote><p>object address = health address − 0x1C</p>
+</blockquote>
+<p>That one fact turns a lone address into a structure. Other accesses through <code>rbx</code> in the same function are other members of the same object, and reverse engineering the struct begins (lesson 2.04).</p>
+<h2>Walking back to a stable path</h2>
+<p>The health address changes every time you start the game, because the player object is created on the heap. To find it again next time you need a <strong>pointer path</strong> from something stable (Pointers and Memory course, lesson 3.03):</p>
+<ol>
+<li>You know the object&#39;s address (health − 0x1C). Scan memory for <strong>pointers</strong> with that value: 8-byte values equal to the object address. Those are the places that point at the player.</li>
+<li>For each one, find what contains it: perhaps a <code>World</code> object&#39;s player array at offset 0x28.</li>
+<li>Repeat from that object until you reach a <strong>static</strong> address inside the module&#39;s image: <code>game.exe+0x51A8</code>.</li>
+</ol>
+<p>The result is a path such as <code>game.exe+0x51A8 → 0x28 → 0x1C</code> that finds the health in every run. Tools automate this as a <strong>pointer scan</strong>: from the target, search backwards for chains of pointers within some offset limit (the Pointers and Memory course&#39;s milestone 3 project built exactly that engine). With your own program you can also just read the source, but doing it by hand once makes it clear what every debugger and memory tool is doing.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-tracing-execution/"><span class="mono">previous</span><b>3.02 Tracing Execution</b></a>
+      <a class="lp-next" href="../3-04-watching-behaviour-from-outside/"><span class="mono">next</span><b>3.04 Watching Behaviour from Outside</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/3-03-finding-where-data-lives"></script>
+</body>
+</html>

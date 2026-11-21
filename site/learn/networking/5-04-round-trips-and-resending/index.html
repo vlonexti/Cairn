@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Round Trips and Resending · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/5-04-round-trips-and-resending/">
+  <meta name="description" content="Measuring how long a round trip takes and smoothing it, the retransmission timeout from RFC 6298 with backoff and Karn's rule, and building reliable ordered…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Round Trips and Resending · Networking · Xenon">
+  <meta property="og:description" content="Measuring how long a round trip takes and smoothing it, the retransmission timeout from RFC 6298 with backoff and Karn's rule, and building reliable ordered…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/5-04-round-trips-and-resending/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Round Trips and Resending · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Round Trips and Resending · Networking · Xenon">
+  <meta name="twitter:description" content="Measuring how long a round trip takes and smoothing it, the retransmission timeout from RFC 6298 with backoff and Karn's rule, and building reliable ordered…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>Reliability over UDP</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Round Trips and Resending</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.04</b></span><span>4 of 5 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Measuring how long a round trip takes and smoothing it, the retransmission timeout from RFC 6298 with backoff and Karn&#39;s rule, and building reliable ordered messages on top of unreliable packets - message ids, resending until acknowledged, and delivering in order.</p>
+      <div class="prose">
+<h2>Measuring the round trip</h2>
+<p>The time from sending a packet to receiving its acknowledgement is a <strong>round-trip time (RTT)</strong> sample. Single samples are noisy (the other side may wait a few milliseconds before sending its next packet), so protocols keep a smoothed estimate. TCP&#39;s method, from RFC 6298, works well for games too:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>first sample R:     srtt = R              rttvar = R / 2
+each later R:       rttvar = 3/4 · rttvar + 1/4 · |srtt - R|
+                    srtt   = 7/8 · srtt   + 1/8 · R
+timeout:            rto = srtt + 4 · rttvar     (clamped to a minimum and maximum)</code></pre></div>
+<p><code>srtt</code> is the smoothed RTT, the number to show the player as &quot;ping&quot;. <code>rttvar</code> measures how much it varies; adding four times it to the timeout means a slow-but-normal round trip is not mistaken for a loss.</p>
+<ul>
+<li>Before any sample, use a safe initial timeout (TCP uses 1 second).</li>
+<li>When a timeout fires and you resend, <strong>double</strong> the timeout (exponential <strong>backoff</strong>), up to the maximum, so a broken connection is not flooded. The next real sample resets it.</li>
+<li><strong>Karn&#39;s rule</strong>: never take a sample from something that was resent, because you cannot tell whether the ack is for the first copy or the second. With per-packet acks (lesson 5.03) this is easy: each packet is sent once, and only resent <em>messages</em> travel in new packets.</li>
+</ul>
+<h2>Reliable messages</h2>
+<p>Some things must arrive: chat, &quot;you picked up the key&quot;, a match result. On top of unreliable packets:</p>
+<ol>
+<li>Give each reliable message an increasing <strong>message id</strong> (16 bits, compared as in lesson 5.02).</li>
+<li>Keep it in a <strong>send queue</strong> until it is acknowledged.</li>
+<li>Each time you build a packet, include queued messages that were <strong>never sent</strong>, or were sent <strong>longer ago than the timeout</strong>. Remember which message ids went into which packet.</li>
+<li>When the packet is acknowledged (lesson 5.03), the messages in it are done: remove them from the queue.</li>
+</ol>
+<p>On the receiving side:</p>
+<ul>
+<li>Messages may arrive out of order (a resent message overtakes nothing, but a later one may arrive first) and more than once.</li>
+<li>Keep the id of the <strong>next message to deliver</strong>. A message with that id is delivered at once, followed by any buffered ones that now follow it. A later id is buffered. An earlier id is a duplicate and is dropped.</li>
+</ul>
+<p>If order does not matter (each message independent), deliver immediately and only drop duplicates: that avoids one lost message holding back the others, the same head-of-line problem as TCP but chosen only where it is needed. Many games run several <strong>channels</strong>: unreliable, reliable unordered and reliable ordered.</p>
+<h2>Resending is expensive</h2>
+<p>Every resend uses bandwidth that newer data could have used. Keep reliable messages small and rare, send state (positions) unreliably, and if something important is large, send it once reliably and then send changes. The next lesson deals with sizes.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/5.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/5.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-03-acknowledgement-bitfields/"><span class="mono">previous</span><b>5.03 Acknowledgement Bitfields</b></a>
+      <a class="lp-next" href="../5-05-fragmentation-and-bandwidth/"><span class="mono">next</span><b>5.05 Fragmentation and Bandwidth</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/5-04-round-trips-and-resending"></script>
+</body>
+</html>

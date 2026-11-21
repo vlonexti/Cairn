@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Windows and the Message Loop · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/5-05-windows-and-the-message-loop/">
+  <meta name="description" content="A Windows program with a window does not ask &quot;has a key been pressed?&quot;. Windows tells it, by putting messages in a queue that the program reads in a message…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Windows and the Message Loop · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A Windows program with a window does not ask &quot;has a key been pressed?&quot;. Windows tells it, by putting messages in a queue that the program reads in a message…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/5-05-windows-and-the-message-loop/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Windows and the Message Loop · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Windows and the Message Loop · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A Windows program with a window does not ask &quot;has a key been pressed?&quot;. Windows tells it, by putting messages in a queue that the program reads in a message…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>The Windows API</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Windows and the Message Loop</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 9 in milestone 5</span><span>6 min</span></div>
+      <p class="lp-summary">A Windows program with a window does not ask &quot;has a key been pressed?&quot;. Windows tells it, by putting <strong>messages</strong> in a queue that the program reads in a <strong>message loop</strong> and hands to a <strong>window procedure</strong>. This lesson explains window classes, messages, the loop, and the variant games use so they can keep rendering when no messages arrive.</p>
+      <div class="prose">
+<h2>Event-driven programs</h2>
+<p>A console program runs top to bottom and asks for input when it wants it. A windowed program is the other way round: it sits waiting, and the operating system <strong>sends it events</strong>: a key was pressed, the mouse moved, the window was resized, the window needs repainting, the user clicked Close.</p>
+<p>Windows delivers these as <strong>messages</strong>. Each message is a small structure:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> MSG
+{
+    HWND   hwnd;      <span class="tk-c">// which window it is for</span>
+    UINT   message;   <span class="tk-c">// what happened: WM_KEYDOWN, WM_MOUSEMOVE, WM_PAINT, ...</span>
+    WPARAM wParam;    <span class="tk-c">// extra information, meaning depends on the message</span>
+    LPARAM lParam;    <span class="tk-c">// more extra information</span>
+    DWORD  time;
+    POINT  pt;
+};</code></pre></div>
+<p>Every thread that creates a window gets a <strong>message queue</strong>. Windows appends messages to it; the program takes them out one at a time.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    U[&quot;User presses a key&quot;] --&gt; W[&quot;Windows&quot;]
+    W --&gt;|&quot;WM_KEYDOWN&quot;| Q[&quot;Thread's message queue&quot;]
+    Q --&gt;|&quot;GetMessage&quot;| L[&quot;Message loop&quot;]
+    L --&gt;|&quot;DispatchMessage&quot;| P[&quot;Window procedure&lt;br/&gt;WndProc(hwnd, msg, wParam, lParam)&quot;]</pre></div>
+<h2>Window classes and the window procedure</h2>
+<p>Before creating a window you register a <strong>window class</strong>: a template naming, among other things, the <strong>window procedure</strong>, the function Windows calls for every message to windows of that class. It is a callback (lesson 3.04): you give Windows a function pointer, and Windows calls it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>LRESULT CALLBACK <span class="tk-f">WindowProc</span>(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    <span class="tk-k">switch</span> (message)
+    {
+    <span class="tk-k">case</span> WM_KEYDOWN:
+        <span class="tk-k">if</span> (wParam == VK_ESCAPE) <span class="tk-f">DestroyWindow</span>(hwnd);   <span class="tk-c">// Esc closes the window</span>
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    <span class="tk-k">case</span> WM_DESTROY:
+        <span class="tk-f">PostQuitMessage</span>(<span class="tk-n">0</span>);                             <span class="tk-c">// ask the message loop to end</span>
+        <span class="tk-k">return</span> <span class="tk-n">0</span>;
+    }
+    <span class="tk-k">return</span> <span class="tk-f">DefWindowProcW</span>(hwnd, message, wParam, lParam);   <span class="tk-c">// default handling for everything else</span>
+}</code></pre></div>
+<p>The <code>switch</code> handles the messages the program cares about. Everything else <strong>must</strong> go to <code>DefWindowProcW</code>, which implements the standard behaviour: moving the window when its title bar is dragged, resizing, the system menu, closing on Alt+F4. A window procedure that returns 0 for everything produces a window that cannot be moved or closed.</p>
+<h2>The message loop</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>MSG msg{};
+<span class="tk-k">while</span> (<span class="tk-f">GetMessageW</span>(&amp;msg, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>) &gt; <span class="tk-n">0</span>)
+{
+    <span class="tk-f">TranslateMessage</span>(&amp;msg);     <span class="tk-c">// turns key presses into WM_CHAR messages for typed text</span>
+    <span class="tk-f">DispatchMessageW</span>(&amp;msg);     <span class="tk-c">// calls the window procedure of msg.hwnd</span>
+}</code></pre></div>
+<ul>
+<li><code>GetMessageW</code> takes the next message from the queue, <strong>waiting</strong> if it is empty. It returns 0 when it finds <code>WM_QUIT</code>, which <code>PostQuitMessage</code> puts in the queue, and -1 on error.</li>
+<li><code>DispatchMessageW</code> looks up the window&#39;s class and calls its window procedure.</li>
+</ul>
+<p>That is the whole skeleton of every classic Windows program: register a class, create a window, loop until <code>WM_QUIT</code>. The next lesson writes a complete one.</p>
+<p>Some messages skip the queue entirely: Windows calls the window procedure <strong>directly</strong> for them (they are &quot;sent&quot; rather than &quot;posted&quot;), for example <code>WM_CREATE</code> during <code>CreateWindowExW</code> and <code>WM_SIZE</code> during resizing. So a window procedure can be called from inside other API calls, not only from <code>DispatchMessageW</code>.</p>
+<h2>Messages you will handle most</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Sent when</th>
+<th>Useful data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WM_CREATE</code></td>
+<td>The window is being created</td>
+<td></td>
+</tr>
+<tr>
+<td><code>WM_DESTROY</code></td>
+<td>The window is being destroyed</td>
+<td>Post <code>WM_QUIT</code> here</td>
+</tr>
+<tr>
+<td><code>WM_CLOSE</code></td>
+<td>The user asked to close (X button, Alt+F4)</td>
+<td>Ask &quot;save first?&quot; here, or call <code>DestroyWindow</code></td>
+</tr>
+<tr>
+<td><code>WM_PAINT</code></td>
+<td>Part of the window needs redrawing</td>
+<td>Use <code>BeginPaint</code> / <code>EndPaint</code></td>
+</tr>
+<tr>
+<td><code>WM_SIZE</code></td>
+<td>The client area changed size</td>
+<td>New width and height in <code>lParam</code></td>
+</tr>
+<tr>
+<td><code>WM_KEYDOWN</code>, <code>WM_KEYUP</code></td>
+<td>A key went down or up</td>
+<td>Virtual-key code in <code>wParam</code> (lesson 5.07)</td>
+</tr>
+<tr>
+<td><code>WM_CHAR</code></td>
+<td>Text was typed (after <code>TranslateMessage</code>)</td>
+<td>The UTF-16 character in <code>wParam</code></td>
+</tr>
+<tr>
+<td><code>WM_MOUSEMOVE</code>, <code>WM_LBUTTONDOWN</code>, ...</td>
+<td>Mouse movement and buttons</td>
+<td>Coordinates in <code>lParam</code> (lesson 5.07)</td>
+</tr>
+<tr>
+<td><code>WM_TIMER</code></td>
+<td>A timer set with <code>SetTimer</code> fired</td>
+<td>Timer id in <code>wParam</code></td>
+</tr>
+<tr>
+<td><code>WM_ACTIVATE</code></td>
+<td>The window gained or lost focus</td>
+<td>Pause the game when it loses focus</td>
+</tr>
+</tbody></table>
+</div>
+<h2>The game loop variant</h2>
+<p><code>GetMessageW</code> waits when there are no messages. A game cannot wait: it must update and draw 60 or more times a second whether or not the player touches anything. Games use <code>PeekMessageW</code>, which returns immediately, and run a frame whenever the queue is empty:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> running{ <span class="tk-k">true</span> };
+<span class="tk-k">while</span> (running)
+{
+    MSG msg{};
+    <span class="tk-k">while</span> (<span class="tk-f">PeekMessageW</span>(&amp;msg, <span class="tk-k">nullptr</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span>, PM_REMOVE))   <span class="tk-c">// handle everything waiting...</span>
+    {
+        <span class="tk-k">if</span> (msg.message == WM_QUIT) running = <span class="tk-k">false</span>;
+        <span class="tk-f">TranslateMessage</span>(&amp;msg);
+        <span class="tk-f">DispatchMessageW</span>(&amp;msg);
+    }
+    <span class="tk-k">if</span> (!running) <span class="tk-k">break</span>;
+
+    <span class="tk-f">updateGame</span>();      <span class="tk-c">// ...then run one frame</span>
+    <span class="tk-f">renderGame</span>();
+}</code></pre></div>
+<p>Draining <strong>all</strong> waiting messages each frame, not just one, keeps input responsive and the window behaving normally. Chapter 10 builds the full game loop with proper timing around this.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Not calling <code>DefWindowProcW</code> for unhandled messages
+The window cannot be moved, resized or closed normally.</p>
+</blockquote>
+<blockquote><p>[!warning] Forgetting <code>PostQuitMessage</code> in <code>WM_DESTROY</code>
+The window disappears but the message loop keeps waiting, and the process keeps running invisibly. Check Task Manager.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Long work inside the window procedure</span></div><div class="callout-body"><p>While it runs, no other messages are handled, and after a few seconds Windows marks the window &quot;Not Responding&quot;. Do slow work elsewhere, or in steps.</p>
+</div></div>
+<blockquote><p>[!warning] Using <code>GetMessageW</code> in a game
+The game only updates when a message arrives, such as when the mouse moves. Use <code>PeekMessageW</code>.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does <code>DispatchMessageW</code> do?</div><ul><li>Calls the window procedure of the window the message is for</li><li>Puts a message in the queue</li><li>Translates key presses into characters</li></ul><details><summary>Show the answer</summary><p><b>Calls the window procedure of the window the message is for</b> It finds the window&#39;s class and calls the function registered for it.</p></details></li><li><div class="q">A program&#39;s window closes but the process keeps running. What is the most likely cause?</div><ul><li><code>WM_DESTROY</code> does not call <code>PostQuitMessage</code>, so the message loop never ends</li><li><code>DefWindowProcW</code> was called</li><li>The window class was not registered</li></ul><details><summary>Show the answer</summary><p><b><code>WM_DESTROY</code> does not call <code>PostQuitMessage</code>, so the message loop never ends</b> The loop keeps waiting for messages for a window that no longer exists.</p></details></li><li><div class="q">Why do games use <code>PeekMessageW</code> instead of <code>GetMessageW</code>?</div><ul><li><code>PeekMessageW</code> returns immediately when the queue is empty, so the game can run a frame instead of waiting</li><li><code>PeekMessageW</code> is faster at reading messages</li><li><code>GetMessageW</code> does not work with games</li></ul><details><summary>Show the answer</summary><p><b><code>PeekMessageW</code> returns immediately when the queue is empty, so the game can run a frame instead of waiting</b> A game must update continuously, not only when messages arrive.</p></details></li><li><div class="q">What should a window procedure do with a message it does not handle?</div><ul><li>Pass it to <code>DefWindowProcW</code> and return its result</li><li>Return 0</li><li>Ignore it and return 1</li></ul><details><summary>Show the answer</summary><p><b>Pass it to <code>DefWindowProcW</code> and return its result</b> The default procedure implements the standard window behaviour.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-files-and-directories/"><span class="mono">previous</span><b>5.04 Files and Directories</b></a>
+      <a class="lp-next" href="../5-06-a-first-win32-application/"><span class="mono">next</span><b>5.06 A First Win32 Application</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/5-05-windows-and-the-message-loop"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

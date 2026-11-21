@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>How HTTP Works · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/3-01-how-http-works/">
+  <meta name="description" content="The protocol of the web as plain text over TCP - a request line, headers and an optional body; a status line, headers and a body in reply - methods, status…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How HTTP Works · Networking · Xenon">
+  <meta property="og:description" content="The protocol of the web as plain text over TCP - a request line, headers and an optional body; a status line, headers and a body in reply - methods, status…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/3-01-how-http-works/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="How HTTP Works · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How HTTP Works · Networking · Xenon">
+  <meta name="twitter:description" content="The protocol of the web as plain text over TCP - a request line, headers and an optional body; a status line, headers and a body in reply - methods, status…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>HTTP by Hand</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">How HTTP Works</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The protocol of the web as plain text over TCP - a request line, headers and an optional body; a status line, headers and a body in reply - methods, status codes, the headers that matter, persistent connections, and where HTTP/2 and HTTP/3 differ.</p>
+      <div class="prose">
+<h2>Text over a connection</h2>
+<p>HTTP/1.1 is a text protocol on top of TCP. A client opens a connection (to port 80, or 443 for HTTPS) and sends a <strong>request</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>GET /courses/networking HTTP/1.1\r\n
+Host: xenon.justloofy.dev\r\n
+User-Agent: my-client/1.0\r\n
+Accept: text/html\r\n
+\r\n</code></pre></div>
+<ul>
+<li>The <strong>request line</strong>: a <strong>method</strong>, the <strong>target</strong> (path and query), and the version.</li>
+<li><strong>Headers</strong>: <code>Name: value</code> lines.</li>
+<li>A <strong>blank line</strong> (<code>\r\n</code> alone) ends the headers.</li>
+<li>Then an optional <strong>body</strong>, for methods that send data.</li>
+</ul>
+<p>The server answers with a <strong>response</strong> in the same shape:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>HTTP/1.1 200 OK\r\n
+Content-Type: text/html; charset=utf-8\r\n
+Content-Length: 1532\r\n
+\r\n
+&lt;!doctype html&gt;... (exactly 1532 bytes)</code></pre></div>
+<p>You can speak it by hand: <code>curl -v https://example.com</code> shows both sides, and over plain HTTP even <code>telnet example.com 80</code> and typing the request works.</p>
+<h2>Methods</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Means</th>
+<th>Body</th>
+<th>Safe to repeat?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET</code></td>
+<td>fetch a resource</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>HEAD</code></td>
+<td>like GET, headers only</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td>submit data, create something, run an action</td>
+<td>yes</td>
+<td><strong>no</strong></td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td>replace a resource with this body</td>
+<td>yes</td>
+<td>yes (idempotent)</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td>change part of a resource</td>
+<td>yes</td>
+<td>not necessarily</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>remove a resource</td>
+<td>usually no</td>
+<td>yes (idempotent)</td>
+</tr>
+<tr>
+<td><code>OPTIONS</code></td>
+<td>ask what is allowed (used by browsers&#39; CORS checks)</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+</tbody></table>
+</div>
+<p>&quot;Safe to repeat&quot; is the idempotency of the IPC course&#39;s lesson 5.04: browsers and proxies retry GETs freely, but never a POST without asking.</p>
+<h2>Status codes</h2>
+<p>The first digit says the class:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Meaning</th>
+<th>Common codes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1xx</td>
+<td>information</td>
+<td><code>101 Switching Protocols</code> (WebSockets)</td>
+</tr>
+<tr>
+<td>2xx</td>
+<td>success</td>
+<td><code>200 OK</code>, <code>201 Created</code>, <code>204 No Content</code></td>
+</tr>
+<tr>
+<td>3xx</td>
+<td>go elsewhere</td>
+<td><code>301 Moved Permanently</code>, <code>302 Found</code>, <code>304 Not Modified</code></td>
+</tr>
+<tr>
+<td>4xx</td>
+<td>the client&#39;s fault</td>
+<td><code>400 Bad Request</code>, <code>401 Unauthorized</code>, <code>403 Forbidden</code>, <code>404 Not Found</code>, <code>429 Too Many Requests</code></td>
+</tr>
+<tr>
+<td>5xx</td>
+<td>the server&#39;s fault</td>
+<td><code>500 Internal Server Error</code>, <code>502 Bad Gateway</code>, <code>503 Service Unavailable</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Clients should handle a code by its class when they do not know it specifically: an unknown 4xx is treated like 400.</p>
+<h2>Headers that matter</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Host</code></td>
+<td>which website on this server (required in HTTP/1.1: one IP serves many sites)</td>
+</tr>
+<tr>
+<td><code>Content-Length</code></td>
+<td>the body&#39;s size in bytes</td>
+</tr>
+<tr>
+<td><code>Transfer-Encoding: chunked</code></td>
+<td>the body comes in pieces of announced size (lesson 3.02)</td>
+</tr>
+<tr>
+<td><code>Content-Type</code></td>
+<td>what the body is: <code>text/html</code>, <code>application/json</code>, <code>image/png</code></td>
+</tr>
+<tr>
+<td><code>Connection: close</code></td>
+<td>close the connection after this response</td>
+</tr>
+<tr>
+<td><code>Location</code></td>
+<td>where a 3xx redirect points; where a 201 created something</td>
+</tr>
+<tr>
+<td><code>Cache-Control</code>, <code>ETag</code>, <code>If-None-Match</code></td>
+<td>caching and conditional requests (304)</td>
+</tr>
+<tr>
+<td><code>Authorization</code></td>
+<td>credentials, such as <code>Bearer &lt;token&gt;</code></td>
+</tr>
+<tr>
+<td><code>Cookie</code> / <code>Set-Cookie</code></td>
+<td>state the browser keeps for a site</td>
+</tr>
+</tbody></table>
+</div>
+<p>Header names are <strong>case-insensitive</strong> (<code>content-length</code> is the same header); values are not.</p>
+<h2>Connections</h2>
+<p>HTTP/1.1 connections are <strong>persistent</strong> by default: after a response, the same connection carries the next request, saving a TCP (and TLS) handshake each time. That only works if each side knows exactly where every message ends, which is why every response needs a <code>Content-Length</code> or chunked encoding, or must close the connection to mark its end.</p>
+<p>On one HTTP/1.1 connection requests are answered <strong>in order</strong>, one at a time, so browsers open several connections per site to load pages in parallel.</p>
+<h2>HTTP/2 and HTTP/3</h2>
+<p><strong>HTTP/2</strong> keeps the same methods, status codes and headers but sends them as <strong>binary frames</strong>, compresses headers, and multiplexes many requests over <strong>one</strong> connection at once. <strong>HTTP/3</strong> does the same over <strong>QUIC</strong> (UDP), so a lost packet delays only its own request (lesson 1.04). Programs usually get both from a library; the meaning of requests and responses is the HTTP/1.1 you see here.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-udp-sockets/"><span class="mono">previous</span><b>2.05 UDP Sockets</b></a>
+      <a class="lp-next" href="../3-02-parsing-http-messages/"><span class="mono">next</span><b>3.02 Parsing HTTP Messages</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/3-01-how-http-works"></script>
+</body>
+</html>

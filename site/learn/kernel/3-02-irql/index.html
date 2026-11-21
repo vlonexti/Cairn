@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>IRQL · Windows Kernel Driver Development · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/kernel/3-02-irql/">
+  <meta name="description" content="The interrupt request level decides what kernel code may do at each moment. This lesson explains PASSIVE, APC, DISPATCH and device levels, what is forbidden…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="IRQL · Windows Kernel Driver Development · Xenon">
+  <meta property="og:description" content="The interrupt request level decides what kernel code may do at each moment. This lesson explains PASSIVE, APC, DISPATCH and device levels, what is forbidden…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/kernel/3-02-irql/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="IRQL · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IRQL · Windows Kernel Driver Development · Xenon">
+  <meta name="twitter:description" content="The interrupt request level decides what kernel code may do at each moment. This lesson explains PASSIVE, APC, DISPATCH and device levels, what is forbidden…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/kernel.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Windows Kernel Driver Development</a><span>/</span><span>Memory and Concurrency</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">IRQL</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The interrupt request level decides what kernel code may do at each moment. This lesson explains PASSIVE, APC, DISPATCH and device levels, what is forbidden at each, how the documentation states each function&#39;s IRQL, and how to raise and lower it correctly.</p>
+      <div class="prose">
+<h2>Levels, not threads</h2>
+<p>Every processor runs at an <strong>IRQL</strong> (interrupt request level) at every moment. Code running at a given IRQL can only be interrupted by something at a <strong>higher</strong> IRQL. The levels that matter to drivers:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>IRQL</th>
+<th>Value</th>
+<th>Who runs there</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PASSIVE_LEVEL</code></td>
+<td>0</td>
+<td>Normal threads, <code>DriverEntry</code>, most dispatch routines, work items</td>
+</tr>
+<tr>
+<td><code>APC_LEVEL</code></td>
+<td>1</td>
+<td>Asynchronous procedure calls; code holding a fast mutex</td>
+</tr>
+<tr>
+<td><code>DISPATCH_LEVEL</code></td>
+<td>2</td>
+<td>DPCs, timers&#39; DPCs, code holding a spin lock; the thread scheduler itself</td>
+</tr>
+<tr>
+<td>Device IRQLs (DIRQL)</td>
+<td>3+</td>
+<td>Hardware interrupt service routines</td>
+</tr>
+</tbody></table>
+</div>
+<h2>The two big rules</h2>
+<p>At <code>DISPATCH_LEVEL</code> and above, the scheduler cannot run on that processor. Therefore:</p>
+<ol>
+<li><strong>No waiting.</strong> Anything that might block (waiting on an event with a timeout other than zero, acquiring a mutex, <code>KeDelayExecutionThread</code>) is forbidden: there is no one to switch to while waiting.</li>
+<li><strong>No page faults.</strong> Touching pageable memory (paged pool, pageable code, user buffers) is forbidden: resolving a page fault needs to wait for the disk. This is bug check <code>0xD1</code> / <code>0x0A</code>.</li>
+</ol>
+<p>Breaking either rule does not always crash at once: if the page happens to be in memory, nothing goes wrong, until one day it is not. That is why Driver Verifier (lesson 5.01) forces pages out to make these bugs reproducible.</p>
+<h2>Reading the documentation</h2>
+<p>Every kernel function&#39;s documentation ends with a line such as <strong>IRQL: &lt;= DISPATCH_LEVEL</strong> or <strong>IRQL: PASSIVE_LEVEL</strong>. That is the highest IRQL at which it may be called. Some examples:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Maximum IRQL</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ExAllocatePool2</code> (non-paged)</td>
+<td><code>DISPATCH_LEVEL</code></td>
+</tr>
+<tr>
+<td><code>ExAllocatePool2</code> (paged)</td>
+<td><code>APC_LEVEL</code></td>
+</tr>
+<tr>
+<td><code>KeAcquireSpinLock</code></td>
+<td><code>DISPATCH_LEVEL</code></td>
+</tr>
+<tr>
+<td><code>ExAcquireFastMutex</code></td>
+<td><code>APC_LEVEL</code></td>
+</tr>
+<tr>
+<td><code>ZwCreateFile</code>, registry functions</td>
+<td><code>PASSIVE_LEVEL</code></td>
+</tr>
+<tr>
+<td><code>IoCompleteRequest</code></td>
+<td><code>DISPATCH_LEVEL</code></td>
+</tr>
+<tr>
+<td><code>KeSetEvent</code> (Wait = FALSE)</td>
+<td><code>DISPATCH_LEVEL</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Static analysis (lesson 5.02) checks annotations such as <code>_IRQL_requires_max_(DISPATCH_LEVEL)</code> against your code paths. The practice writes a small checker for a call path.</p>
+<h2>Raising and lowering</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>KIRQL old;
+<span class="tk-f">KeRaiseIrql</span>(DISPATCH_LEVEL, &amp;old);      <span class="tk-c">// now nothing on this CPU can preempt us</span>
+<span class="tk-c">// ... very short work on non-paged data ...</span>
+<span class="tk-f">KeLowerIrql</span>(old);                       <span class="tk-c">// always back to exactly where we were</span></code></pre></div>
+<p>You may only <strong>raise</strong> with <code>KeRaiseIrql</code> and only <strong>lower</strong> with <code>KeLowerIrql</code> to the value you saved. Most drivers never call these directly: acquiring a spin lock raises to <code>DISPATCH_LEVEL</code>, and releasing it lowers back (lesson 3.03).</p>
+<p><code>KeGetCurrentIrql()</code> tells you where you are; <code>NT_ASSERT(KeGetCurrentIrql() &lt;= APC_LEVEL)</code> at the top of a function documents and checks its requirement in debug builds. <code>PAGED_CODE()</code> does the same for functions placed in pageable sections.</p>
+<h2>Where dispatch routines run</h2>
+<p>Dispatch routines for a top-level software driver run at <code>PASSIVE_LEVEL</code> in the context of the calling thread, so they may wait and allocate paged memory. Completion routines, DPCs and timer callbacks run at <code>DISPATCH_LEVEL</code>. A function called from both kinds of places must obey the stricter rules.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/kernel/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/kernel/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-kernel-memory-pools-and-tags/"><span class="mono">previous</span><b>3.01 Kernel Memory: Pools and Tags</b></a>
+      <a class="lp-next" href="../3-03-locks-in-the-kernel/"><span class="mono">next</span><b>3.03 Locks in the Kernel</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/kernel/3-02-irql"></script>
+</body>
+</html>

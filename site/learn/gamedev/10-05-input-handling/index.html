@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Input Handling · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/10-05-input-handling/">
+  <meta name="description" content="Raw input (keys, mouse buttons, gamepad sticks) is not what game code should depend on. Engines turn it into actions (&quot;jump&quot;, &quot;move left&quot;), track for each…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Input Handling · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Raw input (keys, mouse buttons, gamepad sticks) is not what game code should depend on. Engines turn it into actions (&quot;jump&quot;, &quot;move left&quot;), track for each…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/10-05-input-handling/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Input Handling · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Input Handling · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Raw input (keys, mouse buttons, gamepad sticks) is not what game code should depend on. Engines turn it into actions (&quot;jump&quot;, &quot;move left&quot;), track for each…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Game Engine Architecture</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Input Handling</h1>
+      <div class="readout lp-readout"><span>lesson <b>10.05</b></span><span>5 of 9 in milestone 10</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Raw input (keys, mouse buttons, gamepad sticks) is not what game code should depend on. Engines turn it into <strong>actions</strong> (&quot;jump&quot;, &quot;move left&quot;), track for each one whether it was <strong>pressed</strong>, <strong>held</strong> or <strong>released</strong> this frame, and let players <strong>rebind</strong> the keys. This lesson builds that layer, and covers gamepads, dead zones and input buffering.</p>
+      <div class="prose">
+<h2>From devices to actions</h2>
+<p>Game code should never ask &quot;is the space bar down?&quot;. It should ask &quot;does the player want to jump?&quot;. The difference matters as soon as you support rebinding, a gamepad, or a second keyboard layout:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    K[&quot;Keyboard&lt;br/&gt;Space, W, A, D&quot;] --&gt; B[&quot;Bindings&lt;br/&gt;Space → Jump&lt;br/&gt;W → MoveUp&lt;br/&gt;Pad A → Jump&quot;]
+    P[&quot;Gamepad&lt;br/&gt;A button, left stick&quot;] --&gt; B
+    M[&quot;Mouse&quot;] --&gt; B
+    B --&gt; S[&quot;Action state this frame&lt;br/&gt;Jump: pressed&lt;br/&gt;MoveUp: held&quot;]
+    S --&gt; G[&quot;Game code&lt;br/&gt;if (input.pressed(Action::Jump))&quot;]</pre></div>
+<h2>Pressed, held and released</h2>
+<p>Lesson 5.07 showed two ways to read keys: messages, and the current state. For game controls the cleanest model is: once per frame, take a <strong>snapshot</strong> of every action&#39;s state (down or up), and keep the previous frame&#39;s snapshot. Then for each action:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Query</th>
+<th>Previous</th>
+<th>Now</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>held</code></td>
+<td>(any)</td>
+<td>down</td>
+<td>Continuous actions: walking, aiming, charging</td>
+</tr>
+<tr>
+<td><code>pressed</code></td>
+<td>up</td>
+<td>down</td>
+<td>One-shot actions: jump, fire one shot, open a menu</td>
+</tr>
+<tr>
+<td><code>released</code></td>
+<td>down</td>
+<td>up</td>
+<td>Releasing a charged attack, ending a drag</td>
+</tr>
+</tbody></table>
+</div>
+<p>Because the snapshot is taken once at the start of the frame (lesson 10.01&#39;s input phase), every system in that frame sees the same answer. Checking the live key state in the middle of an update lets two systems disagree about whether a key was pressed.</p>
+<p>There is one trap: a tap shorter than a frame can be <strong>missed</strong> by pure polling, because the key is already up again when the snapshot is taken. Recording &quot;went down at least once this frame&quot; from the key-down messages, as well as the current state, fixes it.</p>
+<h2>Bindings and rebinding</h2>
+<p>A <strong>binding</strong> maps a physical input to an action. Keep them in data, not code:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">enum</span> <span class="tk-k">class</span> <span class="tk-t">Action</span> { <span class="tk-t">MoveLeft</span>, <span class="tk-t">MoveRight</span>, <span class="tk-t">Jump</span>, <span class="tk-t">Attack</span>, <span class="tk-t">Count</span> };
+
+<span class="tk-k">struct</span> <span class="tk-t">Binding</span> { <span class="tk-k">int</span> key; <span class="tk-t">Action</span> action; };
+
+std::vector&lt;<span class="tk-t">Binding</span>&gt; bindings{
+    { <span class="tk-s">'A'</span>, <span class="tk-t">Action</span>::<span class="tk-t">MoveLeft</span> }, { VK_LEFT, <span class="tk-t">Action</span>::<span class="tk-t">MoveLeft</span> },
+    { <span class="tk-s">'D'</span>, <span class="tk-t">Action</span>::<span class="tk-t">MoveRight</span> }, { VK_RIGHT, <span class="tk-t">Action</span>::<span class="tk-t">MoveRight</span> },
+    { VK_SPACE, <span class="tk-t">Action</span>::<span class="tk-t">Jump</span> }, { <span class="tk-s">'J'</span>, <span class="tk-t">Action</span>::<span class="tk-t">Attack</span> },
+};</code></pre></div>
+<p>Several keys may map to one action (an action is down if <strong>any</strong> of its keys is down). Rebinding is then just editing the table and saving it with the settings (lesson 10.07). Use virtual-key codes or, for layout-independent positions such as WASD, scan codes (lesson 5.07).</p>
+<h2>Gamepads and dead zones</h2>
+<p>On Windows, Xbox-compatible controllers are read with <strong>XInput</strong> (<code>XInputGetState</code>) or the newer GameInput API; libraries like SDL (chapter 11) cover many controllers. Analogue sticks report numbers (for XInput, −32768 to 32767 per axis), and a stick at rest never reads exactly zero: it drifts by a few percent. A <strong>dead zone</strong> ignores small values:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">float</span> <span class="tk-f">applyDeadZone</span>(<span class="tk-k">float</span> value, <span class="tk-k">float</span> deadZone)    <span class="tk-c">// value from -1 to 1</span>
+{
+    <span class="tk-k">const</span> <span class="tk-k">float</span> magnitude{ std::<span class="tk-f">abs</span>(value) };
+    <span class="tk-k">if</span> (magnitude &lt; deadZone) <span class="tk-k">return</span> <span class="tk-n">0.0f</span>;
+    <span class="tk-c">// Rescale so movement starts smoothly from 0 just outside the dead zone.</span>
+    <span class="tk-k">return</span> std::<span class="tk-f">copysign</span>((magnitude - deadZone) / (<span class="tk-n">1.0f</span> - deadZone), value);
+}</code></pre></div>
+<p>For a 2D stick, apply the dead zone to the length of the (x, y) vector, not each axis separately, or diagonal movement feels wrong.</p>
+<h2>Input buffering</h2>
+<p>Players press buttons slightly early. If the jump button was pressed three frames before the character landed, a strict game ignores it and the player feels the game &quot;ate&quot; their input. <strong>Buffering</strong> remembers recent presses for a short window (often 100 to 150 ms) and acts on them as soon as the action becomes possible. Its cousin, <strong>coyote time</strong>, still allows a jump for a few frames after walking off a ledge. Small touches like these are a large part of why some games &quot;feel&quot; responsive.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Hard-coding keys in game logic</span></div><div class="callout-body"><p>Map keys to actions in one place, so rebinding and gamepads work everywhere.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Reading live key state during the update</span></div><div class="callout-body"><p>Snapshot once per frame so every system agrees.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>No dead zone on analogue sticks</span></div><div class="callout-body"><p>Characters drift on their own. Apply a dead zone to the stick vector.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Acting on input while the window is unfocused</span></div><div class="callout-body"><p><code>GetAsyncKeyState</code> sees keys typed in other programs. Ignore input when the game is not in front.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">An action was up last frame and is down now. Which queries are true?</div><ul><li><code>pressed</code> and <code>held</code></li><li>Only <code>released</code></li><li>Only <code>held</code></li></ul><details><summary>Show the answer</summary><p><b><code>pressed</code> and <code>held</code></b> Pressed is the transition; held is the current state.</p></details></li><li><div class="q">Why take one input snapshot per frame?</div><ul><li>So every system in that frame sees the same input state</li><li>To save memory</li><li>Because keys can only be read once</li></ul><details><summary>Show the answer</summary><p><b>So every system in that frame sees the same input state</b> Mixing live reads makes systems disagree.</p></details></li><li><div class="q">What is a dead zone for?</div><ul><li>Ignoring the small readings an analogue stick reports when it is at rest</li><li>Disabling input during loading screens</li><li>Making buttons harder to press</li></ul><details><summary>Show the answer</summary><p><b>Ignoring the small readings an analogue stick reports when it is at rest</b> Without it, characters creep around on their own.</p></details></li><li><div class="q">What does input buffering do?</div><ul><li>Remembers a press for a short time so it can take effect as soon as the action becomes possible</li><li>Stores all input for replays</li><li>Delays input to make the game harder</li></ul><details><summary>Show the answer</summary><p><b>Remembers a press for a short time so it can take effect as soon as the action becomes possible</b> It forgives presses that come slightly early.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/10.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/10.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../10-04-a-tour-of-the-rendering-pipeline/"><span class="mono">previous</span><b>10.04 A Tour of the Rendering Pipeline</b></a>
+      <a class="lp-next" href="../10-06-loading-and-managing-resources/"><span class="mono">next</span><b>10.06 Loading and Managing Resources</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/10-05-input-handling"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

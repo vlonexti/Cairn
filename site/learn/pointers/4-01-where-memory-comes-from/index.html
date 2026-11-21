@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Where Memory Comes From · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/4-01-where-memory-comes-from/">
+  <meta name="description" content="A running program's address space holds its code, its static data, one stack per thread and the heap. Each object gets one of four lifetimes - static,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Where Memory Comes From · Pointers and Memory · Xenon">
+  <meta property="og:description" content="A running program's address space holds its code, its static data, one stack per thread and the heap. Each object gets one of four lifetimes - static,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/4-01-where-memory-comes-from/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Where Memory Comes From · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Where Memory Comes From · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="A running program's address space holds its code, its static data, one stack per thread and the heap. Each object gets one of four lifetimes - static,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Lifetime: Stack, Heap and Static</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Where Memory Comes From</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A running program&#39;s address space holds its code, its static data, one stack per thread and the heap. Each object gets one of four lifetimes - static, automatic, dynamic or thread - and the lifetime decides where it lives, when it starts and when its address stops being valid.</p>
+      <div class="prose">
+<h2>The map of a process</h2>
+<p>When Windows starts your program it gives it a private <strong>address space</strong>: a huge range of addresses (128 TB on 64-bit Windows) of which only a few small areas are actually backed by memory. The areas you will meet are:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>high addresses
+  +-----------------------------+
+  | stack of thread 1           |  grows down; 1 MB reserved by default
+  | stack of thread 2           |
+  |            ...              |
+  | heap blocks                 |  new / malloc, anywhere the heap finds room
+  |            ...              |
+  | DLLs: kernel32, ucrtbase... |
+  | your .exe image:            |
+  |   .text    machine code     |  read + execute
+  |   .rdata   constants, text  |  read only
+  |   .data    initialised globals
+  |   .bss     zeroed globals   |
+  +-----------------------------+
+low addresses</code></pre></div>
+<p>ASLR shuffles where each area starts, but every program has these pieces. When you look at a pointer&#39;s value in a debugger, its rough size already says which area it is in: an address near the .exe&#39;s load address is a global, a high address near the stack pointer is a local, anything else is probably heap.</p>
+<h2>Four lifetimes</h2>
+<p>C++ gives every object a <strong>storage duration</strong>, and that decides where it lives:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Duration</th>
+<th>Example</th>
+<th>Lives</th>
+<th>Starts</th>
+<th>Ends</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>static</strong></td>
+<td>globals, <code>static</code> variables, string literals</td>
+<td>in the image (.data, .bss, .rdata)</td>
+<td>before <code>main</code>, or at the first call for a <code>static</code> local</td>
+<td>when the program exits</td>
+</tr>
+<tr>
+<td><strong>automatic</strong></td>
+<td>ordinary local variables, parameters</td>
+<td>on the stack</td>
+<td>when execution reaches the declaration</td>
+<td>at the closing brace of its block</td>
+</tr>
+<tr>
+<td><strong>dynamic</strong></td>
+<td><code>new</code>, <code>malloc</code>, the inside of <code>std::vector</code></td>
+<td>on the heap</td>
+<td>when you allocate it</td>
+<td>when you free it, and only then</td>
+</tr>
+<tr>
+<td><strong>thread</strong></td>
+<td><code>thread_local</code> variables</td>
+<td>per-thread storage</td>
+<td>when the thread starts or first uses it</td>
+<td>when the thread ends</td>
+</tr>
+</tbody></table>
+</div>
+<p>A pointer is valid only during its object&#39;s lifetime. Almost every memory bug is a pointer that outlived what it pointed at.</p>
+<h2>Static storage</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> frames{ <span class="tk-n">0</span> };                    <span class="tk-c">// .data: the whole program sees one frames</span>
+<span class="tk-k">static</span> <span class="tk-k">int</span> hits{ <span class="tk-n">0</span> };               <span class="tk-c">// the same storage; static here limits it to this file</span>
+<span class="tk-k">const</span> <span class="tk-k">char</span>* title{ <span class="tk-s">&quot;Xenon&quot;</span> };       <span class="tk-c">// the pointer is in .data, the text in .rdata</span>
+
+<span class="tk-k">int</span> <span class="tk-f">nextTicket</span>()
+{
+    <span class="tk-k">static</span> <span class="tk-k">int</span> next{ <span class="tk-n">1</span> };           <span class="tk-c">// initialised once, the first time the function runs</span>
+    <span class="tk-k">return</span> next++;                  <span class="tk-c">// keeps its value between calls</span>
+}</code></pre></div>
+<p>Static objects exist for the whole run, so <strong>a pointer to one is always safe to return or keep</strong>. That includes string literals: returning <code>&quot;January&quot;</code> from a function is fine, because the text lives in the image, not on the stack.</p>
+<p>Writing to a string literal is not fine: it is in read-only memory, and <code>char* s = &quot;abc&quot;; s[0] = &#39;x&#39;;</code> crashes with an access violation (modern C++ does not even let that first line compile).</p>
+<h2>Automatic storage</h2>
+<p>Locals live in the current function&#39;s <strong>stack frame</strong>, created on entry and discarded on return. That is fast (allocating a frame is subtracting from one register) and automatic, and it is why a pointer to a local is valid only until the function returns. The next lesson looks at frames byte by byte.</p>
+<h2>Dynamic storage</h2>
+<p>The heap is for objects whose lifetime does not match a function call: created in one place, used across many calls, freed later, possibly by someone else. You get it with <code>new</code> (or <code>malloc</code>), and it stays until you give it back. The heap does not know when you have finished with something; you must say so. Lessons 4.03 to 4.05 are about getting that right, and milestone 5 is about making C++ do it for you.</p>
+<h2>Choosing</h2>
+<ul>
+<li><strong>Default to automatic.</strong> A local <code>std::vector</code> or <code>std::string</code> is itself on the stack and manages its own heap memory for you.</li>
+<li><strong>Use static</strong> for things that genuinely exist once for the whole program, and keep it rare: global state makes code hard to test and to run on several threads.</li>
+<li><strong>Use dynamic</strong> when the size is only known at run time, when the object must outlive the function that creates it, or when it is too big for the stack (1 MB in total, by default, for everything on a thread&#39;s stack).</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-function-pointers-and-callbacks/"><span class="mono">previous</span><b>3.05 Function Pointers and Callbacks</b></a>
+      <a class="lp-next" href="../4-02-the-stack-up-close/"><span class="mono">next</span><b>4.02 The Stack Up Close</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/4-01-where-memory-comes-from"></script>
+</body>
+</html>

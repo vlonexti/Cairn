@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Control Flow · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/1-04-control-flow/">
+  <meta name="description" content="if and else as expressions, loop with break values, while, for over ranges and collections, labelled breaks, a first look at match with ranges and multiple…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Control Flow · Rust · Xenon">
+  <meta property="og:description" content="if and else as expressions, loop with break values, while, for over ranges and collections, labelled breaks, a first look at match with ranges and multiple…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/1-04-control-flow/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Control Flow · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Control Flow · Rust · Xenon">
+  <meta name="twitter:description" content="if and else as expressions, loop with break values, while, for over ranges and collections, labelled breaks, a first look at match with ranges and multiple…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Control Flow</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">if and else as expressions, loop with break values, while, for over ranges and collections, labelled breaks, a first look at match with ranges and multiple patterns, and choosing the right loop.</p>
+      <div class="prose">
+<h2>if</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> temperature = <span class="tk-n">23</span>;
+    <span class="tk-k">if</span> temperature &gt;= <span class="tk-n">30</span> {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;Hot&quot;</span>);
+    } <span class="tk-k">else</span> <span class="tk-k">if</span> temperature &gt;= <span class="tk-n">18</span> {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;Pleasant&quot;</span>);
+    } <span class="tk-k">else</span> {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;Cold&quot;</span>);
+    }
+    <span class="tk-k">let</span> label = <span class="tk-k">if</span> temperature % <span class="tk-n">2</span> == <span class="tk-n">0</span> { <span class="tk-s">&quot;even&quot;</span> } <span class="tk-k">else</span> { <span class="tk-s">&quot;odd&quot;</span> };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{label}&quot;</span>);
+}</code></pre></div>
+<p>The condition must be a <code>bool</code>: <code>if count { }</code> does not compile. Braces are required; parentheses around the condition are not used.</p>
+<h2>loop, while and for</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-c">// loop runs until break; break can return a value</span>
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> n = 27<span class="tk-k">u64</span>;
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> steps = <span class="tk-n">0</span>;
+    <span class="tk-k">let</span> result = <span class="tk-k">loop</span> {
+        <span class="tk-k">if</span> n == <span class="tk-n">1</span> {
+            <span class="tk-k">break</span> steps;
+        }
+        n = <span class="tk-k">if</span> n % <span class="tk-n">2</span> == <span class="tk-n">0</span> { n / <span class="tk-n">2</span> } <span class="tk-k">else</span> { <span class="tk-n">3</span> * n + <span class="tk-n">1</span> };
+        steps += <span class="tk-n">1</span>;
+    };
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{result} steps&quot;</span>);
+
+    <span class="tk-c">// while: repeat while a condition holds</span>
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> countdown = <span class="tk-n">3</span>;
+    <span class="tk-k">while</span> countdown &gt; <span class="tk-n">0</span> {
+        <span class="tk-p">print!</span>(<span class="tk-s">&quot;{countdown} &quot;</span>);
+        countdown -= <span class="tk-n">1</span>;
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;lift-off&quot;</span>);
+
+    <span class="tk-c">// for: over a range or a collection</span>
+    <span class="tk-k">for</span> i <span class="tk-k">in</span> <span class="tk-n">1</span>..=<span class="tk-n">5</span> {
+        <span class="tk-p">print!</span>(<span class="tk-s">&quot;{} &quot;</span>, i * i);
+    }
+    <span class="tk-p">println!</span>();
+    <span class="tk-k">let</span> names = [<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;Grace&quot;</span>, <span class="tk-s">&quot;Linus&quot;</span>];
+    <span class="tk-k">for</span> (index, name) <span class="tk-k">in</span> names.<span class="tk-f">iter</span>().<span class="tk-f">enumerate</span>() {
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{index}: {name}&quot;</span>);
+    }
+    <span class="tk-k">for</span> i <span class="tk-k">in</span> (<span class="tk-n">0</span>..<span class="tk-n">10</span>).<span class="tk-f">rev</span>().<span class="tk-f">step_by</span>(<span class="tk-n">3</span>) {
+        <span class="tk-p">print!</span>(<span class="tk-s">&quot;{i} &quot;</span>);
+    }
+    <span class="tk-p">println!</span>();
+}</code></pre></div>
+<p><code>for</code> is the most common loop: it cannot go out of bounds and needs no index variable. <code>enumerate()</code> adds the index when you need it.</p>
+<h2>break and continue</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> numbers = [<span class="tk-n">4</span>, <span class="tk-n">7</span>, -<span class="tk-n">1</span>, <span class="tk-n">12</span>, <span class="tk-n">0</span>, <span class="tk-n">9</span>];
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> sum = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> x <span class="tk-k">in</span> numbers {
+        <span class="tk-k">if</span> x &lt; <span class="tk-n">0</span> { <span class="tk-k">continue</span>; }
+        <span class="tk-k">if</span> x == <span class="tk-n">0</span> { <span class="tk-k">break</span>; }
+        sum += x;
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{sum}&quot;</span>);
+
+    'outer: <span class="tk-k">for</span> i <span class="tk-k">in</span> <span class="tk-n">0</span>..<span class="tk-n">5</span> {
+        <span class="tk-k">for</span> j <span class="tk-k">in</span> <span class="tk-n">0</span>..<span class="tk-n">5</span> {
+            <span class="tk-k">if</span> i * j == <span class="tk-n">6</span> {
+                <span class="tk-p">println!</span>(<span class="tk-s">&quot;found {i} x {j}&quot;</span>);
+                <span class="tk-k">break</span> 'outer;           <span class="tk-c">// leaves both loops</span>
+            }
+        }
+    }
+}</code></pre></div>
+<h2>match</h2>
+<p><code>match</code> compares a value against <strong>patterns</strong>, in order, and must cover every possible value:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">for</span> day <span class="tk-k">in</span> [<span class="tk-n">1</span>, <span class="tk-n">6</span>, <span class="tk-n">7</span>, <span class="tk-n">9</span>] {
+        <span class="tk-k">let</span> kind = <span class="tk-k">match</span> day {
+            <span class="tk-n">1</span>..=<span class="tk-n">5</span> =&gt; <span class="tk-s">&quot;weekday&quot;</span>,
+            <span class="tk-n">6</span> | <span class="tk-n">7</span> =&gt; <span class="tk-s">&quot;weekend&quot;</span>,
+            _ =&gt; <span class="tk-s">&quot;not a day&quot;</span>,          <span class="tk-c">// _ matches anything else</span>
+        };
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{day}: {kind}&quot;</span>);
+    }
+}</code></pre></div>
+<p>If you leave out the <code>_</code> arm, the compiler refuses: &quot;non-exhaustive patterns&quot;. This exhaustiveness check catches forgotten cases at compile time. <code>match</code> becomes much more powerful with enums (lesson 2.05).</p>
+<h2>Choosing a loop</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Loop</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Over a collection or a range</td>
+<td><code>for</code></td>
+</tr>
+<tr>
+<td>Until a condition becomes false</td>
+<td><code>while</code></td>
+</tr>
+<tr>
+<td>Until something inside decides (retry, read until done)</td>
+<td><code>loop</code> with <code>break</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-functions-and-expressions/"><span class="mono">previous</span><b>1.03 Functions and Expressions</b></a>
+      <a class="lp-next" href="../1-05-strings-and-input/"><span class="mono">next</span><b>1.05 Strings and Input</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/1-04-control-flow"></script>
+</body>
+</html>

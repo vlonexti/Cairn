@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Preprocessor, Compiler, Linker: Who Does What · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/4-02-preprocessor-compiler-linker-who-does-what/">
+  <meta name="description" content="Lesson 1.04 introduced the four build stages. This lesson goes deeper into the rules that decide which file needs what: declarations versus definitions ,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Preprocessor, Compiler, Linker: Who Does What · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Lesson 1.04 introduced the four build stages. This lesson goes deeper into the rules that decide which file needs what: declarations versus definitions ,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/4-02-preprocessor-compiler-linker-who-does-what/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Preprocessor, Compiler, Linker: Who Does What · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Preprocessor, Compiler, Linker: Who Does What · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Lesson 1.04 introduced the four build stages. This lesson goes deeper into the rules that decide which file needs what: declarations versus definitions ,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Visual Studio and the Build Pipeline</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Preprocessor, Compiler, Linker: Who Does What</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 10 in milestone 4</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Lesson 1.04 introduced the four build stages. This lesson goes deeper into the rules that decide which file needs what: <strong>declarations</strong> versus <strong>definitions</strong>, headers and include guards, the <strong>one definition rule</strong>, <code>inline</code> and <code>static</code>, and how the linker matches <strong>symbols</strong> between object files. These rules explain almost every &quot;already defined&quot; and &quot;unresolved&quot; error you will meet.</p>
+      <div class="prose">
+<h2>Declarations and definitions</h2>
+<p>C++ separates saying something exists from saying what it is.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Declaration: &quot;this exists&quot;</th>
+<th>Definition: &quot;here it is&quot;</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Function</td>
+<td><code>int addBonus(int score);</code></td>
+<td><code>int addBonus(int score) { return score + 50; }</code></td>
+</tr>
+<tr>
+<td>Global variable</td>
+<td><code>extern int g_highScore;</code></td>
+<td><code>int g_highScore{ 0 };</code></td>
+</tr>
+<tr>
+<td>Class</td>
+<td><code>class Player;</code> (a forward declaration)</td>
+<td><code>class Player { int health; };</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A declaration is enough to <strong>use</strong> a function: the compiler only needs to know its name, parameters and return type to generate a call. The call&#39;s target address is left for the linker. A definition is what produces machine code or storage.</p>
+<h2>Headers carry declarations</h2>
+<p>Each <code>.cpp</code> file is compiled alone (it becomes one <strong>translation unit</strong>). For <code>main.cpp</code> to call a function defined in <code>score.cpp</code>, <code>main.cpp</code> needs its declaration. A header file is simply a convenient way to paste the same declarations into every file that needs them:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// score.h</span>
+<span class="tk-p">#pragma</span> once
+<span class="tk-k">int</span> <span class="tk-f">addBonus</span>(<span class="tk-k">int</span> score);         <span class="tk-c">// declaration</span>
+
+<span class="tk-c">// score.cpp</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;score.h&quot;</span>
+<span class="tk-k">int</span> <span class="tk-f">addBonus</span>(<span class="tk-k">int</span> score) { <span class="tk-k">return</span> score + <span class="tk-n">50</span>; }   <span class="tk-c">// the one definition</span>
+
+<span class="tk-c">// main.cpp</span>
+<span class="tk-p">#include</span> <span class="tk-s">&quot;score.h&quot;</span>
+<span class="tk-k">int</span> <span class="tk-f">main</span>() { <span class="tk-k">return</span> <span class="tk-f">addBonus</span>(<span class="tk-n">10</span>); }              <span class="tk-c">// a call, resolved by the linker</span></code></pre></div>
+<p><code>#pragma once</code> stops a header from being pasted twice into the same translation unit, which would otherwise repeat its class definitions and fail. The older, portable form is an <strong>include guard</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#ifndef</span> SCORE_H
+<span class="tk-p">#define</span> SCORE_H
+<span class="tk-k">int</span> <span class="tk-f">addBonus</span>(<span class="tk-k">int</span> score);
+<span class="tk-p">#endif</span></code></pre></div>
+<h2>The one definition rule</h2>
+<p>The <strong>one definition rule</strong> (ODR) says, roughly:</p>
+<ul>
+<li>every function and global variable that is used must be <strong>defined exactly once</strong> in the whole program;</li>
+<li>a class, an <code>inline</code> function or a template may be defined in <strong>every</strong> translation unit that uses it, but all those definitions must be identical.</li>
+</ul>
+<p>That second point is why class definitions and templates live in headers, and why ordinary function bodies do not. Break the first point and the linker complains:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Linker error</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A function is declared and called, but defined nowhere</td>
+<td><code>LNK2019: unresolved external symbol</code></td>
+</tr>
+<tr>
+<td>A function body written in a header included by two <code>.cpp</code> files</td>
+<td><code>LNK2005: already defined in main.obj</code></td>
+</tr>
+<tr>
+<td>A global <code>int g_score{ 0 };</code> in a header</td>
+<td><code>LNK2005</code> as well</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Ways to make a definition safe in a header</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Keyword</th>
+<th>Effect</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inline</code></td>
+<td>&quot;Identical definitions may appear in many files; keep one&quot;</td>
+<td>Small functions in headers; <code>inline</code> variables (C++17) for header constants</td>
+</tr>
+<tr>
+<td><code>static</code> (at namespace scope)</td>
+<td>&quot;Private to this translation unit&quot;: each file gets its own separate copy</td>
+<td>Helpers used only in one <code>.cpp</code></td>
+</tr>
+<tr>
+<td>Unnamed <code>namespace { ... }</code></td>
+<td>Same as <code>static</code>, for everything inside</td>
+<td>Several file-private helpers</td>
+</tr>
+<tr>
+<td><code>constexpr</code> variable</td>
+<td>Implicitly <code>inline</code> (since C++17) for static data members; namespace-scope <code>constexpr</code> variables are internal to each file</td>
+<td>Compile-time constants</td>
+</tr>
+</tbody></table>
+</div>
+<p>Templates and functions defined inside a class body are implicitly <code>inline</code>, which is why they can live in headers.</p>
+<h2>Symbols: what the linker actually matches</h2>
+<p>Each object file contains a <strong>symbol table</strong>: names it defines and names it needs. C++ names are <strong>mangled</strong> into strings that encode the namespace, parameter types and more, so that overloads get different symbols:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>int addBonus(int)            ?addBonus@@YAHH@Z
+int addBonus(float)          ?addBonus@@YAHM@Z
+void Player::heal(int)       ?heal@Player@@QEAAXH@Z</code></pre></div>
+<p>The linker matches these strings exactly. So a declaration that differs from its definition in any detail (a <code>const</code>, a parameter type, a namespace) produces a <em>different</em> symbol, and the result is <code>LNK2019</code> even though &quot;the function is right there&quot;. The error message shows the mangled name and a readable version; compare it carefully with your definition.</p>
+<p><code>extern &quot;C&quot;</code> turns mangling off, giving the plain name <code>addBonus</code>. That is how C++ code exposes functions to C, and how DLLs usually export functions so other languages and <code>GetProcAddress</code> (lesson 4.05) can find them by a simple name. You can see an object file&#39;s symbols with:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>dumpbin /symbols score.obj
+dumpbin /exports plugin.dll
+undname <span class="tk-s">&quot;?addBonus@@YAHH@Z&quot;</span></code></pre></div>
+<h2>Order of the stages, once more</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;a.cpp&quot;] --&gt; PA[&quot;preprocess&quot;] --&gt; CA[&quot;compile&quot;] --&gt; OA[&quot;a.obj&lt;br/&gt;defines: addBonus&lt;br/&gt;needs: printf&quot;]
+    B[&quot;main.cpp&quot;] --&gt; PB[&quot;preprocess&quot;] --&gt; CB[&quot;compile&quot;] --&gt; OB[&quot;main.obj&lt;br/&gt;defines: main&lt;br/&gt;needs: addBonus&quot;]
+    OA --&gt; L[&quot;link&quot;]
+    OB --&gt; L
+    LIB[&quot;libraries&quot;] --&gt; L
+    L --&gt; E[&quot;game.exe&quot;]</pre></div>
+<p>Changing <code>a.cpp</code> recompiles only <code>a.obj</code>, then re-links. Changing a header recompiles every <code>.cpp</code> that includes it, directly or indirectly. That is why large projects keep headers small, use forward declarations where they can, and avoid including heavy headers in other headers.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>A declaration that does not quite match its definition</span></div><div class="callout-body"><p><code>void heal(int)</code> declared, <code>void heal(long)</code> defined: two different symbols, and an unresolved external. Copy declarations from definitions exactly.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Globals defined in headers</span></div><div class="callout-body"><p>Declare <code>extern int g_score;</code> in the header and define it in one <code>.cpp</code>, or use <code>inline int g_score{ 0 };</code>.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Including a header to get a type you only point to</span></div><div class="callout-body"><p>If a header only uses <code>Player*</code> or <code>Player&amp;</code>, a forward declaration <code>class Player;</code> is enough, and saves recompiling when <code>player.h</code> changes.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which is a definition, not just a declaration?</div><ul><li><code>int addBonus(int score);</code></li><li><code>extern int g_lives;</code></li><li><code>int g_lives{ 3 };</code></li></ul><details><summary>Show the answer</summary><p><b><code>int g_lives{ 3 };</code></b> It creates the variable&#39;s storage. The others only announce that something exists elsewhere.</p></details></li><li><div class="q">Two <code>.cpp</code> files include a header containing <code>int square(int x) { return x * x; }</code>. What happens?</div><ul><li>The linker reports that <code>square</code> is already defined</li><li>It compiles and links fine</li><li>The compiler reports a syntax error</li></ul><details><summary>Show the answer</summary><p><b>The linker reports that <code>square</code> is already defined</b> Each file gets a definition, breaking the one definition rule. Marking it <code>inline</code> fixes it.</p></details></li><li><div class="q">Why does a declaration <code>void heal(int)</code> not link to a definition <code>void heal(unsigned)</code>?</div><ul><li>The parameter types are part of the mangled symbol, so they are two different symbols</li><li>The linker ignores parameters</li><li><code>unsigned</code> cannot be used in definitions</li></ul><details><summary>Show the answer</summary><p><b>The parameter types are part of the mangled symbol, so they are two different symbols</b> C++ symbols encode the parameter types so that overloads can coexist.</p></details></li><li><div class="q">What does <code>extern &quot;C&quot;</code> change?</div><ul><li>It turns off name mangling, so the symbol is the plain function name</li><li>It makes the function run faster</li><li>It makes the function private to one file</li></ul><details><summary>Show the answer</summary><p><b>It turns off name mangling, so the symbol is the plain function name</b> Plain names are what C code, other languages and <code>GetProcAddress</code> expect.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-solutions-projects-and-build-configurations/"><span class="mono">previous</span><b>4.01 Solutions, Projects and Build Configurations</b></a>
+      <a class="lp-next" href="../4-03-reading-compiler-and-linker-errors/"><span class="mono">next</span><b>4.03 Reading Compiler and Linker Errors</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/4-02-preprocessor-compiler-linker-who-does-what"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

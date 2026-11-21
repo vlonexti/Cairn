@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Idempotency Keys and Timeouts · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/3-04-idempotency-keys-and-timeouts/">
+  <meta name="description" content="Making non-idempotent requests safe to retry - the Idempotency-Key header, one key per logical operation, what the server stores and replays, conflicts when…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Idempotency Keys and Timeouts · Working with APIs · Xenon">
+  <meta property="og:description" content="Making non-idempotent requests safe to retry - the Idempotency-Key header, one key per logical operation, what the server stores and replays, conflicts when…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/3-04-idempotency-keys-and-timeouts/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Idempotency Keys and Timeouts · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Idempotency Keys and Timeouts · Working with APIs · Xenon">
+  <meta name="twitter:description" content="Making non-idempotent requests safe to retry - the Idempotency-Key header, one key per logical operation, what the server stores and replays, conflicts when…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Paging, Rate Limits and Retries</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Idempotency Keys and Timeouts</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.04</b></span><span>4 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Making non-idempotent requests safe to retry - the Idempotency-Key header, one key per logical operation, what the server stores and replays, conflicts when the same key comes with a different request - and timeouts, unknown outcomes and deadlines that span several calls.</p>
+      <div class="prose">
+<h2>The unknown outcome</h2>
+<p>You send <code>POST /payments</code> and the connection drops before the response arrives. Did the payment happen? You cannot know. Retrying might pay twice; not retrying might not pay at all. Timeouts create the same uncertainty: a timeout says <strong>you stopped waiting</strong>, not that the server did nothing.</p>
+<h2>Idempotency keys</h2>
+<p>Many APIs that create things (payments, orders, messages) solve this with an <strong>idempotency key</strong>: a unique value the client generates for each <strong>logical operation</strong> and sends as a header:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>POST /v1/payments
+Idempotency-Key: 6f1c2b7e-4a5d-4c3e-9b8a-1d2e3f4a5b6c
+Content-Type: application/json
+
+{&quot;amount&quot;: 1999, &quot;currency&quot;: &quot;EUR&quot;}</code></pre></div>
+<p>The server remembers the key with the response it gave. If the same key arrives again:</p>
+<ul>
+<li>with the <strong>same</strong> request: it does not repeat the operation; it <strong>replays</strong> the stored response. Your retry is now safe.</li>
+<li>with a <strong>different</strong> request (another amount): it refuses, typically with 409 or 422, because reusing a key for a different operation is a client bug.</li>
+</ul>
+<p>Rules for the client:</p>
+<ul>
+<li>Generate the key <strong>once per operation</strong> (<code>uuid.uuid4()</code>), <strong>before</strong> the first attempt, and reuse it for every retry of that operation.</li>
+<li>A <strong>new</strong> operation (the user clicks &quot;pay&quot; again for a second item) gets a <strong>new</strong> key.</li>
+<li>Keys expire on the server after some time (often 24 hours); retries happen within seconds or minutes, so this does not matter for them.</li>
+</ul>
+<p>Practice 3.04 builds the server side of this, which is the best way to understand what the client relies on.</p>
+<h2>Timeouts and deadlines</h2>
+<p>Every request needs a timeout (lesson 1.02). When an operation makes several requests, with retries, also give it a <strong>deadline</strong>: a total time budget. Each attempt gets the smaller of its usual timeout and the time left, and the operation stops when the budget is spent:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Python</span></div><pre><code>deadline = <span class="tk-f">clock</span>() + <span class="tk-n">30</span>
+<span class="tk-k">for</span> attempt <span class="tk-k">in</span> <span class="tk-f">range</span>(<span class="tk-n">1</span>, <span class="tk-n">5</span>):
+    remaining = deadline - <span class="tk-f">clock</span>()
+    <span class="tk-k">if</span> remaining &lt;= <span class="tk-n">0</span>:
+        <span class="tk-k">raise</span> <span class="tk-f">TimeoutError</span>(<span class="tk-s">&quot;gave up after 30 s&quot;</span>)
+    response = <span class="tk-f">send</span>(timeout=<span class="tk-f">min</span>(<span class="tk-n">10</span>, remaining))
+    ...</code></pre></div>
+<p>Deadlines keep a slow dependency from making your whole program slow: a web page that must answer in 2 s cannot spend 40 s retrying.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/3.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/3.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-03-retries-with-backoff/"><span class="mono">previous</span><b>3.03 Retries with Backoff</b></a>
+      <a class="lp-next" href="../3-05-caching-with-etags/"><span class="mono">next</span><b>3.05 Caching with ETags</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/3-04-idempotency-keys-and-timeouts"></script>
+</body>
+</html>

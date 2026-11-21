@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Capstone: Analysing and Documenting a Program You Did Not Write · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/18-04-capstone-analysing-and-documenting-a-program-you-did-not-wri/">
+  <meta name="description" content="The last capstone applies chapter 9's reverse engineering, chapter 8's debugging and chapter 7's assembly to a program whose source you have not read, and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Capstone: Analysing and Documenting a Program You Did Not Write · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The last capstone applies chapter 9's reverse engineering, chapter 8's debugging and chapter 7's assembly to a program whose source you have not read, and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/18-04-capstone-analysing-and-documenting-a-program-you-did-not-wri/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Capstone: Analysing and Documenting a Program You Did Not Write · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Capstone: Analysing and Documenting a Program You Did Not Write · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The last capstone applies chapter 9's reverse engineering, chapter 8's debugging and chapter 7's assembly to a program whose source you have not read, and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Capstone Projects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Capstone: Analysing and Documenting a Program You Did Not Write</h1>
+      <div class="readout lp-readout"><span>lesson <b>18.04</b></span><span>4 of 4 in milestone 18</span><span>7 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The last capstone applies chapter 9&#39;s reverse engineering, chapter 8&#39;s debugging and chapter 7&#39;s assembly to a program whose source you have not read, and turns the findings into a clear technical report. Targets are chosen so the analysis is legal and checkable: open-source programs you build yourself with the source set aside, practice programs published for analysis, and programs a classmate writes for you. The lesson covers choosing a target, the method, the report&#39;s structure and how to check your conclusions against the truth.</p>
+      <div class="prose">
+<h2>Choosing a target</h2>
+<p>The analysis must be <strong>legal</strong> and <strong>checkable</strong>. Good targets:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Why it works</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>An <strong>open-source program</strong> you compile yourself, in Release, then analyse without reading the source; the source is the answer key afterwards</td>
+<td>Legal under its licence; you can check every conclusion</td>
+</tr>
+<tr>
+<td>A <strong>practice program written for analysis</strong> (often called a &quot;crackme&quot; or reversing challenge) from a site whose rules allow it</td>
+<td>Made for this; usually comes with write-ups to compare</td>
+</tr>
+<tr>
+<td>A program a <strong>classmate or friend writes for you</strong> with a short brief (&quot;a small file format and a checksum&quot;), who keeps the source until you finish</td>
+<td>Realistic and fun; both of you learn</td>
+</tr>
+<tr>
+<td>One of <strong>your own old programs</strong> whose source you no longer remember</td>
+<td>Surprisingly instructive</td>
+</tr>
+</tbody></table>
+</div>
+<p>Not suitable: commercial software or games whose licence forbids reverse engineering, anything protected by anti-tamper (lesson 17.06), online games, and anything you would analyse to get around a protection or a payment. Lesson 9.01&#39;s ground rules apply unchanged.</p>
+<p>A good size is 50 to 500 KB of code: large enough to need a method, small enough to finish. A command-line tool with a file format (a compressor, an image converter, a small game with save files) is ideal.</p>
+<h2>The method</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    A[&quot;1. Triage&lt;br/&gt;PE headers, imports, strings, sections&quot;] --&gt; B[&quot;2. Run it&lt;br/&gt;observe files, output, behaviour&quot;]
+    B --&gt; C[&quot;3. Find the interesting code&lt;br/&gt;cross-references from strings and imports&quot;]
+    C --&gt; D[&quot;4. Understand it&lt;br/&gt;functions, loops, structs, in the disassembler&quot;]
+    D --&gt; E[&quot;5. Confirm dynamically&lt;br/&gt;breakpoints, watch memory, change inputs&quot;]
+    E --&gt;|&quot;new question&quot;| C
+    E --&gt; F[&quot;6. Document&lt;br/&gt;names, structures, diagrams, the report&quot;]</pre></div>
+<ol>
+<li><strong>Triage</strong> (lessons 9.02, 9.03): architecture, sections, imports (file, network, crypto, UI?), exported functions, strings. Write down hypotheses: &quot;it reads <code>.cfg</code> files&quot;, &quot;it uses zlib&quot;.</li>
+<li><strong>Run it</strong> in a VM or sandbox folder and watch with Process Monitor: files it opens, registry keys, what it prints.</li>
+<li><strong>Find the interesting code</strong> (lesson 9.08): from a string such as <code>&quot;invalid header&quot;</code> or an import such as <code>CreateFileW</code>, follow cross-references back to the functions that use them.</li>
+<li><strong>Understand it</strong> (lessons 9.04 to 9.06, 9.09, chapter 7): rename functions and variables in the disassembler as you go, reconstruct structs from field offsets, recognise loops, switches, vtables and library code.</li>
+<li><strong>Confirm dynamically</strong> (lesson 9.07): break on the function, check arguments and results match your reading, change an input byte and predict what happens.</li>
+<li><strong>Document</strong>: names, structures and the report below.</li>
+</ol>
+<p>Keep a <strong>lab notebook</strong>: every address, hypothesis, test and result, dated. It is what turns hours of clicking into a report.</p>
+<h2>The report</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Summary</strong></td>
+<td>What the program does, in one paragraph, for someone who will not read further</td>
+</tr>
+<tr>
+<td><strong>Target and method</strong></td>
+<td>Exact file, version, hash, how it was obtained and why analysing it is permitted; tools used</td>
+</tr>
+<tr>
+<td><strong>Architecture</strong></td>
+<td>Main modules or components and how they interact, with a diagram</td>
+</tr>
+<tr>
+<td><strong>Function map</strong></td>
+<td>A table of the important functions: address, your name, purpose, confidence</td>
+</tr>
+<tr>
+<td><strong>Data structures</strong></td>
+<td>Reconstructed structs with offsets, sizes and field meanings</td>
+</tr>
+<tr>
+<td><strong>File format or protocol</strong></td>
+<td>A byte-level description, if the program has one, with an example decoded by hand</td>
+</tr>
+<tr>
+<td><strong>Findings</strong></td>
+<td>Anything notable: bugs, unsafe patterns (lesson 17.04), surprising design choices</td>
+</tr>
+<tr>
+<td><strong>Verification</strong></td>
+<td>How each major conclusion was confirmed, and what is still uncertain</td>
+</tr>
+<tr>
+<td><strong>Comparison</strong> (open-source targets)</td>
+<td>What you got right, wrong and missed, once you read the source</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <strong>confidence</strong> column matters: &quot;high (confirmed in the debugger)&quot;, &quot;medium (consistent with the code)&quot;, &quot;low (a guess from the name of a string)&quot;. Honest uncertainty is what makes a report trustworthy.</p>
+<h2>Acceptance criteria</h2>
+<ul>
+<li>The target is one of the permitted kinds, recorded with its hash and licence.</li>
+<li>The function map covers the program&#39;s main path from <code>main</code> (or <code>WinMain</code>) to its output, with at least 15 functions named.</li>
+<li>At least two structures are reconstructed with every field&#39;s offset.</li>
+<li>If the program has a file format, a small program of yours reads or writes it correctly (proof of understanding).</li>
+<li>Every high-confidence claim has a recorded dynamic confirmation.</li>
+<li>For an open-source target, the comparison section is honest about errors.</li>
+</ul>
+<h2>Stretch goals</h2>
+<ul>
+<li>Write a script for your disassembler (Ghidra&#39;s Python or Java API) that applies your function names and struct definitions automatically, and include it.</li>
+<li>Analyse two builds of the same program (Debug and Release, or two versions) and document what changed.</li>
+<li>Turn the report into a short talk for classmates.</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Reading everything in order</span></div><div class="callout-body"><p>Start from strings, imports and behaviour, and work towards the interesting code.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Not writing things down</span></div><div class="callout-body"><p>Without a notebook, you will analyse the same function twice.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Stating guesses as facts</span></div><div class="callout-body"><p>Give every conclusion a confidence and the evidence for it.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why is an open-source program built yourself a good target?</div><ul><li>Analysing it is permitted by its licence, and the source lets you check every conclusion afterwards</li><li>Open-source programs have no machine code</li><li>It is the only legal target</li></ul><details><summary>Show the answer</summary><p><b>Analysing it is permitted by its licence, and the source lets you check every conclusion afterwards</b> An answer key, with permission.</p></details></li><li><div class="q">What is the best starting point for finding a program&#39;s interesting code?</div><ul><li>Strings and imports, following cross-references back to the functions that use them</li><li>The first byte of the <code>.text</code> section</li><li>A random function</li></ul><details><summary>Show the answer</summary><p><b>Strings and imports, following cross-references back to the functions that use them</b> Work from what you can observe.</p></details></li><li><div class="q">Why does the function map have a confidence column?</div><ul><li>So readers know which conclusions were confirmed and which are educated guesses</li><li>To sort the table</li><li>It is a legal requirement</li></ul><details><summary>Show the answer</summary><p><b>So readers know which conclusions were confirmed and which are educated guesses</b> Honest uncertainty makes a report trustworthy.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/18.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/18.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../18-03-capstone-a-driver-and-client-pair-in-a-virtual-machine/"><span class="mono">previous</span><b>18.03 Capstone: A Driver and Client Pair in a Virtual Machine</b></a>
+      <span></span>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/18-04-capstone-analysing-and-documenting-a-program-you-did-not-wri"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

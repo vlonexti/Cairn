@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Records, Enums and Sealed Types · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/3-05-records-enums-and-sealed-types/">
+  <meta name="description" content="Modern Java data modelling - records with compact constructors and value equality, enums with fields, methods and switch, EnumMap, sealed interfaces that…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Records, Enums and Sealed Types · Java · Xenon">
+  <meta property="og:description" content="Modern Java data modelling - records with compact constructors and value equality, enums with fields, methods and switch, EnumMap, sealed interfaces that…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/3-05-records-enums-and-sealed-types/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Records, Enums and Sealed Types · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Records, Enums and Sealed Types · Java · Xenon">
+  <meta name="twitter:description" content="Modern Java data modelling - records with compact constructors and value equality, enums with fields, methods and switch, EnumMap, sealed interfaces that…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Object-Oriented Programming</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Records, Enums and Sealed Types</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.05</b></span><span>5 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Modern Java data modelling - records with compact constructors and value equality, enums with fields, methods and switch, EnumMap, sealed interfaces that list their implementations, and pattern matching in switch with record patterns for exhaustive handling of every case.</p>
+      <div class="prose">
+<h2>Records</h2>
+<p>A <strong>record</strong> is a class for plain data. One line gives you private final fields, a constructor, accessors, and <code>equals</code>, <code>hashCode</code> and <code>toString</code> based on the values:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.<span class="tk-t">HashSet</span>;
+<span class="tk-k">import</span> java.util.<span class="tk-t">Set</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Point</span> a = <span class="tk-k">new</span> <span class="tk-f">Point</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>);
+        <span class="tk-t">Point</span> b = <span class="tk-k">new</span> <span class="tk-f">Point</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a + <span class="tk-s">&quot; &quot;</span> + a.<span class="tk-f">equals</span>(b) + <span class="tk-s">&quot; &quot;</span> + a.<span class="tk-f">x</span>());     <span class="tk-c">// accessors are x() and y()</span>
+        <span class="tk-t">Set</span>&lt;<span class="tk-t">Point</span>&gt; set = <span class="tk-k">new</span> <span class="tk-t">HashSet</span>&lt;&gt;(<span class="tk-t">Set</span>.<span class="tk-f">of</span>(a));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(set.<span class="tk-f">contains</span>(b));                          <span class="tk-c">// true: value equality</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(a.<span class="tk-f">plus</span>(<span class="tk-k">new</span> <span class="tk-f">Point</span>(<span class="tk-n">10</span>, <span class="tk-n">10</span>)));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-k">new</span> <span class="tk-f">Range</span>(<span class="tk-n">3</span>, <span class="tk-n">7</span>).<span class="tk-f">length</span>());
+        <span class="tk-k">try</span> {
+            <span class="tk-k">new</span> <span class="tk-f">Range</span>(<span class="tk-n">5</span>, <span class="tk-n">1</span>);
+        } <span class="tk-k">catch</span> (<span class="tk-t">IllegalArgumentException</span> e) {
+            <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(e.<span class="tk-f">getMessage</span>());
+        }
+    }
+}
+
+<span class="tk-k">record</span> <span class="tk-f">Point</span>(<span class="tk-k">int</span> x, <span class="tk-k">int</span> y) {
+    <span class="tk-t">Point</span> <span class="tk-f">plus</span>(<span class="tk-t">Point</span> other) { <span class="tk-k">return</span> <span class="tk-k">new</span> <span class="tk-f">Point</span>(x + other.x, y + other.y); }   <span class="tk-c">// records can have methods</span>
+}
+
+<span class="tk-k">record</span> <span class="tk-f">Range</span>(<span class="tk-k">int</span> start, <span class="tk-k">int</span> end) {
+    <span class="tk-t">Range</span> {                                                 <span class="tk-c">// a compact constructor: validation</span>
+        <span class="tk-k">if</span> (start &gt; end) <span class="tk-k">throw</span> <span class="tk-k">new</span> <span class="tk-f">IllegalArgumentException</span>(<span class="tk-s">&quot;start after end: &quot;</span> + start + <span class="tk-s">&quot; &gt; &quot;</span> + end);
+    }
+    <span class="tk-k">int</span> <span class="tk-f">length</span>() { <span class="tk-k">return</span> end - start; }
+}</code></pre></div>
+<p>Records are <strong>immutable</strong>: to &quot;change&quot; one, create a new one. Use them for values that are compared, stored in sets and maps, returned from methods, and passed between parts of a program.</p>
+<h2>Enums</h2>
+<p>An <strong>enum</strong> is a type with a fixed set of named values. Enums can have fields, constructors and methods:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.<span class="tk-t">EnumMap</span>;
+<span class="tk-k">import</span> java.util.<span class="tk-t">Map</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Planet</span> home = <span class="tk-t">Planet</span>.EARTH;
+        <span class="tk-t">System</span>.out.<span class="tk-f">printf</span>(<span class="tk-s">&quot;%s: %.2f m/s2%n&quot;</span>, home, home.<span class="tk-f">surfaceGravity</span>());
+        <span class="tk-k">for</span> (<span class="tk-t">Planet</span> p : <span class="tk-t">Planet</span>.<span class="tk-f">values</span>()) <span class="tk-t">System</span>.out.<span class="tk-f">print</span>(p.<span class="tk-f">name</span>().<span class="tk-f">toLowerCase</span>() + <span class="tk-s">&quot; &quot;</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>();
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-t">Planet</span>.<span class="tk-f">valueOf</span>(<span class="tk-s">&quot;MARS&quot;</span>).<span class="tk-f">ordinal</span>());
+
+        <span class="tk-t">Map</span>&lt;<span class="tk-t">Planet</span>, <span class="tk-t">Integer</span>&gt; visits = <span class="tk-k">new</span> <span class="tk-t">EnumMap</span>&lt;&gt;(<span class="tk-t">Planet</span>.<span class="tk-k">class</span>);
+        visits.<span class="tk-f">merge</span>(<span class="tk-t">Planet</span>.MARS, <span class="tk-n">1</span>, <span class="tk-t">Integer</span>::sum);
+        visits.<span class="tk-f">merge</span>(<span class="tk-t">Planet</span>.MARS, <span class="tk-n">1</span>, <span class="tk-t">Integer</span>::sum);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(visits);
+
+        <span class="tk-t">Level</span> level = <span class="tk-t">Level</span>.WARN;
+        <span class="tk-t">String</span> colour = <span class="tk-k">switch</span> (level) {
+            <span class="tk-k">case</span> DEBUG, INFO -&gt; <span class="tk-s">&quot;grey&quot;</span>;
+            <span class="tk-k">case</span> WARN -&gt; <span class="tk-s">&quot;orange&quot;</span>;
+            <span class="tk-k">case</span> ERROR -&gt; <span class="tk-s">&quot;red&quot;</span>;
+        };                                             <span class="tk-c">// no default needed: every constant is covered</span>
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(colour + <span class="tk-s">&quot; &quot;</span> + level.<span class="tk-f">isAtLeast</span>(<span class="tk-t">Level</span>.INFO));
+    }
+}
+
+<span class="tk-k">enum</span> <span class="tk-t">Planet</span> {
+    <span class="tk-f">MERCURY</span>(<span class="tk-n">3.303e23</span>, <span class="tk-n">2.4397e6</span>), <span class="tk-f">EARTH</span>(<span class="tk-n">5.976e24</span>, <span class="tk-n">6.37814e6</span>), <span class="tk-f">MARS</span>(<span class="tk-n">6.421e23</span>, <span class="tk-n">3.3972e6</span>);
+
+    <span class="tk-k">private</span> <span class="tk-k">final</span> <span class="tk-k">double</span> mass, radius;
+    <span class="tk-f">Planet</span>(<span class="tk-k">double</span> mass, <span class="tk-k">double</span> radius) { <span class="tk-k">this</span>.mass = mass; <span class="tk-k">this</span>.radius = radius; }
+
+    <span class="tk-k">double</span> <span class="tk-f">surfaceGravity</span>() { <span class="tk-k">return</span> <span class="tk-n">6.67300e-11</span> * mass / (radius * radius); }
+}
+
+<span class="tk-k">enum</span> <span class="tk-t">Level</span> {
+    DEBUG, INFO, WARN, ERROR;
+    <span class="tk-k">boolean</span> <span class="tk-f">isAtLeast</span>(<span class="tk-t">Level</span> other) { <span class="tk-k">return</span> <span class="tk-f">compareTo</span>(other) &gt;= <span class="tk-n">0</span>; }
+}</code></pre></div>
+<p>Use enums instead of <code>int</code> or <code>String</code> codes for fixed sets: directions, card suits, order states, log levels. The compiler then rejects invalid values, and a <code>switch</code> can be checked for completeness.</p>
+<h2>Sealed types</h2>
+<p>A <strong>sealed</strong> interface or class lists exactly which classes may implement or extend it. Together with records, that models data that is &quot;one of these kinds&quot;:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Shape</span>[] shapes = {<span class="tk-k">new</span> <span class="tk-f">Circle</span>(<span class="tk-n">1</span>), <span class="tk-k">new</span> <span class="tk-f">Square</span>(<span class="tk-n">2</span>), <span class="tk-k">new</span> <span class="tk-f">Rect</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>)};
+        <span class="tk-k">for</span> (<span class="tk-t">Shape</span> s : shapes) <span class="tk-t">System</span>.out.<span class="tk-f">printf</span>(<span class="tk-s">&quot;%s -&gt; %.2f%n&quot;</span>, s, <span class="tk-f">area</span>(s));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(<span class="tk-f">describe</span>(<span class="tk-k">new</span> <span class="tk-f">Rect</span>(<span class="tk-n">4</span>, <span class="tk-n">4</span>)) + <span class="tk-s">&quot;, &quot;</span> + <span class="tk-f">describe</span>(<span class="tk-k">new</span> <span class="tk-f">Rect</span>(<span class="tk-n">2</span>, <span class="tk-n">5</span>)));
+    }
+
+    <span class="tk-k">static</span> <span class="tk-k">double</span> <span class="tk-f">area</span>(<span class="tk-t">Shape</span> s) {
+        <span class="tk-k">return</span> <span class="tk-k">switch</span> (s) {                            <span class="tk-c">// pattern matching for switch</span>
+            <span class="tk-k">case</span> <span class="tk-t">Circle</span> c -&gt; <span class="tk-t">Math</span>.PI * c.<span class="tk-f">r</span>() * c.<span class="tk-f">r</span>();
+            <span class="tk-k">case</span> <span class="tk-t">Square</span> sq -&gt; sq.<span class="tk-f">side</span>() * sq.<span class="tk-f">side</span>();
+            <span class="tk-k">case</span> <span class="tk-f">Rect</span>(<span class="tk-k">double</span> w, <span class="tk-k">double</span> h) -&gt; w * h;    <span class="tk-c">// a record pattern takes the record apart</span>
+        };                                             <span class="tk-c">// exhaustive: every permitted type is covered</span>
+    }
+
+    <span class="tk-k">static</span> <span class="tk-t">String</span> <span class="tk-f">describe</span>(<span class="tk-t">Shape</span> s) {
+        <span class="tk-k">return</span> <span class="tk-k">switch</span> (s) {
+            <span class="tk-k">case</span> <span class="tk-f">Rect</span>(<span class="tk-k">double</span> w, <span class="tk-k">double</span> h) when w == h -&gt; <span class="tk-s">&quot;a square-shaped rectangle&quot;</span>;   <span class="tk-c">// a guard</span>
+            <span class="tk-k">case</span> <span class="tk-t">Rect</span> r -&gt; <span class="tk-s">&quot;a rectangle&quot;</span>;
+            <span class="tk-k">default</span> -&gt; <span class="tk-s">&quot;another shape&quot;</span>;
+        };
+    }
+}
+
+<span class="tk-k">sealed</span> <span class="tk-k">interface</span> <span class="tk-t">Shape</span> <span class="tk-k">permits</span> <span class="tk-t">Circle</span>, <span class="tk-t">Square</span>, <span class="tk-t">Rect</span> { }
+<span class="tk-k">record</span> <span class="tk-f">Circle</span>(<span class="tk-k">double</span> r) <span class="tk-k">implements</span> <span class="tk-t">Shape</span> { }
+<span class="tk-k">record</span> <span class="tk-f">Square</span>(<span class="tk-k">double</span> side) <span class="tk-k">implements</span> <span class="tk-t">Shape</span> { }
+<span class="tk-k">record</span> <span class="tk-f">Rect</span>(<span class="tk-k">double</span> w, <span class="tk-k">double</span> h) <span class="tk-k">implements</span> <span class="tk-t">Shape</span> { }</code></pre></div>
+<p>Because the compiler knows every possible <code>Shape</code>, the <code>switch</code> in <code>area</code> needs no <code>default</code>. If someone adds <code>Triangle</code> to the <code>permits</code> list, every switch that does not handle it stops compiling, showing exactly what to update. This style, data as records and behaviour as functions that switch over them, complements classic object-oriented polymorphism.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/3.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/3.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-04-interfaces-and-abstract-classes/"><span class="mono">previous</span><b>3.04 Interfaces and Abstract Classes</b></a>
+      <a class="lp-next" href="../4-01-generics/"><span class="mono">next</span><b>4.01 Generics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/3-05-records-enums-and-sealed-types"></script>
+</body>
+</html>

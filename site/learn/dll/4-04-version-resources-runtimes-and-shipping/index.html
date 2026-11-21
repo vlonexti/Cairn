@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Version Resources, Runtimes and Shipping · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/4-04-version-resources-runtimes-and-shipping/">
+  <meta name="description" content="Getting a program with DLLs onto someone else's computer means three things - giving each file a version resource so people and installers can tell versions…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Version Resources, Runtimes and Shipping · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="Getting a program with DLLs onto someone else's computer means three things - giving each file a version resource so people and installers can tell versions…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/4-04-version-resources-runtimes-and-shipping/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Version Resources, Runtimes and Shipping · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Version Resources, Runtimes and Shipping · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="Getting a program with DLLs onto someone else's computer means three things - giving each file a version resource so people and installers can tell versions…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Loading Safely and Shipping</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Version Resources, Runtimes and Shipping</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Getting a program with DLLs onto someone else&#39;s computer means three things - giving each file a <strong>version resource</strong> so people and installers can tell versions apart, making sure the <strong>Visual C++ runtime</strong> is there (or not needed), and laying out the files so the search order finds the right ones.</p>
+      <div class="prose">
+<h2>The version resource</h2>
+<p>Right-click any DLL in Explorer, <strong>Properties, Details</strong>: file version, product version, description, copyright. That comes from a <strong>version resource</strong> compiled into the file.</p>
+<p>In Visual Studio, <strong>Add, Resource, Version</strong> creates one in a <code>.rc</code> file:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 2,4,1,0
+ PRODUCTVERSION 2,4,1,0
+BEGIN
+    BLOCK &quot;StringFileInfo&quot;
+    BEGIN
+        BLOCK &quot;040904b0&quot;
+        BEGIN
+            VALUE &quot;CompanyName&quot;,      &quot;Xenon&quot;
+            VALUE &quot;FileDescription&quot;,  &quot;Stone maths for Xenon games&quot;
+            VALUE &quot;FileVersion&quot;,      &quot;2.4.1.0&quot;
+            VALUE &quot;OriginalFilename&quot;, &quot;StoneMath.dll&quot;
+            VALUE &quot;ProductVersion&quot;,   &quot;2.4.1&quot;
+        END
+    END
+    BLOCK &quot;VarFileInfo&quot;
+    BEGIN
+        VALUE &quot;Translation&quot;, 0x409, 1200
+    END
+END</code></pre></div>
+<p>The binary <code>FILEVERSION</code> is <strong>four 16-bit numbers</strong>, stored as two 32-bit values: <code>dwFileVersionMS = major &lt;&lt; 16 | minor</code> and <code>dwFileVersionLS = build &lt;&lt; 16 | revision</code>. Installers compare these numbers to decide whether a file on disk is older than the one they carry, so increase them with every release. The practice converts between the text and the two numbers.</p>
+<p>Reading it at run time takes <code>GetFileVersionInfoSizeW</code>, <code>GetFileVersionInfoW</code> and <code>VerQueryValueW</code> (from <code>version.lib</code>), which return a <code>VS_FIXEDFILEINFO</code> with those two values. That is for display and diagnostics; your code&#39;s compatibility checks belong in the library&#39;s own version function (lesson 3.05).</p>
+<h2>The Visual C++ runtime</h2>
+<p>A program built with the default <code>/MD</code> setting needs the runtime DLLs: <code>vcruntime140.dll</code>, <code>vcruntime140_1.dll</code>, <code>msvcp140.dll</code> and the Universal CRT (<code>ucrtbase.dll</code>, part of Windows 10 and later). On a fresh machine they may be missing. Three ways to deal with it:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>How</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Redistributable installer</strong></td>
+<td>Run <code>vc_redist.x64.exe</code> from your installer</td>
+<td>The standard way; shared by all programs, updated by Windows Update</td>
+</tr>
+<tr>
+<td><strong>App-local copy</strong></td>
+<td>Copy the runtime DLLs next to your <code>.exe</code></td>
+<td>Works without an installer; you must update them yourself</td>
+</tr>
+<tr>
+<td><strong>Static runtime</strong></td>
+<td>Build everything with <code>/MT</code></td>
+<td>No runtime DLLs at all, but each DLL gets its own CRT and heap (lesson 2.05)</td>
+</tr>
+</tbody></table>
+</div>
+<p>The redistributable is the usual choice. The runtime DLLs from Visual Studio 2015 to 2022 are <strong>binary compatible</strong>: a program built with an older toolset works with the newer redistributable (never the other way round).</p>
+<div class="callout warning"><div class="callout-title"><span>Never ship Debug builds</span></div><div class="callout-body"><p>Debug builds need the debug runtimes (<code>msvcp140d.dll</code>, <code>ucrtbased.dll</code>), which you are not allowed to redistribute and which only exist where Visual Studio is installed.</p>
+</div></div>
+<h2>Laying out the files</h2>
+<div class="codeblock diagram plain"><pre><code>XenonGame\
+├── XenonGame.exe
+├── StoneMath.dll           your DLLs: next to the .exe, found first (lesson 4.01)
+├── engine.dll
+├── vcruntime140.dll        only if you ship the runtime app-locally
+├── msvcp140.dll
+└── plugins\
+    └── fog\
+        ├── fog.dll         loaded by full path (lesson 4.02)
+        └── noise.dll       found with LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR</code></pre></div>
+<p>Before shipping, check the result on a <strong>clean</strong> machine (a fresh virtual machine is ideal): run <code>dumpbin /dependents</code> on every binary (lesson 1.06), confirm each listed DLL is either part of Windows, installed by the redistributable, or in your folder.</p>
+<h2>Side-by-side assemblies, briefly</h2>
+<p>Older Windows software uses <strong>manifests</strong> to bind a program to an exact version of a shared DLL in <code>C:\Windows\WinSxS</code>. You still meet them for one purpose: telling Windows to use version 6 of the common controls (modern-looking buttons) in a Win32 program. For your own DLLs, the app-local layout above is simpler and is what nearly every modern program does.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Forgetting to increase the file version</span></div><div class="callout-body"><p>An installer that compares versions may then refuse to replace an older file with yours.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Copying only some runtime DLLs</span></div><div class="callout-body"><p><code>msvcp140.dll</code> without <code>vcruntime140_1.dll</code> fails on machines without the redistributable. Use the installer, or copy the whole set from the Visual Studio redist folder.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A file version is 2.4.1.0. What is dwFileVersionMS?</div><ul><li>2 &lt;&lt; 16 | 4</li><li>2.4</li><li>1 &lt;&lt; 16 | 0</li></ul><details><summary>Show the answer</summary><p><b>2 &lt;&lt; 16 | 4</b> MS holds major and minor, LS holds build and revision.</p></details></li><li><div class="q">Why should a shipped program never be a Debug build?</div><ul><li>It needs the debug runtime DLLs, which are not redistributable and are missing on normal machines</li><li>Debug builds cannot load DLLs</li><li>Debug builds are larger but otherwise fine</li></ul><details><summary>Show the answer</summary><p><b>It needs the debug runtime DLLs, which are not redistributable and are missing on normal machines</b> Release builds use the redistributable runtime.</p></details></li><li><div class="q">What is the usual way to make sure the Visual C++ runtime is on a user&#39;s machine?</div><ul><li>Run the vc_redist installer from your installer</li><li>Copy only msvcp140.dll</li><li>Ask the user to install Visual Studio</li></ul><details><summary>Show the answer</summary><p><b>Run the vc_redist installer from your installer</b> The redistributable is shared and kept up to date.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-delay-loading/"><span class="mono">previous</span><b>4.03 Delay Loading</b></a>
+      <a class="lp-next" href="../4-05-static-libraries-dlls-or-header-only/"><span class="mono">next</span><b>4.05 Static Libraries, DLLs or Header-Only</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/4-04-version-resources-runtimes-and-shipping"></script>
+</body>
+</html>

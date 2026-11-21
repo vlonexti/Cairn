@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Shipping and Maintaining What You Build · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/17-08-shipping-and-maintaining-what-you-build/">
+  <meta name="description" content="A program is not finished when it works on your machine. This lesson covers what it takes to put a tool or game in other people's hands and keep it working:…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Shipping and Maintaining What You Build · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A program is not finished when it works on your machine. This lesson covers what it takes to put a tool or game in other people's hands and keep it working:…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/17-08-shipping-and-maintaining-what-you-build/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Shipping and Maintaining What You Build · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Shipping and Maintaining What You Build · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A program is not finished when it works on your machine. This lesson covers what it takes to put a tool or game in other people's hands and keep it working:…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Testing, Security and Reliability</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Shipping and Maintaining What You Build</h1>
+      <div class="readout lp-readout"><span>lesson <b>17.08</b></span><span>8 of 8 in milestone 17</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A program is not finished when it works on your machine. This lesson covers what it takes to put a tool or game in other people&#39;s hands and keep it working: reproducible Release builds, versioning with <strong>semantic versions</strong>, crash reports with symbols kept for every release, installers and updates, documentation, licences, and the habits of maintenance (changelogs, issue tracking, and deciding what not to build).</p>
+      <div class="prose">
+<h2>A reproducible Release build</h2>
+<p>Anyone on the team, or a build server, should produce the same release from the same commit:</p>
+<ul>
+<li>The build is one command or one button: <strong>Build → Batch Build</strong> or <code>msbuild Delve.sln /p:Configuration=Release /p:Platform=x64</code>.</li>
+<li>Dependencies are pinned: the SDL2 version from lesson 11.01 is checked in or fetched at a fixed version (vcpkg with a manifest and baseline does this).</li>
+<li>Release settings are deliberate: optimisation on, warnings as errors, <code>/guard:cf</code> and other mitigations on (lesson 17.04), and <strong><code>/Zi</code> with PDBs</strong> even for Release.</li>
+<li>A <strong>continuous integration</strong> service (GitHub Actions, Azure Pipelines) builds and runs the tests (17.01) on every push, so a broken build is noticed in minutes.</li>
+</ul>
+<h2>Semantic versions</h2>
+<p>A <strong>semantic version</strong> <code>MAJOR.MINOR.PATCH</code> tells users what an update means:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Increase when</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MAJOR</strong></td>
+<td>You make a change that breaks compatibility: an old save format no longer loads, a plugin API function changes</td>
+<td>1.4.2 → 2.0.0</td>
+</tr>
+<tr>
+<td><strong>MINOR</strong></td>
+<td>You add features compatibly</td>
+<td>1.4.2 → 1.5.0</td>
+</tr>
+<tr>
+<td><strong>PATCH</strong></td>
+<td>You fix bugs compatibly</td>
+<td>1.4.2 → 1.4.3</td>
+</tr>
+</tbody></table>
+</div>
+<p>Pre-releases add a suffix (<code>2.0.0-beta.1</code>) and sort before the final version. Versioning interfaces between components (lesson 12.06&#39;s telemetry protocol, lesson 13.07&#39;s plugin API) follows the same rule, which is why those had version fields. The practice task compares and bumps versions.</p>
+<p>Put the version in the executable&#39;s <strong>version resource</strong> (Add → Resource → Version) so it shows in the file&#39;s properties, in the crash report, and in the title or about screen.</p>
+<h2>Crash reports and symbols</h2>
+<p>Users will hit crashes you never saw. Lesson 8.04&#39;s minidumps are how you find out:</p>
+<ol>
+<li>The program installs an unhandled-exception filter that writes a minidump with <code>MiniDumpWriteDump</code> and offers to send it.</li>
+<li>For every release, you <strong>keep the exact PDBs</strong> produced by that build, in a symbol store (<code>symstore add</code>) or a folder named by version.</li>
+<li>When a dump arrives, WinDbg or Visual Studio loads it with the matching symbols and shows the call stack and variables at the crash.</li>
+</ol>
+<p>Without the matching PDB, a dump is a list of addresses. Losing a release&#39;s symbols means losing the ability to debug its crashes.</p>
+<h2>Installers and updates</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Suits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A zip file with a portable folder</td>
+<td>Small tools; nothing to install or uninstall</td>
+</tr>
+<tr>
+<td>An MSIX package or an MSI (WiX)</td>
+<td>Applications that need Start menu entries, file associations, clean uninstall</td>
+</tr>
+<tr>
+<td>A store or launcher (Steam, itch.io, Microsoft Store)</td>
+<td>Games: it handles distribution, updates and signing</td>
+</tr>
+<tr>
+<td>Your own updater</td>
+<td>Only when nothing else fits; it must verify signatures (17.06)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Whatever the method: code-sign the files, install per-user without administrator rights when possible (lesson 6.08), and keep settings and saves in the user&#39;s folders (<code>%APPDATA%</code>, <code>Saved Games</code>), not next to the program.</p>
+<h2>Documentation</h2>
+<p>Three documents cover most needs:</p>
+<ul>
+<li>A <strong>README</strong>: what it is, how to install it, how to use the common features, system requirements.</li>
+<li>A <strong>changelog</strong>: each version, with what was added, changed, fixed and removed, in plain language.</li>
+<li>For anything with an interface others build on (a plugin API, a protocol, a driver&#39;s IOCTLs), a <strong>reference</strong>: every function or message, its parameters, errors and version.</li>
+</ul>
+<h2>Licences</h2>
+<p>Every dependency&#39;s licence must allow your use: SDL2 uses the zlib licence (very permissive), Dear ImGui is MIT, some libraries are GPL (which places conditions on your own code if you distribute it). List them in a third-party notices file. Choose a licence for your own code too, if you publish it; without one, others have no right to use it.</p>
+<h2>Maintenance</h2>
+<p>After release, most of the work is maintenance:</p>
+<ul>
+<li>Track bugs and requests in an <strong>issue tracker</strong>, each with steps to reproduce, version and logs.</li>
+<li>Fix with a <strong>regression test first</strong> (17.01), then the fix.</li>
+<li>Release patches from a known commit, tagged with the version (<code>git tag v1.4.3</code>).</li>
+<li>Say <strong>no</strong> to features that do not fit. Each one is code to maintain forever, a lesson that applies with special force to low-level tools, where every new feature is also new attack surface (17.05).</li>
+</ul>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Not keeping Release PDBs</span></div><div class="callout-body"><p>Crash reports become useless.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Breaking compatibility in a minor version</span></div><div class="callout-body"><p>Users and plugin authors trusted the version number.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Saving data next to the executable</span></div><div class="callout-body"><p>Program Files is not writable by normal users, and updates may replace the folder.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">A change makes old save files fail to load. Which part of the version increases?</div><ul><li>MAJOR</li><li>MINOR</li><li>PATCH</li></ul><details><summary>Show the answer</summary><p><b>MAJOR</b> It breaks compatibility.</p></details></li><li><div class="q">Why keep the PDB files of every release?</div><ul><li>Crash dumps from users can only be read with the exact symbols from the build that crashed</li><li>Windows needs them to run the program</li><li>They make the program faster</li></ul><details><summary>Show the answer</summary><p><b>Crash dumps from users can only be read with the exact symbols from the build that crashed</b> Without them a dump is just addresses.</p></details></li><li><div class="q">Where should a game store its saves?</div><ul><li>In the user&#39;s folders, such as Saved Games or AppData</li><li>Next to the executable in Program Files</li><li>In the Windows folder</li></ul><details><summary>Show the answer</summary><p><b>In the user&#39;s folders, such as Saved Games or AppData</b> Per-user, writable, and untouched by updates.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/17.08">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/17.08">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../17-07-performance-without-guessing/"><span class="mono">previous</span><b>17.07 Performance Without Guessing</b></a>
+      <a class="lp-next" href="../18-01-capstone-a-memory-inspector-with-a-full-interface/"><span class="mono">next</span><b>18.01 Capstone: A Memory Inspector with a Full Interface</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/17-08-shipping-and-maintaining-what-you-build"></script>
+</body>
+</html>

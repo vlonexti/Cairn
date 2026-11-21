@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Structs · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/4-06-structs/">
+  <meta name="description" content="A struct bundles related variables into one new type, such as struct Player { std::string name; int hp; };. Reach the members with ., or - through a pointer.…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Structs · C++ · Xenon">
+  <meta property="og:description" content="A struct bundles related variables into one new type, such as struct Player { std::string name; int hp; };. Reach the members with ., or - through a pointer.…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/4-06-structs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Structs · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Structs · C++ · Xenon">
+  <meta name="twitter:description" content="A struct bundles related variables into one new type, such as struct Player { std::string name; int hp; };. Reach the members with ., or - through a pointer.…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Functions and Compound Types</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Structs</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.06</b></span><span>6 of 7 in milestone 4</span><span>5 min</span><span><b>4</b> practice tasks</span></div>
+      <p class="lp-summary">A <strong>struct</strong> bundles related variables into one new type, such as <code>struct Player { std::string name; int hp; };</code>. Reach the members with <code>.</code>, or <code>-&gt;</code> through a pointer. Pass structs by <code>const&amp;</code>.</p>
+      <div class="prose">
+<h2>Data that belongs together</h2>
+<p>A player has a name, hit points and a level. As loose variables, two players already need six names, and nothing ties <code>hp1</code> to <code>name1</code>.</p>
+<p>A <strong>struct</strong> defines a new type that holds them as one unit.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Player</span>
+{
+    std::string name{};
+    <span class="tk-k">int</span> hp{ <span class="tk-n">100</span> };
+    <span class="tk-k">int</span> level{ <span class="tk-n">1</span> };
+};</code></pre></div>
+<div class="codeblock diagram plain"><pre><code> Player hero
+ ┌────────────────────────────┐
+ │ name  : &quot;Aria&quot;             │
+ │ hp    : 100                │
+ │ level : 1                  │
+ └────────────────────────────┘</code></pre></div>
+<p>The variables inside are <strong>members</strong>. The value after each one is its <strong>default member initializer</strong>: what the member holds unless you say otherwise. Give every member one, for the same reason every variable gets a starting value.</p>
+<h2>Creating and using one</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Player</span>
+{
+    std::string name{};
+    <span class="tk-k">int</span> hp{ <span class="tk-n">100</span> };
+    <span class="tk-k">int</span> level{ <span class="tk-n">1</span> };
+};
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    <span class="tk-t">Player</span> a{};                               <span class="tk-c">// all defaults</span>
+    <span class="tk-t">Player</span> b{ <span class="tk-s">&quot;Aria&quot;</span>, <span class="tk-n">80</span>, <span class="tk-n">5</span> };                <span class="tk-c">// values in member order</span>
+    <span class="tk-t">Player</span> c{ .name = <span class="tk-s">&quot;Bo&quot;</span>, .level = <span class="tk-n">3</span> };     <span class="tk-c">// by name; hp keeps its default</span>
+
+    b.hp -= <span class="tk-n">10</span>;
+    std::cout &lt;&lt; b.name &lt;&lt; <span class="tk-s">&quot; has &quot;</span> &lt;&lt; b.hp &lt;&lt; <span class="tk-s">&quot; HP\n&quot;</span>;
+    std::cout &lt;&lt; c.name &lt;&lt; <span class="tk-s">&quot; is level &quot;</span> &lt;&lt; c.level &lt;&lt; <span class="tk-s">&quot; with &quot;</span> &lt;&lt; c.hp &lt;&lt; <span class="tk-s">&quot; HP\n&quot;</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Name</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Player a{};</code></td>
+<td>Value initialization</td>
+<td>Every member takes its default</td>
+</tr>
+<tr>
+<td><code>Player b{ &quot;Aria&quot;, 80, 5 };</code></td>
+<td>Aggregate initialization</td>
+<td>Values are matched to members in declaration order</td>
+</tr>
+<tr>
+<td><code>Player c{ .name = &quot;Bo&quot;, .level = 3 };</code></td>
+<td>Designated initializers (C++20)</td>
+<td>Names must appear in declaration order; skipped members keep their default</td>
+</tr>
+</tbody></table>
+</div>
+<p>The dot in <code>b.hp</code> is the <strong>member access operator</strong>.</p>
+<h2>Structs and functions</h2>
+<p>Structs follow the parameter rules from <a href="../4-03-references/">4.03 References</a>. They are rarely cheap to copy, so:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">void</span> <span class="tk-f">printPlayer</span>(<span class="tk-k">const</span> <span class="tk-t">Player</span>&amp; p)    <span class="tk-c">// only reads: const reference</span>
+{
+    std::cout &lt;&lt; p.name &lt;&lt; <span class="tk-s">&quot; (level &quot;</span> &lt;&lt; p.level &lt;&lt; <span class="tk-s">&quot;) HP: &quot;</span> &lt;&lt; p.hp &lt;&lt; <span class="tk-s">'\n'</span>;
+}
+
+<span class="tk-k">void</span> <span class="tk-f">heal</span>(<span class="tk-t">Player</span>&amp; p, <span class="tk-k">int</span> amount)     <span class="tk-c">// modifies: reference</span>
+{
+    p.hp += amount;
+}
+
+<span class="tk-t">Player</span> <span class="tk-f">makePlayer</span>(std::string_view name)    <span class="tk-c">// creates: return by value</span>
+{
+    <span class="tk-k">return</span> <span class="tk-t">Player</span>{ std::string{ name }, <span class="tk-n">100</span>, <span class="tk-n">1</span> };
+}</code></pre></div>
+<h3>Returning several values</h3>
+<p>A struct is the clean answer to &quot;a function can return only one thing&quot;.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">MinMax</span>
+{
+    <span class="tk-k">int</span> min{};
+    <span class="tk-k">int</span> max{};
+};
+
+<span class="tk-t">MinMax</span> <span class="tk-f">findMinMax</span>(<span class="tk-k">int</span> a, <span class="tk-k">int</span> b)
+{
+    <span class="tk-k">return</span> a &lt; b ? <span class="tk-t">MinMax</span>{ a, b } : <span class="tk-t">MinMax</span>{ b, a };
+}
+
+<span class="tk-k">auto</span> [low, high]{ <span class="tk-f">findMinMax</span>(<span class="tk-n">9</span>, <span class="tk-n">4</span>) };    <span class="tk-c">// low is 4, high is 9</span></code></pre></div>
+<p>The last line uses <strong>structured bindings</strong>: it unpacks the members into separate named variables, in order.</p>
+<h2>Structs inside structs</h2>
+<p>A member can be another struct.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Vec2</span>
+{
+    <span class="tk-k">double</span> x{};
+    <span class="tk-k">double</span> y{};
+};
+
+<span class="tk-k">struct</span> <span class="tk-t">Entity</span>
+{
+    std::string name{};
+    <span class="tk-t">Vec2</span> position{};
+    <span class="tk-t">Vec2</span> velocity{};
+};
+
+<span class="tk-t">Entity</span> ball{ <span class="tk-s">&quot;Ball&quot;</span>, { <span class="tk-n">0.0</span>, <span class="tk-n">0.0</span> }, { <span class="tk-n">1.5</span>, -<span class="tk-n">2.0</span> } };
+ball.position.x += ball.velocity.x;</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">classDiagram
+    class Entity {
+        std::string name
+        Vec2 position
+        Vec2 velocity
+    }
+    class Vec2 {
+        double x
+        double y
+    }
+    Entity *-- Vec2 : contains two</pre></div>
+<p>Building types out of smaller types like this is called <strong>composition</strong>. Most of a real program&#39;s design is done this way.</p>
+<h2>Through a pointer</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">Player</span>* pp{ &amp;a };
+pp-&gt;hp = <span class="tk-n">50</span>;    <span class="tk-c">// the same as (*pp).hp = 50</span></code></pre></div>
+<h2>Size and padding</h2>
+<p>A struct can be larger than the sum of its members.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> S
+{
+    <span class="tk-k">char</span> c{};
+    <span class="tk-k">int</span> i{};
+};
+<span class="tk-c">// sizeof(S) is usually 8, not 5</span></code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> [ c ][pad][pad][pad][ i   i   i   i ]</code></pre></div>
+<p>Processors read an <code>int</code> fastest when it starts at an address that is a multiple of 4, so the compiler inserts unused <strong>padding</strong> bytes to arrange that. Declaring members from largest to smallest usually minimises it. The full story is in <a href="../13-02-memory-layout-alignment-unions-and-bit-fields/">13.02 Memory Layout, Alignment, Unions and Bit Fields</a>.</p>
+<h2>What comes next</h2>
+<p>A struct can also contain functions. By convention, <code>struct</code> is used for plain bundles of data with everything accessible, and <code>class</code> for types that protect their data behind functions. That is Milestone 6: <a href="../6-01-classes-and-objects/">6.01 Classes and Objects</a>.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>4 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/4.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/4.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-05-enums/"><span class="mono">previous</span><b>4.05 Enums</b></a>
+      <a class="lp-next" href="../4-07-auto-type-deduction-and-type-aliases/"><span class="mono">next</span><b>4.07 auto, Type Deduction and Type Aliases</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/4-06-structs"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

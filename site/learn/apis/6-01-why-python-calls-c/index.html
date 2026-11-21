@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Why Python Calls C · Working with APIs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/apis/6-01-why-python-calls-c/">
+  <meta name="description" content="The other kind of API - a native library's functions - why C's calling convention is the common language every other language can speak, what you gain by…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Why Python Calls C · Working with APIs · Xenon">
+  <meta property="og:description" content="The other kind of API - a native library's functions - why C's calling convention is the common language every other language can speak, what you gain by…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/apis/6-01-why-python-calls-c/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Why Python Calls C · Working with APIs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Why Python Calls C · Working with APIs · Xenon">
+  <meta name="twitter:description" content="The other kind of API - a native library's functions - why C's calling convention is the common language every other language can speak, what you gain by…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/apis.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Working with APIs</a><span>/</span><span>Calling C Libraries</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Why Python Calls C</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The other kind of API - a native library&#39;s functions - why C&#39;s calling convention is the common language every other language can speak, what you gain by calling into C from Python, the tools available (ctypes, cffi, extension modules), and the new kind of failure it brings - crashes instead of exceptions.</p>
+      <div class="prose">
+<h2>A different kind of API</h2>
+<p>Web APIs connect programs over a network. A <strong>native library</strong> (a <code>.dll</code> on Windows, <code>.so</code> on Linux, <code>.dylib</code> on macOS) offers its API as <strong>functions in the same process</strong>: no HTTP, no JSON, just a call with arguments in registers and memory. The Windows API, SQLite, zlib, OpenSSL, graphics drivers and countless vendor SDKs are all native libraries with C interfaces.</p>
+<h2>C as the common language</h2>
+<p>Almost every language can call functions that follow the <strong>C calling convention</strong> (the <strong>ABI</strong>: how arguments are passed, who cleans up the stack, how structures are laid out in memory), and most libraries offer a C interface even when written in C++ or Rust. So C is the lingua franca: a library with a C API can be used from Python, C#, JavaScript, Go, Java and more.</p>
+<p>Reasons to call C from Python:</p>
+<ul>
+<li><strong>Use something only available natively</strong>: an operating system function, a hardware vendor&#39;s SDK, a library with no Python package.</li>
+<li><strong>Speed</strong>: a hot loop moved into C (NumPy, Pillow and most of the scientific stack do this).</li>
+<li><strong>Reuse</strong>: a company&#39;s existing C or C++ code, without rewriting it.</li>
+</ul>
+<h2>The tools</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>How it works</th>
+<th>Good for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ctypes</strong> (standard library)</td>
+<td>describe the C types in Python, load the library, call</td>
+<td>quick bindings, no compiler needed</td>
+</tr>
+<tr>
+<td><strong>cffi</strong> (package)</td>
+<td>paste the C declarations; it works out the types</td>
+<td>larger APIs, written from the header</td>
+</tr>
+<tr>
+<td><strong>C extension modules</strong></td>
+<td>write C against Python&#39;s own C API, compile it</td>
+<td>maximum speed and control</td>
+</tr>
+<tr>
+<td><strong>pybind11</strong>, <strong>nanobind</strong></td>
+<td>C++ templates generate the extension</td>
+<td>wrapping C++ classes</td>
+</tr>
+<tr>
+<td><strong>Cython</strong></td>
+<td>Python-like language compiled to C</td>
+<td>speeding up Python code, calling C</td>
+</tr>
+</tbody></table>
+</div>
+<p>This milestone uses <strong>ctypes</strong>, because it needs nothing installed and shows exactly what every binding tool must do underneath: describe each type, each function&#39;s arguments and result, and who owns which memory.</p>
+<h2>A new kind of failure</h2>
+<p>Inside Python, a mistake raises an exception you can catch and read. Across the boundary into C, Python cannot check anything: if you describe a function wrongly (an <code>int</code> where the library expects a pointer, a buffer that is too short, a structure laid out differently), the program <strong>crashes</strong> with an access violation, or worse, keeps running with corrupted memory. So binding code is written carefully, <strong>from the header file</strong>, with every type spelled out (lesson 6.02), and tested.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/apis/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/apis/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-keeping-an-integration-observable/"><span class="mono">previous</span><b>5.05 Keeping an Integration Observable</b></a>
+      <a class="lp-next" href="../6-02-ctypes-basics/"><span class="mono">next</span><b>6.02 ctypes Basics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/apis/6-01-why-python-calls-c"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Serving Many Clients · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/2-04-serving-many-clients/">
+  <meta name="description" content="A pipe server that handles several clients at once - one instance per client, the accept loop with a thread per connection, keeping an instance always…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Serving Many Clients · Processes and Communication · Xenon">
+  <meta property="og:description" content="A pipe server that handles several clients at once - one instance per client, the accept loop with a thread per connection, keeping an instance always…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/2-04-serving-many-clients/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Serving Many Clients · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Serving Many Clients · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="A pipe server that handles several clients at once - one instance per client, the accept loop with a thread per connection, keeping an instance always…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Pipes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Serving Many Clients</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.04</b></span><span>4 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A pipe server that handles several clients at once - one instance per client, the accept loop with a thread per connection, keeping an instance always listening, identifying who connected, limits, and shutting the server down cleanly.</p>
+      <div class="prose">
+<h2>One instance per client</h2>
+<p>A named pipe instance is one connection. To serve several clients at the same time, the server creates several instances of the same name. The standard shape is an <strong>accept loop</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">for</span> (;;)
+{
+    HANDLE instance{ <span class="tk-f">CreateNamedPipeW</span>(name, PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+                                      PIPE_UNLIMITED_INSTANCES, <span class="tk-n">65536</span>, <span class="tk-n">65536</span>, <span class="tk-n">0</span>, &amp;security) };
+    <span class="tk-k">if</span> (instance == INVALID_HANDLE_VALUE) <span class="tk-k">break</span>;
+
+    <span class="tk-k">const</span> BOOL connected{ <span class="tk-f">ConnectNamedPipe</span>(instance, <span class="tk-k">nullptr</span>) || <span class="tk-f">GetLastError</span>() == ERROR_PIPE_CONNECTED };
+    <span class="tk-k">if</span> (!connected) { <span class="tk-f">CloseHandle</span>(instance); <span class="tk-k">continue</span>; }
+
+    std::thread{ serveClient, instance }.<span class="tk-f">detach</span>();   <span class="tk-c">// serveClient reads, replies, and closes the handle</span>
+}</code></pre></div>
+<p>Each loop iteration creates a fresh instance and waits on it, so as soon as one client is handed to its thread, the next client can connect. Between <code>ConnectNamedPipe</code> returning and the next <code>CreateNamedPipeW</code>, there is a moment with no free instance; a client arriving then gets <code>ERROR_PIPE_BUSY</code>, waits with <code>WaitNamedPipeW</code> (lesson 2.02) and gets in. Some servers keep two or more instances listening to make that window smaller.</p>
+<h2>Thread per client</h2>
+<p>A thread per client is the simplest correct design: each thread runs straightforward blocking code (read a request, handle it, write a reply) and closes its instance when the client disconnects (<code>ReadFile</code> fails with <code>ERROR_BROKEN_PIPE</code>). It is the right choice for tens of clients. For hundreds or thousands, the threads&#39; stacks and scheduling cost too much, and overlapped I/O with a completion port (lesson 2.05) serves them all with a few threads.</p>
+<p>Shared state that client threads touch (a list of connected clients, a cache) needs a mutex, like any multi-threaded code.</p>
+<h2>Limits</h2>
+<p><code>nMaxInstances</code> (the fourth argument) caps how many instances may exist. With a cap of 4, a fifth client keeps getting <code>ERROR_PIPE_BUSY</code> until one of the four disconnects. Set a cap that matches what your server can handle, and give clients a sensible wait and retry policy.</p>
+<h2>Who connected?</h2>
+<p>A server can ask about the process at the other end:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>ULONG clientPid{};
+<span class="tk-f">GetNamedPipeClientProcessId</span>(instance, &amp;clientPid);       <span class="tk-c">// the client's PID</span></code></pre></div>
+<p>and, with care, run code in the client&#39;s security context with <code>ImpersonateNamedPipeClient</code> (lesson 5.05). The PID is useful for logging and for watching the client process; it is <strong>not</strong> proof of who the client is, since PIDs can be reused and any program may connect. Access control on the pipe itself is the real gate.</p>
+<h2>Shutting down</h2>
+<p>The accept loop above blocks in <code>ConnectNamedPipe</code>, so how does it ever stop? Common answers:</p>
+<ul>
+<li>Set a &quot;stopping&quot; flag, then <strong>connect to your own pipe</strong> as a client: the blocked <code>ConnectNamedPipe</code> returns, the loop sees the flag and exits.</li>
+<li>Use overlapped <code>ConnectNamedPipe</code> (lesson 2.05) and wait on both the connection event and a &quot;stop&quot; event.</li>
+<li><code>CancelIoEx(instance, nullptr)</code> from another thread cancels the pending connect.</li>
+</ul>
+<p>Then tell each client thread to finish: close their handles (their reads fail) or set a flag they check between messages, and wait for them to end before the program exits.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/2.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/2.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-03-message-framing/"><span class="mono">previous</span><b>2.03 Message Framing</b></a>
+      <a class="lp-next" href="../2-05-overlapped-i-o-and-completion-ports/"><span class="mono">next</span><b>2.05 Overlapped I/O and Completion Ports</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/2-04-serving-many-clients"></script>
+</body>
+</html>

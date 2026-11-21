@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Combo Boxes and List Boxes · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/2-03-combo-boxes-and-list-boxes/">
+  <meta name="description" content="Choosing one item from many is everywhere in tools - a material, a level, an enemy type. This lesson covers BeginCombo with Selectable, the simple Combo…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Combo Boxes and List Boxes · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Choosing one item from many is everywhere in tools - a material, a level, an enemy type. This lesson covers BeginCombo with Selectable, the simple Combo…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/2-03-combo-boxes-and-list-boxes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Combo Boxes and List Boxes · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Combo Boxes and List Boxes · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Choosing one item from many is everywhere in tools - a material, a level, an enemy type. This lesson covers BeginCombo with Selectable, the simple Combo…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Widgets and Input</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Combo Boxes and List Boxes</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 5 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Choosing one item from many is everywhere in tools - a material, a level, an enemy type. This lesson covers <code>BeginCombo</code> with <code>Selectable</code>, the simple <code>Combo</code> overloads, list boxes, filtering a long list as you type, and showing enums by name.</p>
+      <div class="prose">
+<h2>BeginCombo and Selectable</h2>
+<p>The flexible way to make a drop-down:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static</span> <span class="tk-k">const</span> <span class="tk-k">char</span>* materials[] = { <span class="tk-s">&quot;Granite&quot;</span>, <span class="tk-s">&quot;Basalt&quot;</span>, <span class="tk-s">&quot;Slate&quot;</span>, <span class="tk-s">&quot;Marble&quot;</span>, <span class="tk-s">&quot;Limestone&quot;</span> };
+<span class="tk-k">static</span> <span class="tk-k">int</span> current = <span class="tk-n">0</span>;
+
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginCombo</span>(<span class="tk-s">&quot;Material&quot;</span>, materials[current]))      <span class="tk-c">// the text shown when closed</span>
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-f">IM_ARRAYSIZE</span>(materials); ++i)
+    {
+        <span class="tk-k">const</span> <span class="tk-k">bool</span> selected = (i == current);
+        <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Selectable</span>(materials[i], selected))
+            current = i;
+        <span class="tk-k">if</span> (selected)
+            <span class="tk-t">ImGui</span>::<span class="tk-f">SetItemDefaultFocus</span>();                       <span class="tk-c">// keyboard navigation starts here</span>
+    }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndCombo</span>();                                          <span class="tk-c">// only if BeginCombo returned true!</span>
+}</code></pre></div>
+<p><code>BeginCombo</code> returns <code>true</code> while the drop-down is open; then you draw its contents and call <code>EndCombo</code>. If it returns <code>false</code>, you do <strong>not</strong> call <code>EndCombo</code> (lesson 1.04&#39;s second rule).</p>
+<p><code>Selectable</code> is a full-width clickable row that can be shown as selected. You will use it in lists, tables and trees too.</p>
+<h2>The simple overloads</h2>
+<p>For a plain list of strings there is a one-line version:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-t">ImGui</span>::<span class="tk-f">Combo</span>(<span class="tk-s">&quot;Material&quot;</span>, &amp;current, materials, <span class="tk-f">IM_ARRAYSIZE</span>(materials));
+<span class="tk-t">ImGui</span>::<span class="tk-f">Combo</span>(<span class="tk-s">&quot;Quality&quot;</span>, &amp;quality, <span class="tk-s">&quot;Low\0Medium\0High\0\0&quot;</span>);     <span class="tk-c">// items separated by \0, ending with \0\0</span></code></pre></div>
+<p>Use <code>BeginCombo</code> when the items are not a simple array: a <code>std::vector</code> of objects, items with icons, items you want to filter.</p>
+<h2>Enums by name</h2>
+<p>A table of names next to the enum keeps a combo honest:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">enum</span> <span class="tk-k">class</span> <span class="tk-t">Weather</span> { <span class="tk-t">Clear</span>, <span class="tk-t">Rain</span>, <span class="tk-t">Snow</span>, <span class="tk-t">Fog</span>, <span class="tk-t">Count</span> };
+<span class="tk-k">constexpr</span> <span class="tk-k">const</span> <span class="tk-k">char</span>* weatherNames[] = { <span class="tk-s">&quot;Clear&quot;</span>, <span class="tk-s">&quot;Rain&quot;</span>, <span class="tk-s">&quot;Snow&quot;</span>, <span class="tk-s">&quot;Fog&quot;</span> };
+<span class="tk-k">static_assert</span>(<span class="tk-f">IM_ARRAYSIZE</span>(weatherNames) == <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(<span class="tk-t">Weather</span>::<span class="tk-t">Count</span>));
+
+<span class="tk-k">int</span> w = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(level.weather);
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Combo</span>(<span class="tk-s">&quot;Weather&quot;</span>, &amp;w, weatherNames, <span class="tk-f">IM_ARRAYSIZE</span>(weatherNames)))
+    level.weather = <span class="tk-k">static_cast</span>&lt;<span class="tk-t">Weather</span>&gt;(w);</code></pre></div>
+<p>The <code>static_assert</code> fails the build if someone adds an enum value without a name.</p>
+<h2>List boxes</h2>
+<p>A list box is the same idea, always open, with a fixed height:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginListBox</span>(<span class="tk-s">&quot;##levels&quot;</span>, <span class="tk-f">ImVec2</span>(-FLT_MIN, <span class="tk-n">8</span> * <span class="tk-t">ImGui</span>::<span class="tk-f">GetTextLineHeightWithSpacing</span>())))
+{
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; (<span class="tk-k">int</span>)levels.<span class="tk-f">size</span>(); ++i)
+        <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Selectable</span>(levels[i].name.<span class="tk-f">c_str</span>(), i == selectedLevel))
+            selectedLevel = i;
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndListBox</span>();
+}</code></pre></div>
+<p>Size the height in lines (<code>GetTextLineHeightWithSpacing</code>) so it adapts to the font.</p>
+<h2>Filtering long lists</h2>
+<p>A list of 400 assets needs a search box. Keep a filter string, and only draw matching items:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">static</span> std::string filter;
+<span class="tk-t">ImGui</span>::<span class="tk-f">InputTextWithHint</span>(<span class="tk-s">&quot;##filter&quot;</span>, <span class="tk-s">&quot;Filter...&quot;</span>, &amp;filter);
+<span class="tk-k">for</span> (<span class="tk-k">const</span> <span class="tk-t">Asset</span>&amp; a : assets)
+    <span class="tk-k">if</span> (<span class="tk-f">matches</span>(a.name, filter))
+        <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">Selectable</span>(a.name.<span class="tk-f">c_str</span>(), &amp;a == selected)) selected = &amp;a;</code></pre></div>
+<p>A good <code>matches</code> ignores case and lets the words of the filter appear anywhere, in any order: &quot;rock big&quot; matches &quot;big_mossy_rock&quot;. The practice writes it. ImGui also ships <code>ImGuiTextFilter</code> for include/exclude filters, which lesson 5.02 uses.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Calling EndCombo when BeginCombo returned false</span></div><div class="callout-body"><p>ImGui asserts. EndCombo belongs inside the if.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Selectables with the same text</span></div><div class="callout-body"><p>They share an ID (lesson 1.05). PushID per item, or add <code>##</code> and the index.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">When is EndCombo called?</div><ul><li>Only when BeginCombo returned true</li><li>Always, like End for windows</li><li>Never; it is automatic</li></ul><details><summary>Show the answer</summary><p><b>Only when BeginCombo returned true</b> BeginCombo returns true while the drop-down is open.</p></details></li><li><div class="q">Why add a static_assert next to an enum&#39;s name table?</div><ul><li>So the build fails if an enum value is added without a matching name</li><li>To speed up the combo</li><li>Because Combo requires it</li></ul><details><summary>Show the answer</summary><p><b>So the build fails if an enum value is added without a matching name</b> The table and the enum must stay the same length.</p></details></li><li><div class="q">How do you size a list box to show eight items?</div><ul><li>8 * ImGui::GetTextLineHeightWithSpacing() as its height</li><li>ImVec2(0, 8)</li><li>It always shows eight</li></ul><details><summary>Show the answer</summary><p><b>8 * ImGui::GetTextLineHeightWithSpacing() as its height</b> Measuring in lines adapts to the font size.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-text-input-and-validation/"><span class="mono">previous</span><b>2.02 Text Input and Validation</b></a>
+      <a class="lp-next" href="../2-04-colours-and-colour-pickers/"><span class="mono">next</span><b>2.04 Colours and Colour Pickers</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/2-03-combo-boxes-and-list-boxes"></script>
+</body>
+</html>

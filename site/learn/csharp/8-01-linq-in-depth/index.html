@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>LINQ in Depth · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/8-01-linq-in-depth/">
+  <meta name="description" content="The rest of LINQ - query syntax and how it maps to methods, joining two sequences with Join and GroupJoin, flattening with SelectMany, Aggregate, Zip, Chunk…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LINQ in Depth · C# · Xenon">
+  <meta property="og:description" content="The rest of LINQ - query syntax and how it maps to methods, joining two sequences with Join and GroupJoin, flattening with SelectMany, Aggregate, Zip, Chunk…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/8-01-linq-in-depth/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="LINQ in Depth · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LINQ in Depth · C# · Xenon">
+  <meta name="twitter:description" content="The rest of LINQ - query syntax and how it maps to methods, joining two sequences with Join and GroupJoin, flattening with SelectMany, Aggregate, Zip, Chunk…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>C# in Depth</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">LINQ in Depth</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.01</b></span><span>1 of 5 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">The rest of LINQ - query syntax and how it maps to methods, joining two sequences with Join and GroupJoin, flattening with SelectMany, Aggregate, Zip, Chunk and the By methods, ToLookup, set operations, and the deferred execution rules that decide when a query actually runs.</p>
+      <div class="prose">
+<h2>Beyond Where and Select</h2>
+<p>Lesson 2.04 introduced LINQ&#39;s everyday methods. This lesson covers the ones that combine several sequences, summarise them in custom ways, and the rule that surprises everyone: when a query runs.</p>
+<p>The examples use these records:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">record</span> <span class="tk-f">Customer</span>(<span class="tk-k">int</span> <span class="tk-t">Id</span>, <span class="tk-k">string</span> <span class="tk-t">Name</span>, <span class="tk-k">string</span> <span class="tk-t">City</span>);
+<span class="tk-k">record</span> <span class="tk-f">Order</span>(<span class="tk-k">int</span> <span class="tk-t">Id</span>, <span class="tk-k">int</span> <span class="tk-t">CustomerId</span>, <span class="tk-k">decimal</span> <span class="tk-t">Total</span>);</code></pre></div>
+<h2>Query syntax</h2>
+<p>C# has a second way to write queries that reads like SQL. The compiler turns it into the method calls you already know:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> customers = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-t">Customer</span>&gt; { <span class="tk-k">new</span>(<span class="tk-n">1</span>, <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;London&quot;</span>), <span class="tk-k">new</span>(<span class="tk-n">2</span>, <span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-s">&quot;Paris&quot;</span>), <span class="tk-k">new</span>(<span class="tk-n">3</span>, <span class="tk-s">&quot;Cy&quot;</span>, <span class="tk-s">&quot;London&quot;</span>) };
+
+<span class="tk-k">var</span> londoners =
+    from c <span class="tk-k">in</span> customers
+    <span class="tk-k">where</span> c.<span class="tk-t">City</span> == <span class="tk-s">&quot;London&quot;</span>
+    orderby c.<span class="tk-t">Name</span> descending
+    select c.<span class="tk-t">Name</span>;
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;, &quot;</span>, londoners));     <span class="tk-c">// Cy, Ada</span>
+<span class="tk-c">// the same as: customers.Where(c =&gt; c.City == &quot;London&quot;).OrderByDescending(c =&gt; c.Name).Select(c =&gt; c.Name)</span>
+
+<span class="tk-k">record</span> <span class="tk-f">Customer</span>(<span class="tk-k">int</span> <span class="tk-t">Id</span>, <span class="tk-k">string</span> <span class="tk-t">Name</span>, <span class="tk-k">string</span> <span class="tk-t">City</span>);</code></pre></div>
+<p>Most C# code uses the method form. Query syntax shines for joins and <code>let</code>, which names an intermediate value.</p>
+<h2>Joining two sequences</h2>
+<p><code>Join</code> pairs items from two sequences whose keys match:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> customers = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-t">Customer</span>&gt; { <span class="tk-k">new</span>(<span class="tk-n">1</span>, <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;London&quot;</span>), <span class="tk-k">new</span>(<span class="tk-n">2</span>, <span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-s">&quot;Paris&quot;</span>), <span class="tk-k">new</span>(<span class="tk-n">3</span>, <span class="tk-s">&quot;Cy&quot;</span>, <span class="tk-s">&quot;London&quot;</span>) };
+<span class="tk-k">var</span> orders = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-t">Order</span>&gt; { <span class="tk-k">new</span>(<span class="tk-n">10</span>, <span class="tk-n">1</span>, <span class="tk-n">25m</span>), <span class="tk-k">new</span>(<span class="tk-n">11</span>, <span class="tk-n">2</span>, <span class="tk-n">40m</span>), <span class="tk-k">new</span>(<span class="tk-n">12</span>, <span class="tk-n">1</span>, <span class="tk-n">15m</span>) };
+
+<span class="tk-k">var</span> lines = customers.<span class="tk-f">Join</span>(orders, c =&gt; c.<span class="tk-t">Id</span>, o =&gt; o.<span class="tk-t">CustomerId</span>, (c, o) =&gt; <span class="tk-s">$&quot;{c.Name}: order {o.Id} {o.Total}&quot;</span>);
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> line <span class="tk-k">in</span> lines) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(line);
+
+<span class="tk-c">// GroupJoin keeps every customer, with the list of their orders (possibly empty)</span>
+<span class="tk-k">var</span> totals = customers.<span class="tk-f">GroupJoin</span>(orders, c =&gt; c.<span class="tk-t">Id</span>, o =&gt; o.<span class="tk-t">CustomerId</span>,
+    (c, os) =&gt; <span class="tk-k">new</span> { c.<span class="tk-t">Name</span>, <span class="tk-t">Count</span> = os.<span class="tk-f">Count</span>(), <span class="tk-t">Sum</span> = os.<span class="tk-f">Sum</span>(o =&gt; o.<span class="tk-t">Total</span>) });
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> t <span class="tk-k">in</span> totals) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{t.Name}: {t.Count} orders, {t.Sum}&quot;</span>);
+
+<span class="tk-k">record</span> <span class="tk-f">Customer</span>(<span class="tk-k">int</span> <span class="tk-t">Id</span>, <span class="tk-k">string</span> <span class="tk-t">Name</span>, <span class="tk-k">string</span> <span class="tk-t">City</span>);
+<span class="tk-k">record</span> <span class="tk-f">Order</span>(<span class="tk-k">int</span> <span class="tk-t">Id</span>, <span class="tk-k">int</span> <span class="tk-t">CustomerId</span>, <span class="tk-k">decimal</span> <span class="tk-t">Total</span>);</code></pre></div>
+<p><code>Join</code> is an inner join: Cy, who has no orders, does not appear. <code>GroupJoin</code> is the left join: everyone appears, Cy with 0 orders.</p>
+<h2>Flattening with SelectMany</h2>
+<p><code>SelectMany</code> turns each item into a sequence and joins all those sequences into one:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> teams = <span class="tk-k">new</span> <span class="tk-t">Dictionary</span>&lt;<span class="tk-k">string</span>, <span class="tk-k">string</span>[]&gt;
+{
+    [<span class="tk-s">&quot;red&quot;</span>] = [<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;Bob&quot;</span>],
+    [<span class="tk-s">&quot;blue&quot;</span>] = [<span class="tk-s">&quot;Cy&quot;</span>],
+};
+
+<span class="tk-k">var</span> everyone = teams.<span class="tk-f">SelectMany</span>(t =&gt; t.<span class="tk-t">Value</span>, (t, player) =&gt; <span class="tk-s">$&quot;{player} ({t.Key})&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;, &quot;</span>, everyone));    <span class="tk-c">// Ada (red), Bob (red), Cy (blue)</span>
+
+<span class="tk-k">var</span> pairs = from x <span class="tk-k">in</span> <span class="tk-k">new</span>[] { <span class="tk-n">1</span>, <span class="tk-n">2</span> } from y <span class="tk-k">in</span> <span class="tk-k">new</span>[] { <span class="tk-s">&quot;a&quot;</span>, <span class="tk-s">&quot;b&quot;</span> } select <span class="tk-s">$&quot;{x}{y}&quot;</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; &quot;</span>, pairs));         <span class="tk-c">// 1a 1b 2a 2b</span></code></pre></div>
+<h2>Summaries of your own: Aggregate</h2>
+<p><code>Sum</code>, <code>Max</code> and friends cover common cases. <code>Aggregate</code> folds a sequence with any function, starting from a seed:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> words = <span class="tk-k">new</span>[] { <span class="tk-s">&quot;tea&quot;</span>, <span class="tk-s">&quot;coffee&quot;</span>, <span class="tk-s">&quot;milk&quot;</span> };
+<span class="tk-k">string</span> longest = words.<span class="tk-f">Aggregate</span>((best, w) =&gt; w.<span class="tk-t">Length</span> &gt; best.<span class="tk-t">Length</span> ? w : best);
+<span class="tk-k">string</span> csv = words.<span class="tk-f">Aggregate</span>(<span class="tk-k">new</span> <span class="tk-t">System</span>.<span class="tk-t">Text</span>.<span class="tk-f">StringBuilder</span>(), (sb, w) =&gt; sb.<span class="tk-f">Append</span>(sb.<span class="tk-t">Length</span> &gt; <span class="tk-n">0</span> ? <span class="tk-s">&quot;,&quot;</span> : <span class="tk-s">&quot;&quot;</span>).<span class="tk-f">Append</span>(w)).<span class="tk-f">ToString</span>();
+<span class="tk-k">int</span> product = <span class="tk-t">Enumerable</span>.<span class="tk-f">Range</span>(<span class="tk-n">1</span>, <span class="tk-n">5</span>).<span class="tk-f">Aggregate</span>(<span class="tk-n">1</span>, (acc, n) =&gt; acc * n);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{longest} | {csv} | {product}&quot;</span>);   <span class="tk-c">// coffee | tea,coffee,milk | 120</span></code></pre></div>
+<h2>Zip, Chunk and the By methods</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> names = <span class="tk-k">new</span>[] { <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;Bob&quot;</span>, <span class="tk-s">&quot;Cy&quot;</span> };
+<span class="tk-k">var</span> scores = <span class="tk-k">new</span>[] { <span class="tk-n">91</span>, <span class="tk-n">48</span>, <span class="tk-n">77</span> };
+
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> (name, score) <span class="tk-k">in</span> names.<span class="tk-f">Zip</span>(scores)) <span class="tk-t">Console</span>.<span class="tk-f">Write</span>(<span class="tk-s">$&quot;{name}={score} &quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>();
+
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> chunk <span class="tk-k">in</span> <span class="tk-t">Enumerable</span>.<span class="tk-f">Range</span>(<span class="tk-n">1</span>, <span class="tk-n">7</span>).<span class="tk-f">Chunk</span>(<span class="tk-n">3</span>)) <span class="tk-t">Console</span>.<span class="tk-f">Write</span>(<span class="tk-s">$&quot;[{string.Join(&quot;</span>,<span class="tk-s">&quot;, chunk)}] &quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>();
+
+<span class="tk-k">var</span> people = names.<span class="tk-f">Zip</span>(scores, (n, s) =&gt; (<span class="tk-t">Name</span>: n, <span class="tk-t">Score</span>: s)).<span class="tk-f">ToList</span>();
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(people.<span class="tk-f">MaxBy</span>(p =&gt; p.<span class="tk-t">Score</span>).<span class="tk-t">Name</span>);                       <span class="tk-c">// Ada</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;,&quot;</span>, people.<span class="tk-f">DistinctBy</span>(p =&gt; p.<span class="tk-t">Score</span> / <span class="tk-n">50</span>).<span class="tk-f">Select</span>(p =&gt; p.<span class="tk-t">Name</span>)));   <span class="tk-c">// Ada,Bob</span></code></pre></div>
+<p><code>MaxBy</code>, <code>MinBy</code>, <code>DistinctBy</code>, <code>UnionBy</code>, <code>IntersectBy</code> and <code>ExceptBy</code> compare by a key but return whole items.</p>
+<h2>Lookups and sets</h2>
+<p><code>ToLookup</code> is a <code>GroupBy</code> that runs at once and can be indexed; a missing key gives an empty sequence instead of an exception:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> words = <span class="tk-k">new</span>[] { <span class="tk-s">&quot;apple&quot;</span>, <span class="tk-s">&quot;avocado&quot;</span>, <span class="tk-s">&quot;banana&quot;</span>, <span class="tk-s">&quot;cherry&quot;</span> };
+<span class="tk-k">var</span> byLetter = words.<span class="tk-f">ToLookup</span>(w =&gt; w[<span class="tk-n">0</span>]);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;,&quot;</span>, byLetter[<span class="tk-s">'a'</span>]));     <span class="tk-c">// apple,avocado</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(byLetter[<span class="tk-s">'z'</span>].<span class="tk-f">Count</span>());              <span class="tk-c">// 0</span>
+
+<span class="tk-k">int</span>[] a = [<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>, <span class="tk-n">4</span>], b = [<span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">5</span>];
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{string.Join(&quot;</span>,<span class="tk-s">&quot;, a.Union(b))} | {string.Join(&quot;</span>,<span class="tk-s">&quot;, a.Intersect(b))} | {string.Join(&quot;</span>,<span class="tk-s">&quot;, a.Except(b))}&quot;</span>);</code></pre></div>
+<h2>When does a query run?</h2>
+<p>Most LINQ methods are <strong>deferred</strong>: they build a description of the work, and nothing happens until something enumerates the result (<code>foreach</code>, <code>ToList</code>, <code>Count</code>, <code>First</code>...). Each enumeration runs the whole query again:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">int</span> evaluated = <span class="tk-n">0</span>;
+<span class="tk-k">var</span> numbers = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">int</span>&gt; { <span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span> };
+<span class="tk-k">var</span> doubled = numbers.<span class="tk-f">Select</span>(n =&gt; { evaluated++; <span class="tk-k">return</span> n * <span class="tk-n">2</span>; });
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(evaluated);           <span class="tk-c">// 0: nothing has run yet</span>
+numbers.<span class="tk-f">Add</span>(<span class="tk-n">4</span>);                         <span class="tk-c">// the query sees this, because it has not run</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(doubled.<span class="tk-f">Sum</span>());       <span class="tk-c">// 20</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(doubled.<span class="tk-f">Count</span>());     <span class="tk-c">// 4: it ran again</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(evaluated);           <span class="tk-c">// 8</span>
+
+<span class="tk-k">var</span> snapshot = doubled.<span class="tk-f">ToList</span>();        <span class="tk-c">// run once and keep the results</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(evaluated);           <span class="tk-c">// 12</span></code></pre></div>
+<p>Rules of thumb:</p>
+<ul>
+<li>Call <code>ToList()</code> or <code>ToArray()</code> when you will use the results more than once, or when the source may change.</li>
+<li>Methods that return a single value (<code>Count</code>, <code>Sum</code>, <code>First</code>, <code>Any</code>, <code>ToList</code>, <code>ToDictionary</code>) run at once.</li>
+<li>A query over a database (Entity Framework) is translated into SQL when it runs; deferred execution is what makes that possible.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/8.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/8.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-06-async-streams-and-channels/"><span class="mono">previous</span><b>7.06 Async Streams and Channels</b></a>
+      <a class="lp-next" href="../8-02-pattern-matching-in-depth/"><span class="mono">next</span><b>8.02 Pattern Matching in Depth</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/8-01-linq-in-depth"></script>
+</body>
+</html>

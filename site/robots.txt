@@ -1,0 +1,7 @@
+# Xenon: every lesson is open to read.
+User-agent: *
+Allow: /
+Disallow: /data/
+Disallow: /vendor/
+
+Sitemap: https://xenon.justloofy.dev/sitemap.xml

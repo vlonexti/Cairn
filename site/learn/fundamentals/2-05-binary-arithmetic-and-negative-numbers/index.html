@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Binary Arithmetic and Negative Numbers · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/2-05-binary-arithmetic-and-negative-numbers/">
+  <meta name="description" content="Adding in binary is like adding in decimal with only 0 and 1, carrying a 1 whenever a column reaches 2. A fixed number of bits wraps around when it…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Binary Arithmetic and Negative Numbers · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="Adding in binary is like adding in decimal with only 0 and 1, carrying a 1 whenever a column reaches 2. A fixed number of bits wraps around when it…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/2-05-binary-arithmetic-and-negative-numbers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Binary Arithmetic and Negative Numbers · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Binary Arithmetic and Negative Numbers · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="Adding in binary is like adding in decimal with only 0 and 1, carrying a 1 whenever a column reaches 2. A fixed number of bits wraps around when it…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>Binary: The Language of the Machine</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Binary Arithmetic and Negative Numbers</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.05</b></span><span>5 of 6 in milestone 2</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Adding in binary is like adding in decimal with only 0 and 1, carrying a 1 whenever a column reaches 2. A fixed number of bits wraps around when it overflows. Negative numbers use two&#39;s complement - flip every bit and add one - which lets the same adder do subtraction.</p>
+      <div class="prose">
+<h2>Adding</h2>
+<p>Binary addition follows the rules you learned for decimal, but a column carries as soon as it reaches <strong>2</strong> instead of 10:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Bits</th>
+<th>Sum</th>
+<th>Write</th>
+<th>Carry</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0 + 0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>0 + 1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1 + 1</td>
+<td>2</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1 + 1 + 1 (with a carry in)</td>
+<td>3</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>   carries   1 1 1 1
+             0 1 0 1 1   (11)
+           + 0 0 1 1 1   ( 7)
+             ---------
+             1 0 0 1 0   (18)</code></pre></div>
+<p>Work from the right: 1 + 1 = 10, write 0 carry 1; 1 + 1 + 1 = 11, write 1 carry 1; 0 + 1 + 1 = 10, write 0 carry 1; 1 + 0 + 1 = 10, write 0 carry 1; 0 + 0 + 1 = 1. Answer: 10010 = 16 + 2 = <strong>18</strong>. ✓</p>
+<p>In lesson 4.02 you will build exactly this out of logic gates.</p>
+<h2>Fixed size, and overflow</h2>
+<p>Inside a computer, a number does not grow digits as needed: it has a <strong>fixed number of bits</strong>, such as 8. If a sum needs more, the extra carry is simply lost. This is <strong>overflow</strong>:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>      1111 1111   (255)
+    + 0000 0001   (  1)
+    -----------
+    1 0000 0000   needs 9 bits; the 9th is dropped
+      0000 0000   (  0)</code></pre></div>
+<p>255 + 1 = <strong>0</strong> in 8 bits. The number <strong>wraps around</strong>, like a car&#39;s odometer rolling from 99999 to 00000.</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/2.05">Try it in Xenon</a></div>
+<p>Press <strong>+ 1</strong> twice and watch 255 wrap to 0. Press <strong>− 1</strong> at 0 and it wraps back to 255.</p>
+<div class="callout danger"><div class="callout-title"><span>Overflow is a real bug</span></div><div class="callout-body"><p>In 1996 the first Ariane 5 rocket blew up 37 seconds after launch because a 64-bit floating-point number was converted to a 16-bit integer that could not hold it. In <em>Pac-Man</em>, level 256 is a garbled mess because the level counter is one byte. Choosing a big enough size matters.</p>
+</div></div>
+<h2>Negative numbers: two&#39;s complement</h2>
+<p>How can bits, which are only 0 and 1, store −5? Computers use a clever scheme called <strong>two&#39;s complement</strong>. For 8 bits:</p>
+<ul>
+<li>the <strong>top bit</strong> is worth <strong>−128</strong> instead of +128;</li>
+<li>every other bit keeps its usual positive value.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Bits</th>
+<th>Unsigned reading</th>
+<th>Signed (two&#39;s complement) reading</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>0000 0101</code></td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td><code>0111 1111</code></td>
+<td>127</td>
+<td>127 (largest positive)</td>
+</tr>
+<tr>
+<td><code>1000 0000</code></td>
+<td>128</td>
+<td>−128 (most negative)</td>
+</tr>
+<tr>
+<td><code>1111 1011</code></td>
+<td>251</td>
+<td>−128 + 64 + 32 + 16 + 8 + 2 + 1 = <strong>−5</strong></td>
+</tr>
+<tr>
+<td><code>1111 1111</code></td>
+<td>255</td>
+<td><strong>−1</strong></td>
+</tr>
+</tbody></table>
+</div>
+<p>So a byte read as <strong>unsigned</strong> goes from 0 to 255, and read as <strong>signed</strong> from −128 to 127. Same 256 patterns, different meaning - the program decides (2.01).</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/fundamentals/l/2.05">Try it in Xenon</a></div>
+<p>The demo shows both readings. Switch on only the top bit: unsigned 128, signed −128.</p>
+<h3>Making a negative number: flip and add one</h3>
+<p>To get −<em>x</em>, <strong>flip every bit of <em>x</em> and add 1</strong>:</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>   5 = 0000 0101
+flip = 1111 1010
+ + 1 = 1111 1011   = -5</code></pre></div>
+<p>Check it the other way: flipping <code>1111 1011</code> gives <code>0000 0100</code>, plus one is <code>0000 0101</code> = 5. ✓</p>
+<h3>Why this scheme? Subtraction for free</h3>
+<p>The beauty of two&#39;s complement is that <strong>adding works unchanged</strong>. 7 + (−5):</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>      0000 0111   ( 7)
+    + 1111 1011   (-5)
+    -----------
+    1 0000 0010   the 9th bit is dropped
+      0000 0010   ( 2)   ✓</code></pre></div>
+<p>So the CPU needs no separate circuit for subtraction: to work out <em>a</em> − <em>b</em>, it flips <em>b</em>&#39;s bits, adds one, and uses the same adder. Positive and negative numbers go through the same circuits.</p>
+<p>Signed numbers overflow too: in 8 bits, 127 + 1 is <code>1000 0000</code>, which reads as <strong>−128</strong>.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is 0b0110 + 0b0011?</div><ul><li>0b0111</li><li>0b1001</li><li>0b1010</li></ul><details><summary>Show the answer</summary><p><b>0b1001</b> 6 + 3 = 9 = 1001.</p></details></li><li><div class="q">In 8 bits, unsigned, what is 200 + 100?</div><ul><li>300</li><li>44</li><li>255</li></ul><details><summary>Show the answer</summary><p><b>44</b> 300 needs 9 bits. 300 − 256 = 44 is what is left in 8 bits.</p></details></li><li><div class="q">Read 0b1111_1110 as a signed 8-bit number.</div><ul><li>254</li><li>−2</li><li>−126</li></ul><details><summary>Show the answer</summary><p><b>−2</b> −128 + 64 + 32 + 16 + 8 + 4 + 2 = −2. Or: flip to 0000 0001, add one: 2, so it is −2.</p></details></li><li><div class="q">Why do computers use two&#39;s complement for negative numbers?</div><ul><li>The same adding circuit works for positive and negative numbers, so subtraction needs no extra circuit</li><li>It uses fewer bits than other schemes</li><li>It makes numbers easier for people to read</li></ul><details><summary>Show the answer</summary><p><b>The same adding circuit works for positive and negative numbers, so subtraction needs no extra circuit</b> Subtraction becomes &quot;flip, add one, and add&quot;.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/2.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/2.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-04-hexadecimal/"><span class="mono">previous</span><b>2.04 Hexadecimal</b></a>
+      <a class="lp-next" href="../2-06-8-16-32-and-64-bits/"><span class="mono">next</span><b>2.06 8, 16, 32 and 64 Bits</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/2-05-binary-arithmetic-and-negative-numbers"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Lua course · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/">
+  <meta name="description" content="The small scripting language inside games and tools. Lua is small, fast and made to live inside other programs: games, game engines, editors, databases and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Lua course · Xenon">
+  <meta property="og:description" content="The small scripting language inside games and tools. Lua is small, fast and made to live inside other programs: games, game engines, editors, databases and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Lua course · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lua course · Xenon">
+  <meta name="twitter:description" content="The small scripting language inside games and tools. Lua is small, fast and made to live inside other programs: games, game engines, editors, databases and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../">Courses</a><span>/</span><span>Lua</span></div>
+    <h1 class="display">Lua</h1>
+    <div class="readout lp-readout"><span><b>8</b> milestones</span><span><b>38</b> lessons</span><span><b>49</b> practice tasks</span><span><b>40</b> projects</span></div>
+    <p class="lp-lede">Lua is small, fast and made to live inside other programs: games, game engines, editors, databases and network tools use it for their scripting. Starting from the first line, the course covers values and types, numbers, strings and input, decisions and loops, the table (Lua's one data structure, used as list, dictionary, record and object), functions, closures and recursion, the string library and Lua patterns, metatables, classes and inheritance, modules, errors, iterators, coroutines, files, how Lua is embedded in a C program, and finally sandboxes for untrusted code, weak tables and the garbage collector, and bitwise operators and binary data, then data structures, functional style, serialisation and JSON, object patterns and performance. Every lesson has checked practice that runs real Lua 5.4, and every milestone ends with five projects, from small to large.</p>
+    <div class="lp-go"><a class="btn primary" href="1-01-what-lua-is-and-running-code/">Read the first lesson</a><a class="btn" href="../../login.html?join#/c/lua">Start the course in Xenon</a></div>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">01</span> First Steps</h2>
+      <p class="lp-ms-blurb">What Lua is and where it runs, values and types, local variables, numbers, strings and input, and decisions.</p>
+      <ol class="lp-lessons">
+        <li><a href="1-01-what-lua-is-and-running-code/"><span class="mono">1.01</span><span class="t">What Lua Is and Running Code</span><span class="n">1 task</span></a></li>
+        <li><a href="1-02-values-variables-and-types/"><span class="mono">1.02</span><span class="t">Values, Variables and Types</span><span class="n">1 task</span></a></li>
+        <li><a href="1-03-numbers-and-arithmetic/"><span class="mono">1.03</span><span class="t">Numbers and Arithmetic</span><span class="n">1 task</span></a></li>
+        <li><a href="1-04-strings-and-input/"><span class="mono">1.04</span><span class="t">Strings and Input</span><span class="n">2 tasks</span></a></li>
+        <li><a href="1-05-making-decisions/"><span class="mono">1.05</span><span class="t">Making Decisions</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">02</span> Loops and Tables</h2>
+      <p class="lp-ms-blurb">while, repeat and for loops, tables as lists and as dictionaries, the table library, and nested tables and copies.</p>
+      <ol class="lp-lessons">
+        <li><a href="2-01-loops/"><span class="mono">2.01</span><span class="t">Loops</span><span class="n">2 tasks</span></a></li>
+        <li><a href="2-02-tables-as-lists/"><span class="mono">2.02</span><span class="t">Tables as Lists</span><span class="n">1 task</span></a></li>
+        <li><a href="2-03-tables-as-dictionaries/"><span class="mono">2.03</span><span class="t">Tables as Dictionaries</span><span class="n">1 task</span></a></li>
+        <li><a href="2-04-the-table-library/"><span class="mono">2.04</span><span class="t">The Table Library</span><span class="n">1 task</span></a></li>
+        <li><a href="2-05-nested-tables-and-copies/"><span class="mono">2.05</span><span class="t">Nested Tables and Copies</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">03</span> Functions</h2>
+      <p class="lp-ms-blurb">Functions and multiple results, optional and variable arguments, functions as values and closures, recursion, and scope.</p>
+      <ol class="lp-lessons">
+        <li><a href="3-01-functions/"><span class="mono">3.01</span><span class="t">Functions</span><span class="n">1 task</span></a></li>
+        <li><a href="3-02-optional-and-variable-arguments/"><span class="mono">3.02</span><span class="t">Optional and Variable Arguments</span><span class="n">1 task</span></a></li>
+        <li><a href="3-03-functions-as-values-and-closures/"><span class="mono">3.03</span><span class="t">Functions as Values and Closures</span><span class="n">1 task</span></a></li>
+        <li><a href="3-04-recursion/"><span class="mono">3.04</span><span class="t">Recursion</span><span class="n">1 task</span></a></li>
+        <li><a href="3-05-scope-globals-and-blocks/"><span class="mono">3.05</span><span class="t">Scope, Globals and Blocks</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">04</span> Strings and Patterns</h2>
+      <p class="lp-ms-blurb">The string library, Lua patterns, gmatch and gsub, string.format and building text, and UTF-8.</p>
+      <ol class="lp-lessons">
+        <li><a href="4-01-the-string-library/"><span class="mono">4.01</span><span class="t">The String Library</span><span class="n">1 task</span></a></li>
+        <li><a href="4-02-patterns/"><span class="mono">4.02</span><span class="t">Patterns</span><span class="n">1 task</span></a></li>
+        <li><a href="4-03-gmatch-and-gsub/"><span class="mono">4.03</span><span class="t">gmatch and gsub</span><span class="n">1 task</span></a></li>
+        <li><a href="4-04-string-format-and-building-text/"><span class="mono">4.04</span><span class="t">string.format and Building Text</span><span class="n">1 task</span></a></li>
+        <li><a href="4-05-utf-8-and-bytes/"><span class="mono">4.05</span><span class="t">UTF-8 and Bytes</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">05</span> Metatables and Objects</h2>
+      <p class="lp-ms-blurb">Metatables and operators, __index and __newindex, classes with methods, inheritance, and modules.</p>
+      <ol class="lp-lessons">
+        <li><a href="5-01-metatables-and-operators/"><span class="mono">5.01</span><span class="t">Metatables and Operators</span><span class="n">1 task</span></a></li>
+        <li><a href="5-02-index-and-newindex/"><span class="mono">5.02</span><span class="t">__index and __newindex</span><span class="n">1 task</span></a></li>
+        <li><a href="5-03-classes-and-objects/"><span class="mono">5.03</span><span class="t">Classes and Objects</span><span class="n">1 task</span></a></li>
+        <li><a href="5-04-inheritance/"><span class="mono">5.04</span><span class="t">Inheritance</span><span class="n">1 task</span></a></li>
+        <li><a href="5-05-modules/"><span class="mono">5.05</span><span class="t">Modules</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">06</span> Lua in Depth</h2>
+      <p class="lp-ms-blurb">Errors and pcall, iterators and the generic for, coroutines, files and the os library, and how programs embed Lua.</p>
+      <ol class="lp-lessons">
+        <li><a href="6-01-errors-and-pcall/"><span class="mono">6.01</span><span class="t">Errors and pcall</span><span class="n">1 task</span></a></li>
+        <li><a href="6-02-iterators-and-the-generic-for/"><span class="mono">6.02</span><span class="t">Iterators and the Generic for</span><span class="n">1 task</span></a></li>
+        <li><a href="6-03-coroutines/"><span class="mono">6.03</span><span class="t">Coroutines</span><span class="n">1 task</span></a></li>
+        <li><a href="6-04-files-and-the-os-library/"><span class="mono">6.04</span><span class="t">Files and the os Library</span><span class="n">1 task</span></a></li>
+        <li><a href="6-05-embedding-lua-and-its-dialects/"><span class="mono">6.05</span><span class="t">Embedding Lua and Its Dialects</span><span class="n">1 task</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">07</span> Deeper Lua</h2>
+      <p class="lp-ms-blurb">Environments and sandboxes for untrusted code, weak tables, finalizers and the garbage collector, and integers, bitwise operators and binary data.</p>
+      <ol class="lp-lessons">
+        <li><a href="7-01-environments-and-sandboxes/"><span class="mono">7.01</span><span class="t">Environments and Sandboxes</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-02-weak-tables-and-the-garbage-collector/"><span class="mono">7.02</span><span class="t">Weak Tables and the Garbage Collector</span><span class="n">2 tasks</span></a></li>
+        <li><a href="7-03-integers-bitwise-operators-and-binary-data/"><span class="mono">7.03</span><span class="t">Integers, Bitwise Operators and Binary Data</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+    <section class="lp-ms">
+      <h2 class="lp-ms-title"><span class="mono">08</span> Lua in Practice</h2>
+      <p class="lp-ms-blurb">Data structures built from tables, functional Lua, saving tables as text and JSON, object patterns beyond classes, and making Lua code fast.</p>
+      <ol class="lp-lessons">
+        <li><a href="8-01-data-structures-in-lua/"><span class="mono">8.01</span><span class="t">Data Structures in Lua</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-02-functional-lua/"><span class="mono">8.02</span><span class="t">Functional Lua</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-03-serialisation/"><span class="mono">8.03</span><span class="t">Serialisation</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-04-object-patterns-beyond-classes/"><span class="mono">8.04</span><span class="t">Object Patterns Beyond Classes</span><span class="n">2 tasks</span></a></li>
+        <li><a href="8-05-performance-in-lua/"><span class="mono">8.05</span><span class="t">Performance in Lua</span><span class="n">2 tasks</span></a></li>
+      </ol>
+      <p class="lp-ms-projects">5 projects at the end of this milestone, in Xenon.</p>
+    </section>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../learn/">All courses</a><a href="../../login.html">Sign in</a></footer>
+  <script src="../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua"></script>
+</body>
+</html>

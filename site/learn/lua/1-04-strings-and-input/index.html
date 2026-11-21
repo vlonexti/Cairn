@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Strings and Input · Lua · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/lua/1-04-strings-and-input/">
+  <meta name="description" content="Writing strings with quotes, escapes and long brackets, joining with .., the length operator , strings never changing, io.write versus print, and reading…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Strings and Input · Lua · Xenon">
+  <meta property="og:description" content="Writing strings with quotes, escapes and long brackets, joining with .., the length operator , strings never changing, io.write versus print, and reading…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/lua/1-04-strings-and-input/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Strings and Input · Lua · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Strings and Input · Lua · Xenon">
+  <meta name="twitter:description" content="Writing strings with quotes, escapes and long brackets, joining with .., the length operator , strings never changing, io.write versus print, and reading…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/lua.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Lua</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Strings and Input</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 5 in milestone 1</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Writing strings with quotes, escapes and long brackets, joining with .., the length operator #, strings never changing, io.write versus print, and reading input with io.read and its formats.</p>
+      <div class="prose">
+<h2>Writing strings</h2>
+<p>Single and double quotes mean the same; pick the one that avoids escaping:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> a = <span class="tk-s">&quot;It's fine&quot;</span>
+<span class="tk-k">local</span> b = <span class="tk-s">'She said &quot;hi&quot;'</span>
+<span class="tk-k">local</span> c = <span class="tk-s">&quot;Tab:\tNewline:\nBackslash: \\ Quote: \&quot;&quot;</span>
+<span class="tk-f">print</span>(a)
+<span class="tk-f">print</span>(b)
+<span class="tk-f">print</span>(c)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>It's fine
+She said &quot;hi&quot;
+Tab:	Newline:
+Backslash: \ Quote: &quot;</code></pre></div>
+<p>A <strong>long string</strong> between <code>[[</code> and <code>]]</code> spans lines and takes everything literally, with no escapes. If the text itself contains <code>]]</code>, put the same number of <code>=</code> signs in both brackets: <code>[==[ ... ]==]</code>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> poem = <span class="tk-s">[[
+Roses are red,
+  the moon is &quot;Lua&quot;.]]</span>
+<span class="tk-f">print</span>(poem)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Roses are red,
+  the moon is &quot;Lua&quot;.</code></pre></div>
+<p>(A line break straight after <code>[[</code> is skipped.)</p>
+<h2>Joining and measuring</h2>
+<p><code>..</code> joins two strings. Numbers are turned into text automatically; anything else must go through <code>tostring</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> name = <span class="tk-s">&quot;Ada&quot;</span>
+<span class="tk-k">local</span> greeting = <span class="tk-s">&quot;Hello, &quot;</span> .. name .. <span class="tk-s">&quot;!&quot;</span>
+<span class="tk-f">print</span>(greeting)
+<span class="tk-f">print</span>(<span class="tk-s">&quot;Total: &quot;</span> .. <span class="tk-n">3</span> * <span class="tk-n">4</span>)
+<span class="tk-f">print</span>(<span class="tk-s">&quot;Ready: &quot;</span> .. <span class="tk-f">tostring</span>(<span class="tk-k">true</span>))
+<span class="tk-f">print</span>(#greeting, #<span class="tk-s">&quot;&quot;</span>)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Hello, Ada!
+Total: 12
+Ready: true
+11	0</code></pre></div>
+<p><code>#</code> gives a string&#39;s length in <strong>bytes</strong>. For plain English text that is the number of letters; for letters outside ASCII it is more (lesson 4.05).</p>
+<div class="callout warning"><div class="callout-title"><span>Joining nil is an error</span></div><div class="callout-body"><p><code>&quot;Hi &quot; .. nil</code> stops the program: &quot;attempt to concatenate a nil value&quot;. It usually means a variable was never set, or input ran out.</p>
+</div></div>
+<p>Strings never change. Every operation that seems to change one, like <code>string.upper</code>, returns a <strong>new</strong> string:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code><span class="tk-k">local</span> word = <span class="tk-s">&quot;lua&quot;</span>
+<span class="tk-k">local</span> loud = string.<span class="tk-f">upper</span>(word)
+<span class="tk-f">print</span>(word, loud, word:<span class="tk-f">upper</span>())</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>lua	LUA	LUA</code></pre></div>
+<p><code>word:upper()</code> is a shorter way of writing <code>string.upper(word)</code>. Milestone 4 uses it everywhere.</p>
+<h2>print and io.write</h2>
+<p><code>print</code> adds tabs between values and a newline at the end. <code>io.write</code> writes exactly what you give it, nothing more, which is what you want for prompts and for building a line in pieces:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code>io.<span class="tk-f">write</span>(<span class="tk-s">&quot;Loading&quot;</span>)
+io.<span class="tk-f">write</span>(<span class="tk-s">&quot;.&quot;</span>, <span class="tk-s">&quot;.&quot;</span>, <span class="tk-s">&quot;.&quot;</span>)
+io.<span class="tk-f">write</span>(<span class="tk-s">&quot; done\n&quot;</span>)
+io.<span class="tk-f">write</span>(<span class="tk-s">&quot;Answer: &quot;</span>, <span class="tk-n">42</span>, <span class="tk-s">&quot;\n&quot;</span>)</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Loading... done
+Answer: 42</code></pre></div>
+<h2>Reading input</h2>
+<p><code>io.read</code> reads from the keyboard (standard input). Its argument says what to read:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Reads</th>
+<th>Gives at the end of input</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>io.read()</code> or <code>io.read(&quot;l&quot;)</code></td>
+<td>the next line, without its newline</td>
+<td><code>nil</code></td>
+</tr>
+<tr>
+<td><code>io.read(&quot;n&quot;)</code></td>
+<td>a number, skipping spaces and newlines before it</td>
+<td><code>nil</code> (also if the text is not a number)</td>
+</tr>
+<tr>
+<td><code>io.read(&quot;L&quot;)</code></td>
+<td>the next line, with its newline</td>
+<td><code>nil</code></td>
+</tr>
+<tr>
+<td><code>io.read(&quot;a&quot;)</code></td>
+<td>everything that is left</td>
+<td><code>&quot;&quot;</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Lua</span></div><pre><code>io.<span class="tk-f">write</span>(<span class="tk-s">&quot;Your name? &quot;</span>)
+<span class="tk-k">local</span> name = io.<span class="tk-f">read</span>()
+io.<span class="tk-f">write</span>(<span class="tk-s">&quot;Your age? &quot;</span>)
+<span class="tk-k">local</span> age = io.<span class="tk-f">read</span>(<span class="tk-s">&quot;n&quot;</span>)
+<span class="tk-f">print</span>(<span class="tk-s">&quot;Hello, &quot;</span> .. name .. <span class="tk-s">&quot;. Next year you are &quot;</span> .. age + <span class="tk-n">1</span> .. <span class="tk-s">&quot;.&quot;</span>)</code></pre></div>
+<p>When you press <strong>Run</strong>, a console opens under the code and the program waits there for you to type each answer and press Enter.</p>
+<p>Several formats in one call return several values: <code>local a, b = io.read(&quot;n&quot;, &quot;n&quot;)</code> reads two numbers from the same line or from two lines.</p>
+<div class="callout tip"><div class="callout-title"><span>Reading a line, then a number</span></div><div class="callout-body"><p><code>io.read(&quot;n&quot;)</code> leaves the rest of its line unread. If you read a number and then want the next full line, read once more with <code>io.read()</code> to finish the number&#39;s line first. Reading every line with <code>io.read()</code> and converting with <code>tonumber</code> avoids the problem.</p>
+</div></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/lua/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/lua/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-numbers-and-arithmetic/"><span class="mono">previous</span><b>1.03 Numbers and Arithmetic</b></a>
+      <a class="lp-next" href="../1-05-making-decisions/"><span class="mono">next</span><b>1.05 Making Decisions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/lua/1-04-strings-and-input"></script>
+</body>
+</html>

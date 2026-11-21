@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Wrapping a C API in Modern C++ · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/3-06-wrapping-a-c-api-in-modern-cpp/">
+  <meta name="description" content="A stable C interface is pleasant for the DLL and other languages, but tedious to use from C++. The answer is a thin header-only C++ wrapper on the caller's…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Wrapping a C API in Modern C++ · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="A stable C interface is pleasant for the DLL and other languages, but tedious to use from C++. The answer is a thin header-only C++ wrapper on the caller's…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/3-06-wrapping-a-c-api-in-modern-cpp/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Wrapping a C API in Modern C++ · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Wrapping a C API in Modern C++ · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="A stable C interface is pleasant for the DLL and other languages, but tedious to use from C++. The answer is a thin header-only C++ wrapper on the caller's…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Stable Interfaces</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Wrapping a C API in Modern C++</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.06</b></span><span>6 of 6 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">A stable C interface is pleasant for the DLL and other languages, but tedious to use from C++. The answer is a thin <strong>header-only C++ wrapper</strong> on the caller&#39;s side - RAII classes that create and destroy handles, exceptions instead of result codes, <code>std::string</code> instead of buffers - while the DLL boundary stays pure C.</p>
+      <div class="prose">
+<h2>Both worlds</h2>
+<p>You now have a C interface that is safe across compilers and languages. Using it directly from C++ looks like this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>xenon_world* world{ <span class="tk-k">nullptr</span> };
+<span class="tk-k">if</span> (<span class="tk-f">xenon_world_create</span>(&amp;world) != XENON_OK) { <span class="tk-c">/* ... */</span> }
+<span class="tk-k">if</span> (<span class="tk-f">xenon_world_add_stone</span>(world, <span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">7</span>) != XENON_OK) { <span class="tk-f">xenon_world_destroy</span>(world); <span class="tk-c">/* ... */</span> }
+int32_t count{ <span class="tk-n">0</span> };
+<span class="tk-k">if</span> (<span class="tk-f">xenon_world_stone_count</span>(world, &amp;count) != XENON_OK) { <span class="tk-f">xenon_world_destroy</span>(world); <span class="tk-c">/* ... */</span> }
+<span class="tk-f">xenon_world_destroy</span>(world);</code></pre></div>
+<p>Every early return has to remember the destroy call. C++ programmers would rather write:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>xenon::<span class="tk-t">World</span> world;
+world.<span class="tk-f">addStone</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>, <span class="tk-n">7</span>);
+std::cout &lt;&lt; world.<span class="tk-f">stoneCount</span>() &lt;&lt; <span class="tk-s">'\n'</span>;</code></pre></div>
+<h2>A header-only wrapper</h2>
+<p>Put a C++ wrapper in a second header, <code>xenon.hpp</code>, that includes <code>xenon.h</code>. Because it is <strong>header-only</strong>, its code compiles into the <em>caller&#39;s</em> module, with the caller&#39;s compiler and settings. Nothing C++ crosses the boundary: the wrapper only calls the C functions.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// xenon.hpp</span>
+<span class="tk-p">#pragma</span> once
+<span class="tk-p">#include</span> <span class="tk-s">&quot;xenon.h&quot;</span>
+<span class="tk-p">#include &lt;stdexcept&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;utility&gt;</span>
+
+<span class="tk-k">namespace</span> xenon
+{
+    <span class="tk-k">class</span> <span class="tk-t">Error</span> : <span class="tk-k">public</span> std::runtime_error
+    {
+    <span class="tk-k">public</span>:
+        <span class="tk-f">Error</span>(int32_t code, <span class="tk-k">const</span> std::string&amp; what) : std::<span class="tk-f">runtime_error</span>(what), m_code{ code } {}
+        int32_t <span class="tk-f">code</span>() <span class="tk-k">const</span> <span class="tk-k">noexcept</span> { <span class="tk-k">return</span> m_code; }
+    <span class="tk-k">private</span>:
+        int32_t m_code;
+    };
+
+    <span class="tk-k">inline</span> <span class="tk-k">void</span> <span class="tk-f">check</span>(int32_t result)
+    {
+        <span class="tk-k">if</span> (result == XENON_OK) <span class="tk-k">return</span>;
+        std::string <span class="tk-f">message</span>(<span class="tk-k">static_cast</span>&lt;std::size_t&gt;(<span class="tk-f">xenon_last_error</span>(<span class="tk-k">nullptr</span>, <span class="tk-n">0</span>)), <span class="tk-s">'\0'</span>);
+        <span class="tk-f">xenon_last_error</span>(message.<span class="tk-f">data</span>(), <span class="tk-k">static_cast</span>&lt;int32_t&gt;(message.<span class="tk-f">size</span>()) + <span class="tk-n">1</span>);
+        <span class="tk-k">throw</span> <span class="tk-f">Error</span>(result, std::<span class="tk-f">string</span>(<span class="tk-f">xenon_result_name</span>(result)) + <span class="tk-s">&quot;: &quot;</span> + message);
+    }
+
+    <span class="tk-k">class</span> <span class="tk-t">World</span>
+    {
+    <span class="tk-k">public</span>:
+        <span class="tk-f">World</span>() { <span class="tk-f">check</span>(<span class="tk-f">xenon_world_create</span>(&amp;m_handle)); }
+        ~<span class="tk-f">World</span>() { <span class="tk-f">xenon_world_destroy</span>(m_handle); }
+
+        <span class="tk-f">World</span>(<span class="tk-t">World</span>&amp;&amp; other) <span class="tk-k">noexcept</span> : m_handle{ std::<span class="tk-f">exchange</span>(other.m_handle, <span class="tk-k">nullptr</span>) } {}
+        <span class="tk-t">World</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-t">World</span>&amp;&amp; other) <span class="tk-k">noexcept</span>
+        {
+            <span class="tk-k">if</span> (<span class="tk-k">this</span> != &amp;other) { <span class="tk-f">xenon_world_destroy</span>(m_handle); m_handle = std::<span class="tk-f">exchange</span>(other.m_handle, <span class="tk-k">nullptr</span>); }
+            <span class="tk-k">return</span> *<span class="tk-k">this</span>;
+        }
+        <span class="tk-f">World</span>(<span class="tk-k">const</span> <span class="tk-t">World</span>&amp;) = <span class="tk-k">delete</span>;
+        <span class="tk-t">World</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-k">const</span> <span class="tk-t">World</span>&amp;) = <span class="tk-k">delete</span>;
+
+        <span class="tk-k">void</span> <span class="tk-f">addStone</span>(int32_t x, int32_t y, int32_t weight) { <span class="tk-f">check</span>(<span class="tk-f">xenon_world_add_stone</span>(m_handle, x, y, weight)); }
+        int32_t <span class="tk-f">stoneCount</span>() <span class="tk-k">const</span> { int32_t n{ <span class="tk-n">0</span> }; <span class="tk-f">check</span>(<span class="tk-f">xenon_world_stone_count</span>(m_handle, &amp;n)); <span class="tk-k">return</span> n; }
+
+        xenon_world* <span class="tk-f">get</span>() <span class="tk-k">const</span> <span class="tk-k">noexcept</span> { <span class="tk-k">return</span> m_handle; }   <span class="tk-c">// for calling C functions the wrapper lacks</span>
+
+    <span class="tk-k">private</span>:
+        xenon_world* m_handle{ <span class="tk-k">nullptr</span> };
+    };
+}</code></pre></div>
+<p>The pieces:</p>
+<ul>
+<li><strong>RAII</strong>: the constructor creates, the destructor destroys. No path can forget.</li>
+<li><strong>Move-only</strong>: copying would mean two objects destroying the same handle. A move transfers the handle and leaves the source empty, so its destructor does nothing (<code>xenon_world_destroy(nullptr)</code> must be allowed, which lesson 2.05&#39;s project required).</li>
+<li><strong>Exceptions on the caller&#39;s side</strong>: <code>check</code> turns a result code into an exception thrown and caught entirely in the caller&#39;s module, which is perfectly safe.</li>
+<li><strong><code>get()</code></strong> keeps the escape hatch open.</li>
+</ul>
+<h2>A reference-counted handle</h2>
+<p>For COM-style objects (lesson 3.04), the wrapper is a smart pointer that calls <code>AddRef</code> and <code>Release</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> T&gt;
+<span class="tk-k">class</span> <span class="tk-t">RefPtr</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">RefPtr</span>() = <span class="tk-k">default</span>;
+    <span class="tk-k">explicit</span> <span class="tk-f">RefPtr</span>(T* adopt) <span class="tk-k">noexcept</span> : m_p{ adopt } {}            <span class="tk-c">// takes over an existing reference</span>
+    <span class="tk-f">RefPtr</span>(<span class="tk-k">const</span> <span class="tk-t">RefPtr</span>&amp; o) <span class="tk-k">noexcept</span> : m_p{ o.m_p } { <span class="tk-k">if</span> (m_p) m_p-&gt;<span class="tk-f">AddRef</span>(); }
+    <span class="tk-f">RefPtr</span>(<span class="tk-t">RefPtr</span>&amp;&amp; o) <span class="tk-k">noexcept</span> : m_p{ std::<span class="tk-f">exchange</span>(o.m_p, <span class="tk-k">nullptr</span>) } {}
+    ~<span class="tk-f">RefPtr</span>() { <span class="tk-k">if</span> (m_p) m_p-&gt;<span class="tk-f">Release</span>(); }
+    <span class="tk-t">RefPtr</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-t">RefPtr</span> o) <span class="tk-k">noexcept</span> { std::<span class="tk-f">swap</span>(m_p, o.m_p); <span class="tk-k">return</span> *<span class="tk-k">this</span>; }
+    T* <span class="tk-k">operator</span>-&gt;() <span class="tk-k">const</span> <span class="tk-k">noexcept</span> { <span class="tk-k">return</span> m_p; }
+    T* <span class="tk-f">get</span>() <span class="tk-k">const</span> <span class="tk-k">noexcept</span> { <span class="tk-k">return</span> m_p; }
+<span class="tk-k">private</span>:
+    T* m_p{ <span class="tk-k">nullptr</span> };
+};</code></pre></div>
+<p>Copying adds a reference, destroying releases one. The practice asks you to write the move-only kind for a C handle.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Putting the wrapper&#39;s code in the DLL</span></div><div class="callout-body"><p>Then C++ types cross the boundary again. Keep the wrapper header-only, compiled by the caller.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>A copyable wrapper around a handle</span></div><div class="callout-body"><p>Two copies, two destroy calls, one crash. Delete the copy operations or count references.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Why is the C++ wrapper header-only?</div><ul><li>Its code compiles into the caller&#39;s module, so only C crosses the DLL boundary</li><li>Headers are faster</li><li>DLLs cannot contain C++ code</li></ul><details><summary>Show the answer</summary><p><b>Its code compiles into the caller&#39;s module, so only C crosses the DLL boundary</b> The wrapper uses the caller&#39;s compiler and settings.</p></details></li><li><div class="q">Why is the World wrapper move-only?</div><ul><li>A copy would destroy the same handle twice</li><li>Moving is faster than copying</li><li>Because handles are integers</li></ul><details><summary>Show the answer</summary><p><b>A copy would destroy the same handle twice</b> Ownership of a handle must belong to exactly one object.</p></details></li><li><div class="q">Is it safe for the wrapper&#39;s check function to throw an exception?</div><ul><li>Yes; it is thrown and caught in the caller&#39;s module, never across the DLL boundary</li><li>No; exceptions must never be used with DLLs</li><li>Only in Release builds</li></ul><details><summary>Show the answer</summary><p><b>Yes; it is thrown and caught in the caller&#39;s module, never across the DLL boundary</b> The rule is about exceptions leaving the DLL, not about the caller&#39;s own code.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/3.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/3.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-versioning-and-compatibility/"><span class="mono">previous</span><b>3.05 Versioning and Compatibility</b></a>
+      <a class="lp-next" href="../4-01-the-dll-search-order/"><span class="mono">next</span><b>4.01 The DLL Search Order</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/3-06-wrapping-a-c-api-in-modern-cpp"></script>
+</body>
+</html>

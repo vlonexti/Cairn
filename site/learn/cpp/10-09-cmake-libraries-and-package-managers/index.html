@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>CMake, Libraries and Package Managers · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/10-09-cmake-libraries-and-package-managers/">
+  <meta name="description" content="Real projects have many files and use third-party libraries. CMake describes what to build portably and generates the build files for your tools. Libraries…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CMake, Libraries and Package Managers · C++ · Xenon">
+  <meta property="og:description" content="Real projects have many files and use third-party libraries. CMake describes what to build portably and generates the build files for your tools. Libraries…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/10-09-cmake-libraries-and-package-managers/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="CMake, Libraries and Package Managers · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CMake, Libraries and Package Managers · C++ · Xenon">
+  <meta name="twitter:description" content="Real projects have many files and use third-party libraries. CMake describes what to build portably and generates the build files for your tools. Libraries…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Modern C++ and the STL</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">CMake, Libraries and Package Managers</h1>
+      <div class="readout lp-readout"><span>lesson <b>10.09</b></span><span>9 of 9 in milestone 10</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Real projects have many files and use third-party libraries. <strong>CMake</strong> describes <em>what</em> to build portably and generates the build files for your tools. Libraries are <strong>static</strong> (copied into your executable) or <strong>dynamic</strong> (loaded while running). <strong>vcpkg</strong> and <strong>Conan</strong> download libraries for you.</p>
+      <div class="prose">
+<h2>Beyond a single program</h2>
+<p>Xenon compiles your files for you. A real project needs a description of what to build: which source files form which programs and libraries, with which settings, depending on which outside code. This lesson is about that machinery. It cannot be run inside Xenon, but you will need it for your first project outside.</p>
+<h2>Static and dynamic libraries</h2>
+<p>A <strong>library</strong> is compiled code packaged for reuse.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph Static[&quot;Static library (.lib, .a)&quot;]
+        direction LR
+        S1[&quot;mathlib.lib&quot;] --&gt;|&quot;copied in at LINK time&quot;| S2[&quot;game.exe&lt;br/&gt;larger, self-contained&quot;]
+    end
+    subgraph Dynamic[&quot;Dynamic library (.dll, .so)&quot;]
+        direction LR
+        D1[&quot;game.exe&lt;br/&gt;smaller&quot;] --&gt;|&quot;loaded at RUN time&quot;| D2[&quot;mathlib.dll&lt;br/&gt;must be present&quot;]
+    end</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Static</th>
+<th>Dynamic</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>When it is joined to your program</td>
+<td>By the linker</td>
+<td>When the program starts</td>
+</tr>
+<tr>
+<td>Executable size</td>
+<td>Larger</td>
+<td>Smaller</td>
+</tr>
+<tr>
+<td>What you distribute</td>
+<td>One file</td>
+<td>The executable and the library file</td>
+</tr>
+<tr>
+<td>Update the library without rebuilding</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Shared in memory between programs</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+</div>
+<h3>Using a library takes three things</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>What</th>
+<th>Who needs it</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The <strong>headers</strong></td>
+<td>The compiler</td>
+<td>To know what the library declares</td>
+</tr>
+<tr>
+<td>The <strong>library file</strong></td>
+<td>The linker</td>
+<td>To resolve the calls</td>
+</tr>
+<tr>
+<td>The <strong>dynamic library</strong>, if there is one</td>
+<td>The running program</td>
+<td>It must be found beside the executable or on the system path</td>
+</tr>
+</tbody></table>
+</div>
+<p>Missing headers give compile errors. A missing library file gives &quot;unresolved external symbol&quot;. A missing DLL gives an error when the program starts. Knowing which stage failed tells you which of the three is wrong (<a href="../1-08-multiple-files-and-headers/">1.08 Multiple Files and Headers</a>).</p>
+<h2>CMake</h2>
+<p>CMake does not compile anything. It reads a description of your project and <strong>generates</strong> build files for whatever tool you use: a Visual Studio solution, Makefiles or Ninja files.</p>
+<div class="codeblock diagram plain"><pre><code> my_game/
+ ├── CMakeLists.txt
+ ├── src/
+ │   ├── main.cpp
+ │   └── game/
+ │       ├── Player.h
+ │       └── Player.cpp
+ └── tests/
+     └── test_player.cpp</code></pre></div>
+<h3>CMakeLists.txt</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">CMake</span></div><pre><code>cmake_minimum_required(VERSION 3.25)
+project(MyGame VERSION 1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# A library holding the game logic
+add_library(game_core src/game/Player.cpp)
+target_include_directories(game_core PUBLIC src)
+
+if (MSVC)
+    target_compile_options(game_core PRIVATE /W4 /permissive-)
+else()
+    target_compile_options(game_core PRIVATE -Wall -Wextra -Wconversion -pedantic)
+endif()
+
+# The program
+add_executable(my_game src/main.cpp)
+target_link_libraries(my_game PRIVATE game_core)</code></pre></div>
+<h3>Building</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>cmake -S . -B build</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>cmake --build build --config Release</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    CM[&quot;CMakeLists.txt&quot;] --&gt;|&quot;configure:&lt;br/&gt;cmake -S . -B build&quot;| G[&quot;build/&lt;br/&gt;generated build files&quot;]
+    G --&gt;|&quot;build:&lt;br/&gt;cmake --build build&quot;| E[&quot;my_game.exe&quot;]</pre></div>
+<p>Everything generated goes into <code>build/</code>, separate from your sources. Visual Studio, CLion and VS Code all open a CMake project directly.</p>
+<h3>Targets</h3>
+<p>Modern CMake is organised around <strong>targets</strong>: a library or an executable, together with what it needs.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>add_executable(name sources...)</code></td>
+<td>Defines a program</td>
+</tr>
+<tr>
+<td><code>add_library(name sources...)</code></td>
+<td>Defines a library</td>
+</tr>
+<tr>
+<td><code>target_include_directories(...)</code></td>
+<td>Says where a target&#39;s headers are</td>
+</tr>
+<tr>
+<td><code>target_compile_options(...)</code></td>
+<td>Adds compiler flags for a target</td>
+</tr>
+<tr>
+<td><code>target_link_libraries(a PRIVATE b)</code></td>
+<td>Makes <code>a</code> use <code>b</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Each property carries a visibility keyword that says who it applies to.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Keyword</th>
+<th>Applies to</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PRIVATE</code></td>
+<td>This target only</td>
+</tr>
+<tr>
+<td><code>PUBLIC</code></td>
+<td>This target <strong>and</strong> everything that links to it</td>
+</tr>
+<tr>
+<td><code>INTERFACE</code></td>
+<td>Only the things that link to it (as for a header-only library)</td>
+</tr>
+</tbody></table>
+</div>
+<p><code>game_core</code>&#39;s include directory is <code>PUBLIC</code>, so <code>my_game</code> receives it automatically by linking to <code>game_core</code>. Putting the logic in a library, with a thin executable on top, also lets a test program link the same library.</p>
+<h2>Getting third-party libraries</h2>
+<h3>FetchContent</h3>
+<p>Built into CMake: it downloads and builds a dependency as part of your project.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">CMake</span></div><pre><code>include(FetchContent)
+FetchContent_Declare(fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG 11.0.2)
+FetchContent_MakeAvailable(fmt)
+
+target_link_libraries(my_game PRIVATE fmt::fmt)</code></pre></div>
+<h3>vcpkg</h3>
+<p>A <strong>package manager</strong> downloads, builds and caches libraries, so each project only lists what it needs. vcpkg is Microsoft&#39;s; it works on every platform.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>vcpkg new --application</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>vcpkg add port raylib nlohmann-json</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">CMake</span></div><pre><code>find_package(raylib CONFIG REQUIRED)
+target_link_libraries(my_game PRIVATE raylib)</code></pre></div>
+<p>Pass vcpkg&#39;s toolchain file when configuring, and <code>find_package</code> locates what it installed. <strong>Conan</strong> is a widely used alternative with the same purpose.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Good for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FetchContent</td>
+<td>A few small dependencies; nothing extra to install</td>
+</tr>
+<tr>
+<td>vcpkg or Conan</td>
+<td>Many or large dependencies; builds are cached and shared across projects</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Libraries worth knowing</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Libraries</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Formatting and logging</td>
+<td>{fmt}, spdlog</td>
+</tr>
+<tr>
+<td>JSON</td>
+<td>nlohmann/json, simdjson</td>
+</tr>
+<tr>
+<td>Testing</td>
+<td>GoogleTest, Catch2, doctest</td>
+</tr>
+<tr>
+<td>2D games and graphics</td>
+<td>raylib, SFML, SDL</td>
+</tr>
+<tr>
+<td>3D graphics</td>
+<td>OpenGL with GLFW and glm; Vulkan</td>
+</tr>
+<tr>
+<td>User interfaces</td>
+<td>Dear ImGui, Qt</td>
+</tr>
+<tr>
+<td>Networking</td>
+<td>Asio, cpr</td>
+</tr>
+<tr>
+<td>Mathematics</td>
+<td>Eigen, glm</td>
+</tr>
+<tr>
+<td>Much else</td>
+<td>Boost</td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/10.09">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/10.09">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../10-08-time-and-std-chrono/"><span class="mono">previous</span><b>10.08 Time and std::chrono</b></a>
+      <a class="lp-next" href="../11-01-value-categories-and-perfect-forwarding/"><span class="mono">next</span><b>11.01 Value Categories and Perfect Forwarding</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/10-09-cmake-libraries-and-package-managers"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

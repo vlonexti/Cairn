@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>A Method for Unknown Programs · Reverse Engineering · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/reveng/6-01-a-method-for-unknown-programs/">
+  <meta name="description" content="How to approach a program you know nothing about without getting lost - start from a question, triage, find landmarks, form a hypothesis, test it…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A Method for Unknown Programs · Reverse Engineering · Xenon">
+  <meta property="og:description" content="How to approach a program you know nothing about without getting lost - start from a question, triage, find landmarks, form a hypothesis, test it…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/reveng/6-01-a-method-for-unknown-programs/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Method for Unknown Programs · Reverse Engineering · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Method for Unknown Programs · Reverse Engineering · Xenon">
+  <meta name="twitter:description" content="How to approach a program you know nothing about without getting lost - start from a question, triage, find landmarks, form a hypothesis, test it…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/reveng.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reverse Engineering</a><span>/</span><span>Reversing in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">A Method for Unknown Programs</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How to approach a program you know nothing about without getting lost - start from a question, triage, find landmarks, form a hypothesis, test it dynamically, write it down, and know when to stop reading and switch technique.</p>
+      <div class="prose">
+<h2>The trap</h2>
+<p>The beginner&#39;s approach to an unknown binary is to open it at the entry point and read. After two hours you have understood the C runtime&#39;s start-up code in detail and know nothing about the program. Real programs are millions of instructions; nobody reads them all. Experienced reverse engineers read a tiny fraction, chosen carefully.</p>
+<h2>Start from a question</h2>
+<p>Every session needs a concrete goal, written down before you start:</p>
+<ul>
+<li>&quot;Where does it store its settings, and in what format?&quot;</li>
+<li>&quot;Why does it crash when the file name contains a space?&quot;</li>
+<li>&quot;How does the save file encode the player&#39;s inventory?&quot;</li>
+<li>&quot;What does this DLL&#39;s exported <code>Init</code> function expect as its arguments?&quot;</li>
+</ul>
+<p>A question tells you what you can ignore, which is almost everything.</p>
+<h2>The loop</h2>
+<ol>
+<li><strong>Triage</strong> (lesson 1.05): what is it, how was it built, what does it import, which strings does it contain? Ten minutes.</li>
+<li><strong>Find landmarks</strong> related to the question: strings (&quot;Save failed&quot;), imports (<code>CreateFileW</code>, <code>RegSetValueExW</code>), exports, RTTI class names, behaviour seen in Process Monitor. Each landmark leads to code through cross-references.</li>
+<li><strong>Form a hypothesis</strong>: &quot;this function parses the save file; its first argument is the file contents; <code>[rcx+8]</code> is the item count&quot;.</li>
+<li><strong>Test it dynamically</strong>: put a breakpoint there, trigger the behaviour, check the registers and memory against your guess. Change an input (a different save) and predict the change.</li>
+<li><strong>Record what you learned</strong>: rename the function, define the struct, add a comment, note the evidence.</li>
+<li><strong>Repeat</strong>, each answer raising the next, smaller question.</li>
+</ol>
+<p>Static reading suggests; dynamic testing confirms. A claim that has not been checked in a debugger, or against a second sample, is still a guess. Mark it as one.</p>
+<h2>Top down and bottom up</h2>
+<ul>
+<li><strong>Top down</strong>: start from a high-level landmark (the save command in the menu) and descend into the functions it calls until you reach the detail you need.</li>
+<li><strong>Bottom up</strong>: start from a low-level landmark (the call to <code>WriteFile</code>) and climb the call stack to find who decided what to write.</li>
+</ul>
+<p>Bottom up is usually faster for questions about data; top down for questions about behaviour. Switch whenever you stall.</p>
+<h2>Recognise library code</h2>
+<p>A large part of any program is library code: the C runtime, the C++ standard library, compression, image loading, JSON parsing. Do not reverse it. Recognise it and name it:</p>
+<ul>
+<li>Ghidra&#39;s Function ID and IDA&#39;s FLIRT signatures name known library functions automatically.</li>
+<li>Strings give libraries away: <code>inflate 1.2.13 Copyright</code>, <code>stb_image</code>, error messages of well-known libraries.</li>
+<li>Constants give algorithms away: <code>0x67452301</code> starts MD5 and SHA-1, <code>0xEDB88320</code> is CRC-32&#39;s polynomial, <code>0x9E3779B9</code> appears in TEA and in hash functions.</li>
+</ul>
+<p>Once you know a function is <code>memcpy</code> or zlib&#39;s <code>inflate</code>, you know its arguments and can step over it.</p>
+<h2>Keep notes</h2>
+<p>Write as you go, in the disassembler&#39;s database and in a plain notes file:</p>
+<ul>
+<li>the question, and what you have concluded so far;</li>
+<li>each finding with its <strong>evidence</strong>: address (as <code>module+offset</code>), what you saw, how you confirmed it;</li>
+<li>open questions and things you assumed.</li>
+</ul>
+<p>Notes make the work resumable tomorrow, shareable with someone else, and checkable when a new build arrives.</p>
+<h2>Know when to switch</h2>
+<p>If you have read the same function for an hour, stop and change technique: run it with different inputs and watch, diff two runs (lesson 3.05), look for a library signature, or find a different landmark. Reverse engineering is mostly choosing the right next small question.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/reveng/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/reveng/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-scripting-your-analysis/"><span class="mono">previous</span><b>5.05 Scripting Your Analysis</b></a>
+      <a class="lp-next" href="../6-02-reversing-a-file-format/"><span class="mono">next</span><b>6.02 Reversing a File Format</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/reveng/6-01-a-method-for-unknown-programs"></script>
+</body>
+</html>

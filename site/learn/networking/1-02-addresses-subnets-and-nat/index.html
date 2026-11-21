@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Addresses, Subnets and NAT · Networking · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/networking/1-02-addresses-subnets-and-nat/">
+  <meta name="description" content="IPv4 addresses as 32-bit numbers, prefixes and subnet masks in CIDR notation, network and broadcast addresses, the private ranges, how NAT lets a whole home…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Addresses, Subnets and NAT · Networking · Xenon">
+  <meta property="og:description" content="IPv4 addresses as 32-bit numbers, prefixes and subnet masks in CIDR notation, network and broadcast addresses, the private ranges, how NAT lets a whole home…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/networking/1-02-addresses-subnets-and-nat/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Addresses, Subnets and NAT · Networking · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Addresses, Subnets and NAT · Networking · Xenon">
+  <meta name="twitter:description" content="IPv4 addresses as 32-bit numbers, prefixes and subnet masks in CIDR notation, network and broadcast addresses, the private ranges, how NAT lets a whole home…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/networking.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Networking</a><span>/</span><span>How Networks Work</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Addresses, Subnets and NAT</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.02</b></span><span>2 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">IPv4 addresses as 32-bit numbers, prefixes and subnet masks in CIDR notation, network and broadcast addresses, the private ranges, how NAT lets a whole home share one public address, ports, and a first look at IPv6.</p>
+      <div class="prose">
+<h2>An IPv4 address is a 32-bit number</h2>
+<p><code>192.168.1.20</code> is four bytes written in decimal and separated by dots. As one number it is <code>0xC0A80114</code>, or 3 232 235 796. Every device on an IPv4 network has one (per network interface), and every IP packet carries a source and a destination address.</p>
+<p>Thinking of addresses as numbers makes everything else simple: comparing, masking and counting them is integer arithmetic.</p>
+<h2>Networks and prefixes</h2>
+<p>Addresses are grouped into <strong>networks</strong> (subnets). The first part of an address identifies the network; the rest identifies a device on it. How many bits are the network part is the <strong>prefix length</strong>, written after a slash in <strong>CIDR</strong> notation:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>192.168.1.0/24     the first 24 bits are the network: 192.168.1.x
+                   devices 192.168.1.1 to 192.168.1.254
+10.0.0.0/8         the first 8 bits: 10.x.x.x, about 16.7 million addresses</code></pre></div>
+<p>The same thing as a <strong>subnet mask</strong> is a 32-bit number with the prefix&#39;s bits set: <code>/24</code> is <code>255.255.255.0</code>, <code>/20</code> is <code>255.255.240.0</code>.</p>
+<p>For a network <code>N/p</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Computed as</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>mask</td>
+<td>the top <code>p</code> bits set</td>
+</tr>
+<tr>
+<td>network address</td>
+<td>any address in it <code>&amp; mask</code></td>
+</tr>
+<tr>
+<td>broadcast address</td>
+<td>network address `</td>
+</tr>
+<tr>
+<td>usable hosts</td>
+<td>2^(32−p) − 2 (the network and broadcast addresses are reserved)</td>
+</tr>
+<tr>
+<td>&quot;is address A in it?&quot;</td>
+<td><code>(A &amp; mask) == network</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>So <code>192.168.1.77</code> is in <code>192.168.1.0/24</code> because <code>0xC0A8014D &amp; 0xFFFFFF00 == 0xC0A80100</code>.</p>
+<h2>Private ranges and NAT</h2>
+<p>Three ranges are reserved for <strong>private</strong> networks and never appear on the public internet:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Range</th>
+<th>CIDR</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>10.0.0.0 to 10.255.255.255</td>
+<td>10.0.0.0/8</td>
+</tr>
+<tr>
+<td>172.16.0.0 to 172.31.255.255</td>
+<td>172.16.0.0/12</td>
+</tr>
+<tr>
+<td>192.168.0.0 to 192.168.255.255</td>
+<td>192.168.0.0/16</td>
+</tr>
+</tbody></table>
+</div>
+<p>Your home devices almost certainly have addresses in one of them. They reach the internet through a router doing <strong>network address translation</strong> (NAT): it rewrites each outgoing packet&#39;s private source address and port to its own single <strong>public</strong> address and a port it picks, remembers the mapping, and rewrites replies back. To the rest of the internet, the whole household is one address.</p>
+<p>NAT has a consequence every multiplayer and peer-to-peer program meets: a device behind NAT can make <strong>outgoing</strong> connections freely, but nothing outside can start a connection <strong>to</strong> it, because the router has no mapping for an unsolicited packet. That is why games use servers with public addresses, or relay and &quot;hole punching&quot; techniques.</p>
+<p>Two more special ranges: <code>127.0.0.0/8</code> is <strong>loopback</strong> (your own machine), and <code>169.254.0.0/16</code> is <strong>link-local</strong> (a device that failed to get an address).</p>
+<h2>Ports</h2>
+<p>An IP address reaches a machine; a <strong>port</strong> (a 16-bit number, 0 to 65535) reaches one program on it. A connection is identified by the full <strong>five-tuple</strong>: protocol, source address, source port, destination address, destination port. Servers listen on well-known ports (80 for HTTP, 443 for HTTPS, 53 for DNS); clients get a temporary <strong>ephemeral</strong> port from the operating system (on Windows 49152 to 65535).</p>
+<h2>IPv6</h2>
+<p>IPv4 has only about 4.3 billion addresses, which ran out years ago; NAT is partly a workaround. <strong>IPv6</strong> addresses are 128 bits, written as eight groups of four hex digits, with leading zeros dropped and one run of zero groups shortened to <code>::</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>2001:0db8:0000:0000:0000:ff00:0042:8329  =  2001:db8::ff00:42:8329
+::1                                          loopback
+fe80::/10                                    link-local</code></pre></div>
+<p>The same prefix arithmetic applies, on 128 bits. Most modern networks run both versions side by side; code that uses <code>getaddrinfo</code> (lesson 2.01) handles both without caring which it got.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/networking/l/1.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/networking/l/1.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-01-layers-and-packets/"><span class="mono">previous</span><b>1.01 Layers and Packets</b></a>
+      <a class="lp-next" href="../1-03-dns/"><span class="mono">next</span><b>1.03 DNS</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/networking/1-02-addresses-subnets-and-nat"></script>
+</body>
+</html>

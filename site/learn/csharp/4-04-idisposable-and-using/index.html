@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>IDisposable and using · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/4-04-idisposable-and-using/">
+  <meta name="description" content="Releasing files, connections and other resources on time - how the garbage collector works and what it does not do, IDisposable, using statements and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="IDisposable and using · C# · Xenon">
+  <meta property="og:description" content="Releasing files, connections and other resources on time - how the garbage collector works and what it does not do, IDisposable, using statements and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/4-04-idisposable-and-using/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="IDisposable and using · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IDisposable and using · C# · Xenon">
+  <meta name="twitter:description" content="Releasing files, connections and other resources on time - how the garbage collector works and what it does not do, IDisposable, using statements and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Generics, Delegates and Errors</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">IDisposable and using</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.04</b></span><span>4 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Releasing files, connections and other resources on time - how the garbage collector works and what it does not do, IDisposable, using statements and declarations, try/finally underneath, implementing Dispose in your own classes, IAsyncDisposable, and scoped helpers built on using.</p>
+      <div class="prose">
+<h2>Memory versus resources</h2>
+<p>.NET has a <strong>garbage collector</strong>: objects that nothing refers to any more are freed automatically, at some point. That handles <strong>memory</strong>. But some objects hold <strong>resources</strong> the operating system gives out in limited numbers: open files, network connections, database connections, locks. Those must be released <strong>promptly and predictably</strong>, not whenever the garbage collector happens to run.</p>
+<p>Types that hold such resources implement <code>IDisposable</code>, which has one method, <code>Dispose()</code>, that releases them.</p>
+<h2>using</h2>
+<p>A <code>using</code> statement calls <code>Dispose</code> when the block ends, even if an exception is thrown:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">File</span>.<span class="tk-f">WriteAllText</span>(<span class="tk-s">&quot;notes.txt&quot;</span>, <span class="tk-s">&quot;first line\nsecond line\n&quot;</span>);
+
+<span class="tk-k">using</span> (<span class="tk-k">var</span> reader = <span class="tk-k">new</span> <span class="tk-f">StreamReader</span>(<span class="tk-s">&quot;notes.txt&quot;</span>))
+{
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(reader.<span class="tk-f">ReadLine</span>());
+}   <span class="tk-c">// reader.Dispose() runs here: the file is closed</span>
+
+<span class="tk-k">using</span> <span class="tk-k">var</span> writer = <span class="tk-k">new</span> <span class="tk-f">StreamWriter</span>(<span class="tk-s">&quot;log.txt&quot;</span>);   <span class="tk-c">// a using declaration: disposed at the end of the scope</span>
+writer.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;started&quot;</span>);</code></pre></div>
+<p>The compiler turns <code>using</code> into <code>try</code> / <code>finally</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> reader = <span class="tk-k">new</span> <span class="tk-f">StreamReader</span>(<span class="tk-s">&quot;notes.txt&quot;</span>);
+<span class="tk-k">try</span> { <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(reader.<span class="tk-f">ReadLine</span>()); }
+<span class="tk-k">finally</span> { reader?.<span class="tk-f">Dispose</span>(); }</code></pre></div>
+<p>Whenever you create an object that implements <code>IDisposable</code>, put it in a <code>using</code> (or make sure something else owns and disposes it). Forgetting causes files that stay locked, connection pools that run dry, and data that is never flushed to disk.</p>
+<h2>Writing a disposable class</h2>
+<p>If your class owns a disposable object, it should be disposable too, and pass the <code>Dispose</code> on:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> (<span class="tk-k">var</span> log = <span class="tk-k">new</span> <span class="tk-f">AuditLog</span>(<span class="tk-s">&quot;audit.txt&quot;</span>))
+{
+    log.<span class="tk-f">Record</span>(<span class="tk-s">&quot;login ada&quot;</span>);
+    log.<span class="tk-f">Record</span>(<span class="tk-s">&quot;logout ada&quot;</span>);
+}
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-t">File</span>.<span class="tk-f">ReadAllText</span>(<span class="tk-s">&quot;audit.txt&quot;</span>).<span class="tk-f">TrimEnd</span>());
+
+<span class="tk-k">var</span> closed = <span class="tk-k">new</span> <span class="tk-f">AuditLog</span>(<span class="tk-s">&quot;audit2.txt&quot;</span>);
+closed.<span class="tk-f">Dispose</span>();
+<span class="tk-k">try</span> { closed.<span class="tk-f">Record</span>(<span class="tk-s">&quot;too late&quot;</span>); } <span class="tk-k">catch</span> (<span class="tk-t">ObjectDisposedException</span> e) { <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(e.<span class="tk-t">ObjectName</span> + <span class="tk-s">&quot; is closed&quot;</span>); }
+
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">AuditLog</span> : IDisposable
+{
+    <span class="tk-k">private</span> <span class="tk-k">readonly</span> <span class="tk-t">StreamWriter</span> _writer;
+    <span class="tk-k">private</span> <span class="tk-k">bool</span> _disposed;
+    <span class="tk-k">private</span> <span class="tk-k">int</span> _count;
+
+    <span class="tk-k">public</span> <span class="tk-f">AuditLog</span>(<span class="tk-k">string</span> path) =&gt; _writer = <span class="tk-k">new</span> <span class="tk-f">StreamWriter</span>(path);
+
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Record</span>(<span class="tk-k">string</span> entry)
+    {
+        <span class="tk-t">ObjectDisposedException</span>.<span class="tk-f">ThrowIf</span>(_disposed, <span class="tk-k">this</span>);
+        _writer.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{++_count}: {entry}&quot;</span>);
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Dispose</span>()
+    {
+        <span class="tk-k">if</span> (_disposed) <span class="tk-k">return</span>;          <span class="tk-c">// calling Dispose twice must be harmless</span>
+        _writer.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{_count} entries&quot;</span>);
+        _writer.<span class="tk-f">Dispose</span>();
+        _disposed = <span class="tk-k">true</span>;
+    }
+}</code></pre></div>
+<p>Rules for <code>Dispose</code>:</p>
+<ul>
+<li>It must be safe to call more than once.</li>
+<li>After disposal, other methods throw <code>ObjectDisposedException</code>.</li>
+<li>A <code>sealed</code> class like this needs nothing more. (The longer &quot;dispose pattern&quot; with a finalizer is only for classes that hold raw operating-system handles directly, which is rare.)</li>
+</ul>
+<h2>using for scopes</h2>
+<p><code>using</code> works with anything disposable, which makes it handy for &quot;do this, then always undo it&quot;:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;before&quot;</span>);
+<span class="tk-k">using</span> (<span class="tk-k">new</span> <span class="tk-f">Indent</span>())
+{
+    <span class="tk-t">Indent</span>.<span class="tk-f">Write</span>(<span class="tk-s">&quot;inside&quot;</span>);
+    <span class="tk-k">using</span> (<span class="tk-k">new</span> <span class="tk-f">Indent</span>()) <span class="tk-t">Indent</span>.<span class="tk-f">Write</span>(<span class="tk-s">&quot;deeper&quot;</span>);
+}
+<span class="tk-t">Indent</span>.<span class="tk-f">Write</span>(<span class="tk-s">&quot;after&quot;</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">Indent</span> : IDisposable
+{
+    <span class="tk-k">private</span> <span class="tk-k">static</span> <span class="tk-k">int</span> _level;
+    <span class="tk-k">public</span> <span class="tk-f">Indent</span>() =&gt; _level++;
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Dispose</span>() =&gt; _level--;
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">Write</span>(<span class="tk-k">string</span> text) =&gt; <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">new</span> <span class="tk-k">string</span>(<span class="tk-s">' '</span>, _level * <span class="tk-n">2</span>) + text);
+}</code></pre></div>
+<p>Timers that measure a block, locks, and temporary changes to settings are often written this way.</p>
+<h2>Async disposal</h2>
+<p>Some resources need asynchronous clean-up (flushing a network stream). They implement <code>IAsyncDisposable</code> and are used with <code>await using</code> (lesson 5.01):</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">await</span> <span class="tk-k">using</span> <span class="tk-k">var</span> connection = <span class="tk-k">new</span> <span class="tk-f">SqlConnection</span>(connectionString);
+<span class="tk-k">await</span> connection.<span class="tk-f">OpenAsync</span>();</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/4.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/4.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-03-exceptions/"><span class="mono">previous</span><b>4.03 Exceptions</b></a>
+      <a class="lp-next" href="../4-05-iterators-and-yield/"><span class="mono">next</span><b>4.05 Iterators and yield</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/4-04-idisposable-and-using"></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>What JavaScript Is and Running It · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/1-01-what-javascript-is-and-running-it/">
+  <meta name="description" content="JavaScript is the language every web browser runs, and with Node.js it runs on servers and in tools too. This lesson explains where it runs, how it is…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What JavaScript Is and Running It · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="JavaScript is the language every web browser runs, and with Node.js it runs on servers and in tools too. This lesson explains where it runs, how it is…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/1-01-what-javascript-is-and-running-it/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="What JavaScript Is and Running It · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What JavaScript Is and Running It · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="JavaScript is the language every web browser runs, and with Node.js it runs on servers and in tools too. This lesson explains where it runs, how it is…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">What JavaScript Is and Running It</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.01</b></span><span>1 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">JavaScript is the language every web browser runs, and with Node.js it runs on servers and in tools too. This lesson explains where it runs, how it is executed, the console, and how TypeScript relates to it.</p>
+      <div class="prose">
+<h2>The language of the web</h2>
+<p>Every web browser contains a JavaScript engine. HTML describes a page, CSS styles it, and <strong>JavaScript</strong> makes it do things: respond to clicks, check forms, fetch data, draw, play games. Because every browser runs it, it is the most widely deployed programming language there is.</p>
+<p>JavaScript also runs outside the browser:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Where</th>
+<th>Engine / runtime</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Browsers</td>
+<td>V8 (Chrome, Edge), SpiderMonkey (Firefox), JavaScriptCore (Safari)</td>
+<td>Web pages and apps</td>
+</tr>
+<tr>
+<td><strong>Node.js</strong>, Deno, Bun</td>
+<td>V8 or JavaScriptCore</td>
+<td>Servers, command-line tools, build tools</td>
+</tr>
+<tr>
+<td>Desktop apps</td>
+<td>Electron (VS Code, Discord, this site&#39;s desktop app)</td>
+<td>Apps built with web technology</td>
+</tr>
+</tbody></table>
+</div>
+<h2>How it runs</h2>
+<p>Like Python, JavaScript is not compiled ahead of time by you. The engine parses your code and runs it, compiling hot parts to machine code on the fly (<strong>just-in-time compilation</strong>), which makes modern JavaScript fast.</p>
+<h2>A first program</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code>console.<span class="tk-f">log</span>(<span class="tk-s">&quot;Hello, Xenon!&quot;</span>);
+console.<span class="tk-f">log</span>(<span class="tk-s">&quot;2 + 3 =&quot;</span>, <span class="tk-n">2</span> + <span class="tk-n">3</span>);
+console.<span class="tk-f">log</span>([<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>], { name: <span class="tk-s">&quot;Ada&quot;</span>, age: <span class="tk-n">36</span> });</code></pre></div>
+<p><code>console.log</code> prints its arguments separated by spaces; arrays and objects are shown in a readable form. Press <strong>Run</strong> to try it.</p>
+<p>Statements end with a semicolon. JavaScript inserts missing semicolons automatically in most places, but the rules have surprising corners, so this course always writes them.</p>
+<h2>Running it yourself</h2>
+<ul>
+<li>In a <strong>browser</strong>: open the developer tools (F12), choose the <strong>Console</strong> tab, and type JavaScript; it runs on the current page.</li>
+<li>With <strong>Node.js</strong>: install it from nodejs.org, save code in <code>hello.js</code>, and run <code>node hello.js</code>. Running <code>node</code> alone opens an interactive prompt.</li>
+</ul>
+<p>An editor such as VS Code understands JavaScript out of the box and shows errors as you type.</p>
+<h2>Comments</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-c">// a comment to the end of the line</span>
+<span class="tk-c">/* a comment
+   over several lines */</span>
+<span class="tk-k">const</span> answer = <span class="tk-n">42</span>; <span class="tk-c">// the meaning of everything</span></code></pre></div>
+<h2>JavaScript and TypeScript</h2>
+<p><strong>TypeScript</strong> is JavaScript with <strong>types</strong> added: you write <code>let count: number = 0</code>, and a checker tells you before running that <code>count = &quot;ten&quot;</code> is a mistake. TypeScript compiles to plain JavaScript by removing the types, so it runs everywhere JavaScript does. Most large JavaScript projects today are written in TypeScript. This course teaches JavaScript first (milestones 1-4), then TypeScript on top (milestone 5); everything you learn about JavaScript applies to TypeScript unchanged.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/1.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/1.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <span></span>
+      <a class="lp-next" href="../1-02-values-variables-and-types/"><span class="mono">next</span><b>1.02 Values, Variables and Types</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/1-01-what-javascript-is-and-running-it"></script>
+</body>
+</html>

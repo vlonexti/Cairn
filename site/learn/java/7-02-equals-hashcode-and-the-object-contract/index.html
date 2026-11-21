@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>equals, hashCode and the Object Contract · Java · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/java/7-02-equals-hashcode-and-the-object-contract/">
+  <meta name="description" content="What every class inherits from Object and the rules that come with it - equals and its five properties, why hashCode must agree with equals, compareTo…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="equals, hashCode and the Object Contract · Java · Xenon">
+  <meta property="og:description" content="What every class inherits from Object and the rules that come with it - equals and its five properties, why hashCode must agree with equals, compareTo…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/java/7-02-equals-hashcode-and-the-object-contract/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="equals, hashCode and the Object Contract · Java · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="equals, hashCode and the Object Contract · Java · Xenon">
+  <meta name="twitter:description" content="What every class inherits from Object and the rules that come with it - equals and its five properties, why hashCode must agree with equals, compareTo…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/java.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Java</a><span>/</span><span>Advanced Java</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">equals, hashCode and the Object Contract</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.02</b></span><span>2 of 5 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">What every class inherits from Object and the rules that come with it - equals and its five properties, why hashCode must agree with equals, compareTo consistent with equals, toString, what records write for you, and the bugs that appear in HashSet and HashMap when the rules are broken.</p>
+      <div class="prose">
+<h2>What every object has</h2>
+<p>Every class extends <code>Object</code> and so has <code>equals</code>, <code>hashCode</code>, <code>toString</code>, <code>getClass</code> and a few more. The first three are meant to be overridden, but they come with a <strong>contract</strong>: rules that collections and libraries rely on. Break them and <code>HashMap</code>, <code>HashSet</code> and <code>contains</code> silently misbehave.</p>
+<h2>equals</h2>
+<p><code>==</code> on objects compares <strong>references</strong>: are these the same object? <code>equals</code> should compare <strong>values</strong>: do these two objects mean the same thing? The default <code>equals</code> is just <code>==</code>.</p>
+<p>The contract says <code>equals</code> must be:</p>
+<ol>
+<li><strong>reflexive</strong>: <code>x.equals(x)</code> is true;</li>
+<li><strong>symmetric</strong>: <code>x.equals(y)</code> exactly when <code>y.equals(x)</code>;</li>
+<li><strong>transitive</strong>: if <code>x.equals(y)</code> and <code>y.equals(z)</code>, then <code>x.equals(z)</code>;</li>
+<li><strong>consistent</strong>: the answer does not change unless the objects change;</li>
+<li><code>x.equals(null)</code> is false.</li>
+</ol>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.<span class="tk-t">Objects</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">static</span> <span class="tk-k">final</span> <span class="tk-k">class</span> <span class="tk-t">Point</span> {
+        <span class="tk-k">private</span> <span class="tk-k">final</span> <span class="tk-k">int</span> x, y;
+        <span class="tk-f">Point</span>(<span class="tk-k">int</span> x, <span class="tk-k">int</span> y) { <span class="tk-k">this</span>.x = x; <span class="tk-k">this</span>.y = y; }
+
+        <span class="tk-p">@Override</span>
+        <span class="tk-k">public</span> <span class="tk-k">boolean</span> <span class="tk-f">equals</span>(<span class="tk-t">Object</span> o) {
+            <span class="tk-k">if</span> (<span class="tk-k">this</span> == o) <span class="tk-k">return</span> <span class="tk-k">true</span>;
+            <span class="tk-k">if</span> (!(o <span class="tk-k">instanceof</span> <span class="tk-t">Point</span> other)) <span class="tk-k">return</span> <span class="tk-k">false</span>;   <span class="tk-c">// also false for null</span>
+            <span class="tk-k">return</span> x == other.x &amp;&amp; y == other.y;
+        }
+
+        <span class="tk-p">@Override</span>
+        <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-f">hashCode</span>() {
+            <span class="tk-k">return</span> <span class="tk-t">Objects</span>.<span class="tk-f">hash</span>(x, y);
+        }
+
+        <span class="tk-p">@Override</span>
+        <span class="tk-k">public</span> <span class="tk-t">String</span> <span class="tk-f">toString</span>() { <span class="tk-k">return</span> <span class="tk-s">&quot;(&quot;</span> + x + <span class="tk-s">&quot;, &quot;</span> + y + <span class="tk-s">&quot;)&quot;</span>; }
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Point</span> a = <span class="tk-k">new</span> <span class="tk-f">Point</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>), b = <span class="tk-k">new</span> <span class="tk-f">Point</span>(<span class="tk-n">1</span>, <span class="tk-n">2</span>);
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>((a == b) + <span class="tk-s">&quot; &quot;</span> + a.<span class="tk-f">equals</span>(b));   <span class="tk-c">// false true</span>
+    }
+}</code></pre></div>
+<p>Make such classes <code>final</code> (or compare with <code>getClass()</code>), otherwise a subclass that adds fields cannot keep <code>equals</code> symmetric.</p>
+<h2>hashCode must agree</h2>
+<p>A <code>HashMap</code> or <code>HashSet</code> first uses <code>hashCode</code> to pick a bucket, then <code>equals</code> inside it. So the rule is: <strong>equal objects must have equal hash codes</strong>. (Unequal objects may share one; that only costs speed.) Override <code>equals</code> without <code>hashCode</code> and this happens:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.<span class="tk-t">HashSet</span>;
+<span class="tk-k">import</span> java.util.<span class="tk-t">Set</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">static</span> <span class="tk-k">final</span> <span class="tk-k">class</span> <span class="tk-t">Tag</span> {
+        <span class="tk-k">final</span> <span class="tk-t">String</span> name;
+        <span class="tk-f">Tag</span>(<span class="tk-t">String</span> name) { <span class="tk-k">this</span>.name = name; }
+        <span class="tk-p">@Override</span> <span class="tk-k">public</span> <span class="tk-k">boolean</span> <span class="tk-f">equals</span>(<span class="tk-t">Object</span> o) { <span class="tk-k">return</span> o <span class="tk-k">instanceof</span> <span class="tk-t">Tag</span> t &amp;&amp; t.name.<span class="tk-f">equals</span>(name); }
+        <span class="tk-c">// no hashCode: each object keeps the default, based on its identity</span>
+    }
+
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-t">Set</span>&lt;<span class="tk-t">Tag</span>&gt; tags = <span class="tk-k">new</span> <span class="tk-t">HashSet</span>&lt;&gt;();
+        tags.<span class="tk-f">add</span>(<span class="tk-k">new</span> <span class="tk-f">Tag</span>(<span class="tk-s">&quot;java&quot;</span>));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(tags.<span class="tk-f">contains</span>(<span class="tk-k">new</span> <span class="tk-f">Tag</span>(<span class="tk-s">&quot;java&quot;</span>)));   <span class="tk-c">// almost certainly false</span>
+    }
+}</code></pre></div>
+<p><code>Objects.hash(field1, field2, ...)</code> is the easy, correct way to write <code>hashCode</code>. Use the same fields as <code>equals</code>.</p>
+<h2>Do not change keys</h2>
+<p>If a field used by <code>hashCode</code> changes while the object is in a <code>HashSet</code> or is a <code>HashMap</code> key, the object is now in the wrong bucket and cannot be found or removed. Make key classes immutable.</p>
+<h2>compareTo consistent with equals</h2>
+<p><code>Comparable.compareTo</code> (lesson 4.03) defines natural order. It should return 0 exactly when <code>equals</code> is true; <code>TreeSet</code> and <code>TreeMap</code> use <code>compareTo</code> <strong>instead of</strong> <code>equals</code>, so if two different objects compare as 0, a <code>TreeSet</code> keeps only one of them.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Java</span></div><pre><code><span class="tk-k">import</span> java.util.<span class="tk-t">Comparator</span>;
+<span class="tk-k">import</span> java.util.<span class="tk-t">List</span>;
+<span class="tk-k">import</span> java.util.<span class="tk-t">TreeSet</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Main</span> {
+    <span class="tk-k">record</span> <span class="tk-f">Person</span>(<span class="tk-t">String</span> name, <span class="tk-k">int</span> age) {}
+
+    <span class="tk-k">public</span> <span class="tk-k">static</span> <span class="tk-k">void</span> <span class="tk-f">main</span>(<span class="tk-t">String</span>[] args) {
+        <span class="tk-k">var</span> byAge = <span class="tk-k">new</span> <span class="tk-t">TreeSet</span>&lt;<span class="tk-t">Person</span>&gt;(<span class="tk-t">Comparator</span>.<span class="tk-f">comparingInt</span>(<span class="tk-t">Person</span>::age));
+        byAge.<span class="tk-f">addAll</span>(<span class="tk-t">List</span>.<span class="tk-f">of</span>(<span class="tk-k">new</span> <span class="tk-f">Person</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>), <span class="tk-k">new</span> <span class="tk-f">Person</span>(<span class="tk-s">&quot;Alan&quot;</span>, <span class="tk-n">36</span>)));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(byAge.<span class="tk-f">size</span>());            <span class="tk-c">// 1: same age counts as &quot;equal&quot;</span>
+
+        <span class="tk-k">var</span> full = <span class="tk-k">new</span> <span class="tk-t">TreeSet</span>&lt;<span class="tk-t">Person</span>&gt;(<span class="tk-t">Comparator</span>.<span class="tk-f">comparingInt</span>(<span class="tk-t">Person</span>::age).<span class="tk-f">thenComparing</span>(<span class="tk-t">Person</span>::name));
+        full.<span class="tk-f">addAll</span>(<span class="tk-t">List</span>.<span class="tk-f">of</span>(<span class="tk-k">new</span> <span class="tk-f">Person</span>(<span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-n">36</span>), <span class="tk-k">new</span> <span class="tk-f">Person</span>(<span class="tk-s">&quot;Alan&quot;</span>, <span class="tk-n">36</span>)));
+        <span class="tk-t">System</span>.out.<span class="tk-f">println</span>(full.<span class="tk-f">size</span>());             <span class="tk-c">// 2</span>
+    }
+}</code></pre></div>
+<h2>Records do it for you</h2>
+<p>A <code>record</code> (lesson 3.05) writes <code>equals</code>, <code>hashCode</code> and <code>toString</code> from its components automatically and correctly. For a plain data class, a record is the simplest way to get the contract right. (Arrays inside a record are compared by reference, so prefer <code>List</code> components.)</p>
+<h2>toString</h2>
+<p><code>toString</code> is used by string concatenation, <code>println</code>, debuggers and logs. Return something short that identifies the object; the default <code>ClassName@1b6d3586</code> helps nobody.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/java/l/7.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/java/l/7.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-01-nested-inner-and-anonymous-classes/"><span class="mono">previous</span><b>7.01 Nested, Inner and Anonymous Classes</b></a>
+      <a class="lp-next" href="../7-03-annotations-and-reflection/"><span class="mono">next</span><b>7.03 Annotations and Reflection</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/java/7-02-equals-hashcode-and-the-object-contract"></script>
+</body>
+</html>

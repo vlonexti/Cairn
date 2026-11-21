@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The DOM · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/6-01-the-dom/">
+  <meta name="description" content="How a web page is a tree of objects - loading scripts, finding elements with querySelector, reading and changing text, attributes, classes and styles,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The DOM · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="How a web page is a tree of objects - loading scripts, finding elements with querySelector, reading and changing text, attributes, classes and styles,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/6-01-the-dom/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The DOM · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The DOM · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="How a web page is a tree of objects - loading scripts, finding elements with querySelector, reading and changing text, attributes, classes and styles,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>The Browser and Projects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The DOM</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.01</b></span><span>1 of 5 in milestone 6</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How a web page is a tree of objects - loading scripts, finding elements with querySelector, reading and changing text, attributes, classes and styles, creating and removing elements, why textContent is safe and innerHTML is not, and rendering a list from data.</p>
+      <div class="prose">
+<h2>The page as objects</h2>
+<p>When a browser loads HTML, it builds the <strong>DOM</strong> (Document Object Model): a tree of objects, one per element, that JavaScript can read and change. Changing the DOM changes the page immediately.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">HTML</span></div><pre><code>&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;h1 id=&quot;title&quot;&gt;Shopping&lt;/h1&gt;
+    &lt;ul class=&quot;items&quot;&gt;&lt;/ul&gt;
+    &lt;script type=&quot;module&quot; src=&quot;main.js&quot;&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre></div>
+<p><code>type=&quot;module&quot;</code> makes <code>main.js</code> an ES module (lesson 3.05). Module scripts run after the HTML has been parsed, so every element above already exists.</p>
+<p>The DOM code in this milestone runs in a browser, not in the practice sandbox, which has no page. The practice tasks therefore test the logic behind the page (building HTML, validating forms, managing state), which is where most bugs live.</p>
+<h2>Finding elements</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> title = document.<span class="tk-f">querySelector</span>(<span class="tk-s">&quot;#title&quot;</span>);          <span class="tk-c">// the first match of a CSS selector, or null</span>
+<span class="tk-k">const</span> list = document.<span class="tk-f">querySelector</span>(<span class="tk-s">&quot;.items&quot;</span>);
+<span class="tk-k">const</span> buttons = document.<span class="tk-f">querySelectorAll</span>(<span class="tk-s">&quot;button.delete&quot;</span>);   <span class="tk-c">// all matches (a static NodeList)</span>
+<span class="tk-k">const</span> field = document.<span class="tk-f">getElementById</span>(<span class="tk-s">&quot;email&quot;</span>);
+
+<span class="tk-k">for</span> (<span class="tk-k">const</span> b <span class="tk-k">of</span> buttons) b.disabled = <span class="tk-k">true</span>;</code></pre></div>
+<p><code>querySelector</code> takes any CSS selector: <code>&quot;#id&quot;</code>, <code>&quot;.class&quot;</code>, <code>&quot;form input[name=email]&quot;</code>, <code>&quot;li:first-child&quot;</code>. It returns <code>null</code> when nothing matches, so a misspelled selector shows up as <code>Cannot read properties of null</code>.</p>
+<h2>Changing elements</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code>title.textContent = <span class="tk-s">&quot;Groceries&quot;</span>;                 <span class="tk-c">// replace the text</span>
+title.classList.<span class="tk-f">add</span>(<span class="tk-s">&quot;highlight&quot;</span>);                 <span class="tk-c">// classes: add, remove, toggle, contains</span>
+title.classList.<span class="tk-f">toggle</span>(<span class="tk-s">&quot;done&quot;</span>, isDone);
+title.style.color = <span class="tk-s">&quot;tomato&quot;</span>;                     <span class="tk-c">// inline style (prefer classes)</span>
+title.<span class="tk-f">setAttribute</span>(<span class="tk-s">&quot;aria-live&quot;</span>, <span class="tk-s">&quot;polite&quot;</span>);
+title.dataset.count = <span class="tk-s">&quot;3&quot;</span>;                        <span class="tk-c">// data-count=&quot;3&quot;</span>
+<span class="tk-k">const</span> link = document.<span class="tk-f">querySelector</span>(<span class="tk-s">&quot;a&quot;</span>);
+link.href = <span class="tk-s">&quot;/help&quot;</span>;</code></pre></div>
+<p>Prefer toggling <strong>classes</strong> and keeping the looks in CSS: <code>el.classList.toggle(&quot;hidden&quot;, !visible)</code> is easier to maintain than setting styles from JavaScript.</p>
+<h2>Creating and removing</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> item = document.<span class="tk-f">createElement</span>(<span class="tk-s">&quot;li&quot;</span>);
+item.textContent = <span class="tk-s">&quot;Milk&quot;</span>;
+item.className = <span class="tk-s">&quot;item&quot;</span>;
+list.<span class="tk-f">append</span>(item);                <span class="tk-c">// also: prepend, before, after</span>
+item.<span class="tk-f">remove</span>();
+list.<span class="tk-f">replaceChildren</span>();           <span class="tk-c">// remove all children</span></code></pre></div>
+<h2>textContent versus innerHTML</h2>
+<p><code>innerHTML</code> parses a string as HTML. That is convenient, and <strong>dangerous with any text that comes from users</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> name = <span class="tk-s">'&lt;img src=x onerror=&quot;alert(document.cookie)&quot;&gt;'</span>;
+greeting.innerHTML = <span class="tk-s">`Hello ${name}`</span>;    <span class="tk-c">// runs the attacker's code: cross-site scripting (XSS)</span>
+greeting.textContent = <span class="tk-s">`Hello ${name}`</span>;  <span class="tk-c">// shows the text exactly as typed: safe</span></code></pre></div>
+<p>Use <code>textContent</code> and <code>createElement</code> for user data. If you do build HTML strings, <strong>escape</strong> the text first:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">escapeHtml</span>(text) {
+  <span class="tk-k">return</span> <span class="tk-f">String</span>(text)
+    .<span class="tk-f">replaceAll</span>(<span class="tk-s">&quot;&amp;&quot;</span>, <span class="tk-s">&quot;&amp;amp;&quot;</span>)
+    .<span class="tk-f">replaceAll</span>(<span class="tk-s">&quot;&lt;&quot;</span>, <span class="tk-s">&quot;&amp;lt;&quot;</span>)
+    .<span class="tk-f">replaceAll</span>(<span class="tk-s">&quot;&gt;&quot;</span>, <span class="tk-s">&quot;&amp;gt;&quot;</span>)
+    .<span class="tk-f">replaceAll</span>(<span class="tk-s">'&quot;'</span>, <span class="tk-s">&quot;&amp;quot;&quot;</span>)
+    .<span class="tk-f">replaceAll</span>(<span class="tk-s">&quot;'&quot;</span>, <span class="tk-s">&quot;&amp;#39;&quot;</span>);
+}
+console.<span class="tk-f">log</span>(<span class="tk-f">escapeHtml</span>(<span class="tk-s">'&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'</span>));</code></pre></div>
+<p><code>&amp;</code> must be replaced first, or the <code>&amp;</code> of each replacement would be escaped again.</p>
+<h2>Rendering from data</h2>
+<p>Keep the data in JavaScript and draw the page <strong>from</strong> it, instead of reading values back out of the page:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> state = { items: [{ name: <span class="tk-s">&quot;Milk&quot;</span>, done: <span class="tk-k">false</span> }, { name: <span class="tk-s">&quot;Eggs&quot;</span>, done: <span class="tk-k">true</span> }] };
+
+<span class="tk-k">function</span> <span class="tk-f">render</span>() {
+  list.<span class="tk-f">replaceChildren</span>(...state.items.<span class="tk-f">map</span>((item, i) =&gt; {
+    <span class="tk-k">const</span> li = document.<span class="tk-f">createElement</span>(<span class="tk-s">&quot;li&quot;</span>);
+    li.textContent = item.name;
+    li.classList.<span class="tk-f">toggle</span>(<span class="tk-s">&quot;done&quot;</span>, item.done);
+    li.dataset.index = <span class="tk-f">String</span>(i);
+    <span class="tk-k">return</span> li;
+  }));
+}
+<span class="tk-f">render</span>();</code></pre></div>
+<p>After any change to <code>state</code>, call <code>render()</code> again. This <strong>state, then render</strong> loop is the idea behind React, Vue and Svelte; those libraries make the re-rendering efficient.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/6.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/6.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-05-classes-enums-and-utility-types/"><span class="mono">previous</span><b>5.05 Classes, Enums and Utility Types</b></a>
+      <a class="lp-next" href="../6-02-events-and-forms/"><span class="mono">next</span><b>6.02 Events and Forms</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/6-01-the-dom"></script>
+</body>
+</html>

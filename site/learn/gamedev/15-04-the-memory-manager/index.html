@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Memory Manager · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/15-04-the-memory-manager/">
+  <meta name="description" content="The kernel's memory manager provides every process's virtual address space (chapter 6) and also manages kernel memory. This lesson covers the kernel side:…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Memory Manager · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="The kernel's memory manager provides every process's virtual address space (chapter 6) and also manages kernel memory. This lesson covers the kernel side:…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/15-04-the-memory-manager/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Memory Manager · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Memory Manager · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="The kernel's memory manager provides every process's virtual address space (chapter 6) and also manages kernel memory. This lesson covers the kernel side:…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Windows Kernel Architecture</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Memory Manager</h1>
+      <div class="readout lp-readout"><span>lesson <b>15.04</b></span><span>4 of 8 in milestone 15</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">The kernel&#39;s <strong>memory manager</strong> provides every process&#39;s virtual address space (chapter 6) and also manages kernel memory. This lesson covers the kernel side: <strong>paged</strong> and <strong>non-paged pool</strong>, why the difference matters so much in drivers, <strong>pool tags</strong> for tracking allocations, <strong>memory descriptor lists</strong> (MDLs) for describing buffers, and how the memory manager handles page faults.</p>
+      <div class="prose">
+<h2>What the memory manager does</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Seen before</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Building and switching each process&#39;s page tables</td>
+<td>Lesson 6.02</td>
+</tr>
+<tr>
+<td>Reserving, committing and protecting user memory (<code>VirtualAlloc</code> ends here)</td>
+<td>Lesson 6.03</td>
+</tr>
+<tr>
+<td>Handling page faults: demand-zero pages, paging in from disk</td>
+<td>Lesson 6.02</td>
+</tr>
+<tr>
+<td>Working sets: deciding which pages stay in RAM</td>
+<td>Lesson 6.02</td>
+</tr>
+<tr>
+<td>File mappings and shared memory</td>
+<td>Lesson 12.01</td>
+</tr>
+<tr>
+<td><strong>Kernel memory: the pools</strong></td>
+<td>This lesson</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Paged and non-paged pool</h2>
+<p>Kernel code allocates memory from <strong>pools</strong>, the kernel&#39;s heaps, shared by all drivers:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pool</th>
+<th>Can be paged out to disk?</th>
+<th>Usable at</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Paged pool</strong></td>
+<td>Yes</td>
+<td>Only when page faults are allowed: IRQL below DISPATCH_LEVEL (lesson 15.06)</td>
+</tr>
+<tr>
+<td><strong>Non-paged pool</strong></td>
+<td>No: always in RAM</td>
+<td>Any IRQL, including interrupt handlers</td>
+</tr>
+</tbody></table>
+</div>
+<p>Why both? Non-paged memory is precious: it permanently consumes RAM. But some kernel code runs at times when a page fault <strong>cannot be handled</strong> (while holding a spin lock, in an interrupt or DPC, lesson 15.06), and touching paged memory then, if it has been paged out, crashes the machine with <code>IRQL_NOT_LESS_OR_EQUAL</code> or <code>PAGE_FAULT_IN_NONPAGED_AREA</code>. So drivers put in non-paged pool exactly the data that code at high IRQL touches, and everything else in paged pool.</p>
+<p>The same rule applies to <strong>code</strong>: a driver function that may run at DISPATCH_LEVEL must be in non-paged memory. Drivers mark functions that only run at PASSIVE_LEVEL as pageable with <code>#pragma alloc_text(PAGE, ...)</code> and assert their IRQL with the <code>PAGED_CODE()</code> macro.</p>
+<h2>Allocating with tags</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// A 4-character tag identifies who allocated it: here 'Echo', written backwards in memory as a little-endian integer.</span>
+<span class="tk-k">constexpr</span> ULONG kTag{ 'ohcE' };
+
+<span class="tk-k">auto</span>* buffer{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">char</span>*&gt;(<span class="tk-f">ExAllocatePool2</span>(POOL_FLAG_NON_PAGED, size, kTag)) };
+<span class="tk-k">if</span> (!buffer) <span class="tk-k">return</span> STATUS_INSUFFICIENT_RESOURCES;       <span class="tk-c">// allocation can fail: always check</span>
+<span class="tk-c">// ... use it ...</span>
+<span class="tk-f">ExFreePoolWithTag</span>(buffer, kTag);</code></pre></div>
+<ul>
+<li><code>ExAllocatePool2</code> (Windows 10 2004 and later) zero-initialises memory, unlike its predecessor <code>ExAllocatePoolWithTag</code>, which avoided a whole class of information-leak bugs.</li>
+<li>Every allocation carries a <strong>pool tag</strong>, a four-character code chosen by the driver. Tools such as <code>!poolused</code> in WinDbg and Sysinternals <strong>PoolMon</strong> show how much memory each tag holds, which is how kernel memory leaks are found: a tag whose usage keeps growing points at the guilty driver. The practice task builds this kind of tracking.</li>
+<li>Leaked pool memory is never reclaimed until reboot, because there is no process to clean up after (lesson 15.01).</li>
+</ul>
+<h2>Memory descriptor lists</h2>
+<p>When a driver needs to work with a buffer that belongs to a user process, for example to read data directly into it, it cannot simply keep the user&#39;s virtual address: that address is only valid in that process, and the pages could be paged out or freed. An <strong>MDL</strong> (memory descriptor list) describes the buffer by its <strong>physical pages</strong>:</p>
+<ol>
+<li>Build an MDL for the user range (<code>IoAllocateMdl</code>).</li>
+<li><strong>Lock</strong> the pages in RAM (<code>MmProbeAndLockPages</code>, inside <code>__try</code>, with the probing rules of lesson 15.02).</li>
+<li>Map them into kernel space if needed (<code>MmGetSystemAddressForMdlSafe</code>), giving an address valid in any process context and at raised IRQL.</li>
+<li>Unlock and free when done.</li>
+</ol>
+<p>Chapter 16&#39;s &quot;direct I/O&quot; (lesson 16.07) has the I/O manager do these steps for the driver.</p>
+<h2>Page faults, from the kernel&#39;s side</h2>
+<p>When a thread touches a page that is not present (lesson 6.02), the processor raises a page fault and the memory manager runs:</p>
+<ul>
+<li>Is the address valid for this process (committed or a mapping)? If not: an access violation exception in user mode, a bug check in kernel mode if nothing handles it.</li>
+<li>If valid: find a free physical page, fill it (zeros, or read from the page file or a mapped file, which means waiting for disk I/O), update the page table, and resume the thread.</li>
+</ul>
+<p>Waiting for disk is why a page fault can only be handled at low IRQL: at DISPATCH_LEVEL and above, the thread cannot wait.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Paged memory touched at DISPATCH_LEVEL or higher</span></div><div class="callout-body"><p>Works until the page happens to be paged out, then crashes the machine. Use non-paged pool for anything touched at raised IRQL.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Not checking pool allocations</span></div><div class="callout-body"><p>Pool allocation can fail; return <code>STATUS_INSUFFICIENT_RESOURCES</code>.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Keeping a user virtual address in a driver</span></div><div class="callout-body"><p>It is meaningless in another process context. Use an MDL or copy the data.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the difference between paged and non-paged pool?</div><ul><li>Paged pool may be written out to disk and can only be touched where page faults are allowed; non-paged pool always stays in RAM</li><li>Paged pool is faster</li><li>Non-paged pool is for user mode</li></ul><details><summary>Show the answer</summary><p><b>Paged pool may be written out to disk and can only be touched where page faults are allowed; non-paged pool always stays in RAM</b> High-IRQL code must only touch non-paged memory.</p></details></li><li><div class="q">What is a pool tag for?</div><ul><li>Identifying which driver (and which kind of allocation) each block of kernel memory belongs to, for tracking and finding leaks</li><li>Encrypting allocations</li><li>Aligning memory</li></ul><details><summary>Show the answer</summary><p><b>Identifying which driver (and which kind of allocation) each block of kernel memory belongs to, for tracking and finding leaks</b> Tools like PoolMon show usage per tag.</p></details></li><li><div class="q">Why does a driver use an MDL rather than a user virtual address?</div><ul><li>An MDL describes the physical pages, which can be locked in RAM and mapped so the buffer is usable from any process context</li><li>MDLs are faster to type</li><li>User addresses are always invalid</li></ul><details><summary>Show the answer</summary><p><b>An MDL describes the physical pages, which can be locked in RAM and mapped so the buffer is usable from any process context</b> The user address only means something in the original process.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/15.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/15.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../15-03-kernel-objects-and-the-object-manager/"><span class="mono">previous</span><b>15.03 Kernel Objects and the Object Manager</b></a>
+      <a class="lp-next" href="../15-05-the-i-o-manager-and-the-driver-model/"><span class="mono">next</span><b>15.05 The I/O Manager and the Driver Model</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/15-04-the-memory-manager"></script>
+</body>
+</html>

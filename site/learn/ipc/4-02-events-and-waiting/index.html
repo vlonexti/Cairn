@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Events and Waiting · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/4-02-events-and-waiting/">
+  <meta name="description" content="Signalling between processes with events - auto-reset versus manual-reset, SetEvent and ResetEvent, the lost-wakeup trap and how to avoid it,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Events and Waiting · Processes and Communication · Xenon">
+  <meta property="og:description" content="Signalling between processes with events - auto-reset versus manual-reset, SetEvent and ResetEvent, the lost-wakeup trap and how to avoid it,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/4-02-events-and-waiting/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Events and Waiting · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Events and Waiting · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="Signalling between processes with events - auto-reset versus manual-reset, SetEvent and ResetEvent, the lost-wakeup trap and how to avoid it,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Synchronisation Across Processes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Events and Waiting</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Signalling between processes with events - auto-reset versus manual-reset, SetEvent and ResetEvent, the lost-wakeup trap and how to avoid it, WaitForMultipleObjects for waiting on several things at once, and the return values every wait must check.</p>
+      <div class="prose">
+<h2>An event is a flag the kernel can wait on</h2>
+<p>An <strong>event</strong> is a kernel object with two states, set (signalled) and reset (non-signalled). A process waits on it with <code>WaitForSingleObject</code>; another process sets it with <code>SetEvent</code>. The waiting thread uses no CPU while it waits.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// producer, after putting a message in the shared ring buffer</span>
+ring.<span class="tk-f">send</span>(message);
+<span class="tk-f">SetEvent</span>(dataReady);
+
+<span class="tk-c">// consumer</span>
+<span class="tk-k">for</span> (;;)
+{
+    <span class="tk-k">if</span> (<span class="tk-f">WaitForSingleObject</span>(dataReady, <span class="tk-n">1000</span>) == WAIT_TIMEOUT) { <span class="tk-c">/* check the producer is alive */</span> <span class="tk-k">continue</span>; }
+    <span class="tk-k">while</span> (<span class="tk-k">auto</span> m{ ring.<span class="tk-f">receive</span>() }) <span class="tk-f">handle</span>(*m);
+}</code></pre></div>
+<p>Shared memory carries the data; the event carries the &quot;look now&quot;. Together they give a fast channel that neither spins nor polls.</p>
+<h2>Auto-reset and manual-reset</h2>
+<p>The second argument of <code>CreateEventW</code> chooses the kind:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>When set</th>
+<th>When a wait succeeds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>auto-reset</strong> (<code>FALSE</code>)</td>
+<td>wakes <strong>one</strong> waiting thread</td>
+<td>the event resets itself</td>
+</tr>
+<tr>
+<td><strong>manual-reset</strong> (<code>TRUE</code>)</td>
+<td>wakes <strong>all</strong> waiting threads</td>
+<td>stays set until someone calls <code>ResetEvent</code></td>
+</tr>
+</tbody></table>
+</div>
+<ul>
+<li>Use <strong>auto-reset</strong> for &quot;there is work&quot;: each set lets one waiter through.</li>
+<li>Use <strong>manual-reset</strong> for a <strong>state</strong> that everyone should see: &quot;shutting down&quot;, &quot;initialisation complete&quot;. Once set, every current and future wait returns at once.</li>
+</ul>
+<h2>Events do not count</h2>
+<p>Setting an auto-reset event that is already set does nothing: two <code>SetEvent</code> calls before the consumer wakes up still wake it only once. An event is a flag, not a counter. That is fine as long as the consumer, once woken, processes <strong>everything</strong> that is waiting (the <code>while</code> loop above), not just one item. If you need to count, use a semaphore (lesson 4.03).</p>
+<h2>The lost wakeup</h2>
+<p>The classic bug is checking for work and then waiting, with a gap between:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (ring.<span class="tk-f">empty</span>())                               <span class="tk-c">// 1. consumer sees nothing</span>
+{                                               <span class="tk-c">// 2. producer sends and calls SetEvent</span>
+    <span class="tk-f">ResetEvent</span>(dataReady);                      <span class="tk-c">// 3. consumer clears the signal it never saw</span>
+    <span class="tk-f">WaitForSingleObject</span>(dataReady, INFINITE);   <span class="tk-c">// 4. waits for ever, with a message waiting</span>
+}</code></pre></div>
+<p>The safe pattern never resets a manual event while data may be waiting, and always <strong>re-checks the data after waking</strong>: with an auto-reset event, wait first, then drain everything; with timeouts on every wait, a missed signal costs at most one timeout instead of a hang.</p>
+<h2>Waiting for several things</h2>
+<p>A consumer usually needs to wake for more than one reason: new data, or &quot;stop&quot;, or &quot;the producer process died&quot;. <code>WaitForMultipleObjects</code> waits on up to 64 handles at once:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE handles[]{ stopEvent, producerProcess, dataReady };
+<span class="tk-k">switch</span> (<span class="tk-k">const</span> DWORD r{ <span class="tk-f">WaitForMultipleObjects</span>(<span class="tk-n">3</span>, handles, FALSE, <span class="tk-n">5000</span>) })
+{
+<span class="tk-k">case</span> WAIT_OBJECT_0 + <span class="tk-n">0</span>: <span class="tk-k">return</span>;                         <span class="tk-c">// stop requested</span>
+<span class="tk-k">case</span> WAIT_OBJECT_0 + <span class="tk-n">1</span>: <span class="tk-f">reportProducerDied</span>(); <span class="tk-k">return</span>;   <span class="tk-c">// its process handle became signalled</span>
+<span class="tk-k">case</span> WAIT_OBJECT_0 + <span class="tk-n">2</span>: <span class="tk-f">drain</span>(); <span class="tk-k">break</span>;                 <span class="tk-c">// data ready</span>
+<span class="tk-k">case</span> WAIT_TIMEOUT:      <span class="tk-k">break</span>;                          <span class="tk-c">// nothing in 5 s</span>
+<span class="tk-k">default</span>:                <span class="tk-c">/* WAIT_FAILED or WAIT_ABANDONED_0 + i (lesson 4.03) */</span> <span class="tk-k">break</span>;
+}</code></pre></div>
+<p>With <code>bWaitAll</code> <code>FALSE</code>, it returns when <strong>any</strong> is signalled and tells you which (the lowest index if several are). Put the most important handle first: if stop and data arrive together, stop wins. Waiting on the <strong>other process&#39;s handle</strong> alongside your event is how a shared-memory channel learns that its peer has gone, which shared memory alone never tells you.</p>
+<h2>Check every wait</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Return</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WAIT_OBJECT_0 + i</code></td>
+<td>object <code>i</code> is signalled</td>
+</tr>
+<tr>
+<td><code>WAIT_TIMEOUT</code></td>
+<td>the time ran out</td>
+</tr>
+<tr>
+<td><code>WAIT_ABANDONED_0 + i</code></td>
+<td>object <code>i</code> is a mutex whose owner died (lesson 4.03)</td>
+</tr>
+<tr>
+<td><code>WAIT_FAILED</code></td>
+<td>an error, such as an invalid handle: <code>GetLastError()</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Code that treats every non-timeout return as success sooner or later acts on an abandoned mutex or a closed handle as if all were well.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-named-kernel-objects/"><span class="mono">previous</span><b>4.01 Named Kernel Objects</b></a>
+      <a class="lp-next" href="../4-03-mutexes-semaphores-and-abandonment/"><span class="mono">next</span><b>4.03 Mutexes, Semaphores and Abandonment</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/4-02-events-and-waiting"></script>
+</body>
+</html>

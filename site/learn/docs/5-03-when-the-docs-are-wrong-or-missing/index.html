@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>When the Docs Are Wrong or Missing · Reading Documentation · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/docs/5-03-when-the-docs-are-wrong-or-missing/">
+  <meta name="description" content="What to do when documentation and behaviour disagree - checking the version first, reading changelogs and migration guides, errata and known issues, weighing…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="When the Docs Are Wrong or Missing · Reading Documentation · Xenon">
+  <meta property="og:description" content="What to do when documentation and behaviour disagree - checking the version first, reading changelogs and migration guides, errata and known issues, weighing…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/docs/5-03-when-the-docs-are-wrong-or-missing/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="When the Docs Are Wrong or Missing · Reading Documentation · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="When the Docs Are Wrong or Missing · Reading Documentation · Xenon">
+  <meta name="twitter:description" content="What to do when documentation and behaviour disagree - checking the version first, reading changelogs and migration guides, errata and known issues, weighing…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/docs.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Reading Documentation</a><span>/</span><span>From Docs to Working Code</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">When the Docs Are Wrong or Missing</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.03</b></span><span>3 of 4 in milestone 5</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">What to do when documentation and behaviour disagree - checking the version first, reading changelogs and migration guides, errata and known issues, weighing community answers and AI suggestions, reporting documentation bugs well, and protecting your code against behaviour that is not documented.</p>
+      <div class="prose">
+<h2>First suspect: the version</h2>
+<p>Most &quot;the documentation is wrong&quot; moments are really &quot;I am reading the documentation for a different version&quot;. Check, in this order:</p>
+<ol>
+<li>Which version of the library, language or OS are you <strong>actually</strong> using? (<code>--version</code>, the package file, <code>_MSC_VER</code>, <code>sys.version</code>.)</li>
+<li>Which version is the page about? Look for a version selector, &quot;Added in&quot;, &quot;(since C++20)&quot;, &quot;Changed in version&quot; notes.</li>
+<li>Is there a <strong>changelog</strong> or <strong>release notes</strong> entry between the two?</li>
+</ol>
+<h2>Changelogs and migration guides</h2>
+<p>A <strong>changelog</strong> lists what changed in each release, usually grouped as Added, Changed, Deprecated, Removed, Fixed and Security. Many projects follow Semantic Versioning (the milestone 4 project), so the version number already warns you: a new <strong>major</strong> version may break your code, minor and patch versions should not.</p>
+<p>When you upgrade across several versions, read <strong>every</strong> entry in between, not only the latest: a key renamed in version 2 and a default changed in version 3 both affect you. Larger projects publish a <strong>migration guide</strong> (&quot;Upgrading from 2.x to 3.0&quot;) that lists breaking changes with before-and-after code. Practice 5.03 is a migration written from a changelog.</p>
+<p>Things a changelog entry tells you that a reference page often does not:</p>
+<ul>
+<li>what the <strong>old</strong> behaviour was, so you can recognise it in existing code;</li>
+<li>whether a change is <strong>breaking</strong> or only a fix;</li>
+<li>the <strong>deprecation</strong> timeline: a function marked deprecated in 2.3 may be removed in 3.0.</li>
+</ul>
+<h2>When the page really is wrong</h2>
+<p>Documentation is written by people and has mistakes, especially in corners: a wrong default, a missing error case, an example that no longer compiles. Signs you have found one:</p>
+<ul>
+<li>your experiment (lesson 5.02) contradicts the page, on the version the page describes;</li>
+<li>the implementation (lesson 4.03) clearly does something else;</li>
+<li>the issue tracker or errata list mentions it.</li>
+</ul>
+<p>Then:</p>
+<ol>
+<li><strong>Trust the behaviour you can test</strong>, but write a learning test for it, since a fix might change it.</li>
+<li><strong>Check errata and issues</strong>: RFCs have errata pages; libraries have issue trackers; cppreference pages have discussion pages and are corrected quickly.</li>
+<li><strong>Report it</strong>, briefly and concretely: the page and section, what it says, what actually happens (with a minimal program), and the version. Most documentation is open to contributions: cppreference is a wiki, Microsoft Learn pages have an &quot;Edit&quot; link to GitHub, MDN is on GitHub too.</li>
+</ol>
+<h2>Community answers and AI suggestions</h2>
+<p>Answers from forums, Q&amp;A sites, blog posts and AI assistants are often the fastest way to find <strong>which</strong> function to use. They are also often out of date, written for another platform or version, or simply wrong in a detail, and an AI suggestion can name a function or parameter that does not exist at all. Treat them as <strong>leads</strong>:</p>
+<ul>
+<li>Look up every function they use on its reference page.</li>
+<li>Check the date and version they were written for.</li>
+<li>Prefer answers that link to documentation, and be suspicious of ones that only say &quot;this works for me&quot;.</li>
+<li>Run the experiment yourself.</li>
+</ul>
+<h2>Building on undocumented behaviour</h2>
+<p>Sometimes you must rely on something no page promises: an undocumented message format, the order of results, a timing. If you do:</p>
+<ul>
+<li><strong>Isolate</strong> it in one function, so there is one place to change.</li>
+<li><strong>Write a test</strong> that fails loudly if the behaviour changes.</li>
+<li><strong>Leave a comment</strong> saying it is undocumented and how you found out.</li>
+<li><strong>Prefer a documented alternative</strong> the moment one exists.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/docs/l/5.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/docs/l/5.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-02-checking-your-understanding-with-experiments/"><span class="mono">previous</span><b>5.02 Checking Your Understanding with Experiments</b></a>
+      <a class="lp-next" href="../5-04-writing-documentation-others-can-use/"><span class="mono">next</span><b>5.04 Writing Documentation Others Can Use</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/docs/5-03-when-the-docs-are-wrong-or-missing"></script>
+</body>
+</html>

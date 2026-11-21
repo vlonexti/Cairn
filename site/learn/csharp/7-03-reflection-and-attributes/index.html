@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Reflection and Attributes · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/7-03-reflection-and-attributes/">
+  <meta name="description" content="Programs that look at themselves - Type objects, reading properties and methods with reflection, creating objects and calling methods by name, attributes as…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Reflection and Attributes · C# · Xenon">
+  <meta property="og:description" content="Programs that look at themselves - Type objects, reading properties and methods with reflection, creating objects and calling methods by name, attributes as…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/7-03-reflection-and-attributes/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Reflection and Attributes · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reflection and Attributes · C# · Xenon">
+  <meta name="twitter:description" content="Programs that look at themselves - Type objects, reading properties and methods with reflection, creating objects and calling methods by name, attributes as…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>Advanced C#</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Reflection and Attributes</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.03</b></span><span>3 of 6 in milestone 7</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Programs that look at themselves - Type objects, reading properties and methods with reflection, creating objects and calling methods by name, attributes as labels on code, writing and reading your own attributes, and why source generators replace much of this today.</p>
+      <div class="prose">
+<h2>Types are data too</h2>
+<p>Every object knows its type, and a <code>Type</code> object describes it: name, properties, methods, attributes. Inspecting and using that at run time is <strong>reflection</strong>. Serializers, test frameworks, dependency injection and object mappers are built on it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">var</span> book = <span class="tk-k">new</span> <span class="tk-f">Book</span>(<span class="tk-s">&quot;Dune&quot;</span>, <span class="tk-n">1965</span>);
+<span class="tk-t">Type</span> type = book.<span class="tk-f">GetType</span>();               <span class="tk-c">// or typeof(Book) when you have no object</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{type.Name} in {type.Namespace ?? &quot;</span>(no <span class="tk-k">namespace</span>)<span class="tk-s">&quot;}&quot;</span>);
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> p <span class="tk-k">in</span> type.<span class="tk-f">GetProperties</span>())
+    <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;  {p.Name}: {p.PropertyType.Name} = {p.GetValue(book)}&quot;</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">record</span> <span class="tk-f">Book</span>(<span class="tk-k">string</span> <span class="tk-t">Title</span>, <span class="tk-k">int</span> <span class="tk-t">Year</span>);</code></pre></div>
+<h2>Members by name</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Reflection</span>;
+
+<span class="tk-k">var</span> counter = <span class="tk-k">new</span> <span class="tk-f">Counter</span>();
+<span class="tk-t">Type</span> t = <span class="tk-k">typeof</span>(<span class="tk-t">Counter</span>);
+
+<span class="tk-t">MethodInfo</span> add = t.<span class="tk-f">GetMethod</span>(<span class="tk-s">&quot;Add&quot;</span>)!;
+add.<span class="tk-f">Invoke</span>(counter, [<span class="tk-n">5</span>]);                 <span class="tk-c">// like counter.Add(5)</span>
+
+<span class="tk-t">PropertyInfo</span> total = t.<span class="tk-f">GetProperty</span>(<span class="tk-s">&quot;Total&quot;</span>)!;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(total.<span class="tk-f">GetValue</span>(counter));          <span class="tk-c">// 5</span>
+
+<span class="tk-t">FieldInfo</span> secret = t.<span class="tk-f">GetField</span>(<span class="tk-s">&quot;_calls&quot;</span>, <span class="tk-t">BindingFlags</span>.<span class="tk-t">NonPublic</span> | <span class="tk-t">BindingFlags</span>.<span class="tk-t">Instance</span>)!;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(secret.<span class="tk-f">GetValue</span>(counter));          <span class="tk-c">// 1: private members are reachable too</span>
+
+<span class="tk-k">object</span> made = <span class="tk-t">Activator</span>.<span class="tk-f">CreateInstance</span>(t)!;          <span class="tk-c">// new Counter() without naming it</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(made.<span class="tk-f">GetType</span>().<span class="tk-t">Name</span>);
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Counter</span>
+{
+    <span class="tk-k">private</span> <span class="tk-k">int</span> _calls;
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-t">Total</span> { <span class="tk-k">get</span>; <span class="tk-k">private</span> <span class="tk-k">set</span>; }
+    <span class="tk-k">public</span> <span class="tk-k">void</span> <span class="tk-f">Add</span>(<span class="tk-k">int</span> n) { <span class="tk-t">Total</span> += n; _calls++; }
+}</code></pre></div>
+<p>Reflection is slow compared with normal calls and the compiler cannot check names written as strings, so a typo is only found when the code runs. Use <code>nameof(Counter.Add)</code> instead of <code>&quot;Add&quot;</code> where you can.</p>
+<h2>Attributes</h2>
+<p>An <strong>attribute</strong> is a label attached to code in square brackets. It does nothing by itself; code that reads it (the compiler, a framework, your own reflection) decides what it means. You have already met several:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Read by</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>[Obsolete(&quot;use X&quot;)]</code></td>
+<td>the compiler</td>
+<td>a warning wherever it is used</td>
+</tr>
+<tr>
+<td><code>[JsonPropertyName(&quot;id&quot;)]</code></td>
+<td><code>System.Text.Json</code> (lesson 5.04)</td>
+<td>the JSON name of a property</td>
+</tr>
+<tr>
+<td><code>[Fact]</code>, <code>[Theory]</code></td>
+<td>xUnit (lesson 6.02)</td>
+<td>marks a test</td>
+</tr>
+<tr>
+<td><code>[Flags]</code></td>
+<td><code>Enum.ToString</code></td>
+<td>prints combined flags as <code>&quot;Read, Write&quot;</code></td>
+</tr>
+</tbody></table>
+</div>
+<h2>Your own attribute</h2>
+<p>An attribute is a class that derives from <code>Attribute</code>. <code>AttributeUsage</code> says what it can be put on:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Reflection</span>;
+
+<span class="tk-k">foreach</span> (<span class="tk-k">var</span> p <span class="tk-k">in</span> <span class="tk-k">typeof</span>(<span class="tk-t">SignUp</span>).<span class="tk-f">GetProperties</span>())
+{
+    <span class="tk-k">var</span> max = p.<span class="tk-t">GetCustomAttribute</span>&lt;<span class="tk-t">MaxLengthAttribute</span>&gt;();
+    <span class="tk-k">if</span> (max <span class="tk-k">is</span> not <span class="tk-k">null</span>) <span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{p.Name}: at most {max.Length} characters&quot;</span>);
+}
+
+[<span class="tk-f">AttributeUsage</span>(<span class="tk-t">AttributeTargets</span>.<span class="tk-t">Property</span>)]
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-f">MaxLengthAttribute</span>(<span class="tk-k">int</span> length) : <span class="tk-t">Attribute</span>
+{
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-t">Length</span> { <span class="tk-k">get</span>; } = length;
+}
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">SignUp</span>
+{
+    [<span class="tk-f">MaxLength</span>(<span class="tk-n">20</span>)] <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-t">Name</span> { <span class="tk-k">get</span>; <span class="tk-k">set</span>; } = <span class="tk-s">&quot;&quot;</span>;
+    [<span class="tk-f">MaxLength</span>(<span class="tk-n">80</span>)] <span class="tk-k">public</span> <span class="tk-k">string</span> <span class="tk-t">Email</span> { <span class="tk-k">get</span>; <span class="tk-k">set</span>; } = <span class="tk-s">&quot;&quot;</span>;
+    <span class="tk-k">public</span> <span class="tk-k">int</span> <span class="tk-t">Age</span> { <span class="tk-k">get</span>; <span class="tk-k">set</span>; }
+}</code></pre></div>
+<p>The name <code>MaxLengthAttribute</code> can be written <code>[MaxLength(...)]</code>: the <code>Attribute</code> ending is optional where it is used.</p>
+<h2>Generic code and reflection together</h2>
+<p>A validator that works for <strong>any</strong> class, driven by attributes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Reflection</span>;
+
+<span class="tk-k">static</span> <span class="tk-t">List</span>&lt;<span class="tk-k">string</span>&gt; <span class="tk-f">Validate</span>(<span class="tk-k">object</span> obj)
+{
+    <span class="tk-k">var</span> problems = <span class="tk-k">new</span> <span class="tk-t">List</span>&lt;<span class="tk-k">string</span>&gt;();
+    <span class="tk-k">foreach</span> (<span class="tk-k">var</span> p <span class="tk-k">in</span> obj.<span class="tk-f">GetType</span>().<span class="tk-f">GetProperties</span>())
+    {
+        <span class="tk-k">if</span> (p.<span class="tk-t">GetCustomAttribute</span>&lt;<span class="tk-t">RequiredAttribute</span>&gt;() <span class="tk-k">is</span> not <span class="tk-k">null</span> &amp;&amp; p.<span class="tk-f">GetValue</span>(obj) <span class="tk-k">is</span> <span class="tk-k">null</span> or <span class="tk-s">&quot;&quot;</span>)
+            problems.<span class="tk-f">Add</span>(<span class="tk-s">$&quot;{p.Name} is required&quot;</span>);
+    }
+    <span class="tk-k">return</span> problems;
+}
+
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot;; &quot;</span>, <span class="tk-f">Validate</span>(<span class="tk-k">new</span> <span class="tk-t">Contact</span> { <span class="tk-t">Name</span> = <span class="tk-s">&quot;&quot;</span> })));
+
+[<span class="tk-f">AttributeUsage</span>(<span class="tk-t">AttributeTargets</span>.<span class="tk-t">Property</span>)]
+<span class="tk-k">public</span> <span class="tk-k">sealed</span> <span class="tk-k">class</span> <span class="tk-t">RequiredAttribute</span> : <span class="tk-t">Attribute</span>;
+
+<span class="tk-k">public</span> <span class="tk-k">class</span> <span class="tk-t">Contact</span>
+{
+    [<span class="tk-t">Required</span>] <span class="tk-k">public</span> <span class="tk-k">string</span>? <span class="tk-t">Name</span> { <span class="tk-k">get</span>; <span class="tk-k">set</span>; }
+    [<span class="tk-t">Required</span>] <span class="tk-k">public</span> <span class="tk-k">string</span>? <span class="tk-t">Phone</span> { <span class="tk-k">get</span>; <span class="tk-k">set</span>; }
+}</code></pre></div>
+<h2>Source generators</h2>
+<p>Reflection decides at run time; a <strong>source generator</strong> reads your code (and its attributes) at compile time and writes extra C# for you. The result is as fast as hand-written code, works where reflection is restricted (trimmed and native AOT apps), and errors appear while compiling. <code>System.Text.Json</code>, logging (<code>[LoggerMessage]</code>) and regular expressions (<code>[GeneratedRegex]</code>, lesson 7.05) all offer generated versions. When a library offers both, prefer the generated one.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/7.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/7.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-02-collections-in-depth/"><span class="mono">previous</span><b>7.02 Collections in Depth</b></a>
+      <a class="lp-next" href="../7-04-span-memory-and-performance/"><span class="mono">next</span><b>7.04 Span, Memory and Performance</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/7-03-reflection-and-attributes"></script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Growing Arrays with realloc · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/4-02-growing-arrays-with-realloc/">
+  <meta name="description" content="realloc resizes a heap block, moving it if it has to. Assign its result to a temporary so a failure does not lose the old block. A growing array keeps a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Growing Arrays with realloc · C · Xenon">
+  <meta property="og:description" content="realloc resizes a heap block, moving it if it has to. Assign its result to a temporary so a failure does not lose the old block. A growing array keeps a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/4-02-growing-arrays-with-realloc/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Growing Arrays with realloc · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Growing Arrays with realloc · C · Xenon">
+  <meta name="twitter:description" content="realloc resizes a heap block, moving it if it has to. Assign its result to a temporary so a failure does not lose the old block. A growing array keeps a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>Memory and Structures</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Growing Arrays with realloc</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.02</b></span><span>2 of 6 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">realloc resizes a heap block, moving it if it has to. Assign its result to a temporary so a failure does not lose the old block. A growing array keeps a length and a capacity and doubles the capacity when it is full, so adding stays fast on average - the same trick as Python lists and C++ vectors.</p>
+      <div class="prose">
+<h2>realloc</h2>
+<p><code>realloc(pointer, new_size)</code> makes a heap block bigger or smaller and returns its (possibly new) address. If there is no room right after the block, it allocates a new one, copies the old contents across, and frees the old one.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">int</span> *bigger = <span class="tk-f">realloc</span>(numbers, <span class="tk-n">2</span> * capacity * <span class="tk-k">sizeof</span> *numbers);
+<span class="tk-k">if</span> (bigger == <span class="tk-k">NULL</span>) {
+    <span class="tk-c">// numbers is still valid and still needs freeing</span>
+} <span class="tk-k">else</span> {
+    numbers = bigger;          <span class="tk-c">// the old address may now be invalid</span>
+    capacity *= <span class="tk-n">2</span>;
+}</code></pre></div>
+<div class="callout warning"><div class="callout-title"><span>Never write p = realloc(p, ...)</span></div><div class="callout-body"><p>If <code>realloc</code> fails it returns <code>NULL</code> and leaves the old block alone. <code>p = realloc(p, size)</code> would then overwrite your only pointer to that block: a leak. Use a temporary.</p>
+</div></div>
+<p>Also, after a successful <code>realloc</code>, any other pointers into the old block are dangling: the data may have moved.</p>
+<h2>Length and capacity</h2>
+<p>A growing array keeps three things together: the pointer, how many elements are used (<strong>length</strong>) and how many fit (<strong>capacity</strong>). When length reaches capacity, grow:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;stdlib.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    size_t length = <span class="tk-n">0</span>;
+    size_t capacity = <span class="tk-n">4</span>;
+    <span class="tk-k">int</span> *numbers = <span class="tk-f">malloc</span>(capacity * <span class="tk-k">sizeof</span> *numbers);
+    <span class="tk-k">if</span> (numbers == <span class="tk-k">NULL</span>) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+
+    <span class="tk-k">int</span> value = <span class="tk-n">0</span>;
+    <span class="tk-k">while</span> (<span class="tk-f">scanf</span>(<span class="tk-s">&quot;%d&quot;</span>, &amp;value) == <span class="tk-n">1</span>) {
+        <span class="tk-k">if</span> (length == capacity) {
+            size_t new_capacity = capacity * <span class="tk-n">2</span>;
+            <span class="tk-k">int</span> *bigger = <span class="tk-f">realloc</span>(numbers, new_capacity * <span class="tk-k">sizeof</span> *numbers);
+            <span class="tk-k">if</span> (bigger == <span class="tk-k">NULL</span>) {
+                <span class="tk-f">free</span>(numbers);
+                <span class="tk-k">return</span> <span class="tk-n">1</span>;
+            }
+            numbers = bigger;
+            capacity = new_capacity;
+            <span class="tk-f">printf</span>(<span class="tk-s">&quot;(grew to %zu)\n&quot;</span>, capacity);
+        }
+        numbers[length++] = value;
+    }
+
+    <span class="tk-k">for</span> (size_t i = length; i &gt; <span class="tk-n">0</span>; i--) {
+        <span class="tk-f">printf</span>(<span class="tk-s">&quot;%d &quot;</span>, numbers[i - <span class="tk-n">1</span>]);       <span class="tk-c">// backwards</span>
+    }
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;\n&quot;</span>);
+    <span class="tk-f">free</span>(numbers);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Try it with ten or so numbers (press Ctrl+D to end the input in the console).</p>
+<h2>Why double?</h2>
+<p>Growing by one each time would copy every element on every addition: adding n elements would copy about n²/2 of them. Doubling means copies happen rarely: after adding n elements the total copying is less than 2n, so each addition costs a constant amount <strong>on average</strong> (&quot;amortised O(1)&quot;). Python&#39;s <code>list</code>, C++&#39;s <code>std::vector</code>, Rust&#39;s <code>Vec</code> and Java&#39;s <code>ArrayList</code> all work exactly like this underneath.</p>
+<h2>Wrapping it up in functions</h2>
+<p>Passing three separate variables everywhere is clumsy. The next lesson&#39;s structures bundle them into one thing:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-k">struct</span> int_list {
+    <span class="tk-k">int</span> *items;
+    size_t length;
+    size_t capacity;
+};
+
+<span class="tk-k">bool</span> <span class="tk-f">list_push</span>(<span class="tk-k">struct</span> int_list *list, <span class="tk-k">int</span> value);   <span class="tk-c">// grows when needed</span>
+<span class="tk-k">void</span> <span class="tk-f">list_free</span>(<span class="tk-k">struct</span> int_list *list);</code></pre></div>
+<p>That is your first real <strong>data structure</strong>, and you will build it in the practice.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What can realloc do when the block cannot grow where it is?</div><ul><li>Allocate a new block, copy the data and free the old one</li><li>Fail every time</li><li>Overwrite the memory after the block</li></ul><details><summary>Show the answer</summary><p><b>Allocate a new block, copy the data and free the old one</b> That is why old pointers into the block become invalid.</p></details></li><li><div class="q">Why is p = realloc(p, n) a bug?</div><ul><li>If realloc fails, the only pointer to the old block is lost</li><li>realloc cannot be given the same pointer</li><li>It frees p twice</li></ul><details><summary>Show the answer</summary><p><b>If realloc fails, the only pointer to the old block is lost</b> Use a temporary variable.</p></details></li><li><div class="q">Why does a growing array double its capacity instead of adding one?</div><ul><li>So that copying happens rarely and adding is fast on average</li><li>Memory only comes in powers of two</li><li>To use less memory</li></ul><details><summary>Show the answer</summary><p><b>So that copying happens rarely and adding is fast on average</b> Doubling gives amortised constant-time adds.</p></details></li><li><div class="q">What do length and capacity mean?</div><ul><li>Elements in use, and elements there is room for</li><li>Bytes and elements</li><li>The same thing</li></ul><details><summary>Show the answer</summary><p><b>Elements in use, and elements there is room for</b> When length reaches capacity, grow.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/4.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/4.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-01-malloc-and-free/"><span class="mono">previous</span><b>4.01 malloc and free</b></a>
+      <a class="lp-next" href="../4-03-structures/"><span class="mono">next</span><b>4.03 Structures</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/4-02-growing-arrays-with-realloc"></script>
+</body>
+</html>

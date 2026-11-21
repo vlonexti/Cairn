@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Operators Deep Dive · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/2-08-operators-deep-dive/">
+  <meta name="description" content="Comparisons (==, &lt; ...) produce a bool. Logical operators (&amp;&amp;, , !) combine bools and stop early when the answer is settled. ++x and x++ differ in the value…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Operators Deep Dive · C++ · Xenon">
+  <meta property="og:description" content="Comparisons (==, &lt; ...) produce a bool. Logical operators (&amp;&amp;, , !) combine bools and stop early when the answer is settled. ++x and x++ differ in the value…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/2-08-operators-deep-dive/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Operators Deep Dive · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Operators Deep Dive · C++ · Xenon">
+  <meta name="twitter:description" content="Comparisons (==, &lt; ...) produce a bool. Logical operators (&amp;&amp;, , !) combine bools and stop early when the answer is settled. ++x and x++ differ in the value…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Types and Data</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Operators Deep Dive</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.08</b></span><span>8 of 9 in milestone 2</span><span>5 min</span><span><b>4</b> practice tasks</span></div>
+      <p class="lp-summary">Comparisons (<code>==</code>, <code>&lt;</code> ...) produce a <code>bool</code>. Logical operators (<code>&amp;&amp;</code>, <code>||</code>, <code>!</code>) combine bools and stop early when the answer is settled. <code>++x</code> and <code>x++</code> differ in the value they give back. <code>?:</code> chooses between two values.</p>
+      <div class="prose">
+<h2>Comparison operators</h2>
+<p>Each of these compares two values and produces a <code>bool</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Meaning</th>
+<th><code>5 ? 3</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>==</code></td>
+<td>equal to</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>!=</code></td>
+<td>not equal to</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td><code>&lt;</code></td>
+<td>less than</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>greater than</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td><code>&lt;=</code></td>
+<td>less than or equal to</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>&gt;=</code></td>
+<td>greater than or equal to</td>
+<td><code>true</code></td>
+</tr>
+</tbody></table>
+</div>
+<blockquote><p>[!danger] <code>=</code> stores, <code>==</code> compares
+<code>x = 5</code> puts 5 into <code>x</code>. <code>x == 5</code> asks whether <code>x</code> is 5. Writing one where you meant the other is among the most common mistakes in C++, and it compiles. The compiler warns about it, which is one more reason to read warnings.</p>
+</blockquote>
+<h2>Logical operators</h2>
+<p>These combine yes/no answers.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Name</th>
+<th>True when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>a &amp;&amp; b</code></td>
+<td>AND</td>
+<td><strong>both</strong> are true</td>
+</tr>
+<tr>
+<td><code>a || b</code></td>
+<td>OR</td>
+<td><strong>at least one</strong> is true</td>
+</tr>
+<tr>
+<td><code>!a</code></td>
+<td>NOT</td>
+<td><code>a</code> is false</td>
+</tr>
+</tbody></table>
+</div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+<th><code>a &amp;&amp; b</code></th>
+<th><code>a || b</code></th>
+<th><code>!a</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>true</td>
+<td>true</td>
+<td><strong>true</strong></td>
+<td><strong>true</strong></td>
+<td>false</td>
+</tr>
+<tr>
+<td>true</td>
+<td>false</td>
+<td>false</td>
+<td><strong>true</strong></td>
+<td>false</td>
+</tr>
+<tr>
+<td>false</td>
+<td>true</td>
+<td>false</td>
+<td><strong>true</strong></td>
+<td><strong>true</strong></td>
+</tr>
+<tr>
+<td>false</td>
+<td>false</td>
+<td>false</td>
+<td>false</td>
+<td><strong>true</strong></td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> canVote{ age &gt;= <span class="tk-n">18</span> &amp;&amp; isCitizen };
+<span class="tk-k">bool</span> isWeekend{ day == <span class="tk-n">6</span> || day == <span class="tk-n">7</span> };
+<span class="tk-k">bool</span> isTeen{ age &gt;= <span class="tk-n">13</span> &amp;&amp; age &lt;= <span class="tk-n">19</span> };</code></pre></div>
+<div class="callout warning"><div class="callout-title"><span>Ranges need two comparisons</span></div><div class="callout-body"><p>Maths lets you write 13 ≤ age ≤ 19. In C++, <code>13 &lt;= age &lt;= 19</code> compiles and is <strong>always true</strong>. It works out <code>13 &lt;= age</code> first, giving <code>true</code> or <code>false</code>, which is 1 or 0, and then compares that with 19.</p>
+</div></div>
+<h3>Short-circuit evaluation</h3>
+<p><code>&amp;&amp;</code> and <code>||</code> look at the left side first. If that already settles the answer, the right side is <strong>never run</strong>.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    A[&quot;false &amp;&amp; anything&quot;] --&gt;|&quot;must be false&quot;| B[&quot;right side skipped&quot;]
+    C[&quot;true || anything&quot;] --&gt;|&quot;must be true&quot;| D[&quot;right side skipped&quot;]</pre></div>
+<p>This is a tool you can rely on, not just a speed-up:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (count != <span class="tk-n">0</span> &amp;&amp; total / count &gt; <span class="tk-n">10</span>)</code></pre></div>
+<p>When <code>count</code> is 0 the division never happens, so there is no divide-by-zero.</p>
+<h2>Prefix and postfix <code>++</code></h2>
+<p>Both add one to the variable. They differ in the value the <strong>expression</strong> gives back.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code> int x{ 5 };
+
+ int a{ ++x };    prefix:   add first, then give the new value    a is 6, x is 6
+ int b{ x++ };    postfix:  give the old value, then add          b is 6, x is 7</code></pre></div>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    P[&quot;++x&quot;] --&gt; P1[&quot;add 1 to x&quot;] --&gt; P2[&quot;give back the new x&quot;]
+    Q[&quot;x++&quot;] --&gt; Q1[&quot;remember the old x&quot;] --&gt; Q2[&quot;add 1 to x&quot;] --&gt; Q3[&quot;give back the old value&quot;]</pre></div>
+<p>On a line of its own, <code>++x;</code> and <code>x++;</code> do the same thing.</p>
+<div class="callout tip"><div class="callout-title"><span>Two habits</span></div><div class="callout-body"><p>Use prefix <code>++x</code> unless you specifically need the old value. And never change a variable with <code>++</code> and also use it elsewhere in the same expression: <code>x++ + x++</code> has no dependable answer.</p>
+</div></div>
+<h2>The conditional operator <code>?:</code></h2>
+<p>It chooses between two values according to a condition.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>condition ? value <span class="tk-k">if</span> <span class="tk-k">true</span> : value <span class="tk-k">if</span> <span class="tk-k">false</span></code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> larger{ (a &gt; b) ? a : b };
+std::cout &lt;&lt; (score &gt;= <span class="tk-n">50</span> ? <span class="tk-s">&quot;Pass&quot;</span> : <span class="tk-s">&quot;Fail&quot;</span>) &lt;&lt; <span class="tk-s">'\n'</span>;</code></pre></div>
+<p>Use it to pick a <strong>value</strong>. To choose between <strong>actions</strong>, use <code>if</code>: <a href="../3-01-if-and-else/">3.01 if and else</a>.</p>
+<h2>Precedence: what binds tightest</h2>
+<p>Higher rows are worked out first.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Operators</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>x++</code> <code>x--</code> and function calls</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>++x</code> <code>--x</code> <code>!</code> <code>-x</code> (negative) <code>static_cast</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>*</code> <code>/</code> <code>%</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>+</code> <code>-</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>==</code> <code>!=</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>&amp;&amp;</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>||</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>?:</code> <code>=</code> <code>+=</code> and the other assignments</td>
+</tr>
+</tbody></table>
+</div>
+<p>You do not have to memorise this. Remember three facts: arithmetic comes before comparison, comparison before <code>&amp;&amp;</code>, and <code>&amp;&amp;</code> before <code>||</code>. For anything else, add brackets.</p>
+<div class="callout warning"><div class="callout-title"><span>Printing a comparison needs brackets</span></div><div class="callout-body"><p><code>std::cout &lt;&lt; a &lt; b;</code> fails, because <code>&lt;&lt;</code> is above <code>&lt;</code> in the table. Write <code>std::cout &lt;&lt; (a &lt; b);</code>.</p>
+</div></div>
+<h2>Maths functions</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Result</th>
+<th>Header</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>std::pow(2, 10)</code></td>
+<td><code>1024</code> (as a <code>double</code>)</td>
+<td><code>&lt;cmath&gt;</code></td>
+</tr>
+<tr>
+<td><code>std::sqrt(16)</code></td>
+<td><code>4</code></td>
+<td><code>&lt;cmath&gt;</code></td>
+</tr>
+<tr>
+<td><code>std::abs(-3)</code></td>
+<td><code>3</code></td>
+<td><code>&lt;cmath&gt;</code></td>
+</tr>
+<tr>
+<td><code>std::max(a, b)</code>, <code>std::min(a, b)</code></td>
+<td>the larger, the smaller</td>
+<td><code>&lt;algorithm&gt;</code></td>
+</tr>
+</tbody></table>
+</div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>4 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/2.08">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/2.08">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-07-strings-std-string-and-std-string-view/"><span class="mono">previous</span><b>2.07 Strings — std::string and std::string_view</b></a>
+      <a class="lp-next" href="../2-09-bit-manipulation/"><span class="mono">next</span><b>2.09 Bit Manipulation</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/2-08-operators-deep-dive"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

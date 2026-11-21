@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Solutions, Projects and Build Configurations · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/4-01-solutions-projects-and-build-configurations/">
+  <meta name="description" content="A real game is not one .cpp file. It is a solution holding several projects , such as the game, an engine library, a tools DLL and a test runner, each built…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Solutions, Projects and Build Configurations · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="A real game is not one .cpp file. It is a solution holding several projects , such as the game, an engine library, a tools DLL and a test runner, each built…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/4-01-solutions-projects-and-build-configurations/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Solutions, Projects and Build Configurations · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Solutions, Projects and Build Configurations · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="A real game is not one .cpp file. It is a solution holding several projects , such as the game, an engine library, a tools DLL and a test runner, each built…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>Visual Studio and the Build Pipeline</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Solutions, Projects and Build Configurations</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 10 in milestone 4</span><span>7 min</span></div>
+      <p class="lp-summary">A real game is not one <code>.cpp</code> file. It is a <strong>solution</strong> holding several <strong>projects</strong>, such as the game, an engine library, a tools DLL and a test runner, each built in several <strong>configurations</strong> and for one or more <strong>platforms</strong>. This lesson shows how Visual Studio organises that, where the settings live, and how to set up a multi-project solution you will reuse for the rest of the course.</p>
+      <div class="prose">
+<h2>Solutions and projects</h2>
+<p>Lesson 1.07 created one console project. From now on the course builds several things that belong together: a game, a library it uses, a DLL it loads, tests that check them. Visual Studio&#39;s structure for this is:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Thing</th>
+<th>File</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Solution</strong></td>
+<td><code>.sln</code></td>
+<td>A list of projects, plus which of them to build in which configuration</td>
+</tr>
+<tr>
+<td><strong>Project</strong></td>
+<td><code>.vcxproj</code></td>
+<td>One output (an <code>.exe</code>, <code>.dll</code> or <code>.lib</code>), its source files, and all its compiler and linker settings</td>
+</tr>
+<tr>
+<td><strong>Filters</strong></td>
+<td><code>.vcxproj.filters</code></td>
+<td>Only the folders shown in Solution Explorer. They do not have to match folders on disk</td>
+</tr>
+<tr>
+<td><strong>User settings</strong></td>
+<td><code>.vcxproj.user</code></td>
+<td>Your personal debugging settings, such as command arguments. Not shared</td>
+</tr>
+</tbody></table>
+</div>
+<p>A <code>.vcxproj</code> file is XML that you can open in a text editor. Everything in the Properties dialog ends up in it, which is useful when comparing two projects&#39; settings or reviewing a change in version control.</p>
+<h2>A solution for the course</h2>
+<p>Here is the layout the rest of the course assumes. Create it now so later lessons can add to it.</p>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>course\
+    course.sln
+    engine\          Static library (.lib): shared code, such as maths, the tile map, memory helpers
+    game\            Console app (.exe): the game itself, uses engine
+    plugin\          Dynamic library (.dll): built in lesson 4.05
+    tests\           Console app (.exe): unit tests for engine</code></pre></div>
+<ol>
+<li><strong>File → New → Project → Blank Solution</strong>, name it <code>course</code>.</li>
+<li>Right-click the solution → <strong>Add → New Project → Static Library</strong>, name it <code>engine</code>.</li>
+<li>Add a <strong>Console App</strong> named <code>game</code>, and another named <code>tests</code>.</li>
+<li>Right-click <code>game</code> → <strong>Add → Reference</strong> → tick <code>engine</code>. Do the same for <code>tests</code>.</li>
+<li>Right-click <code>game</code> → <strong>Set as Startup Project</strong>: F5 now runs the game.</li>
+</ol>
+<p>The <strong>reference</strong> does two things: it makes <code>engine</code> build before <code>game</code>, and it links <code>engine.lib</code> into <code>game.exe</code> automatically. You still have to tell the compiler where <code>engine</code>&#39;s headers are: in <code>game</code>&#39;s properties, <strong>C/C++ → General → Additional Include Directories</strong>, add <code>$(SolutionDir)engine</code>.</p>
+<h2>Configurations and platforms</h2>
+<p>Every project is built in a <strong>configuration</strong> for a <strong>platform</strong>. Visual Studio starts you with two of each:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>x64</th>
+<th>Win32 (x86)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Debug</strong></td>
+<td>Debug, 64-bit</td>
+<td>Debug, 32-bit</td>
+</tr>
+<tr>
+<td><strong>Release</strong></td>
+<td>Release, 64-bit</td>
+<td>Release, 32-bit</td>
+</tr>
+</tbody></table>
+</div>
+<p>Each of the four combinations has its own complete set of settings. That is powerful (Debug can have checks Release does not), and it is the cause of the most common project mistake: changing a setting in one combination and wondering why another behaves differently. When a setting should apply everywhere, select <strong>All Configurations</strong> and <strong>All Platforms</strong> at the top of the Properties dialog before changing it.</p>
+<p>You can add your own configurations in <strong>Build → Configuration Manager</strong>. Common additions:</p>
+<ul>
+<li><strong>ASan</strong>: Debug plus AddressSanitizer (lesson 2.10).</li>
+<li><strong>Profile</strong>: Release with debug information and profiling hooks, for measuring (chapter 8).</li>
+</ul>
+<h2>Macros in settings</h2>
+<p>Paths in project settings use <strong>macros</strong> so they work on any machine. The ones you will use most:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Macro</th>
+<th>Expands to</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$(SolutionDir)</code></td>
+<td>The folder holding the <code>.sln</code>, with a trailing backslash</td>
+</tr>
+<tr>
+<td><code>$(ProjectDir)</code></td>
+<td>The folder holding the <code>.vcxproj</code></td>
+</tr>
+<tr>
+<td><code>$(Configuration)</code></td>
+<td><code>Debug</code> or <code>Release</code> (or your own)</td>
+</tr>
+<tr>
+<td><code>$(Platform)</code></td>
+<td><code>x64</code> or <code>Win32</code></td>
+</tr>
+<tr>
+<td><code>$(OutDir)</code></td>
+<td>Where the project&#39;s output goes</td>
+</tr>
+<tr>
+<td><code>$(TargetPath)</code></td>
+<td>The full path of the <code>.exe</code> or <code>.dll</code> being built</td>
+</tr>
+</tbody></table>
+</div>
+<p>A tidy convention is to send every project&#39;s output to one folder per configuration, so the game, its DLLs and its tests end up side by side: set <strong>General → Output Directory</strong> to <code>$(SolutionDir)bin\$(Platform)\$(Configuration)\</code> for all projects and all configurations.</p>
+<h2>Property sheets</h2>
+<p>When five projects need the same settings (C++20, warning level 4, the same output folder), setting them five times invites mistakes. A <strong>property sheet</strong> (<code>.props</code> file) holds settings that several projects share. Open <strong>View → Other Windows → Property Manager</strong>, right-click a project → <strong>Add New Project Property Sheet</strong>, set things there, then add the same sheet to the other projects. Change it once and every project follows.</p>
+<h2>Building from the command line</h2>
+<p>Everything Visual Studio does can be done from the Developer PowerShell, which is how build servers do it:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Terminal</span></div><pre><code>msbuild course.sln /p:Configuration=Release /p:Platform=x64 /m</code></pre></div>
+<p><code>/m</code> builds projects in parallel. Being able to build without the IDE is useful for scripts, and for checking that a build does not secretly depend on something only your IDE session had set up.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Settings changed in one configuration only</span></div><div class="callout-body"><p>If Debug works and Release does not, compare the two configurations&#39; settings. Use All Configurations for project-wide options.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Including another project&#39;s headers by relative path</span></div><div class="callout-body"><p><code>#include &quot;../engine/tilemap.h&quot;</code> breaks when files move. Add the folder to Additional Include Directories and write <code>#include &quot;tilemap.h&quot;</code>.</p>
+</div></div>
+<blockquote><p>[!warning] Committing <code>.vs</code>, <code>bin</code>, <code>obj</code> and <code>x64</code> folders
+They are build output and caches. A <code>.gitignore</code> for Visual Studio projects excludes them.</p>
+</blockquote>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does adding a project reference from <code>game</code> to <code>engine</code> do?</div><ul><li>Builds <code>engine</code> first and links its output into <code>game</code></li><li>Copies <code>engine</code>&#39;s source files into <code>game</code></li><li>Adds <code>engine</code>&#39;s headers to the include path</li></ul><details><summary>Show the answer</summary><p><b>Builds <code>engine</code> first and links its output into <code>game</code></b> It sets the build order and the linking. Include directories are a separate setting.</p></details></li><li><div class="q">Where are a project&#39;s compiler and linker settings stored?</div><ul><li>In the <code>.sln</code> file</li><li>In the <code>.vcxproj</code> file (and any property sheets it uses)</li><li>In the Windows registry</li></ul><details><summary>Show the answer</summary><p><b>In the <code>.vcxproj</code> file (and any property sheets it uses)</b> The solution only lists projects; each project file holds its own settings.</p></details></li><li><div class="q">What does <code>$(Configuration)</code> expand to?</div><ul><li>The name of the configuration being built, such as <code>Debug</code></li><li>The full path of the output file</li><li>The project&#39;s folder</li></ul><details><summary>Show the answer</summary><p><b>The name of the configuration being built, such as <code>Debug</code></b> Macros let one setting work for every configuration and machine.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-10-containers-of-game-objects-entity-lists-and-pools/"><span class="mono">previous</span><b>3.10 Containers of Game Objects: Entity Lists and Pools</b></a>
+      <a class="lp-next" href="../4-02-preprocessor-compiler-linker-who-does-what/"><span class="mono">next</span><b>4.02 Preprocessor, Compiler, Linker: Who Does What</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/4-01-solutions-projects-and-build-configurations"></script>
+</body>
+</html>

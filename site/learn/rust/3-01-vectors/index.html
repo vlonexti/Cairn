@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Vectors · Rust · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/rust/3-01-vectors/">
+  <meta name="description" content="Vec&lt;T in depth - creating with vec! and Vec::new, pushing, popping, inserting and removing, indexing versus get, iterating by reference, by mutable reference…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Vectors · Rust · Xenon">
+  <meta property="og:description" content="Vec&lt;T in depth - creating with vec! and Vec::new, pushing, popping, inserting and removing, indexing versus get, iterating by reference, by mutable reference…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/rust/3-01-vectors/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Vectors · Rust · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vectors · Rust · Xenon">
+  <meta name="twitter:description" content="Vec&lt;T in depth - creating with vec! and Vec::new, pushing, popping, inserting and removing, indexing versus get, iterating by reference, by mutable reference…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/rust.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Rust</a><span>/</span><span>Collections, Errors and Modules</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Vectors</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.01</b></span><span>1 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Vec&lt;T&gt; in depth - creating with vec! and Vec::new, pushing, popping, inserting and removing, indexing versus get, iterating by reference, by mutable reference and by value, sorting and deduplicating, retain, extend and drain, capacity, and the borrow rules that apply to vectors.</p>
+      <div class="prose">
+<h2>Creating and growing</h2>
+<p>A <code>Vec&lt;T&gt;</code> is a growable array on the heap: Rust&#39;s most used collection.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> v: <span class="tk-t">Vec</span>&lt;<span class="tk-k">i32</span>&gt; = <span class="tk-t">Vec</span>::<span class="tk-f">new</span>();
+    v.<span class="tk-f">push</span>(<span class="tk-n">3</span>);
+    v.<span class="tk-f">push</span>(<span class="tk-n">1</span>);
+    v.<span class="tk-f">push</span>(<span class="tk-n">4</span>);
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> w = <span class="tk-p">vec!</span>[<span class="tk-n">1</span>, <span class="tk-n">5</span>, <span class="tk-n">9</span>, <span class="tk-n">2</span>, <span class="tk-n">6</span>];             <span class="tk-c">// the vec! macro</span>
+    <span class="tk-k">let</span> zeros = <span class="tk-p">vec!</span>[<span class="tk-n">0</span>; <span class="tk-n">4</span>];
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{v:?} {w:?} {zeros:?} len={} cap&gt;={}&quot;</span>, v.<span class="tk-f">len</span>(), v.<span class="tk-f">capacity</span>());
+
+    <span class="tk-k">let</span> last = w.<span class="tk-f">pop</span>();                          <span class="tk-c">// Some(6)</span>
+    w.<span class="tk-f">insert</span>(<span class="tk-n">0</span>, <span class="tk-n">100</span>);                            <span class="tk-c">// shifts everything right: O(n)</span>
+    <span class="tk-k">let</span> removed = w.<span class="tk-f">remove</span>(<span class="tk-n">1</span>);                   <span class="tk-c">// returns the removed item</span>
+    w.<span class="tk-f">extend</span>([<span class="tk-n">7</span>, <span class="tk-n">7</span>, <span class="tk-n">8</span>]);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{last:?} {removed} {w:?}&quot;</span>);
+}</code></pre></div>
+<h2>Reading items</h2>
+<p>Indexing with <code>v[i]</code> panics when <code>i</code> is out of range; <code>v.get(i)</code> returns an <code>Option</code> instead:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> v = <span class="tk-p">vec!</span>[<span class="tk-n">10</span>, <span class="tk-n">20</span>, <span class="tk-n">30</span>];
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{}&quot;</span>, v[<span class="tk-n">1</span>]);
+    <span class="tk-k">match</span> v.<span class="tk-f">get</span>(<span class="tk-n">10</span>) {
+        <span class="tk-f">Some</span>(x) =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;found {x}&quot;</span>),
+        <span class="tk-t">None</span> =&gt; <span class="tk-p">println!</span>(<span class="tk-s">&quot;no item 10&quot;</span>),
+    }
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{:?} {:?} {}&quot;</span>, v.<span class="tk-f">first</span>(), v.<span class="tk-f">last</span>(), v.<span class="tk-f">contains</span>(&amp;<span class="tk-n">20</span>));
+    <span class="tk-k">if</span> <span class="tk-k">let</span> [first, .., last] = v.<span class="tk-f">as_slice</span>() {    <span class="tk-c">// a slice pattern</span>
+        <span class="tk-p">println!</span>(<span class="tk-s">&quot;{first}..{last}&quot;</span>);
+    }
+}</code></pre></div>
+<p>Use indexing when an out-of-range index would be a bug, and <code>get</code> when it is a normal possibility (user input, searching).</p>
+<h2>Iterating</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> scores = <span class="tk-p">vec!</span>[<span class="tk-n">72</span>, <span class="tk-n">95</span>, <span class="tk-n">88</span>];
+
+    <span class="tk-k">for</span> s <span class="tk-k">in</span> &amp;scores {                  <span class="tk-c">// borrow each item: s is &amp;i32</span>
+        <span class="tk-p">print!</span>(<span class="tk-s">&quot;{s} &quot;</span>);
+    }
+    <span class="tk-p">println!</span>();
+
+    <span class="tk-k">for</span> s <span class="tk-k">in</span> &amp;<span class="tk-k">mut</span> scores {              <span class="tk-c">// borrow each item mutably: s is &amp;mut i32</span>
+        *s += <span class="tk-n">5</span>;
+    }
+
+    <span class="tk-k">let</span> total: <span class="tk-k">i32</span> = scores.<span class="tk-f">iter</span>().<span class="tk-f">sum</span>();
+    <span class="tk-k">let</span> doubled: <span class="tk-t">Vec</span>&lt;<span class="tk-k">i32</span>&gt; = scores.<span class="tk-f">iter</span>().<span class="tk-f">map</span>(|s| s * <span class="tk-n">2</span>).<span class="tk-f">collect</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{scores:?} {total} {doubled:?}&quot;</span>);
+
+    <span class="tk-k">for</span> s <span class="tk-k">in</span> scores {                   <span class="tk-c">// by value: the vector is moved and consumed</span>
+        <span class="tk-p">print!</span>(<span class="tk-s">&quot;{s} &quot;</span>);
+    }
+    <span class="tk-p">println!</span>();
+    <span class="tk-c">// println!(&quot;{scores:?}&quot;);          // error: scores was moved by the loop</span>
+}</code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Loop</th>
+<th>Item type</th>
+<th>The vector afterwards</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>for x in &amp;v</code> / <code>v.iter()</code></td>
+<td><code>&amp;T</code></td>
+<td>Unchanged, still usable</td>
+</tr>
+<tr>
+<td><code>for x in &amp;mut v</code> / <code>v.iter_mut()</code></td>
+<td><code>&amp;mut T</code></td>
+<td>Changed in place</td>
+</tr>
+<tr>
+<td><code>for x in v</code> / <code>v.into_iter()</code></td>
+<td><code>T</code></td>
+<td>Moved, gone</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Changing in bulk</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> v = <span class="tk-p">vec!</span>[<span class="tk-n">5</span>, <span class="tk-n">3</span>, <span class="tk-n">8</span>, <span class="tk-n">3</span>, <span class="tk-n">1</span>, <span class="tk-n">8</span>, <span class="tk-n">8</span>, <span class="tk-n">2</span>];
+    v.<span class="tk-f">sort</span>();                                    <span class="tk-c">// in place</span>
+    v.<span class="tk-f">dedup</span>();                                   <span class="tk-c">// removes consecutive repeats</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{v:?}&quot;</span>);
+    v.<span class="tk-f">retain</span>(|&amp;x| x % <span class="tk-n">2</span> == <span class="tk-n">1</span> || x &gt; <span class="tk-n">4</span>);          <span class="tk-c">// keep the matching items</span>
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{v:?}&quot;</span>);
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> words = <span class="tk-p">vec!</span>[<span class="tk-s">&quot;pear&quot;</span>, <span class="tk-s">&quot;Fig&quot;</span>, <span class="tk-s">&quot;apple&quot;</span>];
+    words.<span class="tk-f">sort_by_key</span>(|w| w.<span class="tk-f">to_lowercase</span>());
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{words:?}&quot;</span>);
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> nums = <span class="tk-p">vec!</span>[<span class="tk-n">3.2</span>, <span class="tk-n">1.5</span>, <span class="tk-n">2.7</span>];
+    nums.<span class="tk-f">sort_by</span>(|a, b| a.<span class="tk-f">partial_cmp</span>(b).<span class="tk-f">unwrap</span>());   <span class="tk-c">// f64 has no total order: sort_by</span>
+    <span class="tk-k">let</span> drained: <span class="tk-t">Vec</span>&lt;<span class="tk-k">f64</span>&gt; = nums.<span class="tk-f">drain</span>(..<span class="tk-n">2</span>).<span class="tk-f">collect</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{drained:?} {nums:?}&quot;</span>);
+    v.<span class="tk-f">clear</span>();
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{} {}&quot;</span>, v.<span class="tk-f">is_empty</span>(), v.<span class="tk-f">capacity</span>() &gt; <span class="tk-n">0</span>);
+}</code></pre></div>
+<p><code>f64</code> cannot use <code>sort()</code> because <code>NaN</code> makes the order partial; <code>sort_by</code> with <code>partial_cmp</code> (or <code>f64::total_cmp</code>) says how to compare.</p>
+<h2>Vectors and the borrow rules</h2>
+<p>While you hold a reference into a vector, you cannot push to it (lesson 2.02): pushing may move the whole buffer. Collect what you need first, or work with indexes:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Rust</span></div><pre><code><span class="tk-k">fn</span> <span class="tk-f">main</span>() {
+    <span class="tk-k">let</span> <span class="tk-k">mut</span> v = <span class="tk-p">vec!</span>[<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>];
+    <span class="tk-k">let</span> first = v[<span class="tk-n">0</span>];             <span class="tk-c">// copy the value out (i32 is Copy), no borrow kept</span>
+    v.<span class="tk-f">push</span>(first * <span class="tk-n">10</span>);
+    <span class="tk-k">let</span> len = v.<span class="tk-f">len</span>();
+    v.<span class="tk-f">push</span>(len <span class="tk-k">as</span> <span class="tk-k">i32</span>);
+    <span class="tk-p">println!</span>(<span class="tk-s">&quot;{v:?}&quot;</span>);
+}</code></pre></div>
+<h2>Capacity</h2>
+<p>A vector keeps spare room and doubles its capacity when it runs out, so <code>push</code> is amortised O(1). If you know the final size, <code>Vec::with_capacity(n)</code> avoids repeated growth.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/rust/l/3.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/rust/l/3.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-05-enums-option-and-match/"><span class="mono">previous</span><b>2.05 Enums, Option and match</b></a>
+      <a class="lp-next" href="../3-02-strings-in-depth/"><span class="mono">next</span><b>3.02 Strings in Depth</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/rust/3-01-vectors"></script>
+</body>
+</html>

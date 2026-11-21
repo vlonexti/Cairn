@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Classes in Header Files and Nested Types · C++ · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/cpp/6-06-classes-in-header-files-and-nested-types/">
+  <meta name="description" content="Put the class definition in Name.h and the member function bodies in Name.cpp, written as ClassName::function. Small functions can stay in the header. Types…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Classes in Header Files and Nested Types · C++ · Xenon">
+  <meta property="og:description" content="Put the class definition in Name.h and the member function bodies in Name.cpp, written as ClassName::function. Small functions can stay in the header. Types…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/cpp/6-06-classes-in-header-files-and-nested-types/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Classes in Header Files and Nested Types · C++ · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Classes in Header Files and Nested Types · C++ · Xenon">
+  <meta name="twitter:description" content="Put the class definition in Name.h and the member function bodies in Name.cpp, written as ClassName::function. Small functions can stay in the header. Types…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/cpp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C++</a><span>/</span><span>Classes and Objects</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Classes in Header Files and Nested Types</h1>
+      <div class="readout lp-readout"><span>lesson <b>6.06</b></span><span>6 of 9 in milestone 6</span><span>5 min</span><span><b>3</b> practice tasks</span></div>
+      <p class="lp-summary">Put the <strong>class definition</strong> in <code>Name.h</code> and the <strong>member function bodies</strong> in <code>Name.cpp</code>, written as <code>ClassName::function</code>. Small functions can stay in the header. Types can be nested inside a class, as in <code>Player::State</code>.</p>
+      <div class="prose">
+<h2>Splitting a class across files</h2>
+<p>The pattern from <a href="../1-08-multiple-files-and-headers/">1.08 Multiple Files and Headers</a> applies to classes: the header says what exists, and the source file says how it works.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    H[&quot;Date.h&lt;br/&gt;the class definition:&lt;br/&gt;members and declarations&quot;] -.-&gt;|&quot;#include&quot;| C[&quot;Date.cpp&lt;br/&gt;the member function bodies&quot;]
+    H -.-&gt;|&quot;#include&quot;| M[&quot;main.cpp&lt;br/&gt;uses Date&quot;]</pre></div>
+<h3>Date.h</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#pragma</span> once
+<span class="tk-p">#include &lt;string&gt;</span>
+
+<span class="tk-k">class</span> <span class="tk-t">Date</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-f">Date</span>(<span class="tk-k">int</span> year, <span class="tk-k">int</span> month, <span class="tk-k">int</span> day);
+
+    <span class="tk-k">void</span> <span class="tk-f">print</span>() <span class="tk-k">const</span>;
+    std::string <span class="tk-f">toString</span>() <span class="tk-k">const</span>;
+
+    <span class="tk-k">int</span> <span class="tk-f">year</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_year; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-k">int</span> m_year{};
+    <span class="tk-k">int</span> m_month{};
+    <span class="tk-k">int</span> m_day{};
+};</code></pre></div>
+<h3>Date.cpp</h3>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include</span> <span class="tk-s">&quot;Date.h&quot;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-t">Date</span>::<span class="tk-f">Date</span>(<span class="tk-k">int</span> year, <span class="tk-k">int</span> month, <span class="tk-k">int</span> day)
+    : m_year{ year }, m_month{ month }, m_day{ day }
+{
+}
+
+<span class="tk-k">void</span> <span class="tk-t">Date</span>::<span class="tk-f">print</span>() <span class="tk-k">const</span>
+{
+    std::cout &lt;&lt; <span class="tk-f">toString</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+}
+
+std::string <span class="tk-t">Date</span>::<span class="tk-f">toString</span>() <span class="tk-k">const</span>
+{
+    <span class="tk-k">return</span> std::<span class="tk-f">to_string</span>(m_year) + <span class="tk-s">'-'</span> + std::<span class="tk-f">to_string</span>(m_month) + <span class="tk-s">'-'</span> + std::<span class="tk-f">to_string</span>(m_day);
+}</code></pre></div>
+<p>Outside the class, every member function&#39;s name is prefixed with <code>Date::</code>. That is the scope resolution operator from <a href="../3-05-scope-lifetime-and-namespaces/">3.05 Scope, Lifetime and Namespaces</a>, saying &quot;the <code>print</code> that belongs to <code>Date</code>&quot;.</p>
+<div class="callout warning"><div class="callout-title"><span>The definition must match the declaration exactly</span></div><div class="callout-body"><p>The <code>const</code> is part of the function&#39;s signature. <code>void Date::print()</code> without it defines a <strong>different</strong> function, and the compiler reports that no such member was declared.</p>
+</div></div>
+<h2>What goes where</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>In the header</th>
+<th>In the <code>.cpp</code> file</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The class definition, with all its members</td>
+<td>The bodies of member functions of any size</td>
+</tr>
+<tr>
+<td>One-line functions such as getters</td>
+<td>Helper functions only this file needs</td>
+</tr>
+<tr>
+<td>Templates, in full</td>
+<td>Definitions of static data that is not <code>inline</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A member function defined inside the class is implicitly <code>inline</code>, so it does not break the One Definition Rule when the header is included from several files.</p>
+<p>Why not put everything in the header? Each file that includes the header recompiles all of it, and any change to a function body forces every such file to rebuild. Keeping bodies in the <code>.cpp</code> file keeps builds fast and hides the implementation.</p>
+<div class="callout tip"><div class="callout-title"><span>Public first</span></div><div class="callout-body"><p>List the public section first and the private section last. People reading a header want the interface; the private members are detail.</p>
+</div></div>
+<h2>Nested types</h2>
+<p>A type can be declared inside a class.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Player</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">enum</span> <span class="tk-k">class</span> <span class="tk-t">State</span> { idle, running, jumping };
+
+    <span class="tk-k">struct</span> <span class="tk-t">Stats</span>
+    {
+        <span class="tk-k">int</span> strength{};
+        <span class="tk-k">int</span> dexterity{};
+    };
+
+    <span class="tk-k">using</span> <span class="tk-t">Id</span> = <span class="tk-k">int</span>;
+
+    <span class="tk-t">State</span> <span class="tk-f">state</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_state; }
+
+<span class="tk-k">private</span>:
+    <span class="tk-t">State</span> m_state{ <span class="tk-t">State</span>::idle };
+    <span class="tk-t">Stats</span> m_stats{};
+    <span class="tk-t">Id</span> m_id{};
+};
+
+<span class="tk-t">Player</span>::<span class="tk-t">State</span> s{ <span class="tk-t">Player</span>::<span class="tk-t">State</span>::running };</code></pre></div>
+<p>From outside, a nested type is named through the class: <code>Player::State</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Reason to nest</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The type only makes sense with the class</td>
+<td><code>Player::State</code></td>
+</tr>
+<tr>
+<td>It avoids a clash</td>
+<td><code>Player::State</code> and <code>Door::State</code> coexist</td>
+</tr>
+<tr>
+<td>It can be hidden</td>
+<td>A nested type in the private section cannot be named outside</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Forward declarations</h2>
+<p>To declare a function that takes a <code>Foo&amp;</code> or <code>Foo*</code>, the compiler needs to know that <code>Foo</code> is a class. It does not need the class&#39;s contents.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Foo</span>;                 <span class="tk-c">// forward declaration: &quot;Foo is a class, defined elsewhere&quot;</span>
+
+<span class="tk-k">void</span> <span class="tk-f">process</span>(<span class="tk-t">Foo</span>&amp; foo);    <span class="tk-c">// fine: the size of Foo is not needed</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>The header uses <code>Foo</code> as</th>
+<th>Needs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A reference or pointer, in declarations</td>
+<td>A forward declaration is enough</td>
+</tr>
+<tr>
+<td>A member by value, or calls its functions</td>
+<td><code>#include &quot;Foo.h&quot;</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Forward declarations cut down what each file has to compile, and they are the only way out when two classes refer to each other: neither header can include the other first.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>3 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/cpp/l/6.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/cpp/l/6.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../6-05-static-members-and-friends/"><span class="mono">previous</span><b>6.05 Static Members and Friends</b></a>
+      <a class="lp-next" href="../6-07-operator-overloading-basics/"><span class="mono">next</span><b>6.07 Operator Overloading Basics</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/cpp/6-06-classes-in-header-files-and-nested-types"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

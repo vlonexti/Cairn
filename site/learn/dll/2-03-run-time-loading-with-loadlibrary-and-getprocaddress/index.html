@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Run-Time Loading with LoadLibrary and GetProcAddress · DLLs and Modular Programs · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dll/2-03-run-time-loading-with-loadlibrary-and-getprocaddress/">
+  <meta name="description" content="Instead of linking against an import library, a program can load a DLL whenever it likes with LoadLibraryW, look up functions by name with GetProcAddress,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Run-Time Loading with LoadLibrary and GetProcAddress · DLLs and Modular Programs · Xenon">
+  <meta property="og:description" content="Instead of linking against an import library, a program can load a DLL whenever it likes with LoadLibraryW, look up functions by name with GetProcAddress,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dll/2-03-run-time-loading-with-loadlibrary-and-getprocaddress/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Run-Time Loading with LoadLibrary and GetProcAddress · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Run-Time Loading with LoadLibrary and GetProcAddress · DLLs and Modular Programs · Xenon">
+  <meta name="twitter:description" content="Instead of linking against an import library, a program can load a DLL whenever it likes with LoadLibraryW, look up functions by name with GetProcAddress,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dll.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">DLLs and Modular Programs</a><span>/</span><span>Across the Boundary</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Run-Time Loading with LoadLibrary and GetProcAddress</h1>
+      <div class="readout lp-readout"><span>lesson <b>2.03</b></span><span>3 of 6 in milestone 2</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Instead of linking against an import library, a program can load a DLL whenever it likes with <code>LoadLibraryW</code>, look up functions by name with <code>GetProcAddress</code>, call them through function pointers, and unload the DLL with <code>FreeLibrary</code>. This is the foundation of plugins and hot reload.</p>
+      <div class="prose">
+<h2>Three functions</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HMODULE <span class="tk-f">LoadLibraryW</span>(LPCWSTR fileName);                 <span class="tk-c">// map the DLL (and its dependencies); NULL on failure</span>
+FARPROC <span class="tk-f">GetProcAddress</span>(HMODULE <span class="tk-k">module</span>, LPCSTR name);    <span class="tk-c">// address of an export; NULL if not found</span>
+BOOL    <span class="tk-f">FreeLibrary</span>(HMODULE <span class="tk-k">module</span>);                     <span class="tk-c">// drop one reference; unmap at zero</span></code></pre></div>
+<p><code>HMODULE</code> is a handle to a loaded module. Its value is in fact the module&#39;s base address. Note that <code>GetProcAddress</code> takes an <strong>ANSI</strong> string (there is no <code>W</code> version), because export names are plain bytes.</p>
+<h2>A complete example</h2>
+<p>StoneMath from lesson 1.03, now with <code>extern &quot;C&quot;</code> exports (lesson 2.01). The program does <strong>not</strong> link <code>StoneMath.lib</code> and does not include its header:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">using</span> <span class="tk-t">StackHeightFn</span> = <span class="tk-k">int</span> (*)(<span class="tk-k">int</span>, <span class="tk-k">int</span>);           <span class="tk-c">// must match the DLL's declaration exactly</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    HMODULE dll{ <span class="tk-f">LoadLibraryW</span>(<span class="tk-s">L&quot;StoneMath.dll&quot;</span>) };
+    <span class="tk-k">if</span> (!dll)
+    {
+        std::cerr &lt;&lt; <span class="tk-s">&quot;Could not load StoneMath.dll, error &quot;</span> &lt;&lt; <span class="tk-f">GetLastError</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    }
+
+    <span class="tk-k">auto</span> stackHeight{ <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-t">StackHeightFn</span>&gt;(<span class="tk-f">GetProcAddress</span>(dll, <span class="tk-s">&quot;stackHeight&quot;</span>)) };
+    <span class="tk-k">if</span> (!stackHeight)
+    {
+        std::cerr &lt;&lt; <span class="tk-s">&quot;StoneMath.dll has no stackHeight\n&quot;</span>;
+        <span class="tk-f">FreeLibrary</span>(dll);
+        <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    }
+
+    std::cout &lt;&lt; <span class="tk-f">stackHeight</span>(<span class="tk-n">10</span>, <span class="tk-n">4</span>) &lt;&lt; <span class="tk-s">'\n'</span>;     <span class="tk-c">// 3</span>
+    <span class="tk-f">FreeLibrary</span>(dll);
+}</code></pre></div>
+<p>The <code>reinterpret_cast</code> is needed because <code>GetProcAddress</code> returns a generic <code>FARPROC</code>. The compiler cannot check that the type you cast to is right: if the DLL&#39;s function takes <code>(double, int)</code> and you cast to <code>int(*)(int, int)</code>, the call compiles and silently passes garbage. Keep function pointer types in a header shared with the DLL.</p>
+<div class="callout note"><div class="callout-title"><span>Why not just link?</span></div><div class="callout-body"><p>Run-time loading lets the program start even when the DLL is missing, choose which DLL to load (say, <code>renderer_d3d11.dll</code> or <code>renderer_vulkan.dll</code>), load DLLs it has never heard of (plugins), and unload and reload a DLL (hot reload).</p>
+</div></div>
+<h2>Errors</h2>
+<p>When <code>LoadLibraryW</code> returns <code>NULL</code>, <code>GetLastError()</code> says why:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Name</th>
+<th>Usual cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>126</td>
+<td><code>ERROR_MOD_NOT_FOUND</code></td>
+<td>The DLL, <strong>or one of its dependencies</strong>, was not found</td>
+</tr>
+<tr>
+<td>127</td>
+<td><code>ERROR_PROC_NOT_FOUND</code></td>
+<td>A dependency is missing an export the DLL imports</td>
+</tr>
+<tr>
+<td>193</td>
+<td><code>ERROR_BAD_EXE_FORMAT</code></td>
+<td>32-bit DLL in a 64-bit process, or not a DLL at all</td>
+</tr>
+<tr>
+<td>1114</td>
+<td><code>ERROR_DLL_INIT_FAILED</code></td>
+<td>The DLL&#39;s <code>DllMain</code> returned <code>FALSE</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Error 126 is confusing: the DLL you named may be right there, but something <em>it</em> needs is not. Lesson 1.06&#39;s tools find out which.</p>
+<h2>Reference counting</h2>
+<p>Each successful <code>LoadLibraryW</code> of the same DLL increases its reference count and returns the <strong>same</strong> <code>HMODULE</code>. Each <code>FreeLibrary</code> decreases it. The DLL is unmapped only when the count reaches zero.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HMODULE a{ <span class="tk-f">LoadLibraryW</span>(<span class="tk-s">L&quot;StoneMath.dll&quot;</span>) };   <span class="tk-c">// count 1, maps the DLL</span>
+HMODULE b{ <span class="tk-f">LoadLibraryW</span>(<span class="tk-s">L&quot;StoneMath.dll&quot;</span>) };   <span class="tk-c">// count 2, a == b</span>
+<span class="tk-f">FreeLibrary</span>(a);                                <span class="tk-c">// count 1, still mapped</span>
+<span class="tk-f">FreeLibrary</span>(b);                                <span class="tk-c">// count 0, unmapped</span></code></pre></div>
+<p>After the last <code>FreeLibrary</code>, every function pointer you got from that DLL points at memory that no longer belongs to it. Calling one crashes. So does using any object, string or vtable the DLL created. Lesson 5.03 deals with this carefully.</p>
+<h2>A small RAII wrapper</h2>
+<p>Forgetting <code>FreeLibrary</code> on an error path is easy. Wrap the handle:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">class</span> <span class="tk-t">Library</span>
+{
+<span class="tk-k">public</span>:
+    <span class="tk-k">explicit</span> <span class="tk-f">Library</span>(<span class="tk-k">const</span> <span class="tk-k">wchar_t</span>* file) : m_module{ <span class="tk-f">LoadLibraryW</span>(file) } {}
+    ~<span class="tk-f">Library</span>() { <span class="tk-k">if</span> (m_module) <span class="tk-f">FreeLibrary</span>(m_module); }
+    <span class="tk-f">Library</span>(<span class="tk-k">const</span> <span class="tk-t">Library</span>&amp;) = <span class="tk-k">delete</span>;
+    <span class="tk-t">Library</span>&amp; <span class="tk-k">operator</span>=(<span class="tk-k">const</span> <span class="tk-t">Library</span>&amp;) = <span class="tk-k">delete</span>;
+
+    <span class="tk-k">explicit</span> <span class="tk-k">operator</span> <span class="tk-k">bool</span>() <span class="tk-k">const</span> { <span class="tk-k">return</span> m_module != <span class="tk-k">nullptr</span>; }
+
+    <span class="tk-k">template</span> &lt;<span class="tk-k">typename</span> <span class="tk-t">Fn</span>&gt;
+    <span class="tk-t">Fn</span> <span class="tk-f">get</span>(<span class="tk-k">const</span> <span class="tk-k">char</span>* name) <span class="tk-k">const</span> { <span class="tk-k">return</span> <span class="tk-k">reinterpret_cast</span>&lt;<span class="tk-t">Fn</span>&gt;(<span class="tk-f">GetProcAddress</span>(m_module, name)); }
+
+<span class="tk-k">private</span>:
+    HMODULE m_module;
+};</code></pre></div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Casting to the wrong function type</span></div><div class="callout-body"><p>The compiler cannot catch it. Share the typedef with the DLL.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Calling a function after FreeLibrary</span></div><div class="callout-body"><p>Pointers into an unloaded DLL are dangling. Drop them before you free the library.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Passing a relative name and getting the wrong file</span></div><div class="callout-body"><p><code>LoadLibraryW(L&quot;StoneMath.dll&quot;)</code> searches several folders. Lesson 4.02 shows how to load exactly the file you mean.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">LoadLibraryW fails with error 126, but StoneMath.dll is next to the program. What is the most likely cause?</div><ul><li>One of StoneMath.dll&#39;s own dependencies is missing</li><li>The file is too large</li><li>GetProcAddress was called first</li></ul><details><summary>Show the answer</summary><p><b>One of StoneMath.dll&#39;s own dependencies is missing</b> 126 means &quot;module not found&quot;, and it covers every module the loader needs.</p></details></li><li><div class="q">A DLL is loaded twice and freed once. Is it still mapped?</div><ul><li>Yes; its reference count is still 1</li><li>No; one FreeLibrary always unmaps it</li><li>Only in Debug builds</li></ul><details><summary>Show the answer</summary><p><b>Yes; its reference count is still 1</b> Each LoadLibrary is matched by one FreeLibrary.</p></details></li><li><div class="q">Why must the function pointer type match the DLL&#39;s function exactly?</div><ul><li>GetProcAddress returns an untyped address, so a wrong cast passes arguments the wrong way with no compiler error</li><li>Otherwise GetProcAddress returns NULL</li><li>Because the DLL checks the type</li></ul><details><summary>Show the answer</summary><p><b>GetProcAddress returns an untyped address, so a wrong cast passes arguments the wrong way with no compiler error</b> The type is only in your cast; nothing checks it.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dll/l/2.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dll/l/2.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../2-02-calling-conventions-at-the-boundary/"><span class="mono">previous</span><b>2.02 Calling Conventions at the Boundary</b></a>
+      <a class="lp-next" href="../2-04-dllmain-and-the-loader-lock/"><span class="mono">next</span><b>2.04 DllMain and the Loader Lock</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dll/2-03-run-time-loading-with-loadlibrary-and-getprocaddress"></script>
+</body>
+</html>

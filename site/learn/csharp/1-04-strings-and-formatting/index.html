@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Strings and Formatting · C# · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/csharp/1-04-strings-and-formatting/">
+  <meta name="description" content="Working with text - string literals, escapes, verbatim and raw strings, interpolation with format specifiers and alignment, the common string methods,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Strings and Formatting · C# · Xenon">
+  <meta property="og:description" content="Working with text - string literals, escapes, verbatim and raw strings, interpolation with format specifiers and alignment, the common string methods,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/csharp/1-04-strings-and-formatting/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Strings and Formatting · C# · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Strings and Formatting · C# · Xenon">
+  <meta name="twitter:description" content="Working with text - string literals, escapes, verbatim and raw strings, interpolation with format specifiers and alignment, the common string methods,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/csharp.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C#</a><span>/</span><span>First Steps</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Strings and Formatting</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.04</b></span><span>4 of 5 in milestone 1</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Working with text - string literals, escapes, verbatim and raw strings, interpolation with format specifiers and alignment, the common string methods, comparing strings, characters, and building text efficiently with StringBuilder.</p>
+      <div class="prose">
+<h2>String literals</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">string</span> plain = <span class="tk-s">&quot;Tab:\tQuote:\&quot; Backslash:\\ Newline:\nnext line&quot;</span>;
+<span class="tk-k">string</span> path = <span class="tk-s">@&quot;C:\Users\Ada\notes.txt&quot;</span>;        <span class="tk-c">// verbatim: backslashes are literal</span>
+<span class="tk-k">string</span> json = <span class="tk-s">&quot;&quot;</span>&quot;
+    { <span class="tk-s">&quot;name&quot;</span>: <span class="tk-s">&quot;Ada&quot;</span>, <span class="tk-s">&quot;tags&quot;</span>: [<span class="tk-s">&quot;math&quot;</span>] }
+    <span class="tk-s">&quot;&quot;</span>&quot;;                                         <span class="tk-c">// raw string: no escaping at all</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(plain);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(path);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(json);</code></pre></div>
+<p>Raw strings (three or more quotes) keep everything exactly, which suits JSON, SQL and regular expressions. The indentation of the closing quotes is removed from every line.</p>
+<h2>Interpolation and formatting</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">string</span> name = <span class="tk-s">&quot;Ada&quot;</span>;
+<span class="tk-k">decimal</span> price = <span class="tk-n">1234.5m</span>;
+<span class="tk-k">double</span> ratio = <span class="tk-n">0.4567</span>;
+<span class="tk-k">int</span> n = <span class="tk-n">42</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{name} paid {price:C2}&quot;</span>);         <span class="tk-c">// currency, depends on the machine's culture</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{price:N2}&quot;</span>);                     <span class="tk-c">// 1,234.50</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{price:F1}&quot;</span>);                     <span class="tk-c">// 1234.5</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{ratio:P1}&quot;</span>);                     <span class="tk-c">// 45.7 %</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{n:D5} {n:X}&quot;</span>);                   <span class="tk-c">// 00042 2A</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;[{name,8}] [{name,-8}]&quot;</span>);         <span class="tk-c">// right- and left-aligned in 8 characters</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;[{price,10:F2}]&quot;</span>);                <span class="tk-c">// alignment and format together</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">$&quot;{(n &gt; 40 ? &quot;</span>big<span class="tk-s">&quot; : &quot;</span>small<span class="tk-s">&quot;)}&quot;</span>);   <span class="tk-c">// expressions in parentheses</span></code></pre></div>
+<p>After the value, <code>,width</code> aligns (negative means left) and <code>:format</code> formats. Common formats: <code>F2</code> fixed decimals, <code>N2</code> with thousands separators, <code>P</code> percent, <code>D5</code> zero-padded integer, <code>X</code> hexadecimal, <code>C</code> currency. For dates: <code>{DateTime.Now:yyyy-MM-dd}</code>.</p>
+<p><code>N</code>, <code>C</code> and dates follow the computer&#39;s <strong>culture</strong>. Output meant for files or other programs should use <code>CultureInfo.InvariantCulture</code>: <code>price.ToString(&quot;F2&quot;, CultureInfo.InvariantCulture)</code>.</p>
+<h2>String methods</h2>
+<p>Strings never change: each method returns a <strong>new</strong> string.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Gives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>s.Length</code>, <code>s[0]</code>, <code>s[^1]</code></td>
+<td>Length, first character, last character</td>
+</tr>
+<tr>
+<td><code>s.Substring(start, length)</code>, <code>s[2..5]</code></td>
+<td>Part of the string</td>
+</tr>
+<tr>
+<td><code>s.ToUpper()</code>, <code>s.ToLower()</code>, <code>s.Trim()</code></td>
+<td>Case, without surrounding spaces</td>
+</tr>
+<tr>
+<td><code>s.Contains(x)</code>, <code>s.StartsWith(x)</code>, <code>s.EndsWith(x)</code></td>
+<td>Tests</td>
+</tr>
+<tr>
+<td><code>s.IndexOf(x)</code>, <code>s.LastIndexOf(x)</code></td>
+<td>Position, or -1</td>
+</tr>
+<tr>
+<td><code>s.Replace(a, b)</code>, <code>s.Insert(i, x)</code>, <code>s.Remove(i, n)</code></td>
+<td>New strings with changes</td>
+</tr>
+<tr>
+<td><code>s.Split(&#39;,&#39;)</code>, <code>string.Join(&quot;, &quot;, parts)</code></td>
+<td>Split into an array, join back</td>
+</tr>
+<tr>
+<td><code>s.PadLeft(5, &#39;0&#39;)</code>, <code>s.PadRight(10)</code></td>
+<td>Padded</td>
+</tr>
+<tr>
+<td><code>string.IsNullOrWhiteSpace(s)</code></td>
+<td>Null, empty or only spaces</td>
+</tr>
+</tbody></table>
+</div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">string</span> line = <span class="tk-s">&quot;  Ada Lovelace, 1815 , mathematician &quot;</span>;
+<span class="tk-k">string</span>[] parts = line.<span class="tk-f">Split</span>(<span class="tk-s">','</span>, <span class="tk-t">StringSplitOptions</span>.<span class="tk-t">TrimEntries</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(parts[<span class="tk-n">0</span>].<span class="tk-f">ToUpper</span>());
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">int</span>.<span class="tk-f">Parse</span>(parts[<span class="tk-n">1</span>]) + <span class="tk-n">200</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">string</span>.<span class="tk-f">Join</span>(<span class="tk-s">&quot; | &quot;</span>, parts));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-s">&quot;banana&quot;</span>.<span class="tk-f">Replace</span>(<span class="tk-s">&quot;an&quot;</span>, <span class="tk-s">&quot;AN&quot;</span>) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-s">&quot;banana&quot;</span>.<span class="tk-f">IndexOf</span>(<span class="tk-s">'n'</span>) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-s">&quot;banana&quot;</span>[<span class="tk-n">1</span>..<span class="tk-n">4</span>]);</code></pre></div>
+<p><code>[1..4]</code> is a <strong>range</strong>: from index 1 up to, not including, 4. <code>^1</code> counts from the end.</p>
+<h2>Comparing</h2>
+<p><code>==</code> compares string contents. For case-insensitive comparison, use <code>string.Equals(a, b, StringComparison.OrdinalIgnoreCase)</code>; for sorting, <code>string.Compare(a, b, StringComparison.Ordinal)</code>.</p>
+<h2>Characters</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">char</span> c = <span class="tk-s">'b'</span>;
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>(<span class="tk-k">char</span>.<span class="tk-f">IsLetter</span>(c) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-k">char</span>.<span class="tk-f">IsDigit</span>(<span class="tk-s">'7'</span>) + <span class="tk-s">&quot; &quot;</span> + <span class="tk-k">char</span>.<span class="tk-f">ToUpper</span>(c));
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>((<span class="tk-k">int</span>)c);            <span class="tk-c">// 98: its character code</span>
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>((<span class="tk-k">char</span>)(c + <span class="tk-n">1</span>));     <span class="tk-c">// 'c'</span>
+<span class="tk-k">foreach</span> (<span class="tk-k">char</span> ch <span class="tk-k">in</span> <span class="tk-s">&quot;hi!&quot;</span>) <span class="tk-t">Console</span>.<span class="tk-f">Write</span>(<span class="tk-s">$&quot;[{ch}]&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">WriteLine</span>();</code></pre></div>
+<h2>Building strings</h2>
+<p>Because strings are immutable, <code>+=</code> in a loop copies the whole string each time. For many pieces, use a <strong>StringBuilder</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C#</span></div><pre><code><span class="tk-k">using</span> <span class="tk-t">System</span>.<span class="tk-t">Text</span>;
+
+<span class="tk-k">var</span> sb = <span class="tk-k">new</span> <span class="tk-f">StringBuilder</span>();
+<span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">1</span>; i &lt;= <span class="tk-n">5</span>; i++) sb.<span class="tk-f">Append</span>(i).<span class="tk-f">Append</span>(i &lt; <span class="tk-n">5</span> ? <span class="tk-s">&quot;, &quot;</span> : <span class="tk-s">&quot;\n&quot;</span>);
+sb.<span class="tk-f">AppendLine</span>(<span class="tk-s">&quot;done&quot;</span>);
+<span class="tk-t">Console</span>.<span class="tk-f">Write</span>(sb.<span class="tk-f">ToString</span>());</code></pre></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/csharp/l/1.04">Create an account</a><a class="btn ghost" href="../../../login.html#/c/csharp/l/1.04">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-03-operators-and-math/"><span class="mono">previous</span><b>1.03 Operators and Math</b></a>
+      <a class="lp-next" href="../1-05-control-flow/"><span class="mono">next</span><b>1.05 Control Flow</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/csharp/1-04-strings-and-formatting"></script>
+</body>
+</html>

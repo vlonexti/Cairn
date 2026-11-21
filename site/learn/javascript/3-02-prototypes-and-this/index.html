@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Prototypes and this · JavaScript and TypeScript · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/javascript/3-02-prototypes-and-this/">
+  <meta name="description" content="How JavaScript objects really share behaviour - the prototype chain under classes, Object.create, own versus inherited properties, the four rules for this,…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Prototypes and this · JavaScript and TypeScript · Xenon">
+  <meta property="og:description" content="How JavaScript objects really share behaviour - the prototype chain under classes, Object.create, own versus inherited properties, the four rules for this,…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/javascript/3-02-prototypes-and-this/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Prototypes and this · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Prototypes and this · JavaScript and TypeScript · Xenon">
+  <meta name="twitter:description" content="How JavaScript objects really share behaviour - the prototype chain under classes, Object.create, own versus inherited properties, the four rules for this,…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/javascript.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">JavaScript and TypeScript</a><span>/</span><span>Objects, Errors and Modules</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Prototypes and this</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.02</b></span><span>2 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">How JavaScript objects really share behaviour - the prototype chain under classes, Object.create, own versus inherited properties, the four rules for this, losing this when passing methods, and fixing it with arrow functions and bind.</p>
+      <div class="prose">
+<h2>The prototype chain</h2>
+<p>Every object has a hidden link to another object, its <strong>prototype</strong>. When a property is not found on an object, JavaScript looks on its prototype, then that object&#39;s prototype, and so on: the <strong>prototype chain</strong>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">const</span> animal = { <span class="tk-f">speak</span>() { <span class="tk-k">return</span> <span class="tk-s">`${this.name} makes a sound`</span>; } };
+<span class="tk-k">const</span> dog = Object.<span class="tk-f">create</span>(animal);      <span class="tk-c">// dog's prototype is animal</span>
+dog.name = <span class="tk-s">&quot;Rex&quot;</span>;
+console.<span class="tk-f">log</span>(dog.<span class="tk-f">speak</span>());               <span class="tk-c">// found on animal, run with this = dog</span>
+console.<span class="tk-f">log</span>(Object.<span class="tk-f">getPrototypeOf</span>(dog) === animal);
+console.<span class="tk-f">log</span>(Object.<span class="tk-f">hasOwn</span>(dog, <span class="tk-s">&quot;name&quot;</span>), Object.<span class="tk-f">hasOwn</span>(dog, <span class="tk-s">&quot;speak&quot;</span>));</code></pre></div>
+<p>Classes are built on this: methods live once on <code>ClassName.prototype</code>, and every instance links to it.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">class</span> Point { <span class="tk-f">constructor</span>(x, y) { <span class="tk-k">this</span>.x = x; <span class="tk-k">this</span>.y = y; } <span class="tk-f">length</span>() { <span class="tk-k">return</span> Math.<span class="tk-f">hypot</span>(<span class="tk-k">this</span>.x, <span class="tk-k">this</span>.y); } }
+<span class="tk-k">const</span> p = <span class="tk-k">new</span> <span class="tk-f">Point</span>(<span class="tk-n">3</span>, <span class="tk-n">4</span>);
+console.<span class="tk-f">log</span>(Object.<span class="tk-f">getPrototypeOf</span>(p) === Point.prototype, Object.<span class="tk-f">keys</span>(p), p.<span class="tk-f">length</span>());</code></pre></div>
+<p><code>Object.keys</code> shows only an object&#39;s <strong>own</strong> properties (<code>x</code>, <code>y</code>); <code>length</code> is inherited. Arrays get <code>map</code> from <code>Array.prototype</code>, and everything ends at <code>Object.prototype</code>, whose prototype is <code>null</code>.</p>
+<p>Never add methods to built-in prototypes (<code>Array.prototype.sum = ...</code>): it can clash with future versions of the language and with other code.</p>
+<h2>What this is</h2>
+<p><code>this</code> is decided <strong>when a function is called</strong>, not where it is written:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th><code>this</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>obj.method()</code></td>
+<td><code>obj</code></td>
+</tr>
+<tr>
+<td><code>new Fn()</code></td>
+<td>the new object</td>
+</tr>
+<tr>
+<td><code>fn.call(x, ...)</code> / <code>fn.apply(x, [...])</code> / a <code>bind(x)</code> copy</td>
+<td><code>x</code></td>
+</tr>
+<tr>
+<td><code>fn()</code> on its own</td>
+<td><code>undefined</code> (in modules and classes)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Arrow functions do not have their own <code>this</code>; they use the <code>this</code> of the code around them.</p>
+<h2>Losing this</h2>
+<p>Taking a method out of its object and calling it later loses <code>this</code>. This happens whenever a method is passed as a callback:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">class</span> Timer {
+  <span class="tk-f">constructor</span>() { <span class="tk-k">this</span>.ticks = <span class="tk-n">0</span>; }
+  <span class="tk-f">tick</span>() { <span class="tk-k">this</span>.ticks++; }
+}
+<span class="tk-k">const</span> timer = <span class="tk-k">new</span> <span class="tk-f">Timer</span>();
+<span class="tk-k">const</span> f = timer.tick;
+<span class="tk-k">try</span> { <span class="tk-f">f</span>(); } <span class="tk-k">catch</span> (e) { console.<span class="tk-f">log</span>(e.constructor.name, e.message); }
+
+[<span class="tk-n">1</span>, <span class="tk-n">2</span>, <span class="tk-n">3</span>].<span class="tk-f">forEach</span>(() =&gt; timer.<span class="tk-f">tick</span>());    <span class="tk-c">// fix 1: an arrow function calling the method</span>
+[<span class="tk-n">1</span>, <span class="tk-n">2</span>].<span class="tk-f">forEach</span>(timer.tick.<span class="tk-f">bind</span>(timer));   <span class="tk-c">// fix 2: bind makes a copy with this fixed</span>
+console.<span class="tk-f">log</span>(timer.ticks);</code></pre></div>
+<p>A third fix is a class field holding an arrow function: <code>tick = () =&gt; { this.ticks++; };</code>. Each instance then gets its own copy with <code>this</code> fixed, which is convenient for event handlers (milestone 6).</p>
+<h2>call, apply and bind</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">JavaScript</span></div><pre><code><span class="tk-k">function</span> <span class="tk-f">introduce</span>(greeting, punctuation) { <span class="tk-k">return</span> <span class="tk-s">`${greeting}, I am ${this.name}${punctuation}`</span>; }
+<span class="tk-k">const</span> ada = { name: <span class="tk-s">&quot;Ada&quot;</span> };
+console.<span class="tk-f">log</span>(introduce.<span class="tk-f">call</span>(ada, <span class="tk-s">&quot;Hi&quot;</span>, <span class="tk-s">&quot;!&quot;</span>));
+console.<span class="tk-f">log</span>(introduce.<span class="tk-f">apply</span>(ada, [<span class="tk-s">&quot;Hello&quot;</span>, <span class="tk-s">&quot;.&quot;</span>]));
+<span class="tk-k">const</span> adaIntro = introduce.<span class="tk-f">bind</span>(ada, <span class="tk-s">&quot;Hey&quot;</span>);
+console.<span class="tk-f">log</span>(<span class="tk-f">adaIntro</span>(<span class="tk-s">&quot;?&quot;</span>));</code></pre></div>
+<p><code>bind</code> can also fix leading arguments, as <code>&quot;Hey&quot;</code> here.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/javascript/l/3.02">Create an account</a><a class="btn ghost" href="../../../login.html#/c/javascript/l/3.02">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-01-classes/"><span class="mono">previous</span><b>3.01 Classes</b></a>
+      <a class="lp-next" href="../3-03-errors-and-exceptions/"><span class="mono">next</span><b>3.03 Errors and Exceptions</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/javascript/3-02-prototypes-and-this"></script>
+</body>
+</html>

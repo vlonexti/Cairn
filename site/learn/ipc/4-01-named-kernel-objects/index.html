@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Named Kernel Objects · Processes and Communication · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/ipc/4-01-named-kernel-objects/">
+  <meta name="description" content="Events, mutexes and semaphores that several processes can open by name - creating versus opening, ERROR ALREADY EXISTS, the session namespaces, signalled and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Named Kernel Objects · Processes and Communication · Xenon">
+  <meta property="og:description" content="Events, mutexes and semaphores that several processes can open by name - creating versus opening, ERROR ALREADY EXISTS, the session namespaces, signalled and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/ipc/4-01-named-kernel-objects/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Named Kernel Objects · Processes and Communication · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Named Kernel Objects · Processes and Communication · Xenon">
+  <meta name="twitter:description" content="Events, mutexes and semaphores that several processes can open by name - creating versus opening, ERROR ALREADY EXISTS, the session namespaces, signalled and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/ipc.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Processes and Communication</a><span>/</span><span>Synchronisation Across Processes</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Named Kernel Objects</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.01</b></span><span>1 of 5 in milestone 4</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Events, mutexes and semaphores that several processes can open by name - creating versus opening, ERROR_ALREADY_EXISTS, the session namespaces, signalled and non-signalled states, and why a kernel object outlives the handle that made it until the last handle closes.</p>
+      <div class="prose">
+<h2>Synchronisation that crosses processes</h2>
+<p><code>std::mutex</code> and <code>std::condition_variable</code> work between threads of one process. Between processes you use <strong>kernel objects</strong>: objects that live in the Windows kernel, reached through handles, and that can be given a <strong>name</strong> so another process can open the same one.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Create</th>
+<th>Open</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>event</strong></td>
+<td><code>CreateEventW</code></td>
+<td><code>OpenEventW</code></td>
+<td>&quot;something happened&quot;: new data, stop now</td>
+</tr>
+<tr>
+<td><strong>mutex</strong></td>
+<td><code>CreateMutexW</code></td>
+<td><code>OpenMutexW</code></td>
+<td>exclusive access to a shared resource</td>
+</tr>
+<tr>
+<td><strong>semaphore</strong></td>
+<td><code>CreateSemaphoreW</code></td>
+<td><code>OpenSemaphoreW</code></td>
+<td>allow up to N at once</td>
+</tr>
+<tr>
+<td><strong>waitable timer</strong></td>
+<td><code>CreateWaitableTimerW</code></td>
+<td><code>OpenWaitableTimerW</code></td>
+<td>signal at a time or interval</td>
+</tr>
+</tbody></table>
+</div>
+<p>Processes, threads, file mappings and pipes are kernel objects too, which is why the same wait functions work on all of them.</p>
+<h2>Create or open</h2>
+<p>The usual pattern is for <strong>both</strong> sides to call <code>Create...</code> with the same name:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code>HANDLE ready{ <span class="tk-f">CreateEventW</span>(&amp;security, FALSE, FALSE, <span class="tk-s">LR&quot;(Local\xenon-telemetry-ready)&quot;</span>) };
+<span class="tk-k">if</span> (!ready) <span class="tk-c">/* failed: GetLastError() */</span>;
+<span class="tk-k">const</span> <span class="tk-k">bool</span> someoneElseCreatedIt{ <span class="tk-f">GetLastError</span>() == ERROR_ALREADY_EXISTS };</code></pre></div>
+<p>If the object exists, <code>Create...</code> opens it instead (and the creation parameters, such as the initial state, are ignored), so it does not matter which process starts first. <code>Open...</code> fails with <code>ERROR_FILE_NOT_FOUND</code> if the object does not exist, which is what you want when only one side should create it (a client must not create the server&#39;s objects).</p>
+<p><code>ERROR_ALREADY_EXISTS</code> is how a <strong>single-instance</strong> application detects a copy already running (lesson 6.01). Note that <code>GetLastError()</code> must be read immediately after the call, and that the call <strong>succeeds</strong> in that case.</p>
+<h2>Names and namespaces</h2>
+<p>Kernel object names follow the rules from lesson 3.01: <code>Local\</code> (the default) within the session, <code>Global\</code> across sessions. Names share one namespace across object types: an event and a mutex cannot both be called <code>xenon-lock</code> (the second create fails with <code>ERROR_INVALID_HANDLE</code>). Choose specific names, and prefix them with your product and purpose.</p>
+<h2>Signalled or not</h2>
+<p>Every waitable kernel object is either <strong>signalled</strong> or <strong>non-signalled</strong>, and the wait functions block until an object is signalled:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Signalled when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>event</td>
+<td>it has been set (lesson 4.02)</td>
+</tr>
+<tr>
+<td>mutex</td>
+<td>nobody owns it</td>
+</tr>
+<tr>
+<td>semaphore</td>
+<td>its count is above zero</td>
+</tr>
+<tr>
+<td>process, thread</td>
+<td>it has ended</td>
+</tr>
+<tr>
+<td>waitable timer</td>
+<td>its time has come</td>
+</tr>
+</tbody></table>
+</div>
+<p>Some objects change state when a wait succeeds on them (a mutex becomes owned, a semaphore&#39;s count drops, an auto-reset event resets); others stay signalled (a process stays ended).</p>
+<h2>Lifetime</h2>
+<p>A kernel object exists as long as <strong>any</strong> process holds a handle to it. When the last handle closes, the object, and its name, are gone. Practical consequences:</p>
+<ul>
+<li>If the creator exits but another process still has the object open, the object stays and keeps its state.</li>
+<li>A process that crashes has all its handles closed by Windows, so it cannot leave objects behind for ever.</li>
+<li>To keep an object available between runs you need some process to hold it open, typically a long-running service.</li>
+</ul>
+<h2>Security</h2>
+<p>Every named object can carry a security descriptor saying who may open it and with which rights. The default allows the creating user and administrators, which is usually right for <code>Local\</code> objects. Objects shared with a service or another user need an explicit descriptor (lesson 5.05). And because anyone allowed can create an object with your name <strong>first</strong>, a client should check it really talks to your server, not an impostor.</p>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/ipc/l/4.01">Create an account</a><a class="btn ghost" href="../../../login.html#/c/ipc/l/4.01">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-05-seqlocks-and-snapshots/"><span class="mono">previous</span><b>3.05 Seqlocks and Snapshots</b></a>
+      <a class="lp-next" href="../4-02-events-and-waiting/"><span class="mono">next</span><b>4.02 Events and Waiting</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/ipc/4-01-named-kernel-objects"></script>
+</body>
+</html>

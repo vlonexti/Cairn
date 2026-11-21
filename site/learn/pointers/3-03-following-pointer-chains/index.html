@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Following Pointer Chains · Pointers and Memory · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/pointers/3-03-following-pointer-chains/">
+  <meta name="description" content="Real programs reach data through several levels of pointers - a game reaches a player's health through the world, the level and the player. A chain can be…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Following Pointer Chains · Pointers and Memory · Xenon">
+  <meta property="og:description" content="Real programs reach data through several levels of pointers - a game reaches a player's health through the world, the level and the player. A chain can be…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/pointers/3-03-following-pointer-chains/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Following Pointer Chains · Pointers and Memory · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Following Pointer Chains · Pointers and Memory · Xenon">
+  <meta name="twitter:description" content="Real programs reach data through several levels of pointers - a game reaches a player's health through the world, the level and the player. A chain can be…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/pointers.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Pointers and Memory</a><span>/</span><span>Structures and Pointer Chains</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Following Pointer Chains</h1>
+      <div class="readout lp-readout"><span>lesson <b>3.03</b></span><span>3 of 5 in milestone 3</span><span>5 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Real programs reach data through several levels of pointers - a game reaches a player&#39;s health through the world, the level and the player. A chain can be written as a base address and a list of offsets, followed one read at a time with a null check at every step. Why chains survive restarts when single addresses do not.</p>
+      <div class="prose">
+<h2>Data at the end of a path</h2>
+<p>In a real program the value you care about is rarely in a variable you can name. A game&#39;s code might reach the local player&#39;s health like this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">struct</span> <span class="tk-t">Stats</span>  { <span class="tk-k">int</span> level; <span class="tk-k">int</span> health; <span class="tk-k">int</span> mana; };
+<span class="tk-k">struct</span> <span class="tk-t">Player</span> { <span class="tk-k">char</span> name[<span class="tk-n">16</span>]; <span class="tk-t">Stats</span>* stats; };
+<span class="tk-k">struct</span> <span class="tk-t">World</span>  { <span class="tk-k">int</span> tick; <span class="tk-t">Player</span>* players[<span class="tk-n">8</span>]; };
+<span class="tk-k">struct</span> <span class="tk-t">Game</span>   { <span class="tk-t">World</span>* world; <span class="tk-k">int</span> localIndex; };
+
+<span class="tk-t">Game</span>* game{ <span class="tk-c">/* created at start-up */</span> };
+<span class="tk-k">int</span> health{ game-&gt;world-&gt;players[game-&gt;localIndex]-&gt;stats-&gt;health };</code></pre></div>
+<p>Five arrows. Every object along the way lives on the heap, created at a different moment, so none of them is at a predictable address. What <em>is</em> predictable is the <strong>shape</strong> of the path: from a <code>Game</code>, the <code>World*</code> is at some offset; from the <code>World</code>, the player pointers start at another; from a <code>Player</code>, the <code>Stats*</code> is at another; and <code>health</code> is at offset 4 of <code>Stats</code>.</p>
+<h2>A chain as base and offsets</h2>
+<p>Write each step as &quot;read the pointer stored at this offset&quot;, and the whole path becomes a base address and a list of numbers:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>base:  &amp;game (the address of the variable holding the Game*)
+step 1: read the pointer at base + 0        -&gt; the Game
+step 2: read the pointer at Game + 0x00     -&gt; the World
+step 3: read the pointer at World + 0x08    -&gt; players[0]
+step 4: read the pointer at Player + 0x10   -&gt; the Stats
+final:  Stats + 0x04                        -&gt; the address of health</code></pre></div>
+<p>So <code>base → 0x00 → 0x00 → 0x08 → 0x10 → 0x04</code>. Every intermediate step reads 8 bytes and treats them as the next address; the last offset is added without reading, giving the address of the value itself. The offsets come straight from the struct layouts of lesson 3.01: <code>offsetof(World, players)</code> is 8 because <code>tick</code> and its padding come first.</p>
+<p>Debuggers and memory tools display chains in exactly this form, often with brackets for each read: <code>[[[[base + 0] + 0] + 8] + 0x10] + 4</code>.</p>
+<h2>Following a chain in code</h2>
+<p>With real pointers, following a chain through byte offsets looks like this:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// Follows base -&gt; offsets[0] -&gt; ... -&gt; offsets[n-1]. Returns the final address, or nullptr.</span>
+<span class="tk-k">const</span> <span class="tk-k">void</span>* <span class="tk-f">follow</span>(<span class="tk-k">const</span> <span class="tk-k">void</span>* base, <span class="tk-k">const</span> std::vector&lt;std::size_t&gt;&amp; offsets)
+{
+    <span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>* at{ <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>*&gt;(base) };
+    <span class="tk-k">for</span> (std::size_t i{ <span class="tk-n">0</span> }; i + <span class="tk-n">1</span> &lt; offsets.<span class="tk-f">size</span>(); ++i)
+    {
+        <span class="tk-k">const</span> <span class="tk-k">void</span>* next;
+        std::<span class="tk-f">memcpy</span>(&amp;next, at + offsets[i], <span class="tk-k">sizeof</span>(next));   <span class="tk-c">// read the pointer stored there</span>
+        <span class="tk-k">if</span> (!next) <span class="tk-k">return</span> <span class="tk-k">nullptr</span>;                            <span class="tk-c">// a broken link: stop</span>
+        at = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">unsigned</span> <span class="tk-k">char</span>*&gt;(next);
+    }
+    <span class="tk-k">return</span> offsets.<span class="tk-f">empty</span>() ? at : at + offsets.<span class="tk-f">back</span>();
+}</code></pre></div>
+<p>The <code>memcpy</code> reads 8 bytes as an address (lesson 2.05 explains why not a cast). The null check at every step is not optional: any object along the path may not exist yet (no level loaded, the player not spawned), and following its null pointer crashes.</p>
+<div class="callout warning"><div class="callout-title"><span class="label">Watch out</span></div><div class="callout-body"><p>A chain is only valid while every object along it is alive. A level being unloaded frees the <code>World</code>; a pointer you read from it a moment ago now dangles. Code that caches a resolved address must resolve the chain again whenever the structure may have changed.</p>
+</div></div>
+<h2>Why chains survive a restart</h2>
+<p>Run the program twice and every heap address changes, and ASLR moves the program itself. So the address of <code>health</code> is different every time. The <strong>offsets</strong> never change, because they come from the struct layouts compiled into the program. And the first link can be anchored to something stable: a global variable inside the program&#39;s own image, whose address is &quot;where the program was loaded&quot; plus a fixed number.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Text</span></div><pre><code>run 1: module at 0x7FF6_1000_0000, global Game* at module + 0x51A8, health at 0x0000_01F3_2C40_9A14
+run 2: module at 0x7FF7_A230_0000, global Game* at module + 0x51A8, health at 0x0000_0229_0E11_3374
+        the chain module + 0x51A8 -&gt; 0 -&gt; 0 -&gt; 8 -&gt; 0x10 -&gt; 4 finds health both times</code></pre></div>
+<p>This is how debuggers, profilers, save-game editors and the inspection tools you build for your own programs find the same data run after run: not by remembering an address, but by remembering a path.</p>
+<h2>Where you will use this</h2>
+<ul>
+<li><strong>Your own debug tools.</strong> A debug overlay or an external inspector for your own game (the Game Development course builds one) reaches its data through chains like this.</li>
+<li><strong>Reading crash dumps.</strong> A dump holds raw memory; you follow pointers from a known global by hand or with the debugger&#39;s <code>dx</code> command.</li>
+<li><strong>File formats and packets.</strong> Many binary formats store offsets to other parts of the file, which you follow exactly the same way, with &quot;offset into the file&quot; in place of &quot;address&quot;.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/pointers/l/3.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/pointers/l/3.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../3-02-pointers-to-pointers/"><span class="mono">previous</span><b>3.02 Pointers to Pointers</b></a>
+      <a class="lp-next" href="../3-04-linked-structures/"><span class="mono">next</span><b>3.04 Linked Structures</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/pointers/3-03-following-pointer-chains"></script>
+</body>
+</html>

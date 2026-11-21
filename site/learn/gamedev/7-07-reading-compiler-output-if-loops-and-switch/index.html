@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Reading Compiler Output: if, Loops and switch · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/7-07-reading-compiler-output-if-loops-and-switch/">
+  <meta name="description" content="Control flow in C++ compiles into a small set of recognisable shapes built from comparisons and jumps. This lesson teaches you to recognise them: if and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Reading Compiler Output: if, Loops and switch · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Control flow in C++ compiles into a small set of recognisable shapes built from comparisons and jumps. This lesson teaches you to recognise them: if and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/7-07-reading-compiler-output-if-loops-and-switch/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Reading Compiler Output: if, Loops and switch · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reading Compiler Output: if, Loops and switch · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Control flow in C++ compiles into a small set of recognisable shapes built from comparisons and jumps. This lesson teaches you to recognise them: if and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>x64 Assembly Language</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Reading Compiler Output: if, Loops and switch</h1>
+      <div class="readout lp-readout"><span>lesson <b>7.07</b></span><span>7 of 11 in milestone 7</span><span>5 min</span></div>
+      <p class="lp-summary">Control flow in C++ compiles into a small set of recognisable shapes built from comparisons and jumps. This lesson teaches you to recognise them: <code>if</code> and <code>if</code>/<code>else</code>, <code>while</code> and <code>for</code> loops (and how compilers rotate them), short-circuit <code>&amp;&amp;</code> and <code>||</code>, and the <strong>jump table</strong> a <code>switch</code> becomes. Recognising shapes is how you read disassembly quickly.</p>
+      <div class="prose">
+<h2>The method</h2>
+<p>When reading compiled code, do not try to understand each instruction in isolation. Look for the <strong>shape</strong>:</p>
+<ol>
+<li>Find the jumps. Each conditional jump is a decision; each backward jump (to a lower address) is a loop.</li>
+<li>Group the instructions between jumps into <strong>basic blocks</strong>: straight runs with one way in and one way out.</li>
+<li>Draw the blocks and the arrows between them. The picture is the control flow, and it maps back to <code>if</code>, <code>while</code> and <code>switch</code>.</li>
+</ol>
+<p>Disassemblers such as Ghidra and IDA draw this graph for you (chapter 9). With practice you see it directly in the listing.</p>
+<h2>if and if/else</h2>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">grade</span>(<span class="tk-k">int</span> score)
+{
+    <span class="tk-k">if</span> (score &gt;= <span class="tk-n">50</span>) <span class="tk-k">return</span> <span class="tk-n">1</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>    cmp   <span class="tk-t">ecx</span>, <span class="tk-n">50</span>
+    jl    fail            <span class="tk-c">; inverted: skip the &quot;then&quot; part when score &lt; 50</span>
+    mov   <span class="tk-t">eax</span>, <span class="tk-n">1</span>
+    ret
+<span class="tk-f">fail:</span>
+    xor   <span class="tk-t">eax</span>, <span class="tk-t">eax</span>
+    ret</code></pre></div>
+<p>With an <code>else</code>, the &quot;then&quot; block ends with an unconditional <code>jmp</code> over the &quot;else&quot; block to the code after both:</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    A[&quot;cmp ...&lt;br/&gt;jcc else&quot;] --&gt;|&quot;condition false&quot;| E[&quot;else block&quot;]
+    A --&gt;|&quot;condition true (fall through)&quot;| T[&quot;then block&lt;br/&gt;jmp end&quot;]
+    T --&gt; J[&quot;end&quot;]
+    E --&gt; J</pre></div>
+<p>(Optimisers often replace small if/else assignments with <code>cmov</code>, lesson 7.04, so there may be no jump at all.)</p>
+<h2>Loops</h2>
+<p>A <code>while</code> loop literally compiled would test at the top and jump back to the test at the bottom: two jumps per iteration. Compilers <strong>rotate</strong> loops instead: test once before entering, then test again at the bottom with a single backward jump.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">int</span> <span class="tk-f">sum</span>(<span class="tk-k">const</span> <span class="tk-k">int</span>* values, <span class="tk-k">int</span> count)
+{
+    <span class="tk-k">int</span> total{ <span class="tk-n">0</span> };
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> i{ <span class="tk-n">0</span> }; i &lt; count; ++i) total += values[i];
+    <span class="tk-k">return</span> total;
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>    xor   <span class="tk-t">eax</span>, <span class="tk-t">eax</span>              <span class="tk-c">; total = 0</span>
+    test  <span class="tk-t">edx</span>, <span class="tk-t">edx</span>              <span class="tk-c">; count &lt;= 0?  then skip the loop entirely</span>
+    jle   done
+    xor   <span class="tk-t">r8d</span>, <span class="tk-t">r8d</span>              <span class="tk-c">; i = 0</span>
+<span class="tk-f">top:</span>
+    add   <span class="tk-t">eax</span>, [<span class="tk-t">rcx</span>+<span class="tk-t">r8</span>*<span class="tk-n">4</span>]       <span class="tk-c">; total += values[i]</span>
+    inc   <span class="tk-t">r8d</span>                   <span class="tk-c">; ++i</span>
+    cmp   <span class="tk-t">r8d</span>, <span class="tk-t">edx</span>              <span class="tk-c">; i &lt; count?</span>
+    jl    top                   <span class="tk-c">; backward jump: the loop</span>
+<span class="tk-f">done:</span>
+    ret</code></pre></div>
+<p>The <strong>backward jump</strong> to <code>top</code> is the signature of a loop. The block before it is the guard that skips the loop when it would run zero times. Step through it with three values:</p>
+<div class="lp-inapp"><b>Interactive demo.</b> This part of the lesson is a working model you can step through in Xenon. <a href="../../../login.html?join#/c/gamedev/l/7.07">Try it in Xenon</a></div>
+<p>In optimised builds, loops may also be <strong>unrolled</strong> (the body repeated several times per jump) or <strong>vectorised</strong> (processing four or eight elements per instruction, lesson 7.11), which changes the shape but not the backward jump.</p>
+<h2>&amp;&amp; and ||</h2>
+<p>C++ guarantees <strong>short-circuit</strong> evaluation: in <code>a &amp;&amp; b</code>, <code>b</code> is not evaluated if <code>a</code> is false. That becomes a chain of jumps, each able to skip straight to the outcome:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">if</span> (enemy != <span class="tk-k">nullptr</span> &amp;&amp; enemy-&gt;health &gt; <span class="tk-n">0</span>) <span class="tk-f">attack</span>(enemy);</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>    test  <span class="tk-t">rcx</span>, <span class="tk-t">rcx</span>              <span class="tk-c">; enemy == nullptr?</span>
+    je    skip                  <span class="tk-c">; then the whole condition is false</span>
+    cmp   <span class="tk-k">dword</span> <span class="tk-k">ptr</span> [<span class="tk-t">rcx</span>+<span class="tk-n">8</span>], <span class="tk-n">0</span>  <span class="tk-c">; enemy-&gt;health &gt; 0?</span>
+    jle   skip
+    call  attack
+<span class="tk-f">skip:</span></code></pre></div>
+<p>Two conditional jumps to the same label is the shape of <code>&amp;&amp;</code>. For <code>||</code>, the first test jumps to the &quot;true&quot; block instead.</p>
+<h2>switch and jump tables</h2>
+<p>A <code>switch</code> over a few cases compiles to a chain of comparisons. Over many <strong>dense</strong> cases (values close together), the compiler builds a <strong>jump table</strong>: an array of addresses, one per case, and jumps through it with a single indexed jump.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">const</span> <span class="tk-k">char</span>* <span class="tk-f">stateName</span>(<span class="tk-k">int</span> state)
+{
+    <span class="tk-k">switch</span> (state)
+    {
+    <span class="tk-k">case</span> <span class="tk-n">0</span>: <span class="tk-k">return</span> <span class="tk-s">&quot;idle&quot;</span>;
+    <span class="tk-k">case</span> <span class="tk-n">1</span>: <span class="tk-k">return</span> <span class="tk-s">&quot;walking&quot;</span>;
+    <span class="tk-k">case</span> <span class="tk-n">2</span>: <span class="tk-k">return</span> <span class="tk-s">&quot;running&quot;</span>;
+    <span class="tk-k">case</span> <span class="tk-n">3</span>: <span class="tk-k">return</span> <span class="tk-s">&quot;jumping&quot;</span>;
+    <span class="tk-k">case</span> <span class="tk-n">4</span>: <span class="tk-k">return</span> <span class="tk-s">&quot;falling&quot;</span>;
+    <span class="tk-k">default</span>: <span class="tk-k">return</span> <span class="tk-s">&quot;?&quot;</span>;
+    }
+}</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">Assembly</span></div><pre><code>    cmp   <span class="tk-t">ecx</span>, <span class="tk-n">4</span>
+    ja    default_case          <span class="tk-c">; unsigned compare: also catches negative values!</span>
+    movsxd <span class="tk-t">rax</span>, <span class="tk-t">ecx</span>
+    lea   <span class="tk-t">rdx</span>, [__ImageBase]
+    mov   <span class="tk-t">eax</span>, [<span class="tk-t">rdx</span>+<span class="tk-t">rax</span>*<span class="tk-n">4</span>+table_rva]   <span class="tk-c">; read the case's offset from the table</span>
+    add   <span class="tk-t">rax</span>, <span class="tk-t">rdx</span>
+    jmp   <span class="tk-t">rax</span>                    <span class="tk-c">; jump to that case</span></code></pre></div>
+<p>Three things to recognise:</p>
+<ul>
+<li><strong>One unsigned comparison</strong> (<code>ja</code>) checks the range: a negative value, seen as unsigned, is huge, so it also goes to <code>default</code>. One check covers both ends.</li>
+<li><strong>An indexed load</strong> from a table, scaled by 4 or 8.</li>
+<li><strong>An indirect jump</strong> (<code>jmp rax</code>).</li>
+</ul>
+<p>Sparse cases (1, 100, 5000) get a chain of comparisons or a binary search instead.</p>
+<h2>Common mistakes</h2>
+<blockquote><p>[!warning] Reading every jump as an <code>if</code>
+Backward jumps are loops; a <code>jmp</code> at the end of a block is usually the &quot;skip the else&quot; jump.</p>
+</blockquote>
+<div class="callout warning"><div class="callout-title"><span>Expecting the loop test at the top</span></div><div class="callout-body"><p>Rotated loops test at the bottom, with a guard before the loop.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Missing the range check before a jump table</span></div><div class="callout-body"><p>The <code>cmp</code> and <code>ja</code> before it tell you the number of cases.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is the signature of a loop in disassembly?</div><ul><li>A conditional jump backwards, to a lower address</li><li>Any <code>cmp</code> instruction</li><li>A <code>call</code></li></ul><details><summary>Show the answer</summary><p><b>A conditional jump backwards, to a lower address</b> Looping means going back to code that already ran.</p></details></li><li><div class="q">Why does a rotated loop have a test before the loop as well as at the bottom?</div><ul><li>To skip the loop entirely when it should run zero times</li><li>Because the CPU requires two tests</li><li>To count the iterations</li></ul><details><summary>Show the answer</summary><p><b>To skip the loop entirely when it should run zero times</b> The bottom test decides whether to go round again; the guard handles the zero-iteration case.</p></details></li><li><div class="q">Two conditional jumps lead to the same label just before a <code>call</code>. What C++ is this likely to be?</div><ul><li><code>if (a &amp;&amp; b) call();</code></li><li><code>if (a || b) call();</code></li><li>A <code>switch</code></li></ul><details><summary>Show the answer</summary><p><b><code>if (a &amp;&amp; b) call();</code></b> Either condition failing skips the call.</p></details></li><li><div class="q">Why does a jump table&#39;s range check use <code>ja</code> instead of <code>jg</code>?</div><ul><li>An unsigned comparison also sends negative values to the default case with one check</li><li><code>jg</code> does not exist</li><li>The cases are always unsigned</li></ul><details><summary>Show the answer</summary><p><b>An unsigned comparison also sends negative values to the default case with one check</b> Negative numbers read as unsigned are larger than any case.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/7.07">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/7.07">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../7-06-the-microsoft-x64-calling-convention/"><span class="mono">previous</span><b>7.06 The Microsoft x64 Calling Convention</b></a>
+      <a class="lp-next" href="../7-08-structs-arrays-and-pointers-in-assembly/"><span class="mono">next</span><b>7.08 Structs, Arrays and Pointers in Assembly</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/7-07-reading-compiler-output-if-loops-and-switch"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The Family Tree of Modern Languages · Computer Fundamentals · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/fundamentals/5-05-the-family-tree-of-modern-languages/">
+  <meta name="description" content="The languages of today descend from a few ancestors - C's syntax, Simula's objects, Lisp's functions. C++ added objects to C; Python made code read like…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Family Tree of Modern Languages · Computer Fundamentals · Xenon">
+  <meta property="og:description" content="The languages of today descend from a few ancestors - C's syntax, Simula's objects, Lisp's functions. C++ added objects to C; Python made code read like…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/fundamentals/5-05-the-family-tree-of-modern-languages/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Family Tree of Modern Languages · Computer Fundamentals · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Family Tree of Modern Languages · Computer Fundamentals · Xenon">
+  <meta name="twitter:description" content="The languages of today descend from a few ancestors - C's syntax, Simula's objects, Lisp's functions. C++ added objects to C; Python made code read like…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/fundamentals.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Computer Fundamentals</a><span>/</span><span>From Machine Code to Modern Languages</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">The Family Tree of Modern Languages</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 6 in milestone 5</span><span>5 min</span></div>
+      <p class="lp-summary">The languages of today descend from a few ancestors - C&#39;s syntax, Simula&#39;s objects, Lisp&#39;s functions. C++ added objects to C; Python made code read like plain English; Java and C# brought virtual machines and garbage collection; JavaScript took over the web; Rust and Go rethought systems programming. Each one trades speed, safety and convenience differently.</p>
+      <div class="prose">
+<h2>Objects: Simula and Smalltalk</h2>
+<p>A new idea arrived in Norway: <strong>Simula</strong> (1967), by Ole-Johan Dahl and Kristen Nygaard, was built to simulate things like ships and queues, and introduced <strong>classes and objects</strong>: a bundle of data and the functions that work on it. <strong>Smalltalk</strong> (1972, Alan Kay and others at Xerox PARC) made objects the centre of everything, and also gave us much of the modern graphical interface.</p>
+<h2>The family tree</h2>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    ALGOL[&quot;ALGOL 60&quot;] --&gt; C[&quot;C (1972)&quot;]
+    Simula[&quot;Simula (1967)&quot;] --&gt; CPP
+    C --&gt; CPP[&quot;C++ (1985)&quot;]
+    CPP --&gt; Java[&quot;Java (1995)&quot;]
+    CPP --&gt; CS[&quot;C# (2000)&quot;]
+    Java --&gt; CS
+    C --&gt; Go[&quot;Go (2009)&quot;]
+    CPP --&gt; Rust[&quot;Rust (2015)&quot;]
+    ABC[&quot;ABC&quot;] --&gt; Py[&quot;Python (1991)&quot;]
+    Smalltalk[&quot;Smalltalk (1972)&quot;] --&gt; Java
+    Lisp[&quot;Lisp (1958)&quot;] --&gt; JS[&quot;JavaScript (1995)&quot;]
+    Java -.name and syntax.-&gt; JS
+    JS --&gt; TS[&quot;TypeScript (2012)&quot;]
+    ObjC[&quot;Objective-C (1984)&quot;] --&gt; Swift[&quot;Swift (2014)&quot;]</pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Year</th>
+<th>Made by</th>
+<th>Why it exists</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>C++</strong></td>
+<td>1985</td>
+<td>Bjarne Stroustrup, Bell Labs</td>
+<td>C&#39;s speed with Simula&#39;s classes. Games, browsers, game engines, anything where speed matters</td>
+</tr>
+<tr>
+<td><strong>Python</strong></td>
+<td>1991</td>
+<td>Guido van Rossum</td>
+<td>Readable, short code; &quot;batteries included&quot; library. Science, data, AI, scripting, teaching</td>
+</tr>
+<tr>
+<td><strong>Java</strong></td>
+<td>1995</td>
+<td>James Gosling, Sun</td>
+<td>Write once, run anywhere on the JVM; garbage collection. Android apps, big business systems</td>
+</tr>
+<tr>
+<td><strong>JavaScript</strong></td>
+<td>1995</td>
+<td>Brendan Eich, Netscape (in about ten days)</td>
+<td>Make web pages interactive. Now runs everywhere, servers included</td>
+</tr>
+<tr>
+<td><strong>C#</strong></td>
+<td>2000</td>
+<td>Anders Hejlsberg, Microsoft</td>
+<td>Microsoft&#39;s Java-like language for .NET. Windows apps, the Unity game engine</td>
+</tr>
+<tr>
+<td><strong>Go</strong></td>
+<td>2009</td>
+<td>Google (including Ken Thompson of Unix)</td>
+<td>Simple, fast to compile, built for servers and concurrency</td>
+</tr>
+<tr>
+<td><strong>TypeScript</strong></td>
+<td>2012</td>
+<td>Microsoft (Hejlsberg again)</td>
+<td>JavaScript with types, to catch mistakes before running</td>
+</tr>
+<tr>
+<td><strong>Swift</strong></td>
+<td>2014</td>
+<td>Apple</td>
+<td>A safer replacement for Objective-C on Apple devices</td>
+</tr>
+<tr>
+<td><strong>Rust</strong></td>
+<td>2015</td>
+<td>Mozilla (started by Graydon Hoare)</td>
+<td>C++&#39;s speed without its memory bugs, checked by the compiler</td>
+</tr>
+</tbody></table>
+</div>
+<h2>Choosing a trade-off</h2>
+<p>Languages differ mostly in what they make easy and what they make you handle yourself:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Closer to the machine</th>
+<th>Further from it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Who frees memory?</td>
+<td>You (C, C++), or the compiler&#39;s rules (Rust)</td>
+<td>A garbage collector (Java, C#, Python, JavaScript, Go)</td>
+</tr>
+<tr>
+<td>When are types checked?</td>
+<td>Before running: <strong>static</strong> (C, C++, Java, C#, Rust, Go, TypeScript)</td>
+<td>While running: <strong>dynamic</strong> (Python, JavaScript)</td>
+</tr>
+<tr>
+<td>How is it run?</td>
+<td>Compiled to machine code (C, C++, Rust, Go, Swift)</td>
+<td>Bytecode and a VM, or an interpreter (Java, C#, Python, JavaScript)</td>
+</tr>
+<tr>
+<td>Typical speed</td>
+<td>Fastest</td>
+<td>Slower, but JITs close much of the gap</td>
+</tr>
+<tr>
+<td>Typical effort</td>
+<td>More code, more control</td>
+<td>Less code, less control</td>
+</tr>
+</tbody></table>
+</div>
+<p>There is no best language, only better fits. A game engine wants C++; a quick data analysis wants Python; a web page needs JavaScript; an operating system kernel wants C or, more and more, Rust.</p>
+<h2>Paradigms</h2>
+<p>Languages also differ in <strong>style</strong>, called paradigms, and most modern ones mix several:</p>
+<ul>
+<li><strong>Procedural</strong>: a sequence of steps and functions (C, early Python).</li>
+<li><strong>Object-oriented</strong>: objects with data and methods (Java, C#, C++, Python).</li>
+<li><strong>Functional</strong>: functions that take and return functions, values that do not change (Lisp, Haskell, and parts of JavaScript, Python and Rust).</li>
+</ul>
+<h2>Still all the same underneath</h2>
+<p>Whatever the language, the end is the same: machine code running on a CPU, fetch, decode, execute, bits in registers and memory. A Python list, a Java object and a C array are all, in the end, bytes at addresses. The next lesson follows one line of Python all the way there.</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Which language added classes to C?</div><ul><li>Java</li><li>C++</li><li>C#</li></ul><details><summary>Show the answer</summary><p><b>C++</b> Bjarne Stroustrup&#39;s &quot;C with Classes&quot; became C++ in 1985.</p></details></li><li><div class="q">What is the main idea of Rust?</div><ul><li>The speed of C and C++, with memory mistakes caught by the compiler</li><li>Running in web browsers</li><li>Being the easiest language for beginners</li></ul><details><summary>Show the answer</summary><p><b>The speed of C and C++, with memory mistakes caught by the compiler</b> Rust&#39;s compiler checks who owns each piece of memory.</p></details></li><li><div class="q">What does &quot;statically typed&quot; mean?</div><ul><li>Types are checked before the program runs</li><li>Variables never change</li><li>The language has no types</li></ul><details><summary>Show the answer</summary><p><b>Types are checked before the program runs</b> C, Java, Rust and TypeScript check types at compile time; Python and JavaScript at run time.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Carry on in Xenon</h2>
+      <p>In Xenon your progress is saved, every example runs, and each milestone ends with practice and projects that are compiled and tested. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/fundamentals/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/fundamentals/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-c-and-unix/"><span class="mono">previous</span><b>5.04 C and Unix</b></a>
+      <a class="lp-next" href="../5-06-one-line-of-code-all-the-way-down/"><span class="mono">next</span><b>5.06 One Line of Code All the Way Down</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/fundamentals/5-05-the-family-tree-of-modern-languages"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Time and Dates · C · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/c/8-03-time-and-dates/">
+  <meta name="description" content="Working with time in standard C - time t and time, breaking it into struct tm with gmtime and localtime, formatting with strftime, building and normalising…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Time and Dates · C · Xenon">
+  <meta property="og:description" content="Working with time in standard C - time t and time, breaking it into struct tm with gmtime and localtime, formatting with strftime, building and normalising…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/c/8-03-time-and-dates/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Time and Dates · C · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Time and Dates · C · Xenon">
+  <meta name="twitter:description" content="Working with time in standard C - time t and time, breaking it into struct tm with gmtime and localtime, formatting with strftime, building and normalising…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/c.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">C</a><span>/</span><span>C in Practice</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Time and Dates</h1>
+      <div class="readout lp-readout"><span>lesson <b>8.03</b></span><span>3 of 6 in milestone 8</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Working with time in standard C - time_t and time, breaking it into struct tm with gmtime and localtime, formatting with strftime, building and normalising dates with mktime, differences with difftime, measuring how long code takes with clock and timespec_get, and the pitfalls of time zones and thread safety.</p>
+      <div class="prose">
+<h2>Two ways to hold a time</h2>
+<p><code>&lt;time.h&gt;</code> gives two representations:</p>
+<ul>
+<li><code>time_t</code>: a single number, usually the seconds since 1 January 1970 UTC (the &quot;Unix epoch&quot;). Easy to store and compare.</li>
+<li><code>struct tm</code>: the parts a person reads, such as year, month, day, hour, minute and second.</li>
+</ul>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;time.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    time_t now = <span class="tk-f">time</span>(<span class="tk-k">NULL</span>);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;seconds since 1970: %lld\n&quot;</span>, (<span class="tk-k">long</span> <span class="tk-k">long</span>)now &gt; <span class="tk-n">1700000000</span> ? <span class="tk-n">1700000000LL</span> : <span class="tk-n">0LL</span>);
+
+    time_t moment = <span class="tk-n">1767225600</span>;                 <span class="tk-c">/* 2026-01-01 00:00:00 UTC */</span>
+    <span class="tk-k">struct</span> tm *t = <span class="tk-f">gmtime</span>(&amp;moment);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%04d-%02d-%02d %02d:%02d, day of the week %d, day of the year %d\n&quot;</span>,
+           t-&gt;tm_year + <span class="tk-n">1900</span>, t-&gt;tm_mon + <span class="tk-n">1</span>, t-&gt;tm_mday, t-&gt;tm_hour, t-&gt;tm_min, t-&gt;tm_wday, t-&gt;tm_yday + <span class="tk-n">1</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Watch the offsets in <code>struct tm</code>: <code>tm_year</code> counts from 1900, <code>tm_mon</code> from 0 (January is 0), <code>tm_wday</code> from Sunday = 0, <code>tm_yday</code> from 0. <code>tm_mday</code> alone starts at 1.</p>
+<p><code>gmtime</code> gives UTC; <code>localtime</code> gives the computer&#39;s time zone.</p>
+<h2>Formatting with strftime</h2>
+<p><code>strftime</code> is <code>printf</code> for dates. It writes into a buffer you give it and returns the length, or 0 if it did not fit:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;time.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    time_t moment = <span class="tk-n">1767264300</span>;            <span class="tk-c">/* 2026-01-01 10:45:00 UTC */</span>
+    <span class="tk-k">struct</span> tm *t = <span class="tk-f">gmtime</span>(&amp;moment);
+    <span class="tk-k">char</span> buf[<span class="tk-n">64</span>];
+    <span class="tk-f">strftime</span>(buf, <span class="tk-k">sizeof</span> buf, <span class="tk-s">&quot;%Y-%m-%d %H:%M:%S&quot;</span>, t);
+    <span class="tk-f">puts</span>(buf);
+    <span class="tk-f">strftime</span>(buf, <span class="tk-k">sizeof</span> buf, <span class="tk-s">&quot;%A %d %B %Y, week %V&quot;</span>, t);
+    <span class="tk-f">puts</span>(buf);
+    <span class="tk-f">strftime</span>(buf, <span class="tk-k">sizeof</span> buf, <span class="tk-s">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span>, t);    <span class="tk-c">/* ISO 8601, for files and logs */</span>
+    <span class="tk-f">puts</span>(buf);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Common conversions: <code>%Y</code> year, <code>%m</code> month, <code>%d</code> day, <code>%H</code> <code>%M</code> <code>%S</code> time, <code>%A</code> weekday name, <code>%B</code> month name, <code>%j</code> day of the year, <code>%V</code> ISO week. Names follow the program&#39;s locale (English by default).</p>
+<h2>Building a date: mktime</h2>
+<p><code>mktime</code> turns a <code>struct tm</code> in <strong>local</strong> time back into a <code>time_t</code>. It also <strong>normalises</strong> out-of-range fields, which makes date arithmetic easy: add 40 to the day and it rolls over into the next month.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;time.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">struct</span> tm t = {<span class="tk-n">0</span>};
+    t.tm_year = <span class="tk-n">2026</span> - <span class="tk-n">1900</span>;
+    t.tm_mon = <span class="tk-n">0</span>;          <span class="tk-c">/* January */</span>
+    t.tm_mday = <span class="tk-n">31</span> + <span class="tk-n">30</span>;   <span class="tk-c">/* &quot;January 61st&quot; */</span>
+    t.tm_hour = <span class="tk-n">12</span>;
+    t.tm_isdst = -<span class="tk-n">1</span>;       <span class="tk-c">/* let mktime work out summer time */</span>
+    <span class="tk-f">mktime</span>(&amp;t);
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%04d-%02d-%02d, weekday %d\n&quot;</span>, t.tm_year + <span class="tk-n">1900</span>, t.tm_mon + <span class="tk-n">1</span>, t.tm_mday, t.tm_wday);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p>Setting the hour to 12 keeps the date safe from daylight-saving shifts, which move clock times by an hour near midnight.</p>
+<h2>Differences</h2>
+<p><code>difftime(end, start)</code> returns the seconds between two <code>time_t</code> values as a <code>double</code>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;time.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    time_t a = <span class="tk-n">1767225600</span>;            <span class="tk-c">/* 2026-01-01 */</span>
+    time_t b = <span class="tk-n">1798761600</span>;            <span class="tk-c">/* 2027-01-01 */</span>
+    <span class="tk-k">double</span> days = <span class="tk-f">difftime</span>(b, a) / <span class="tk-n">86400.0</span>;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;%.0f days in 2026\n&quot;</span>, days);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<h2>Measuring how long code takes</h2>
+<p><code>clock()</code> measures <strong>processor time</strong> used by the program; <code>timespec_get</code> (C11) gives wall-clock time with nanoseconds:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C</span></div><pre><code><span class="tk-p">#include &lt;stdio.h&gt;</span>
+<span class="tk-p">#include &lt;time.h&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>(<span class="tk-k">void</span>)
+{
+    <span class="tk-k">struct</span> timespec t0, t1;
+    <span class="tk-f">timespec_get</span>(&amp;t0, TIME_UTC);
+    clock_t c0 = <span class="tk-f">clock</span>();
+
+    <span class="tk-k">volatile</span> <span class="tk-k">double</span> x = <span class="tk-n">0</span>;
+    <span class="tk-k">for</span> (<span class="tk-k">long</span> i = <span class="tk-n">0</span>; i &lt; <span class="tk-n">20000000</span>; i++) x += i * <span class="tk-n">0.5</span>;
+
+    clock_t c1 = <span class="tk-f">clock</span>();
+    <span class="tk-f">timespec_get</span>(&amp;t1, TIME_UTC);
+    <span class="tk-k">double</span> cpu = (<span class="tk-k">double</span>)(c1 - c0) / CLOCKS_PER_SEC;
+    <span class="tk-k">double</span> wall = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / <span class="tk-n">1e9</span>;
+    <span class="tk-f">printf</span>(<span class="tk-s">&quot;cpu %s, wall %s\n&quot;</span>, cpu &gt;= <span class="tk-n">0</span> ? <span class="tk-s">&quot;measured&quot;</span> : <span class="tk-s">&quot;?&quot;</span>, wall &gt;= <span class="tk-n">0</span> ? <span class="tk-s">&quot;measured&quot;</span> : <span class="tk-s">&quot;?&quot;</span>);
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<p><code>volatile</code> stops the compiler from deleting a loop whose result is never used. For real benchmarks, repeat the measurement and take the best or median.</p>
+<h2>Pitfalls</h2>
+<ul>
+<li><code>gmtime</code> and <code>localtime</code> return a pointer to <strong>one shared</strong> <code>struct tm</code>: the next call overwrites it, and two threads calling them at once clash. Copy the result straight away, or use <code>gmtime_r</code>/<code>localtime_r</code> (POSIX) and <code>gmtime_s</code> (Windows, C11 Annex K).</li>
+<li><code>time_t</code> was 32 bits on old systems and runs out in January 2038. Use a 64-bit <code>time_t</code> (the default on current systems) and store times as 64-bit numbers.</li>
+<li>Local time depends on the computer&#39;s time zone setting. Store and exchange UTC; convert to local only for display.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/c/l/8.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/c/l/8.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../8-02-generic-code-with-void-pointers/"><span class="mono">previous</span><b>8.02 Generic Code with void Pointers</b></a>
+      <a class="lp-next" href="../8-04-command-line-programs/"><span class="mono">next</span><b>8.04 Command-Line Programs</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/c/8-03-time-and-dates"></script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>What the Operating System Does for a Program · Game Development &amp; Low-Level Programming · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/gamedev/1-06-what-the-operating-system-does-for-a-program/">
+  <meta name="description" content="Between your program and the hardware sits the operating system . It loads the program into memory, gives it a private address space , shares the CPU between…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What the Operating System Does for a Program · Game Development &amp; Low-Level Programming · Xenon">
+  <meta property="og:description" content="Between your program and the hardware sits the operating system . It loads the program into memory, gives it a private address space , shares the CPU between…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/gamedev/1-06-what-the-operating-system-does-for-a-program/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="What the Operating System Does for a Program · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What the Operating System Does for a Program · Game Development &amp; Low-Level Programming · Xenon">
+  <meta name="twitter:description" content="Between your program and the hardware sits the operating system . It loads the program into memory, gives it a private address space , shares the CPU between…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/gamedev.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Game Development &amp; Low-Level Programming</a><span>/</span><span>How Computers Run Programs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">What the Operating System Does for a Program</h1>
+      <div class="readout lp-readout"><span>lesson <b>1.06</b></span><span>6 of 8 in milestone 1</span><span>8 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Between your program and the hardware sits the <strong>operating system</strong>. It loads the program into memory, gives it a private <strong>address space</strong>, shares the CPU between hundreds of programs, and is the only way to reach files, the screen or the network. Each of these ideas gets its own chapter later; this lesson is the map.</p>
+      <div class="prose">
+<h2>The program is not alone</h2>
+<p>On the tiny computer from lesson 1.01, one program owned the whole machine. A Windows PC runs hundreds of programs at once: the game, the browser, the music player, dozens of background services. None of them can be allowed to overwrite another&#39;s memory or hog the processor forever.</p>
+<p>The <strong>operating system</strong> (OS) is the program that makes sharing possible. Its core, the <strong>kernel</strong>, runs with full control of the hardware. Everything else, including your game, runs with restricted rights and has to ask the kernel for anything that touches the outside world.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart TB
+    subgraph USER[&quot;User mode: restricted&quot;]
+        G[&quot;Your game&quot;]
+        B[&quot;Browser&quot;]
+        M[&quot;Music player&quot;]
+    end
+    subgraph KERNEL[&quot;Kernel mode: full control&quot;]
+        K[&quot;Windows kernel&lt;br/&gt;memory, scheduling, security&quot;]
+        D[&quot;Drivers&lt;br/&gt;disk, graphics, input&quot;]
+    end
+    G --&gt; K
+    B --&gt; K
+    M --&gt; K
+    K --&gt; D
+    D --&gt; HW[&quot;Hardware&quot;]</pre></div>
+<p>Chapter 15 looks inside the kernel. For now, five jobs matter.</p>
+<h2>1. Loading the program</h2>
+<p>An <code>.exe</code> on disk is a file in the <strong>PE format</strong> (Portable Executable). When you start it, the Windows <strong>loader</strong>:</p>
+<ol>
+<li>Creates a new <strong>process</strong>: the container for one running copy of a program.</li>
+<li>Maps the <code>.exe</code> file&#39;s code and data into the process&#39;s memory.</li>
+<li>Loads every <strong>DLL</strong> the program needs (such as <code>kernel32.dll</code> and the C++ runtime), and fills in the addresses of the functions the program calls in them.</li>
+<li>Creates the first <strong>thread</strong> and starts it at the program&#39;s entry point, which eventually calls your <code>main</code>.</li>
+</ol>
+<p>Chapter 9 takes the PE format apart byte by byte. Chapter 4 builds DLLs of your own.</p>
+<h2>2. Giving each process its own memory</h2>
+<p>Every process gets its own <strong>virtual address space</strong>. The addresses your program prints are not positions in the RAM chips. They are positions in a private, pretend memory that the OS and the processor translate to real memory behind the scenes.</p>
+<div class="diagram-box lp-diagram"><pre class="mermaid">flowchart LR
+    subgraph A[&quot;Game's addresses&quot;]
+        A1[&quot;0x7FF6...1000&quot;]
+    end
+    subgraph B[&quot;Browser's addresses&quot;]
+        B1[&quot;0x7FF6...1000&quot;]
+    end
+    A1 --&gt; R1[&quot;RAM page 51,203&quot;]
+    B1 --&gt; R2[&quot;RAM page 9,876&quot;]</pre></div>
+<p>Two programs can both use the address <code>0x7FF61000</code>, and they reach different physical memory. That is how Windows keeps programs from reading or wrecking each other: there is simply no address in one process that leads to another process&#39;s memory. Memory is handed out in <strong>pages</strong>, which are 4,096 bytes (<code>0x1000</code>) each on x64. Chapter 6 explains the translation and how to explore your own address space.</p>
+<h2>3. Sharing the processor</h2>
+<p>A CPU has a handful of cores, and there are thousands of threads that want to run. The OS <strong>scheduler</strong> gives each thread a short turn, a <strong>time slice</strong> of a few milliseconds, then saves its registers and lets another thread run. It switches so often that everything appears to run at once.</p>
+<p>This is why your game&#39;s frame time is never perfectly steady, and why one program stuck in an endless loop does not freeze the whole PC. Chapter 6 covers threads and scheduling.</p>
+<h2>4. Being the only door to the hardware</h2>
+<p>User-mode programs cannot touch the disk, the graphics card or the network directly. They call <strong>system calls</strong>, functions that switch the CPU into kernel mode, do the work with full rights and switch back. On Windows you almost never make system calls yourself. You call documented functions in DLLs, the <strong>Windows API</strong>, and those make the system calls for you.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    SYSTEM_INFO info{};
+    <span class="tk-f">GetSystemInfo</span>(&amp;info);       <span class="tk-c">// asks Windows about the machine and the address space</span>
+
+    std::cout &lt;&lt; <span class="tk-s">&quot;Page size:              &quot;</span> &lt;&lt; info.dwPageSize &lt;&lt; <span class="tk-s">&quot; bytes\n&quot;</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;Allocation granularity: &quot;</span> &lt;&lt; info.dwAllocationGranularity &lt;&lt; <span class="tk-s">&quot; bytes\n&quot;</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;Lowest usable address:  &quot;</span> &lt;&lt; info.lpMinimumApplicationAddress &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output</span></div><pre><code>Page size:              4096 bytes
+Allocation granularity: 65536 bytes
+Lowest usable address:  0000000000010000</code></pre></div>
+<p><code>GetSystemInfo</code> is part of the Windows API, declared in <code>&lt;windows.h&gt;</code> and implemented in <code>kernel32.dll</code>. Chapter 5 is all about this API: how to read its documentation, handle its errors and use its strange string types.</p>
+<p>Even <code>std::cout</code> ends in a system call. The C++ library collects your text, then calls <code>WriteFile</code> in <code>kernel32.dll</code>, which asks the kernel to put the bytes on the console.</p>
+<h2>5. Keeping track of who owns what</h2>
+<p>When your program opens a file, the kernel creates an object to represent the open file and hands your process a <strong>handle</strong>: a small number that means &quot;that file I opened&quot;. Threads, processes, events and windows are all handled the same way. The kernel checks every handle against the process&#39;s rights, and closes everything a process left open when it exits.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;windows.h&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::cout &lt;&lt; <span class="tk-s">&quot;This process has id &quot;</span> &lt;&lt; <span class="tk-f">GetCurrentProcessId</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    std::cout &lt;&lt; <span class="tk-s">&quot;Its main thread has id &quot;</span> &lt;&lt; <span class="tk-f">GetCurrentThreadId</span>() &lt;&lt; <span class="tk-s">'\n'</span>;
+    <span class="tk-k">return</span> <span class="tk-n">0</span>;
+}</code></pre></div>
+<div class="codeblock output"><div class="codeblock-head"><span class="lang">Output (yours will differ)</span></div><pre><code>This process has id 18324
+Its main thread has id 20916</code></pre></div>
+<p>Run it twice and the numbers change: every run is a new process with a new id. Open <strong>Task Manager → Details</strong> while a program is running and you can find it by this id.</p>
+<h2>What this means for low-level work</h2>
+<p>Every topic later in the course is about one of these jobs, seen up close.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>OS job</th>
+<th>Where the course goes deeper</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Loading programs and DLLs</td>
+<td>Chapter 4 (DLLs), chapter 9 (the PE format)</td>
+</tr>
+<tr>
+<td>Private virtual memory</td>
+<td>Chapter 6 (address spaces, pages, protection)</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>Chapter 6 (threads), chapter 8 (debugging threads)</td>
+</tr>
+<tr>
+<td>System calls and the Windows API</td>
+<td>Chapter 5, chapter 15</td>
+</tr>
+<tr>
+<td>Handles and rights</td>
+<td>Chapter 5 (handles), chapter 6 (access rights)</td>
+</tr>
+</tbody></table>
+</div>
+<div class="callout note"><div class="callout-title"><span>Rights are a feature, not an obstacle</span></div><div class="callout-body"><p>Much of what the OS does is say no: no, you cannot read that process; no, you cannot load that driver. These rules are what keep a PC stable and keep one bad program from compromising the others. The course works with them, using documented interfaces on programs you write yourself.</p>
+</div></div>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>Thinking a pointer value is a place in RAM</span></div><div class="callout-body"><p>It is a virtual address, meaningful only inside its own process. The same number in another process leads somewhere else, or nowhere.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Assuming your thread runs without interruption</span></div><div class="callout-body"><p>The scheduler can pause it between any two instructions. Code that shares data between threads has to be written for that, as chapter 6 shows.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Forgetting that handles must be closed</span></div><div class="callout-body"><p>Windows closes them when the process exits, but a long-running game that opens files or threads in a loop and never closes them will run out.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">Two processes print the same pointer value. What does that tell you?</div><ul><li>They are sharing that piece of memory</li><li>Nothing in particular: each process has its own address space, so the same address can lead to different memory</li><li>One of them has crashed</li></ul><details><summary>Show the answer</summary><p><b>Nothing in particular: each process has its own address space, so the same address can lead to different memory</b> Virtual addresses are private to each process. The OS maps them to physical memory separately for each one.</p></details></li><li><div class="q">What is a process?</div><ul><li>The container for one running copy of a program: its address space, its threads and its handles</li><li>Another name for an <code>.exe</code> file</li><li>A single function running on the CPU</li></ul><details><summary>Show the answer</summary><p><b>The container for one running copy of a program: its address space, its threads and its handles</b> The <code>.exe</code> is the file on disk. Starting it creates a process. Starting it twice creates two processes.</p></details></li><li><div class="q">How big is one page of memory on x64 Windows?</div><ul><li>1,024 bytes</li><li>4,096 bytes (<code>0x1000</code>)</li><li>65,536 bytes</li></ul><details><summary>Show the answer</summary><p><b>4,096 bytes (<code>0x1000</code>)</b> 65,536 is the allocation granularity, which chapter 6 explains. A page is 4 KB.</p></details></li><li><div class="q">How does a normal Windows program read a file from disk?</div><ul><li>It talks to the disk controller directly</li><li>It calls a Windows API function, which makes a system call into the kernel</li><li>It reads the disk&#39;s memory addresses with a pointer</li></ul><details><summary>Show the answer</summary><p><b>It calls a Windows API function, which makes a system call into the kernel</b> User-mode code cannot touch hardware. The kernel and its drivers do that on the program&#39;s behalf.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/gamedev/l/1.06">Create an account</a><a class="btn ghost" href="../../../login.html#/c/gamedev/l/1.06">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../1-05-function-calls-and-the-stack-a-first-look/"><span class="mono">previous</span><b>1.05 Function Calls and the Stack: A First Look</b></a>
+      <a class="lp-next" href="../1-07-setting-up-visual-studio-for-this-course/"><span class="mono">next</span><b>1.07 Setting Up Visual Studio for This Course</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/gamedev/1-06-what-the-operating-system-does-for-a-program"></script>
+  <script src="../../../vendor/mermaid/mermaid.min.js?v=5ec033cc34c5"></script>
+  <script src="../../../app/js/learn.js?v=5ec033cc34c5"></script>
+</body>
+</html>

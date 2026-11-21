@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Grid Search and A* · Data Structures and Algorithms · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/dsa/5-05-grid-search-and-a/">
+  <meta name="description" content="Finding paths faster with a sense of direction - weighted grids, Dijkstra exploring in every direction, the A algorithm with f = g + h, admissible and…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Grid Search and A* · Data Structures and Algorithms · Xenon">
+  <meta property="og:description" content="Finding paths faster with a sense of direction - weighted grids, Dijkstra exploring in every direction, the A algorithm with f = g + h, admissible and…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/dsa/5-05-grid-search-and-a/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Grid Search and A* · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Grid Search and A* · Data Structures and Algorithms · Xenon">
+  <meta name="twitter:description" content="Finding paths faster with a sense of direction - weighted grids, Dijkstra exploring in every direction, the A algorithm with f = g + h, admissible and…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/dsa.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Data Structures and Algorithms</a><span>/</span><span>Graphs</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Grid Search and A*</h1>
+      <div class="readout lp-readout"><span>lesson <b>5.05</b></span><span>5 of 5 in milestone 5</span><span>6 min</span><span><b>1</b> practice task</span></div>
+      <p class="lp-summary">Finding paths faster with a sense of direction - weighted grids, Dijkstra exploring in every direction, the A* algorithm with f = g + h, admissible and consistent heuristics (Manhattan, Chebyshev, octile, Euclidean), tie-breaking, comparing how many cells each algorithm expands, and where A* is used in games, robotics and puzzles.</p>
+      <div class="prose">
+<h2>Searching with a goal in mind</h2>
+<p>Dijkstra&#39;s algorithm expands vertices in order of their distance from the start, in <strong>every</strong> direction. If you only want the path to one goal, most of that work is wasted: searching for a route from Paris to Berlin, Dijkstra explores Spain just as eagerly as Germany.</p>
+<p><strong>A*</strong> (Hart, Nilsson and Raphael, 1968) adds a sense of direction. For each vertex n it uses:</p>
+<ul>
+<li><strong>g(n)</strong>: the cost of the best known path from the start to n (Dijkstra&#39;s <code>dist</code>),</li>
+<li><strong>h(n)</strong>: a <strong>heuristic</strong>, an estimate of the remaining cost from n to the goal,</li>
+<li><strong>f(n) = g(n) + h(n)</strong>: the estimated cost of the best path <strong>through</strong> n.</li>
+</ul>
+<p>A* is Dijkstra with the priority queue ordered by f instead of g. Vertices that are close to the start <strong>and</strong> seem close to the goal come first.</p>
+<h2>Admissible and consistent heuristics</h2>
+<p>A* finds the optimal path if h never <strong>overestimates</strong> the true remaining cost: h is <strong>admissible</strong>. If h also never drops by more than the edge cost along any edge (h(u) ≤ w(u, v) + h(v)), it is <strong>consistent</strong>, and then, as in Dijkstra, every vertex is final when popped and needs to be expanded only once.</p>
+<ul>
+<li>h = 0 everywhere is admissible and consistent: A* becomes Dijkstra.</li>
+<li>The better h estimates the true distance (without overestimating), the fewer vertices A* expands.</li>
+<li>An overestimating h can make A* faster but no longer guarantees the shortest path (&quot;weighted A*&quot; does this deliberately).</li>
+</ul>
+<p>For grids, the right heuristic depends on the moves allowed, scaled by the cheapest cost of a step:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Moves</th>
+<th>Heuristic</th>
+<th>Formula (dx, dy = distances to the goal)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>4 directions</td>
+<td>Manhattan</td>
+<td>dx + dy</td>
+</tr>
+<tr>
+<td>8 directions, diagonal costs 1</td>
+<td>Chebyshev</td>
+<td>max(dx, dy)</td>
+</tr>
+<tr>
+<td>8 directions, diagonal costs √2</td>
+<td>octile</td>
+<td>max(dx, dy) + (√2 − 1)·min(dx, dy)</td>
+</tr>
+<tr>
+<td>any direction</td>
+<td>Euclidean</td>
+<td>√(dx² + dy²)</td>
+</tr>
+</tbody></table>
+</div>
+<h2>A* on a grid</h2>
+<p>The grid below has walls (<code>#</code>), open cells (<code>.</code>, cost 1 to enter) and swamp (<code>~</code>, cost 5 to enter). Moves go up, down, left and right, so Manhattan distance (times the cheapest step cost, 1) is admissible and consistent.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-p">#include &lt;cstdlib&gt;</span>
+<span class="tk-p">#include &lt;functional&gt;</span>
+<span class="tk-p">#include &lt;iostream&gt;</span>
+<span class="tk-p">#include &lt;queue&gt;</span>
+<span class="tk-p">#include &lt;string&gt;</span>
+<span class="tk-p">#include &lt;tuple&gt;</span>
+<span class="tk-p">#include &lt;vector&gt;</span>
+
+<span class="tk-k">struct</span> <span class="tk-t">Result</span> { <span class="tk-k">int</span> cost; <span class="tk-k">int</span> expanded; };
+
+<span class="tk-t">Result</span> <span class="tk-f">search</span>(<span class="tk-k">const</span> std::vector&lt;std::string&gt;&amp; grid, <span class="tk-k">int</span> sr, <span class="tk-k">int</span> sc, <span class="tk-k">int</span> gr, <span class="tk-k">int</span> gc, <span class="tk-k">bool</span> useHeuristic)
+{
+    <span class="tk-k">int</span> rows = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(grid.<span class="tk-f">size</span>()), cols = <span class="tk-k">static_cast</span>&lt;<span class="tk-k">int</span>&gt;(grid[<span class="tk-n">0</span>].<span class="tk-f">size</span>());
+    <span class="tk-k">auto</span> h = [&amp;](<span class="tk-k">int</span> r, <span class="tk-k">int</span> c) { <span class="tk-k">return</span> useHeuristic ? std::<span class="tk-f">abs</span>(r - gr) + std::<span class="tk-f">abs</span>(c - gc) : <span class="tk-n">0</span>; };
+    std::vector&lt;<span class="tk-k">int</span>&gt; <span class="tk-f">g</span>(rows * cols, <span class="tk-n">1</span> &lt;&lt; <span class="tk-n">30</span>);
+    <span class="tk-k">using</span> <span class="tk-t">Item</span> = std::tuple&lt;<span class="tk-k">int</span>, <span class="tk-k">int</span>, <span class="tk-k">int</span>&gt;;                          <span class="tk-c">// (f, -g, cell): ties prefer larger g, closer to the goal</span>
+    std::priority_queue&lt;<span class="tk-t">Item</span>, std::vector&lt;<span class="tk-t">Item</span>&gt;, std::greater&lt;<span class="tk-t">Item</span>&gt;&gt; open;
+    g[sr * cols + sc] = <span class="tk-n">0</span>;
+    open.<span class="tk-f">push</span>({ <span class="tk-f">h</span>(sr, sc), <span class="tk-n">0</span>, sr * cols + sc });
+    <span class="tk-k">int</span> expanded = <span class="tk-n">0</span>;
+    <span class="tk-k">const</span> <span class="tk-k">int</span> dr[] = { -<span class="tk-n">1</span>, <span class="tk-n">1</span>, <span class="tk-n">0</span>, <span class="tk-n">0</span> }, dc[] = { <span class="tk-n">0</span>, <span class="tk-n">0</span>, -<span class="tk-n">1</span>, <span class="tk-n">1</span> };
+    <span class="tk-k">while</span> (!open.<span class="tk-f">empty</span>())
+    {
+        <span class="tk-k">auto</span> [f, negG, cell] = open.<span class="tk-f">top</span>();
+        open.<span class="tk-f">pop</span>();
+        <span class="tk-k">if</span> (-negG &gt; g[cell]) <span class="tk-k">continue</span>;                                <span class="tk-c">// stale entry</span>
+        ++expanded;
+        <span class="tk-k">int</span> r = cell / cols, c = cell % cols;
+        <span class="tk-k">if</span> (r == gr &amp;&amp; c == gc) <span class="tk-k">return</span> { g[cell], expanded };
+        <span class="tk-k">for</span> (<span class="tk-k">int</span> d = <span class="tk-n">0</span>; d &lt; <span class="tk-n">4</span>; ++d)
+        {
+            <span class="tk-k">int</span> nr = r + dr[d], nc = c + dc[d];
+            <span class="tk-k">if</span> (nr &lt; <span class="tk-n">0</span> || nr &gt;= rows || nc &lt; <span class="tk-n">0</span> || nc &gt;= cols || grid[nr][nc] == <span class="tk-s">'#'</span>) <span class="tk-k">continue</span>;
+            <span class="tk-k">int</span> cost = g[cell] + (grid[nr][nc] == <span class="tk-s">'~'</span> ? <span class="tk-n">5</span> : <span class="tk-n">1</span>);
+            <span class="tk-k">int</span> next = nr * cols + nc;
+            <span class="tk-k">if</span> (cost &lt; g[next])
+            {
+                g[next] = cost;
+                open.<span class="tk-f">push</span>({ cost + <span class="tk-f">h</span>(nr, nc), -cost, next });
+            }
+        }
+    }
+    <span class="tk-k">return</span> { -<span class="tk-n">1</span>, expanded };
+}
+
+<span class="tk-k">int</span> <span class="tk-f">main</span>()
+{
+    std::vector&lt;std::string&gt; <span class="tk-f">grid</span>(<span class="tk-n">40</span>, std::<span class="tk-f">string</span>(<span class="tk-n">60</span>, <span class="tk-s">'.'</span>));
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> r = <span class="tk-n">5</span>; r &lt; <span class="tk-n">35</span>; ++r) grid[r][<span class="tk-n">30</span>] = <span class="tk-s">'#'</span>;                  <span class="tk-c">// a wall with gaps at the top and bottom</span>
+    <span class="tk-k">for</span> (<span class="tk-k">int</span> c = <span class="tk-n">10</span>; c &lt; <span class="tk-n">50</span>; ++c) grid[<span class="tk-n">20</span>][c] = <span class="tk-s">'~'</span>;                 <span class="tk-c">// a band of swamp</span>
+    <span class="tk-k">for</span> (<span class="tk-k">bool</span> astar : { <span class="tk-k">false</span>, <span class="tk-k">true</span> })
+    {
+        <span class="tk-t">Result</span> res = <span class="tk-f">search</span>(grid, <span class="tk-n">20</span>, <span class="tk-n">2</span>, <span class="tk-n">20</span>, <span class="tk-n">57</span>, astar);
+        std::cout &lt;&lt; (astar ? <span class="tk-s">&quot;A*:       &quot;</span> : <span class="tk-s">&quot;Dijkstra: &quot;</span>) &lt;&lt; <span class="tk-s">&quot;cost &quot;</span> &lt;&lt; res.cost &lt;&lt; <span class="tk-s">&quot;, cells expanded &quot;</span> &lt;&lt; res.expanded &lt;&lt; <span class="tk-s">'\n'</span>;
+    }
+}</code></pre></div>
+<p>Both find the same cost, but A* expands a fraction of the cells: Dijkstra floods the whole map before reaching the far side, while A* heads for the goal and only spreads out where the wall forces it to.</p>
+<p><strong>Tie-breaking</strong> matters on grids: many cells often share the same f. Preferring the one with the larger g (the one further along) makes A* push towards the goal instead of widening the search front. The code orders by <code>(f, −g)</code>.</p>
+<h2>Beyond grids</h2>
+<ul>
+<li><strong>Games</strong>: units finding their way around maps; often with precomputed navigation meshes and hierarchical search for large maps.</li>
+<li><strong>Robotics</strong>: path planning in configuration spaces.</li>
+<li><strong>Puzzles</strong>: the 15-puzzle or Rubik&#39;s cube are graphs of states; the heuristic counts misplaced tiles or adds up each tile&#39;s Manhattan distance to its home.</li>
+<li><strong>Route planning</strong>: road networks use the straight-line distance divided by the top speed as an admissible time estimate, plus &quot;landmark&quot; heuristics precomputed from distances to a few reference points.</li>
+</ul>
+<p>When even A* is too slow or memory-hungry, variants trade optimality or memory: IDA* (iterative deepening, very little memory), jump point search (skips symmetric paths on uniform grids), and bidirectional search (searching from both ends at once).</p>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What does A* use as the priority of a vertex?</div><ul><li>g(n), the cost so far</li><li>h(n), the estimated remaining cost</li><li>f(n) = g(n) + h(n)</li><li>the number of edges from the start</li></ul><details><summary>Show the answer</summary><p><b>f(n) = g(n) + h(n)</b> The estimated cost of the cheapest path through n.</p></details></li><li><div class="q">Which heuristic is admissible for a grid with 4-direction moves costing at least 1?</div><ul><li>Manhattan distance</li><li>twice the Manhattan distance</li><li>the number of walls on the map</li><li>Manhattan distance plus 10</li></ul><details><summary>Show the answer</summary><p><b>Manhattan distance</b> It never overestimates: any 4-direction path needs at least dx + dy steps.</p></details></li><li><div class="q">What happens with h(n) = 0 for every vertex?</div><ul><li>A* fails to find a path</li><li>A* behaves exactly like Dijkstra&#39;s algorithm</li><li>A* becomes breadth-first search on weighted graphs</li><li>A* becomes depth-first search</li></ul><details><summary>Show the answer</summary><p><b>A* behaves exactly like Dijkstra&#39;s algorithm</b> With no estimate, the priority is just the cost so far.</p></details></li></ol></div>
+<h2>Summary</h2>
+<ul>
+<li>A* orders the frontier by f = g + h, steering the search towards the goal.</li>
+<li>With an admissible (never overestimating) heuristic it finds a shortest path; with a consistent one, each vertex is expanded once.</li>
+<li>Match the heuristic to the moves: Manhattan, Chebyshev, octile or Euclidean, scaled by the cheapest step.</li>
+<li>Break ties towards larger g; A* then expands far fewer vertices than Dijkstra for a single goal.</li>
+</ul>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>1 practice task goes with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/dsa/l/5.05">Create an account</a><a class="btn ghost" href="../../../login.html#/c/dsa/l/5.05">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../5-04-minimum-spanning-trees/"><span class="mono">previous</span><b>5.04 Minimum Spanning Trees</b></a>
+      <a class="lp-next" href="../6-01-greedy-algorithms/"><span class="mono">next</span><b>6.01 Greedy Algorithms</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/dsa/5-05-grid-search-and-a"></script>
+</body>
+</html>

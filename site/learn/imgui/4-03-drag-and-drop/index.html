@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bgezqqzxoffufpbhkbzl.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Drag and Drop · Tool Interfaces with Dear ImGui · Xenon</title>
+  <link rel="canonical" href="https://xenon.justloofy.dev/learn/imgui/4-03-drag-and-drop/">
+  <meta name="description" content="Dragging an asset onto a slot, reordering a list, moving an object to another parent in a tree - ImGui's drag and drop works between any two items with a…">
+  <meta property="og:site_name" content="Xenon">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Drag and Drop · Tool Interfaces with Dear ImGui · Xenon">
+  <meta property="og:description" content="Dragging an asset onto a slot, reordering a list, moving an object to another parent in a tree - ImGui's drag and drop works between any two items with a…">
+  <meta property="og:url" content="https://xenon.justloofy.dev/learn/imgui/4-03-drag-and-drop/">
+  <meta property="og:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Drag and Drop · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Drag and Drop · Tool Interfaces with Dear ImGui · Xenon">
+  <meta name="twitter:description" content="Dragging an asset onto a slot, reordering a list, moving an object to another parent in a tree - ImGui's drag and drop works between any two items with a…">
+  <meta name="twitter:image" content="https://xenon.justloofy.dev/app/img/share/imgui.png">
+  <link rel="icon" type="image/svg+xml" href="../../../app/img/icon.svg">
+  <link rel="alternate icon" href="../../../app/img/icon.png">
+  <meta name="theme-color" content="#131416">
+  <link rel="stylesheet" href="../../../app/css/app.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/prose.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/theme.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/polish.css?v=5ec033cc34c5">
+  <link rel="stylesheet" href="../../../app/css/xenon.css?v=5ec033cc34c5">
+  <script src="../../../app/js/theme.js?v=5ec033cc34c5"></script>
+</head>
+<body class="learn-page">
+  <header class="lp-top">
+    <a class="lp-brand" href="../../../learn/"><span class="brand-tile"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.9 3.75h3.38l4.5 8.25-4.5 8.25H2.9L7.4 12z"/><path d="M21.1 3.75h-3.38L13.22 12l4.5 8.25h3.38L16.6 12z"/><path class="arc" d="M12 8.2q.2 3.5 1.25 3.8q-1.05.3-1.25 3.8q-.2-3.5-1.25-3.8q1.05-.3 1.25-3.8z"/></svg></span><span class="brand-name">Xenon</span></a>
+    <nav class="lp-nav"><a href="../../../learn/">Courses</a></nav>
+    <span class="lp-space"></span>
+    <a class="btn ghost small" href="../../../login.html">Sign in</a>
+    <a class="btn primary small" href="../../../login.html?join">Create an account</a>
+  </header>
+  <main class="lp-main">
+    <div class="lp-crumbs"><a href="../../">Courses</a><span>/</span><a href="../">Tool Interfaces with Dear ImGui</a><span>/</span><span>Menus, Popups, Docking and Style</span></div>
+    <article class="lp-lesson">
+      <h1 class="lp-title">Drag and Drop</h1>
+      <div class="readout lp-readout"><span>lesson <b>4.03</b></span><span>3 of 6 in milestone 4</span><span>5 min</span><span><b>2</b> practice tasks</span></div>
+      <p class="lp-summary">Dragging an asset onto a slot, reordering a list, moving an object to another parent in a tree - ImGui&#39;s drag and drop works between any two items with a typed <strong>payload</strong>. This lesson covers sources, targets, payload types, reordering a list by dragging, and re-parenting in a tree without creating loops.</p>
+      <div class="prose">
+<h2>Source and target</h2>
+<p>Any item can be a drag <strong>source</strong> and any item a drop <strong>target</strong>. They talk through a <strong>payload</strong>: a small block of bytes with a type name.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-c">// The source: an asset in the browser</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Selectable</span>(asset.name.<span class="tk-f">c_str</span>());
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginDragDropSource</span>())
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">SetDragDropPayload</span>(<span class="tk-s">&quot;ASSET&quot;</span>, &amp;asset.id, <span class="tk-k">sizeof</span>(asset.id));   <span class="tk-c">// copied by ImGui</span>
+    <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%s&quot;</span>, asset.name.<span class="tk-f">c_str</span>());                              <span class="tk-c">// drawn under the mouse while dragging</span>
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndDragDropSource</span>();
+}
+
+<span class="tk-c">// The target: a texture slot in the inspector</span>
+<span class="tk-t">ImGui</span>::<span class="tk-f">Button</span>(material.texture.<span class="tk-f">empty</span>() ? <span class="tk-s">&quot;(drop a texture)&quot;</span> : material.texture.<span class="tk-f">c_str</span>(), <span class="tk-f">ImVec2</span>(-FLT_MIN, <span class="tk-n">0</span>));
+<span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginDragDropTarget</span>())
+{
+    <span class="tk-k">if</span> (<span class="tk-k">const</span> <span class="tk-t">ImGuiPayload</span>* p = <span class="tk-t">ImGui</span>::<span class="tk-f">AcceptDragDropPayload</span>(<span class="tk-s">&quot;ASSET&quot;</span>))  <span class="tk-c">// non-null on the frame of the drop</span>
+    {
+        <span class="tk-k">const</span> <span class="tk-k">int</span> id = *<span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">int</span>*&gt;(p-&gt;<span class="tk-t">Data</span>);
+        material.texture = assets.<span class="tk-f">byId</span>(id).name;
+    }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">EndDragDropTarget</span>();
+}</code></pre></div>
+<p>Both <code>Begin...</code> functions follow the &quot;End only if Begin returned true&quot; rule. The <strong>type</strong> string (up to 32 characters) lets a target accept only what it understands: a texture slot accepts <code>&quot;ASSET&quot;</code>, ignores <code>&quot;ENTITY&quot;</code>. While dragging, matching targets highlight automatically.</p>
+<p>The payload is <strong>copied</strong>, so pass small, stable things: an id, an index, never a pointer to something that may move or be deleted during the drag.</p>
+<h2>Reordering a list</h2>
+<p>A list where each row is both a source and a target can be reordered by dragging:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">for</span> (<span class="tk-k">int</span> i = <span class="tk-n">0</span>; i &lt; (<span class="tk-k">int</span>)layers.<span class="tk-f">size</span>(); ++i)
+{
+    <span class="tk-t">ImGui</span>::<span class="tk-f">PushID</span>(i);
+    <span class="tk-t">ImGui</span>::<span class="tk-f">Selectable</span>(layers[i].name.<span class="tk-f">c_str</span>());
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginDragDropSource</span>()) { <span class="tk-t">ImGui</span>::<span class="tk-f">SetDragDropPayload</span>(<span class="tk-s">&quot;LAYER&quot;</span>, &amp;i, <span class="tk-k">sizeof</span>(i)); <span class="tk-t">ImGui</span>::<span class="tk-f">Text</span>(<span class="tk-s">&quot;%s&quot;</span>, layers[i].name.<span class="tk-f">c_str</span>()); <span class="tk-t">ImGui</span>::<span class="tk-f">EndDragDropSource</span>(); }
+    <span class="tk-k">if</span> (<span class="tk-t">ImGui</span>::<span class="tk-f">BeginDragDropTarget</span>())
+    {
+        <span class="tk-k">if</span> (<span class="tk-k">const</span> <span class="tk-t">ImGuiPayload</span>* p = <span class="tk-t">ImGui</span>::<span class="tk-f">AcceptDragDropPayload</span>(<span class="tk-s">&quot;LAYER&quot;</span>))
+            pendingMove = { *<span class="tk-k">static_cast</span>&lt;<span class="tk-k">const</span> <span class="tk-k">int</span>*&gt;(p-&gt;<span class="tk-t">Data</span>), i };     <span class="tk-c">// apply after the loop</span>
+        <span class="tk-t">ImGui</span>::<span class="tk-f">EndDragDropTarget</span>();
+    }
+    <span class="tk-t">ImGui</span>::<span class="tk-f">PopID</span>();
+}
+<span class="tk-k">if</span> (pendingMove) { <span class="tk-f">moveItem</span>(layers, pendingMove-&gt;from, pendingMove-&gt;to); pendingMove.<span class="tk-f">reset</span>(); }</code></pre></div>
+<p>Apply the move <strong>after</strong> the loop: changing the vector while iterating over it would skip or repeat rows. &quot;Move item from <code>from</code> to <code>to</code>&quot; means: take the item out, and insert it so it ends up at index <code>to</code>. The practice writes <code>moveItem</code>.</p>
+<h2>Re-parenting in a tree</h2>
+<p>Dropping a tree node on another node makes it a child of that node. One rule protects the data: <strong>a node may not be dropped onto itself or onto any of its own descendants</strong>, which would make a loop (the node would become its own ancestor) and detach that whole branch from the tree. Check the ancestry before accepting:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="lang">C++</span></div><pre><code><span class="tk-k">bool</span> <span class="tk-f">isAncestor</span>(<span class="tk-k">const</span> <span class="tk-t">Scene</span>&amp; s, <span class="tk-k">int</span> maybeAncestor, <span class="tk-k">int</span> node)   <span class="tk-c">// walk up the parent links</span></code></pre></div>
+<p>ImGui can help the user too: <code>AcceptDragDropPayload</code> with <code>ImGuiDragDropFlags_AcceptBeforeDelivery</code> lets you peek at the payload while hovering and show a &quot;not allowed&quot; cursor or tooltip before the drop. The practice implements the re-parenting rule.</p>
+<h2>Dragging from outside</h2>
+<p>The Win32 back end does not deliver files dragged from Explorer as ImGui payloads. Handle <code>WM_DROPFILES</code> (after <code>DragAcceptFiles(hwnd, TRUE)</code>) in your window procedure, and act on the files directly, for example importing them into the asset browser.</p>
+<h2>Common mistakes</h2>
+<div class="callout warning"><div class="callout-title"><span>A pointer in the payload</span></div><div class="callout-body"><p>The data may move or be deleted during the drag. Use ids or indexes.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Changing a container while drawing it</span></div><div class="callout-body"><p>Record the move and apply it after the loop.</p>
+</div></div>
+<div class="callout warning"><div class="callout-title"><span>Allowing a node to become its own descendant</span></div><div class="callout-body"><p>Check ancestry before re-parenting, or part of the tree disappears into a loop.</p>
+</div></div>
+<h2>Knowledge check</h2>
+<div class="lp-quiz"><div class="lp-quiz-head"><span class="label">quiz</span><span>In Xenon your best score is kept.</span></div><ol><li><div class="q">What is a drag-and-drop payload&#39;s type string for?</div><ul><li>So a target only accepts payloads it understands</li><li>To choose the cursor</li><li>To name the window</li></ul><details><summary>Show the answer</summary><p><b>So a target only accepts payloads it understands</b> &quot;ASSET&quot; and &quot;ENTITY&quot; payloads go to different targets.</p></details></li><li><div class="q">Why apply a list reorder after the loop that draws the list?</div><ul><li>Changing the vector while iterating over it skips or repeats items</li><li>ImGui requires all drops at the end of the frame</li><li>It is faster</li></ul><details><summary>Show the answer</summary><p><b>Changing the vector while iterating over it skips or repeats items</b> Record the move, then apply it once the loop is done.</p></details></li><li><div class="q">Node A is the parent of B, and B the parent of C. Can A be dropped onto C?</div><ul><li>No; A would become a descendant of itself</li><li>Yes</li><li>Only if C has no children</li></ul><details><summary>Show the answer</summary><p><b>No; A would become a descendant of itself</b> Check that the target is not the dragged node or one of its descendants.</p></details></li></ol></div>
+
+      </div>
+    </article>
+    <section class="card lp-cta">
+      <h2>Practise this lesson</h2>
+      <p>2 practice tasks go with this lesson. In Xenon you write the code in a real editor, and it is compiled and tested against the task's checks. Free during the beta.</p>
+      <div class="lp-go"><a class="btn primary" href="../../../login.html?join#/c/imgui/l/4.03">Create an account</a><a class="btn ghost" href="../../../login.html#/c/imgui/l/4.03">Sign in</a></div>
+    </section>
+    <nav class="lp-pager" aria-label="Lessons">
+      <a class="lp-prev" href="../4-02-popups-context-menus-and-modals/"><span class="mono">previous</span><b>4.02 Popups, Context Menus and Modals</b></a>
+      <a class="lp-next" href="../4-04-docking-and-multiple-viewports/"><span class="mono">next</span><b>4.04 Docking and Multiple Viewports</b></a>
+    </nav>
+  </main>
+  <footer class="lp-foot"><span>Xenon · Learn it by running it.</span><a href="../../../learn/">All courses</a><a href="../../../login.html">Sign in</a></footer>
+  <script src="../../../app/js/visit.js?v=5ec033cc34c5" data-page="/learn/imgui/4-03-drag-and-drop"></script>
+</body>
+</html>
